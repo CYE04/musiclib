@@ -7,7 +7,7 @@
   const LOGO_SRC=(function(){
     try{
       const cur=document.currentScript && document.currentScript.src ? new URL(document.currentScript.src, location.href) : null;
-      return cur ? new URL('olive-fellowship-logo.png', cur.href).href : 'musiclib/olive-fellowship-logo.png';
+      return cur ? new URL('olive-fellowship-logo.png', cur.href).href : 'olive-fellowship-logo.png';
     }catch(_){
       return 'musiclib/olive-fellowship-logo.png';
     }
