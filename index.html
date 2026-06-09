@@ -1,12 +1,34 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
   <head>
-    <title>CECP诗歌库</title>
     <meta charset="UTF-8">
-    <link rel="stylesheet" href="https://cye04.github.io/musiclib/musiclib.css">
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>CECP诗歌库</title>
+
+    <script>
+      const key = new URLSearchParams(window.location.search).get("key");
+
+      if (key !== "cecp2026") {
+        alert("Access denied");
+        window.location.replace("https://cecp.it");
+      }
+    </script>
+
+    <link
+      rel="stylesheet"
+      href="https://cye04.github.io/musiclib/musiclib.css?v=20260609"
+    >
   </head>
+
   <body>
     <div id="music-library"></div>
-    <script src="https://cye04.github.io/musiclib/musiclib.js"></script>
+
+    <script
+      src="https://cye04.github.io/musiclib/musiclib.js?v=20260609"
+    ></script>
   </body>
 </html>
