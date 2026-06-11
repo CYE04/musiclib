@@ -71,6 +71,8 @@
   transition:background .25s ease,color .25s ease;
   border-radius:28px;overflow:hidden;
   position:relative;
+  /* Fix 4: prevent content from hiding behind iOS home indicator */
+  padding-bottom:env(safe-area-inset-bottom);
 }
 
 #music-library::before{
@@ -144,6 +146,20 @@
 /* hide Halo chrome */
 #header-menu,aside,footer,.mt-10{display:none!important;}
 section.mx-auto{grid-template-columns:1fr!important;max-width:100%!important;padding:0!important;margin:0!important;gap:0!important;}
+
+/* ── iOS Safe-Area / White-Edge Fix ── */
+/* Fix 1 & 5: html/body base reset — background tracks theme to prevent white bleed */
+html,body{
+  margin:0!important;
+  padding:0!important;
+  background:#f4efe7; /* matches --halo-bg (light) */
+}
+@media(prefers-color-scheme:dark){
+  html,body{
+    background:#15110f; /* matches --halo-bg (dark) */
+  }
+}
+
 body{overflow-x:hidden;}
 html.ml-fullscreen,
 body.ml-fullscreen{
@@ -158,7 +174,10 @@ body.ml-fullscreen #music-library{
   inset:0;
   width:100vw;
   max-width:100vw;
+  /* Fix 2: 100vh fallback first, then 100dvh for browsers that support it */
+  height:100vh;
   height:100dvh;
+  min-height:100vh;
   min-height:100dvh;
   margin:0!important;
   border-radius:0!important;
