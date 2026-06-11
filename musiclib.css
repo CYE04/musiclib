@@ -69,10 +69,10 @@
   background:var(--bg);color:var(--text);min-height:100vh;
   -webkit-font-smoothing:antialiased;
   transition:background .25s ease,color .25s ease;
-  border-radius:28px;overflow:hidden;
+  border-radius:28px;
+  /* overflow:hidden 保留用于圆角裁切；fullscreen 模式下被下方规则覆盖 */
+  overflow:hidden;
   position:relative;
-  /* Fix 4: prevent content from hiding behind iOS home indicator */
-  padding-bottom:env(safe-area-inset-bottom);
 }
 
 #music-library::before{
@@ -174,15 +174,34 @@ body.ml-fullscreen #music-library{
   inset:0;
   width:100vw;
   max-width:100vw;
-  /* Fix 2: 100vh fallback first, then 100dvh for browsers that support it */
+  /* 100vh fallback，再用 100dvh 覆盖（iOS 15+ 支持） */
   height:100vh;
   height:100dvh;
   min-height:100vh;
   min-height:100dvh;
   margin:0!important;
   border-radius:0!important;
+  /* 关键：fullscreen 下不能用 overflow:hidden，否则 safe-area padding 被裁掉 */
   overflow-x:hidden;
   overflow-y:auto;
+  /* 用 padding-bottom 把内容推离 Home 指示条 */
+  padding-bottom:env(safe-area-inset-bottom, 0px);
+  /* 让背景色延伸到安全区下方，消灭露底 */
+  background-color:var(--bg);
+}
+
+/* 用 ::after 伪元素在安全区下方填充背景色，彻底消灭黑/白底边 */
+body.ml-fullscreen #music-library::after{
+  content:'';
+  position:fixed;
+  left:0;
+  right:0;
+  bottom:0;
+  height:env(safe-area-inset-bottom, 0px);
+  background:var(--bg);
+  /* 确保在内容之上、在 modal/player 之下 */
+  z-index:1;
+  pointer-events:none;
 }
 html,body,#music-library{
   width:100%;
