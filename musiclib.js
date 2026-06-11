@@ -4,6 +4,13 @@
   const ML_VER='2026.05.23.1';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
+  const HALO_BASE='https://cecp.it';
+  function resolveMediaUrl(url){
+    if(!url) return '';
+    if(/^https?:\/\//i.test(url)) return url;
+    if(String(url).startsWith('/')) return HALO_BASE+url;
+    return HALO_BASE+'/'+url;
+  }
   const LOGO_SRC=(function(){
     try{
       const cur=document.currentScript && document.currentScript.src ? new URL(document.currentScript.src, location.href) : null;
@@ -2540,7 +2547,7 @@
     const xnt=$('ml-player-now-title'); if(xnt) xnt.textContent=s.title||'正在播放';
     const xns=$('ml-player-now-sub'); if(xns) xns.textContent=s.artist||s.source||'诗歌';
     _mpSetCover(s.cover||'');
-    _mpAudio.src=s.mp3||'';
+    _mpAudio.src=resolveMediaUrl(s.mp3)||'';
     $('ml-mp-cur').textContent='0:00';
     $('ml-mp-dur').textContent='0:00';
     $('ml-mp-fill').style.width='0%';
@@ -2712,7 +2719,7 @@
         if(idx>=0) _mpIdx=idx; else { _mpSongs=[s]; _mpIdx=0; }
         _mpRenderQueue();
         _mpLrc=[]; _mpLrcIdx=-1;
-        _mpAudio.src=s.mp3||'';
+        _mpAudio.src=resolveMediaUrl(s.mp3)||'';
         if(s.lrc) fetch(s.lrc).then(r=>r.text()).then(text=>{_mpLrc=_mpParseLrc(text);_mpRenderLrc();}).catch(()=>{});
       }
       const titleEl=document.getElementById('ml-mp-title');
