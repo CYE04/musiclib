@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
     >
     <meta name="theme-color" content="#0f172a">
     <meta name="mobile-web-app-capable" content="yes">
@@ -35,6 +35,11 @@
   <body>
     <div id="music-library"></div>
 
+    <script>
+      /* Fullscreen init — must run before musiclib.js */
+      document.documentElement.classList.add('ml-fullscreen');
+      document.body.classList.add('ml-fullscreen');
+    </script>
     <script
       src="./musiclib.js?v=20260611"
     ></script>
