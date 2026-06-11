@@ -66,13 +66,17 @@
   --toast-bg:rgba(31,28,24,0.92);
   --toast-text:#fff;
   font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,sans-serif;
-  background:var(--bg);color:var(--text);min-height:100vh;
+  background:var(--bg);color:var(--text);
+  /* 100vh 兜底，100dvh/100svh 覆盖（iOS Safari 动态视口） */
+  min-height:100vh;
+  min-height:100dvh;
   -webkit-font-smoothing:antialiased;
   transition:background .25s ease,color .25s ease;
   border-radius:28px;
-  /* overflow:hidden 保留用于圆角裁切；fullscreen 模式下被下方规则覆盖 */
   overflow:hidden;
   position:relative;
+  /* 撑开底部安全区，背景色延伸覆盖 Home 指示条 */
+  padding-bottom:env(safe-area-inset-bottom, 0px);
 }
 
 #music-library::before{
@@ -148,15 +152,16 @@
 section.mx-auto{grid-template-columns:1fr!important;max-width:100%!important;padding:0!important;margin:0!important;gap:0!important;}
 
 /* ── iOS Safe-Area / White-Edge Fix ── */
-/* Fix 1 & 5: html/body base reset — background tracks theme to prevent white bleed */
+/* html/body 背景必须与 #music-library 的 --bg 完全一致，
+   否则底部安全区会透出 Halo 网站自身的深/白色背景 */
 html,body{
   margin:0!important;
   padding:0!important;
-  background:#f4efe7; /* matches --halo-bg (light) */
+  background:#f4efe7!important; /* = --halo-bg 浅色 */
 }
 @media(prefers-color-scheme:dark){
   html,body{
-    background:#15110f; /* matches --halo-bg (dark) */
+    background:#15110f!important; /* = --halo-bg 深色 */
   }
 }
 
