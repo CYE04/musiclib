@@ -4,10 +4,18 @@
     <meta charset="UTF-8">
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
     >
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="CECP诗歌库">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
     <title>CECP诗歌库</title>
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./icons/favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
 
     <script>
       const key = new URLSearchParams(window.location.search).get("key");
@@ -30,5 +38,12 @@
     <script
       src="./musiclib.js?v=20260611"
     ></script>
+    <script>
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("./sw.js").catch(() => {});
+        });
+      }
+    </script>
   </body>
 </html>
