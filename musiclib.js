@@ -43,10 +43,10 @@
       const cssUrl=cur ? new URL('musiclib.css', cur.href) : new URL('musiclib.css', location.href);
       cssUrl.searchParams.set('v',ML_VER);
       s.href=cssUrl.href;
-      s.onerror=()=>{ if(!/cye04\.github\.io\/musiclib\/musiclib\.css/.test(s.href)) s.href='https://cye04.github.io/musiclib/musiclib/musiclib.css?v='+encodeURIComponent(ML_VER); };
+      s.onerror=()=>{ if(!/cye04\.github\.io\/musiclib\/musiclib\.css/.test(s.href)) s.href='https://cye04.github.io/musiclib/musiclib.css?v='+encodeURIComponent(ML_VER); };
     }catch(_){
       s.href='musiclib.css?v='+encodeURIComponent(ML_VER);
-      s.onerror=()=>{ s.href='https://cye04.github.io/musiclib/musiclib/musiclib.css?v='+encodeURIComponent(ML_VER); };
+      s.onerror=()=>{ s.href='https://cye04.github.io/musiclib/musiclib.css?v='+encodeURIComponent(ML_VER); };
     }
     document.head.appendChild(s);
   }
