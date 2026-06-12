@@ -1165,6 +1165,54 @@ html,body,#music-library{
 }
 #ml-toast.show{ opacity:1; transform:translate(-50%,0); }
 
+#ml-pull-refresh{
+  position:fixed;
+  top:calc(8px + env(safe-area-inset-top, 0px));
+  left:50%;
+  z-index:1200;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  min-height:36px;
+  padding:8px 14px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.12);
+  background:rgba(9,13,25,.78);
+  color:#f7f8fb;
+  font-size:13px;
+  font-weight:700;
+  line-height:1;
+  box-shadow:0 16px 44px rgba(0,0,0,.28),0 1px 0 rgba(255,255,255,.10) inset;
+  backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);
+  opacity:0;
+  pointer-events:none;
+  transform:translate(-50%,-54px);
+  transition:opacity .16s ease,transform .16s ease,background .16s ease,border-color .16s ease;
+}
+#ml-pull-refresh.pulling,
+#ml-pull-refresh.refreshing{
+  opacity:1;
+}
+#ml-pull-refresh.ready{
+  background:rgba(227,191,66,.94);
+  border-color:rgba(227,191,66,.85);
+  color:#121212;
+}
+#ml-pull-refresh.refreshing .ml-pull-spinner{
+  animation:mlPullSpin .75s linear infinite;
+}
+.ml-pull-spinner{
+  width:15px;
+  height:15px;
+  border-radius:50%;
+  border:2px solid currentColor;
+  border-top-color:transparent;
+  opacity:.9;
+}
+@keyframes mlPullSpin{to{transform:rotate(360deg);}}
+
 
 
 @media (max-width:768px){

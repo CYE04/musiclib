@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.12.1';
+  const ML_VER='2026.06.12.2-pullrefresh';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -69,6 +69,7 @@
   let _themeObserver=null;
   let _detailStatePushed=false;
   let _revealObserver=null,_weatherCache=null;
+  let _pullRefreshing=false;
 
   root.innerHTML=`
     <div id="ml-header">
@@ -344,6 +345,12 @@
     toast.id='ml-toast';
     root.appendChild(toast);
 
+    const refresher=document.createElement('div');
+    refresher.id='ml-pull-refresh';
+    refresher.setAttribute('aria-live','polite');
+    refresher.innerHTML='<span class="ml-pull-spinner"></span><span id="ml-pull-refresh-text">下拉刷新</span>';
+    root.appendChild(refresher);
+
     const mbLyric=$('ml-mb-lyric');
     if(mbLyric) mbLyric.textContent='';
   })();
@@ -371,6 +378,84 @@
     t.classList.add('show');
     clearTimeout(showToast._timer);
     showToast._timer=setTimeout(()=>t.classList.remove('show'),1800);
+  }
+
+  function attachPullToRefresh(){
+    const indicator=$('ml-pull-refresh');
+    const label=$('ml-pull-refresh-text');
+    if(!indicator||!label) return;
+    let startY=0,pull=0,tracking=false,ready=false;
+    const maxPull=104,threshold=72;
+    function isBlockedTarget(target){
+      if(_pullRefreshing) return true;
+      if(detail?.classList.contains('open')) return true;
+      if($('ml-notice-modal')?.classList.contains('open')) return true;
+      if($('ml-lightbox')?.classList.contains('open')) return true;
+      if($('ml-player-view')?.classList.contains('is-open')) return true;
+      if(target.closest('input,textarea,select,button,a,[contenteditable="true"],#ml-nowbar,#ml-miniplayer')) return true;
+      return false;
+    }
+    function reset(){
+      tracking=false; ready=false; pull=0;
+      indicator.classList.remove('ready','pulling');
+      indicator.style.transform='';
+      label.textContent='下拉刷新';
+    }
+    function finish(text){
+      label.textContent=text;
+      setTimeout(()=>{
+        _pullRefreshing=false;
+        indicator.classList.remove('refreshing');
+        reset();
+      },650);
+    }
+    async function refresh(){
+      _pullRefreshing=true;
+      indicator.classList.remove('ready','pulling');
+      indicator.classList.add('refreshing');
+      indicator.style.transform='translate(-50%,18px)';
+      label.textContent='正在刷新';
+      try{
+        if(navigator.serviceWorker?.getRegistration){
+          const reg=await navigator.serviceWorker.getRegistration();
+          await reg?.update?.();
+        }
+        await loadSongs({refresh:true});
+        finish('已刷新');
+      }catch(_){
+        finish('刷新失败');
+        showToast('刷新失败，请稍后重试');
+      }
+    }
+    root.addEventListener('touchstart',e=>{
+      if(isBlockedTarget(e.target)) return;
+      if(root.scrollTop>2) return;
+      const t=e.touches&&e.touches[0];
+      if(!t) return;
+      startY=t.clientY; pull=0; tracking=true; ready=false;
+    },{passive:true});
+    root.addEventListener('touchmove',e=>{
+      if(!tracking) return;
+      const t=e.touches&&e.touches[0];
+      if(!t) return;
+      const dy=t.clientY-startY;
+      if(dy<=0){ reset(); return; }
+      if(root.scrollTop>2){ reset(); return; }
+      pull=Math.min(maxPull,dy*0.46);
+      ready=pull>=threshold;
+      indicator.classList.add('pulling');
+      indicator.classList.toggle('ready',ready);
+      indicator.style.transform=`translate(-50%,${Math.max(0,pull-46)}px)`;
+      label.textContent=ready?'松开刷新':'下拉刷新';
+      if(pull>8) e.preventDefault();
+    },{passive:false});
+    const end=()=>{
+      if(!tracking) return;
+      if(ready) refresh();
+      else reset();
+    };
+    root.addEventListener('touchend',end,{passive:true});
+    root.addEventListener('touchcancel',reset,{passive:true});
   }
 
   async function copyText(text, msg){
@@ -1176,8 +1261,9 @@
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',syncHaloTheme);
   }
 
-  async function loadSongs(){
+  async function loadSongs(opts={}){
     try{
+      if(opts.refresh) showToast('正在刷新诗歌库');
       const res=await fetch(GITHUB_API+'?t='+Date.now(),{cache:'no-store'});if(!res.ok)throw 0;
       const files=await res.json();
       const jsons=files.filter(f=>f.name.endsWith('.json')&&f.name!=='test.json');
@@ -1189,8 +1275,10 @@
       render();
       window.dispatchEvent(new CustomEvent('cecp:musiclib-songs-loaded',{detail:{songs:songs.slice()}}));
       openSongFromUrl();
+      if(opts.refresh) showToast('诗歌库已刷新');
     }catch(e){
-      $('ml-loading').innerHTML='<div style="color:#ff3b30;font-size:14px">载入失败，请刷新重试</div>';
+      if(!opts.refresh) $('ml-loading').innerHTML='<div style="color:#ff3b30;font-size:14px">载入失败，请刷新重试</div>';
+      throw e;
     }
   }
 
@@ -3130,6 +3218,7 @@
   }
 
   attachSwipeBack();
+  attachPullToRefresh();
   window.__CECP_MUSICLIB_ENGINE__={
     version:ML_VER,
     getSongs:()=>songs.slice(),
