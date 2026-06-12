@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.12.4-restore-core';
+  const ML_VER='2026.06.12.2-pullrefresh';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -84,9 +84,8 @@
         </div>
       </div>
       <div id="ml-hero">
-        <div id="ml-hero-kicker">CECP MUSIC LIBRARY</div>
-        <h1 id="ml-title">为敬拜而预备</h1>
-        <div id="ml-subtitle">快速查找诗歌、歌词、和弦、歌谱与敬拜资料。</div>
+        <h1 id="ml-title">诗歌库</h1>
+        <div id="ml-subtitle">精选敬拜诗歌集合，含歌词、简谱、移调与音频练习。</div>
       </div>
       <section id="ml-worship-picks" class="ml-reveal" aria-label="每日推荐">
         <div id="ml-wp-glow" aria-hidden="true"></div>
@@ -1279,7 +1278,7 @@
       if(opts.refresh) showToast('诗歌库已刷新');
     }catch(e){
       if(!opts.refresh) $('ml-loading').innerHTML='<div style="color:#ff3b30;font-size:14px">载入失败，请刷新重试</div>';
-      if(opts.refresh) throw e;
+      throw e;
     }
   }
 
