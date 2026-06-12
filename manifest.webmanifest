@@ -6,8 +6,8 @@
   "start_url": "./?key=cecp2026",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f4efe7",
-  "theme_color": "#f4efe7",
+  "background_color": "#060a16",
+  "theme_color": "#060a16",
   "orientation": "any",
   "icons": [
     {

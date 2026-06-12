@@ -1,4 +1,4 @@
-const CACHE_NAME = "cecp-musiclib-vue-pwa-v1";
+const CACHE_NAME = "cecp-musiclib-vue-pwa-v2";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
