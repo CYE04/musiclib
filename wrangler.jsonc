@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "musiclib-vue",
+  "name": "musiclib",
   "compatibility_date": "2026-06-11",
   "observability": {
     "enabled": true
