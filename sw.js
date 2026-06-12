@@ -1,9 +1,9 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v5-pure-music-app";
+const CACHE_NAME = "cecp-musiclib-pwa-v6-restore-core";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
-  "./musiclib.css?v=20260612-pure-music-app",
-  "./musiclib.js?v=20260612-pure-music-app",
+  "./musiclib.css?v=20260612-restore-core",
+  "./musiclib.js?v=20260612-restore-core",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
   "./icons/favicon.ico",

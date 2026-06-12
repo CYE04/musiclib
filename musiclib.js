@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.12.3-pure-music-app';
+  const ML_VER='2026.06.12.4-restore-core';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -64,7 +64,6 @@
   }
 
   let songs=[],query='',sourceFilter='全部';
-  let filters={key:'全部',artist:'全部',tag:'全部'};
   let _apLoaded=false,_ap=null;
   let _audioCtx=null,_metroTimer=null,_metroNext=0,_metroRunning=false,_metroBpm=72;
   let _themeObserver=null;
@@ -73,20 +72,11 @@
   let _pullRefreshing=false;
 
   root.innerHTML=`
-    <aside id="ml-app-rail" aria-label="诗歌库导航">
-      <div class="ml-rail-brand"><span class="ml-rail-logo">𝄞</span><span>CECP</span></div>
-      <button class="ml-rail-item active" type="button" data-jump="ml-header"><span>⌂</span><span>首页</span></button>
-      <button class="ml-rail-item" type="button" data-jump="ml-list-stage"><span>♫</span><span>诗歌库</span></button>
-      <button class="ml-rail-item" type="button" data-jump="ml-filter-dock"><span>⌕</span><span>筛选</span></button>
-      <button class="ml-rail-item" type="button" data-jump="ml-worship-picks"><span>♡</span><span>推荐</span></button>
-      <button class="ml-rail-item" type="button" data-jump="ml-home-dashboard"><span>▦</span><span>资料</span></button>
-    </aside>
-    <main id="ml-app-main">
     <div id="ml-header">
       <div id="ml-nav">
         <div id="ml-brand">
           <span class="ml-brand-dot"><img src="${LOGO_SRC}" alt="橄榄树团契"></span>
-          <span class="ml-brand-name">CECP 诗歌库</span>
+          <span class="ml-brand-name">诗歌库</span>
         </div>
         <div id="ml-nav-actions">
           <button class="ml-nav-icon-btn" id="ml-nav-search" type="button" aria-label="聚焦搜索">⌕</button>
@@ -140,15 +130,6 @@
         </div>
       </div>
       <div id="ml-source-bar"></div>
-      <section id="ml-filter-dock" aria-label="分类、标签、调号与歌手筛选"></section>
-      <section id="ml-quick-access" aria-label="常用入口">
-        <button class="ml-quick-card" type="button" data-action="library"><span class="ml-quick-icon">▤</span><strong>歌谱库</strong><small>浏览所有诗歌</small></button>
-        <button class="ml-quick-card" type="button" data-action="playlist"><span class="ml-quick-icon">♡</span><strong>推荐歌单</strong><small>今日敬拜精选</small></button>
-        <button class="ml-quick-card" type="button" data-action="recent"><span class="ml-quick-icon">♪</span><strong>最近更新</strong><small>最新收录歌曲</small></button>
-        <button class="ml-quick-card" type="button" data-action="hot"><span class="ml-quick-icon">▶</span><strong>热门敬拜</strong><small>有音频可练习</small></button>
-        <button class="ml-quick-card" type="button" data-action="practice"><span class="ml-quick-icon">♬</span><strong>练习资料</strong><small>乐谱 / 和弦 / 歌词</small></button>
-        <button class="ml-quick-card" type="button" data-action="categories"><span class="ml-quick-icon">▦</span><strong>全部分类</strong><small>按分类浏览</small></button>
-      </section>
     </div>
     <div id="ml-loading"><div id="ml-spinner"></div>正在载入诗歌…</div>
     <div id="ml-list-stage">
@@ -158,8 +139,6 @@
       </div>
       <div id="ml-list"></div>
     </div>
-    <section id="ml-home-dashboard" aria-label="诗歌库概览"></section>
-    </main>
     <div id="ml-empty">
       <div id="ml-empty-icon">🎵</div>
       <div id="ml-empty-msg">找不到「<span id="ml-query-text"></span>」</div>
@@ -383,8 +362,6 @@
   $('ml-search').addEventListener('input',e=>{query=e.target.value.trim();render();});
   $('ml-back').addEventListener('click',closeDetail);
   $('ml-nav-search')?.addEventListener('click',()=>{$('ml-search')?.focus();});
-  bindAppNavigation();
-  bindQuickAccess();
   bindWorshipPicksEffects();
   updateWorshipGreeting();
   setInterval(updateWorshipGreeting,60000);
@@ -1302,7 +1279,7 @@
       if(opts.refresh) showToast('诗歌库已刷新');
     }catch(e){
       if(!opts.refresh) $('ml-loading').innerHTML='<div style="color:#ff3b30;font-size:14px">载入失败，请刷新重试</div>';
-      throw e;
+      if(opts.refresh) throw e;
     }
   }
 
@@ -1665,217 +1642,6 @@
     if(!q||!t)return t||'';
     return t.replace(new RegExp(`(${escapeRegExp(q)})`,'gi'),'<mark class="ml-highlight">$1</mark>');
   }
-  function jumpTo(id){
-    const el=$(id);
-    if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
-  }
-  function bindAppNavigation(){
-    root.querySelectorAll('.ml-rail-item[data-jump]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        root.querySelectorAll('.ml-rail-item').forEach(x=>x.classList.remove('active'));
-        btn.classList.add('active');
-        jumpTo(btn.dataset.jump);
-      });
-    });
-  }
-  function bindQuickAccess(){
-    root.querySelectorAll('.ml-quick-card').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const action=btn.dataset.action;
-        if(action==='library'){
-          query=''; sourceFilter='全部'; filters={key:'全部',artist:'全部',tag:'全部'};
-          const input=$('ml-search'); if(input) input.value='';
-          render(); jumpTo('ml-list-stage');
-        }else if(action==='playlist'){
-          jumpTo('ml-worship-picks');
-        }else if(action==='recent'){
-          query=''; filters.tag='最近更新';
-          const input=$('ml-search'); if(input) input.value='';
-          render(); jumpTo('ml-list-stage');
-        }else if(action==='hot'){
-          query=''; filters.tag='有音频';
-          const input=$('ml-search'); if(input) input.value='';
-          render(); jumpTo('ml-list-stage');
-        }else if(action==='practice'){
-          query=''; filters.tag='练习资料';
-          const input=$('ml-search'); if(input) input.value='';
-          render(); jumpTo('ml-list-stage');
-        }else if(action==='categories'){
-          jumpTo('ml-filter-dock');
-        }
-      });
-    });
-  }
-  function songHasChord(song){
-    for(const sec of song.sections||[])for(const line of sec.lines||[]){
-      const arr=Array.isArray(line)?line:(line.line||[]);
-      if(arr.some(c=>cleanText(c.chord))) return true;
-    }
-    return false;
-  }
-  function songHasLyrics(song){
-    return (song.sections||[]).some(sec=>(sec.lines||[]).length);
-  }
-  function songMatchesTag(song,tag){
-    if(!tag||tag==='全部') return true;
-    if(tag==='有音频') return hasSongAudio(song);
-    if(tag==='有歌谱') return !!song.scoreImg;
-    if(tag==='有歌词') return songHasLyrics(song);
-    if(tag==='有和弦') return songHasChord(song);
-    if(tag==='练习资料') return !!(song.scoreImg||songHasChord(song)||songHasLyrics(song));
-    if(tag==='最近更新') return true;
-    return true;
-  }
-  function getFavoriteIds(){
-    try{return JSON.parse(localStorage.getItem('cecp:musiclib:favorites')||'[]').filter(Boolean);}
-    catch(_){return [];}
-  }
-  function isFavorite(id){
-    return getFavoriteIds().includes(id);
-  }
-  function toggleFavorite(song){
-    if(!song||!song.id) return;
-    const ids=getFavoriteIds();
-    const idx=ids.indexOf(song.id);
-    if(idx>=0){
-      ids.splice(idx,1);
-      showToast('已取消收藏');
-    }else{
-      ids.unshift(song.id);
-      showToast('已加入收藏');
-    }
-    try{localStorage.setItem('cecp:musiclib:favorites',JSON.stringify(ids.slice(0,200)));}catch(_){}
-    render();
-  }
-  function recentSongs(list=songs){
-    return list.slice().sort((a,b)=>String(b.id||'').localeCompare(String(a.id||''))).slice(0,6);
-  }
-  function uniqueTop(list,field,limit=10){
-    const counts=list.reduce((acc,s)=>{
-      const v=cleanText(s[field]);
-      if(v) acc[v]=(acc[v]||0)+1;
-      return acc;
-    },{});
-    return Object.keys(counts).sort((a,b)=>counts[b]-counts[a]||a.localeCompare(b,'zh-Hans-CN')).slice(0,limit);
-  }
-  function renderChipGroup(title,type,items,current){
-    return `<div class="ml-filter-group">
-      <div class="ml-filter-title">${title}</div>
-      <div class="ml-filter-chips">
-        ${items.map(item=>`<button class="ml-filter-chip${item===current?' active':''}" type="button" data-filter-type="${type}" data-filter-value="${item}">${item}</button>`).join('')}
-      </div>
-    </div>`;
-  }
-  function renderFilterDock(){
-    const dock=$('ml-filter-dock');
-    if(!dock) return;
-    const keys=['全部'].concat(uniqueTop(songs,'origKey',12));
-    const artists=['全部'].concat(uniqueTop(songs,'displayArtist',10));
-    const tags=['全部','有音频','有歌谱','有歌词','有和弦','练习资料','最近更新'];
-    dock.innerHTML=`
-      <div class="ml-section-head">
-        <div><span>筛选</span><strong>分类 / 标签 / 调号 / 歌手</strong></div>
-        <button id="ml-clear-filters" type="button">重置</button>
-      </div>
-      ${renderChipGroup('调号','key',keys,filters.key)}
-      ${renderChipGroup('歌手','artist',artists,filters.artist)}
-      ${renderChipGroup('标签','tag',tags,filters.tag)}
-    `;
-    dock.querySelectorAll('.ml-filter-chip').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        filters[btn.dataset.filterType]=btn.dataset.filterValue||'全部';
-        render();
-      });
-    });
-    $('ml-clear-filters')?.addEventListener('click',()=>{
-      sourceFilter='全部';
-      filters={key:'全部',artist:'全部',tag:'全部'};
-      render();
-    });
-  }
-  function dashboardSongRow(song,tag='诗歌'){
-    if(!song) return '';
-    return `<button class="ml-dash-song" type="button" data-id="${song.id}">
-      <span class="ml-dash-cover">${song.cover?`<img src="${song.cover}" alt="" loading="lazy">`:'♪'}</span>
-      <span class="ml-dash-copy"><strong>${song.title||'未命名诗歌'}</strong><small>${song.displayArtist||song.source||'诗歌'} · ${tag}</small></span>
-      <span class="ml-dash-open">›</span>
-    </button>`;
-  }
-  function renderDashboardCard(title,subtitle,rows,kind){
-    return `<section class="ml-dash-card" data-kind="${kind}">
-      <div class="ml-dash-card-head">
-        <div><span>${subtitle}</span><strong>${title}</strong></div>
-        <button type="button" class="ml-dash-more" data-kind="${kind}">查看</button>
-      </div>
-      <div class="ml-dash-list">${rows.join('')}</div>
-    </section>`;
-  }
-  function renderHomeDashboard(){
-    const dash=$('ml-home-dashboard');
-    if(!dash||!songs.length) return;
-    const recent=recentSongs(songs);
-    const audio=songs.filter(hasSongAudio).slice(0,6);
-    const practice=songs.filter(s=>s.scoreImg||songHasChord(s)).slice(0,6);
-    const {picks}=getDailyWorshipPicks();
-    const sourceCounts=songs.reduce((acc,s)=>{const k=s.source||'其他';acc[k]=(acc[k]||0)+1;return acc;},{});
-    const categoryRows=Object.keys(sourceCounts).sort((a,b)=>sourceCounts[b]-sourceCounts[a]).slice(0,6).map(name=>`
-      <button class="ml-dash-category" type="button" data-source="${name}">
-        <span>${name}</span><strong>${sourceCounts[name]} 首</strong>
-      </button>`);
-    dash.innerHTML=`
-      <div class="ml-section-head ml-dashboard-title">
-        <div><span>CECP 诗歌库 App</span><strong>今日推荐与敬拜资料</strong></div>
-      </div>
-      <div class="ml-dashboard-grid">
-        <section id="ml-weather-card" class="ml-weather-card">
-          <div class="ml-weather-kicker">今日天气</div>
-          <strong id="ml-weather-main">正在同步</strong>
-          <span id="ml-weather-sub">用于安排练习与敬拜预备</span>
-        </section>
-        ${renderDashboardCard('推荐歌单','今日推荐',picks.map(s=>dashboardSongRow(s,'推荐')),'playlist')}
-        ${renderDashboardCard('最近更新','最新收录',recent.map(s=>dashboardSongRow(s,'新歌')),'recent')}
-        ${renderDashboardCard('热门敬拜','音频练习',audio.map(s=>dashboardSongRow(s,s.bpm?`${s.bpm} BPM`:'可播放')),'hot')}
-        ${renderDashboardCard('练习资料','歌谱 / 和弦',practice.map(s=>dashboardSongRow(s,s.scoreImg?'有歌谱':'有和弦')),'practice')}
-        <section class="ml-dash-card">
-          <div class="ml-dash-card-head"><div><span>全部分类</span><strong>按歌手 / 团体浏览</strong></div></div>
-          <div class="ml-dash-categories">${categoryRows.join('')}</div>
-        </section>
-      </div>
-    `;
-    dash.querySelectorAll('.ml-dash-song[data-id]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const song=songs.find(s=>s.id===btn.dataset.id);
-        if(song) openDetail(song);
-      });
-    });
-    dash.querySelectorAll('.ml-dash-more').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        const kind=btn.dataset.kind;
-        query='';
-        const input=$('ml-search'); if(input) input.value='';
-        if(kind==='recent') filters.tag='最近更新';
-        if(kind==='hot') filters.tag='有音频';
-        if(kind==='practice') filters.tag='练习资料';
-        if(kind==='playlist') jumpTo('ml-worship-picks');
-        if(kind!=='playlist'){ render(); jumpTo('ml-list-stage'); }
-      });
-    });
-    dash.querySelectorAll('.ml-dash-category[data-source]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        sourceFilter=btn.dataset.source||'全部';
-        filters={key:'全部',artist:'全部',tag:'全部'};
-        render();
-        jumpTo('ml-list-stage');
-      });
-    });
-    updateWeatherCard('正在同步今日天气','用于安排练习与敬拜预备');
-    loadWorshipWeather().then(text=>updateWeatherCard(text||'安静敬拜日','Padova / 当前天气')).catch(()=>updateWeatherCard('安静敬拜日','天气暂不可用'));
-  }
-  function updateWeatherCard(main,sub){
-    const m=$('ml-weather-main'),s=$('ml-weather-sub');
-    if(m) m.textContent=main;
-    if(s) s.textContent=sub||'今日天气';
-  }
   function renderSourceBar(){
     const bar=$('ml-source-bar');
     if(!bar) return;
@@ -1899,7 +1665,6 @@
     bar.querySelectorAll('.ml-source-chip').forEach(btn=>{
       btn.addEventListener('click',()=>{
         sourceFilter=btn.dataset.source||'全部';
-        filters.artist='全部';
         render();
       });
     });
@@ -1908,15 +1673,9 @@
   function render(){
     const list=$('ml-list'),empty=$('ml-empty'),q=query.toLowerCase();
     renderSourceBar();
-    renderFilterDock();
-    const recentIds=new Set(recentSongs(songs).map(s=>s.id));
     const filtered=songs.filter(s=>{
       const sourceOk=sourceFilter==='全部'||(s.source||'其他')===sourceFilter;
-      const keyOk=filters.key==='全部'||(s.origKey||'')===filters.key;
-      const artistOk=filters.artist==='全部'||(s.displayArtist||s.artist||s.source||'')===filters.artist;
-      const tagOk=filters.tag==='最近更新'?recentIds.has(s.id):songMatchesTag(s,filters.tag);
       if(!sourceOk) return false;
-      if(!keyOk||!artistOk||!tagOk) return false;
       if(!q) return true;
       return (s.title||'').toLowerCase().includes(q)
         || (s.artist||'').toLowerCase().includes(q)
@@ -2016,17 +1775,6 @@
         };
         el.appendChild(shareBtn);
 
-        const favBtn=document.createElement('button');
-        favBtn.className='ml-fav-btn'+(isFavorite(el.dataset.id)?' is-on':'');
-        favBtn.innerHTML='♡';
-        favBtn.title='收藏';
-        favBtn.onclick=e=>{
-          e.stopPropagation();
-          const s=songs.find(x=>x.id===el.dataset.id);
-          if(s) toggleFavorite(s);
-        };
-        el.appendChild(favBtn);
-
         const playBtn=document.createElement('button');
         playBtn.className='ml-mp-play-btn';
         playBtn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
@@ -2041,7 +1789,6 @@
         el.appendChild(playBtn);
       });
     }
-    renderHomeDashboard();
     observeRevealItems();
   }
 
