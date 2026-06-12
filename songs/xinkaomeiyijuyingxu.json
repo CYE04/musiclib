@@ -1,0 +1,334 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-03-04 18:10:47",
+  "id": "xinkaomeiyijuyingxu",
+  "title": "信靠每一句应许",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉【从早晨到夜晚】 郑懋柔词 游智婷曲（罗5:1-5,15:13）",
+  "origKey": "E",
+  "timeSign": "4/4",
+  "bpm": 90,
+  "cover": "https://cecpadua.github.io/resouces/covers/junwangjiuzaizheli.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/xinkaomeiyijuyingxu.lrc",
+  "youtube": "https://youtu.be/hQ6Uz6Uhesw",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/xinkaomeiyijuyingxuE.jpg",
+  "sections": [
+    {
+      "name": "前奏",
+      "lines": [
+        [
+          {
+            "chord": "E",
+            "n": "0_ 5_",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "1'_ 2'_",
+            "lyric": ""
+          },
+          {
+            "chord": "E/G#",
+            "n": "3' 5'",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "A",
+            "n": "6 - - -",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "E",
+            "n": "0_ 5_",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "1'_ 2'_",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "3' 5'",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "A",
+            "n": "6 - -",
+            "lyric": ""
+          }
+        ]
+      ]
+    },
+    {
+      "name": "主歌",
+      "lines": [
+        [
+          {
+            "chord": "",
+            "n": "3_ 4_",
+            "lyric": "主你"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "E",
+            "n": "5 ( 3_ 2_ )",
+            "lyric": "使卑"
+          },
+          {
+            "chord": "E/G#",
+            "n": "1 ( 7,_ 1_ )",
+            "lyric": "微转"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "A",
+            "n": "1 6, 5, 5,_ 5,_",
+            "lyric": "为尊贵,是伤"
+          },
+          {
+            "chord": "",
+            "lyric": "|"
+          },
+          {
+            "chord": "E/G#",
+            "n": "1 3 5 ( 3_ 2_ )",
+            "lyric": "心流泪转"
+          },
+          {
+            "chord": "",
+            "lyric": "|"
+          },
+          {
+            "chord": "A",
+            "n": "1 3",
+            "lyric": "为笑"
+          },
+          {
+            "chord": "B",
+            "n": "2 3_ 4_",
+            "lyric": "颜.患难"
+          },
+          {
+            "chord": "",
+            "lyric": "|"
+          }
+        ],
+        [
+          {
+            "chord": "E",
+            "n": "5 ( 3_ 2_ )",
+            "lyric": "生忍"
+          },
+          {
+            "chord": "E/G#",
+            "n": "1",
+            "lyric": "耐"
+          },
+          {
+            "chord": "",
+            "n": "7,_ 1_",
+            "lyric": "忍耐"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "A",
+            "n": "1_ 6,",
+            "lyric": "生老"
+          },
+          {
+            "chord": "E/G#",
+            "n": "5, sp 5,_ 5,_",
+            "lyric": "练，老练"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "A",
+            "n": "1 3",
+            "lyric": "生盼"
+          },
+          {
+            "chord": "E/G#",
+            "n": "5 sp 3_ 2_",
+            "lyric": "望，盼望"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "B⁷",
+            "n": "1_ 2_ 3_ 2_",
+            "lyric": "不至羞愧，"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ 7,_ 2_",
+            "lyric": "就没有失"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          }
+        ],
+        [
+          {
+            "chord": "E",
+            "n": "1_ - - 3_ 2_",
+            "lyric": "望ㅤㅤ 心中"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "E",
+            "n": "5 3_ 2_",
+            "lyric": "充满盼"
+          },
+          {
+            "chord": "E/G#",
+            "n": "1",
+            "lyric": "望，"
+          },
+          {
+            "chord": "",
+            "n": "7,_ 1_",
+            "lyric": "盼望"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "A",
+            "n": "6,_ 1_ 4_ 6_",
+            "lyric": "使眼睛明"
+          },
+          {
+            "chord": "E/G#",
+            "n": "5 -",
+            "lyric": "亮"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "A",
+            "n": "6,_ 1_ 4_ 6_",
+            "lyric": "道路虽崎"
+          },
+          {
+            "chord": "E/G#",
+            "n": "5",
+            "lyric": "岖，"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_",
+            "lyric": "你与"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          }
+        ],
+        [
+          {
+            "chord": "F#",
+            "n": "1 ( 3_ 2_ )",
+            "lyric": "我同ㅤ"
+          },
+          {
+            "chord": "B",
+            "n": "1 sp 3_ 2_",
+            "lyric": "行。心中"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "",
+            "n": "5 3_ 2_",
+            "lyric": "充满盼"
+          },
+          {
+            "chord": "E/G#",
+            "n": "1",
+            "lyric": "望"
+          },
+          {
+            "chord": "",
+            "n": "7,_ 1_",
+            "lyric": "盼望｜"
+          },
+          {
+            "chord": "A",
+            "n": "6,_ 1_ 4_ 6_",
+            "lyric": "使信心刚"
+          },
+          {
+            "chord": "E/G#",
+            "n": "5 -",
+            "lyric": "强｜"
+          },
+          {
+            "chord": "A",
+            "n": "1 1_ 4_ 6_",
+            "lyric": "信靠每一"
+          },
+          {
+            "chord": "",
+            "n": "5_ 3_ 1",
+            "lyric": "句应许｜"
+          }
+        ],
+        [
+          {
+            "chord": "F#m",
+            "n": "1 2_ 2_",
+            "lyric": "生命充"
+          },
+          {
+            "chord": "B",
+            "n": "3 ( 2_ 1_ )",
+            "lyric": "满亮"
+          },
+          {
+            "chord": "E",
+            "n": "5 -",
+            "lyric": "光｜｜"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/xinkaomeiyijuyingxu.mp3"
+}

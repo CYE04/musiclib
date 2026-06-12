@@ -1,0 +1,246 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-04-14 18:52:50",
+  "id": "anjing-yueshuya",
+  "title": "安静",
+  "artist": "约书亚乐团",
+  "sub": "约书亚乐团【直到世界尽头】(2004) Reuben Morgan 词曲 周巽光译",
+  "origKey": "C",
+  "timeSign": "4/4",
+  "bpm": 76,
+  "cover": "https://cecpadua.github.io/resouces/covers/anjingyueshuya.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/anjingyueshuya.lrc",
+  "youtube": "https://youtu.be/-YRgF25YBIg?si=6e2-YZ7nCg34kEWi",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/anjing-yueshuyaC.png",
+  "sections": [
+    {
+      "name": "安静-约书亚乐团",
+      "lines": [
+        [
+          {
+            "chord": "C",
+            "n": "3· sp",
+            "lyric": "藏",
+            "lyric2": "灵"
+          },
+          {
+            "chord": "ㅤ G/B",
+            "n": "( 5_ sp 5· ) sp",
+            "lyric": "我",
+            "lyric2": "安"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤA",
+            "n": "( 1_ sp | sp 1 ) ( sp - sp - 1_ )",
+            "lyric": "在",
+            "lyric2": "息，"
+          },
+          {
+            "chord": "(C/G)",
+            "n": "1_ sp | sp",
+            "lyric": "翅",
+            "lyric2": "在"
+          },
+          {
+            "chord": "F",
+            "n": "6· sp",
+            "lyric": "膀",
+            "lyric2": "基"
+          },
+          {
+            "chord": "",
+            "n": "( 2_ sp 2· ) sp sp",
+            "lyric": "荫",
+            "lyric2": "督"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤGsus4",
+            "n": "( 2_ sp | sp 2 ) sp - sp",
+            "lyric": "下，",
+            "lyric2": "里，"
+          },
+          {
+            "chord": "G",
+            "n": "0 sp 0 sp |",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          }
+        ],
+        [
+          {
+            "chord": "C/E",
+            "n": "3· sp",
+            "lyric": "遮",
+            "lyric2": "你"
+          },
+          {
+            "chord": "",
+            "n": "( 5_ 5 ) ( sp sp 5_ )",
+            "lyric": "盖",
+            "lyric2": "大"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤF2",
+            "n": "( 1_ sp | sp 1 ) ( - sp - sp 1_ )",
+            "lyric": "我",
+            "lyric2": "能"
+          },
+          {
+            "chord": "(C/E)",
+            "n": "1_ sp | sp",
+            "lyric": "在",
+            "lyric2": "使"
+          },
+          {
+            "chord": "Dm7",
+            "n": "4 sp",
+            "lyric": "你",
+            "lyric2": "我"
+          },
+          {
+            "chord": "",
+            "n": "3_ ( 2_ sp 2 )",
+            "lyric": "大能",
+            "lyric2": "安然"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤGsus4",
+            "n": "1_ ( 2_ sp | sp 2 ) -",
+            "lyric": "手中。",
+            "lyric2": "信靠。"
+          },
+          {
+            "chord": "C",
+            "n": "3_ 5_",
+            "lyric": "当大",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "C/E",
+            "n": "1'_ 7_ sp |",
+            "lyric": "海翻",
+            "lyric2": "ㅤ"
+          }
+        ],
+        [
+          {
+            "chord": "F",
+            "n": "6 sp",
+            "lyric": "腾，"
+          },
+          {
+            "chord": "ㅤㅤㅤ G",
+            "n": "6_ sp_ ( 6_ sp 6 ) sp",
+            "lyric": "波ㅤ涛"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤㅤCsus4",
+            "n": "5_ sp_ ( 5_ sp | sp 5 ) sp - sp",
+            "lyric": "汹ㅤ涌"
+          },
+          {
+            "chord": "C/E",
+            "n": "3_ sp_ 5_ sp",
+            "lyric": "我ㅤ与"
+          },
+          {
+            "chord": "",
+            "n": "1'_ sp_ 7_ sp | sp",
+            "lyric": "你ㅤ展"
+          },
+          {
+            "chord": "F",
+            "n": "6 sp",
+            "lyric": "翅"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤG",
+            "n": "6_ ( 7_ sp 7 )",
+            "lyric": "暴风"
+          },
+          {
+            "chord": "(G#dim)",
+            "n": "1'_ ( 1'_ sp sp | )",
+            "lyric": "上空。"
+          }
+        ],
+        [
+          {
+            "chord": "ㅤAm",
+            "n": "( sp 1' ) sp - sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "C/E",
+            "n": "3_ sp_ 5_",
+            "lyric": "父ㅤ你"
+          },
+          {
+            "chord": "",
+            "n": "1'_ sp_ 7_ sp | sp",
+            "lyric": "仍ㅤ作"
+          },
+          {
+            "chord": "F",
+            "n": "6 sp",
+            "lyric": "王"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤ ㅤG",
+            "n": "6_ sp_ ( 6_ sp 6 )",
+            "lyric": "在ㅤ洪"
+          },
+          {
+            "chord": "ㅤㅤㅤ ㅤㅤㅤㅤ C",
+            "n": "5_ sp_ ( 5_ sp | sp 5 ) sp 0 sp",
+            "lyric": "水ㅤ中"
+          },
+          {
+            "chord": "C/E",
+            "n": "3_ sp_ 4_",
+            "lyric": "我ㅤ要"
+          },
+          {
+            "chord": "",
+            "n": "5_ sp_ ( 1_ sp | )",
+            "lyric": "安ㅤ静"
+          }
+        ],
+        [
+          {
+            "chord": "ㅤㅤF",
+            "n": "( sp 1 )",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "ㅤㅤㅤ ㅤㅤㅤG",
+            "n": "3_ sp_ ( 2_ sp 2 )",
+            "lyric": "知ㅤ你"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤFmaj9ㅤㅤㅤㅤㅤㅤㅤ C",
+            "n": "1_ sp_ ( 1_ sp | sp 1 ) ( - - - sp | sp 1 ) [v1",
+            "lyric": "是ㅤ神"
+          },
+          {
+            "chord": "",
+            "n": "sp - sp - sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "0_ 3_ sp ]v :|",
+            "lyric": "ㅤ我"
+          },
+          {
+            "chord": "ㅤㅤC",
+            "n": "( sp 1 ) sp - sp - sp - [v2 ||/ ]v",
+            "lyric": "ㅤ"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/anjingyueshuya.m4a"
+}

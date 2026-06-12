@@ -1,0 +1,486 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-04-30 21:48:24",
+  "id": "woyuanweiniqu",
+  "title": "我愿为你去",
+  "artist": "小羊诗歌",
+  "sub": "小羊诗歌 【我愿意】 （2005） 林婉容 词曲",
+  "origKey": "D",
+  "timeSign": "4/4",
+  "bpm": 75,
+  "cover": "https://cecpadua.github.io/resouces/covers/woyuanyi.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/woyuanweiniqu.lrc",
+  "youtube": "https://youtu.be/_yv4ksPKRZM?si=f6ON_vXvCuP4GOs7",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/woyuanweiniquD.jpg",
+  "sections": [
+    {
+      "name": "我愿为你去",
+      "lines": [
+        [
+          {
+            "chord": "",
+            "n": "0",
+            "lyric": "ㅤㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "0",
+            "lyric": "ㅤㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "0",
+            "lyric": "ㅤㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1_ 2_ sp |: sp",
+            "lyric": "用圣",
+            "lyric2": "成为"
+          },
+          {
+            "chord": "D",
+            "n": "3_ 3_",
+            "lyric": "灵与",
+            "lyric2": "我的"
+          },
+          {
+            "chord": "",
+            "n": "( 3_ 3_ )",
+            "lyric": "火",
+            "lyric2": "异乡"
+          },
+          {
+            "chord": "A/C#",
+            "n": "2·",
+            "lyric": "为ㅤ",
+            "lyric2": "荣ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp | sp",
+            "lyric": "我",
+            "lyric2": "耀"
+          },
+          {
+            "chord": "Bm",
+            "n": "2_",
+            "lyric": "施",
+            "lyric2": "救"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤBm/A",
+            "n": "( 1· sp sp 1 )",
+            "lyric": "洗，",
+            "lyric2": "主，"
+          },
+          {
+            "chord": "",
+            "n": "2_ 3_ sp | sp",
+            "lyric": "让我",
+            "lyric2": "让万"
+          },
+          {
+            "chord": "",
+            "n": "4_ ( 4_ sp 4_ ) 4_",
+            "lyric": "充满ㅤㅤ天",
+            "lyric2": "国的ㅤ荣华"
+          },
+          {
+            "chord": "",
+            "n": "3·",
+            "lyric": "上ㅤ",
+            "lyric2": "尽ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "4_ sp |",
+            "lyric": "的",
+            "lyric2": "都"
+          }
+        ],
+        [
+          {
+            "chord": "Em7",
+            "n": "3_",
+            "lyric": "能",
+            "lyric2": "失"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤA7",
+            "n": "( 2· sp sp 2 )",
+            "lyric": "力；",
+            "lyric2": "色；"
+          },
+          {
+            "chord": "",
+            "n": "3_ 4_ sp | sp",
+            "lyric": "让圣",
+            "lyric2": "赐我"
+          },
+          {
+            "chord": "D",
+            "n": "5_ 5_",
+            "lyric": "火烧",
+            "lyric2": "勇敢"
+          },
+          {
+            "chord": "",
+            "n": "5_ 3_",
+            "lyric": "尽邪",
+            "lyric2": "的心"
+          },
+          {
+            "chord": "F#7/C#",
+            "n": "2·",
+            "lyric": "情",
+            "lyric2": "一"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp | sp",
+            "lyric": "和",
+            "lyric2": "无"
+          },
+          {
+            "chord": "",
+            "n": "2·_ sp_ ( 1__ 1 )",
+            "lyric": "私ㅤ欲；",
+            "lyric2": "畏ㅤ惧；"
+          },
+          {
+            "chord": "Bm/A",
+            "n": "-",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "6,_ 7,_ sp | sp",
+            "lyric": "因为",
+            "lyric2": "因为"
+          },
+          {
+            "chord": "G",
+            "n": "1·",
+            "lyric": "我ㅤ",
+            "lyric2": "我ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3_",
+            "lyric": "愿",
+            "lyric2": "愿"
+          },
+          {
+            "chord": "A7",
+            "n": "2",
+            "lyric": "为",
+            "lyric2": "为"
+          },
+          {
+            "chord": "",
+            "n": "2·_ sp_ ( 1__ sp sp | )",
+            "lyric": "你ㅤ去。",
+            "lyric2": "你ㅤ去。"
+          }
+        ],
+        [
+          {
+            "chord": "ㅤㅤD",
+            "n": "( sp 1 ) sp - sp - [v1",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1_ 2_ sp :| ]v",
+            "lyric": "成为"
+          },
+          {
+            "chord": "",
+            "n": "[v2",
+            "lyric": ""
+          },
+          {
+            "chord": "ㅤㅤDㅤㅤㅤㅤ【cho",
+            "n": "( sp 1 ) sp - sp -",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "rus】",
+            "n": "5_ 4_ sp ]v",
+            "lyric": "钉痕"
+          },
+          {
+            "chord": "",
+            "n": "|:",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "DㅤㅤㅤㅤㅤF#/C#",
+            "n": "( 3 sp - sp 3_ ) 4_",
+            "lyric": "手ㅤㅤㅤㅤ引"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_ sp | sp",
+            "lyric": "我前"
+          },
+          {
+            "chord": "BmㅤㅤㅤㅤBm/A",
+            "n": "1 sp - sp -",
+            "lyric": "行，ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ sp sp |",
+            "lyric": "我只ㅤ"
+          }
+        ],
+        [
+          {
+            "chord": "Gㅤㅤㅤ       ㅤD/F#",
+            "n": "( 6 sp - sp 6_ ) 5_",
+            "lyric": "愿ㅤㅤㅤㅤ合"
+          },
+          {
+            "chord": "",
+            "n": "4_ 3_ sp | sp",
+            "lyric": "你心"
+          },
+          {
+            "chord": "Em7",
+            "n": "2 sp - sp",
+            "lyric": "意，"
+          },
+          {
+            "chord": "A7",
+            "n": "- sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 7_ sp | sp",
+            "lyric": "看万"
+          },
+          {
+            "chord": "G",
+            "n": "6",
+            "lyric": "事ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "6_ 4_ sp",
+            "lyric": "为损"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5·",
+            "lyric": "失，"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp | sp",
+            "lyric": "受"
+          },
+          {
+            "chord": "A/C#",
+            "n": "2",
+            "lyric": "苦"
+          },
+          {
+            "chord": "",
+            "n": "3_ 6,_ sp",
+            "lyric": "为小"
+          },
+          {
+            "chord": "Bm",
+            "n": "1 sp - sp |",
+            "lyric": "事，"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "[v1",
+            "lyric": ""
+          },
+          {
+            "chord": "G",
+            "n": "0_ 4_",
+            "lyric": "ㅤ靠"
+          },
+          {
+            "chord": "",
+            "n": "4_ 3_",
+            "lyric": "你的"
+          },
+          {
+            "chord": "Em",
+            "n": "4_ 3_",
+            "lyric": "恩典"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤAsus4",
+            "n": "4_ ( 5_ sp | sp 5 ) sp - sp",
+            "lyric": "站立。"
+          },
+          {
+            "chord": "A7",
+            "n": "-",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "5_ 4_ sp :| ]v",
+            "lyric": "钉痕 "
+          },
+          {
+            "chord": "Em7",
+            "n": "[v2 0_ 6,_",
+            "lyric": "ㅤ靠"
+          },
+          {
+            "chord": "",
+            "n": "1_ 2_",
+            "lyric": "你的"
+          },
+          {
+            "chord": "A",
+            "n": "3·_ sp_ ( 2__ sp 2_ ) ( 1__ 7,__ ) sp | sp",
+            "lyric": "恩ㅤ典ㅤㅤ站"
+          },
+          {
+            "chord": "DㅤㅤㅤㅤㅤFine",
+            "n": "( 1 sp - - - sp ||/ ) ]v",
+            "lyric": "立。"
+          }
+        ],
+        [
+          {
+            "chord": "ㅤㅤD",
+            "n": "( sp 1 ) -",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "【Bri",
+            "n": "0_ 5,_",
+            "lyric": "ㅤ神"
+          },
+          {
+            "chord": "dge】",
+            "n": "1_ 2_ sp | sp",
+            "lyric": "圣的"
+          },
+          {
+            "chord": "D",
+            "n": "3 -",
+            "lyric": "爱，"
+          },
+          {
+            "chord": "A",
+            "n": "2·",
+            "lyric": "融ㅤ"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤ Bm",
+            "n": "( 5_ sp | sp 5_ )",
+            "lyric": "化"
+          },
+          {
+            "chord": "",
+            "n": "( 1· sp 1_ ) 1_",
+            "lyric": "我！ㅤ神"
+          },
+          {
+            "chord": "",
+            "n": "2_ 3_ sp |",
+            "lyric": "圣的"
+          },
+          {
+            "chord": "G",
+            "n": "4 -",
+            "lyric": "火，"
+          },
+          {
+            "chord": "D",
+            "n": "5·",
+            "lyric": "熬"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤA",
+            "n": "( 6_ sp | sp 6_ )",
+            "lyric": "炼"
+          },
+          {
+            "chord": "",
+            "n": "( 2· sp 2_ ) 3_",
+            "lyric": "我！ㅤ神"
+          },
+          {
+            "chord": "D7/F#",
+            "n": "2_ 1_ sp |",
+            "lyric": "圣的"
+          }
+        ],
+        [
+          {
+            "chord": "G",
+            "n": "6·",
+            "lyric": "使ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1'_",
+            "lyric": "命，"
+          },
+          {
+            "chord": "A",
+            "n": "7",
+            "lyric": "占"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤBm",
+            "n": "6_ ( 3_ sp | sp 3 ) ( sp - sp 3_ ) 3_",
+            "lyric": "有我ㅤㅤㅤㅤㅤㅤ神"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ sp | sp",
+            "lyric": "圣的"
+          },
+          {
+            "chord": "Em7",
+            "n": "4 - sp",
+            "lyric": "灵，"
+          },
+          {
+            "chord": "E7",
+            "n": "6_ sp 6",
+            "lyric": "引ㅤ领ㅤ"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤA",
+            "n": "( 5_ sp | sp 5 ) sp",
+            "lyric": "我！"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤD.S.",
+            "n": "- sp - sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "al Fine",
+            "n": "5_ sp_ 4_ sp |",
+            "lyric": "钉ㅤ痕"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/woyuanweiniqu.mp3"
+}

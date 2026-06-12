@@ -1,0 +1,480 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-05-24 11:22:45",
+  "id": "jiangtianchangkai",
+  "title": "将天敞开",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉【将天敞开】 郑懋柔词 游智婷曲",
+  "origKey": "C",
+  "timeSign": "4/4",
+  "bpm": 152,
+  "cover": "https://cecpadua.github.io/resouces/covers/jiangtianchangkai.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/jiangtianchangkai.lrc",
+  "youtube": "https://youtu.be/OVUPLFLdmpE?si=AxWs9rUW1ejrThPD",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/jiangtianchangkaiC.jpg",
+  "sections": [
+    {
+      "name": "将天敞开",
+      "lines": [
+        [
+          {
+            "chord": "",
+            "n": "|: sp sp",
+            "lyric": ""
+          },
+          {
+            "chord": "G",
+            "n": "3' sp 3' sp 4' sp 5' sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "F/F#",
+            "n": "5' sp 5' sp 7' sp 1'' sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "C/E",
+            "n": "3' sp 3' sp 4' sp 5' sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "G/D",
+            "n": "5' sp 5' sp 7' sp 1'' sp sp :|",
+            "lyric": ""
+          }
+        ],
+        [
+          {
+            "chord": "G",
+            "n": "3 3",
+            "lyric": "将天"
+          },
+          {
+            "chord": "",
+            "n": "4 5 sp | sp",
+            "lyric": "敞开，"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5 5",
+            "lyric": "祢的"
+          },
+          {
+            "chord": "",
+            "n": "6 7 sp | sp",
+            "lyric": "荣耀"
+          },
+          {
+            "chord": "C/E",
+            "n": "1' - ( 7 sp 6 ) sp | sp",
+            "lyric": "降ㅤ下"
+          },
+          {
+            "chord": "G/D",
+            "n": "5 - sp - sp - sp | sp",
+            "lyric": "来;"
+          },
+          {
+            "chord": "C",
+            "n": "6 6",
+            "lyric": "将天"
+          },
+          {
+            "chord": "",
+            "n": "7 1' sp | sp",
+            "lyric": "敞开；"
+          },
+          {
+            "chord": "G/B",
+            "n": "5 1'",
+            "lyric": "祢的"
+          },
+          {
+            "chord": "",
+            "n": "1' 3' sp |",
+            "lyric": "同在"
+          }
+        ],
+        [
+          {
+            "chord": "Am",
+            "n": "3' - ( 4' sp 2' ) sp | sp",
+            "lyric": "降ㅤ下"
+          },
+          {
+            "chord": "D",
+            "n": "2' - - - sp | sp",
+            "lyric": "来;"
+          },
+          {
+            "chord": "G",
+            "n": "3 3",
+            "lyric": "将天"
+          },
+          {
+            "chord": "",
+            "n": "4 5 sp | sp",
+            "lyric": "敞开;"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5 5",
+            "lyric": "祢的"
+          },
+          {
+            "chord": "",
+            "n": "6 7 sp | sp",
+            "lyric": "荣耀"
+          },
+          {
+            "chord": "C/E",
+            "n": "1' - ( 2' sp 1' ) sp | sp",
+            "lyric": "降ㅤ下"
+          },
+          {
+            "chord": "G/D",
+            "n": "3' - -",
+            "lyric": "来,"
+          },
+          {
+            "chord": "",
+            "n": "2'_ 3'_ sp |",
+            "lyric": "万国"
+          }
+        ],
+        [
+          {
+            "chord": "C",
+            "n": "4'",
+            "lyric": "赞"
+          },
+          {
+            "chord": "",
+            "n": "3'_ ( 2'_ 2' )",
+            "lyric": "叹祢;"
+          },
+          {
+            "chord": "",
+            "n": "2'_ 3'_ sp |",
+            "lyric": "祢是"
+          },
+          {
+            "chord": "D",
+            "n": "4'·",
+            "lyric": "荣"
+          },
+          {
+            "chord": "",
+            "n": "( 3'_ 3' )",
+            "lyric": "耀"
+          },
+          {
+            "chord": "",
+            "n": "2' sp |",
+            "lyric": "君"
+          },
+          {
+            "chord": "G",
+            "n": "1' - - - sp |",
+            "lyric": "王。"
+          },
+          {
+            "chord": "",
+            "n": "0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1' 1' 2' sp |",
+            "lyric": "天地上"
+          },
+          {
+            "chord": "G",
+            "n": "3' - - - sp |",
+            "lyric": "下，"
+          },
+          {
+            "chord": "",
+            "n": "0 3' 2' 1' sp |",
+            "lyric": "ㅤ何以敬"
+          },
+          {
+            "chord": "C/G",
+            "n": "1' - - - sp |",
+            "lyric": "拜，"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "0 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "2' 3' sp | sp",
+            "lyric": "欢呼"
+          },
+          {
+            "chord": "Am",
+            "n": "3'",
+            "lyric": "耶"
+          },
+          {
+            "chord": "",
+            "n": "4'_ ( 4'_ 4' )",
+            "lyric": "稣基"
+          },
+          {
+            "chord": "",
+            "n": "3' sp | sp",
+            "lyric": "督"
+          },
+          {
+            "chord": "C/G",
+            "n": "3'",
+            "lyric": "圣"
+          },
+          {
+            "chord": "",
+            "n": "4'_ ( 4'_ 4' )",
+            "lyric": "洁羔"
+          },
+          {
+            "chord": "",
+            "n": "3' sp | sp",
+            "lyric": "羊，"
+          },
+          {
+            "chord": "D",
+            "n": "4' 3' 2'",
+            "lyric": "荣耀归"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 2'_ sp | sp",
+            "lyric": "于祢"
+          },
+          {
+            "chord": "",
+            "n": "0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1' 1' 2' sp | sp",
+            "lyric": "天上地"
+          },
+          {
+            "chord": "E",
+            "n": "3' - - -",
+            "lyric": "下，"
+          },
+          {
+            "chord": "",
+            "n": "|",
+            "lyric": "ㅤ"
+          }
+        ],
+        [
+          {
+            "chord": "Dm/F",
+            "n": "0 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1' 1' sp |",
+            "lyric": "在永"
+          },
+          {
+            "chord": "C/E",
+            "n": "5'·",
+            "lyric": "恒"
+          },
+          {
+            "chord": "",
+            "n": "( 4'_ 4' )",
+            "lyric": "里"
+          },
+          {
+            "chord": "",
+            "n": "3' sp |",
+            "lyric": "敬"
+          },
+          {
+            "chord": "Cm/Eb",
+            "n": "4' -",
+            "lyric": "拜。"
+          },
+          {
+            "chord": "",
+            "n": "3' 4' sp |",
+            "lyric": "哈利"
+          },
+          {
+            "chord": "G/D",
+            "n": "5'·",
+            "lyric": "路"
+          },
+          {
+            "chord": "",
+            "n": "( 1'_ 1' ) - sp |",
+            "lyric": "亚！"
+          },
+          {
+            "chord": "C/D",
+            "n": "4'·",
+            "lyric": "哈"
+          },
+          {
+            "chord": "",
+            "n": "( 3'_ 3' )",
+            "lyric": "利"
+          },
+          {
+            "chord": "",
+            "n": "2' sp |",
+            "lyric": "路"
+          },
+          {
+            "chord": "GㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤFine",
+            "n": "( 1' - - - sp | sp 1' ) - - - sp ||",
+            "lyric": "亚！"
+          }
+        ],
+        [
+          {
+            "chord": "C",
+            "n": "1'",
+            "lyric": "神"
+          },
+          {
+            "chord": "",
+            "n": "7'_ ( 1'_ 1'_ )",
+            "lyric": "就在"
+          },
+          {
+            "chord": "",
+            "n": "3'· sp |",
+            "lyric": "这"
+          },
+          {
+            "chord": "D",
+            "n": "2' - - - |",
+            "lyric": "里，"
+          },
+          {
+            "chord": "Bm",
+            "n": "7",
+            "lyric": "我"
+          },
+          {
+            "chord": "",
+            "n": "6_ ( 7_ 7_ )",
+            "lyric": "们欢"
+          },
+          {
+            "chord": "",
+            "n": "2'· sp |",
+            "lyric": "迎"
+          },
+          {
+            "chord": "Em",
+            "n": "1' - 1'",
+            "lyric": "祢！让"
+          },
+          {
+            "chord": "",
+            "n": "7 |",
+            "lyric": "一"
+          },
+          {
+            "chord": "C",
+            "n": "6 - -",
+            "lyric": "切"
+          },
+          {
+            "chord": "",
+            "n": "1' |",
+            "lyric": "焦"
+          },
+          {
+            "chord": "D",
+            "n": "7 -",
+            "lyric": "点"
+          },
+          {
+            "chord": "",
+            "n": "1' 2' |",
+            "lyric": "转向"
+          },
+          {
+            "chord": "G",
+            "n": "( 3' - - - | 3' ) - - - |",
+            "lyric": "祢"
+          }
+        ],
+        [
+          {
+            "chord": "C",
+            "n": "1'",
+            "lyric": "神"
+          },
+          {
+            "chord": "",
+            "n": "7_ ( 1'_ 1'_ )",
+            "lyric": "就在"
+          },
+          {
+            "chord": "",
+            "n": "3'· sp |",
+            "lyric": "这"
+          },
+          {
+            "chord": "D",
+            "n": "2' - - - sp |",
+            "lyric": "里，"
+          },
+          {
+            "chord": "Bm",
+            "n": "5'",
+            "lyric": "我"
+          },
+          {
+            "chord": "",
+            "n": "5'_ ( 3'_ 3' )",
+            "lyric": "们欢"
+          },
+          {
+            "chord": "",
+            "n": "2' sp |",
+            "lyric": "迎"
+          },
+          {
+            "chord": "Em",
+            "n": "1' - 2' 3' |",
+            "lyric": "祢！宝座"
+          },
+          {
+            "chord": "Am",
+            "n": "4' - 4' 3' |",
+            "lyric": "前ㅤ敬拜"
+          },
+          {
+            "chord": "A/C#",
+            "n": "2' - 3' - |",
+            "lyric": "不ㅤ停"
+          },
+          {
+            "chord": "D",
+            "n": "( 2' - - - | 2' ) - - - ||",
+            "lyric": "息"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/jiangtianchangkai.mp3"
+}

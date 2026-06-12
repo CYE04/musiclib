@@ -1,0 +1,363 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-04-29 19:14:43",
+  "id": "jingbaidexin",
+  "title": "敬拜的心",
+  "artist": "约书亚乐团",
+  "sub": "约书亚乐团【坚强的爱】(2014)  赵治德 词曲",
+  "origKey": "F",
+  "timeSign": "4/4",
+  "bpm": 70,
+  "cover": "https://cecpadua.github.io/resouces/covers/jianqiangdeai.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/jingbaidexin.lrc",
+  "youtube": "https://youtu.be/3k1JbhnNdFs?si=q0JlWVA2xVgK3c41",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/jingbaidexinF.jpg",
+  "sections": [
+    {
+      "name": "敬拜的心",
+      "lines": [
+        [
+          {
+            "chord": "F",
+            "n": "0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤ ㅤEm",
+            "n": "1__ 2__ 2__ ( 3__ sp 3_ )",
+            "lyric": "我献上一"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤA",
+            "n": "4__ ( 3__ sp 3__ )",
+            "lyric": "颗敬"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤDm7",
+            "n": "7,_ ( 2__ sp | sp 2__ )",
+            "lyric": "敬的"
+          },
+          {
+            "chord": "",
+            "n": "( 1·__ 1 ) - - sp | sp",
+            "lyric": "心"
+          },
+          {
+            "chord": "Gm7",
+            "n": "0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "ㅤ ㅤㅤㅤㅤBb/F",
+            "n": "2__ 3__ 4__ ( 4__ 4_ )",
+            "lyric": "指的就是"
+          },
+          {
+            "chord": "",
+            "n": "3__ ( 1__ 1__ )",
+            "lyric": "我全"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤBb/C",
+            "n": "3_ ( 2__ sp | sp 2 ) - - - sp |",
+            "lyric": "所有"
+          }
+        ],
+        [
+          {
+            "chord": "F",
+            "n": "0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤ ㅤEm",
+            "n": "1__ 2__ 2__ ( 3__ sp 3_ )",
+            "lyric": "每个呼吸"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤA",
+            "n": "4__ ( 3__ sp 3__ )",
+            "lyric": "每个"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤDm7",
+            "n": "7,_ ( 2__ sp | sp 2__ )",
+            "lyric": "决定"
+          },
+          {
+            "chord": "",
+            "n": "1__ ( 1__ 1__ )",
+            "lyric": "都为"
+          },
+          {
+            "chord": "",
+            "n": "5_ ( 2__ 2__ ) ( 1·_ ) ( sp 1 ) sp | sp",
+            "lyric": "了你，"
+          },
+          {
+            "chord": "Gm7",
+            "n": "0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤBb/C",
+            "n": "2__ 3__ 4__ ( 4__ 4__ )",
+            "lyric": "直到你再"
+          },
+          {
+            "chord": "",
+            "n": "3__ ( 1__ sp 1__ )",
+            "lyric": "来那"
+          },
+          {
+            "chord": "",
+            "n": "1_ ( 1__ sp | )",
+            "lyric": "一天。"
+          }
+        ],
+        [
+          {
+            "chord": "Fsus4",
+            "n": "( sp 1 ) -",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "F",
+            "n": "0·_ 1__",
+            "lyric": "ㅤ无"
+          },
+          {
+            "chord": "Eb/FㅤㅤㅤㅤㅤBb2",
+            "n": "3__ 5_ ( 5__ sp || sp 5_ )",
+            "lyric": "论要付"
+          },
+          {
+            "chord": "",
+            "n": "4__ ( 4__ sp 4__ )",
+            "lyric": "什么"
+          },
+          {
+            "chord": "ㅤㅤㅤC/Bb",
+            "n": "3_ ( 2__ sp 2·_ ) sp_ 1__",
+            "lyric": "代价， 你"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤㅤㅤAm",
+            "n": "2__ 5_ ( 2__ sp | sp 2_ )",
+            "lyric": "说敬拜"
+          },
+          {
+            "chord": "",
+            "n": "1__ ( 1__ sp 1__ )",
+            "lyric": "不可"
+          },
+          {
+            "chord": "",
+            "n": "7,_ ( 1__ sp ) ( 1 sp 1_ )",
+            "lyric": "虚假，"
+          },
+          {
+            "chord": "",
+            "n": "1__ 3__ sp |",
+            "lyric": "只要"
+          }
+        ],
+        [
+          {
+            "chord": "Cm7",
+            "n": "5_ 5__ ( 5__ sp 5_ )",
+            "lyric": "祭物是"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤEb/F",
+            "n": "3__ ( 6__ sp 6_ )",
+            "lyric": "来自"
+          },
+          {
+            "chord": "",
+            "n": "3__ ( 2__ sp 2__ )",
+            "lyric": "我心"
+          },
+          {
+            "chord": "",
+            "n": "3·_ sp | sp",
+            "lyric": "灵，"
+          },
+          {
+            "chord": "Gm7",
+            "n": "6,_ 1__ ( 5__ sp 5_ )",
+            "lyric": "主你就"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤF/A",
+            "n": "1__ ( 1__ sp 1·_ )",
+            "lyric": "悦纳。"
+          },
+          {
+            "chord": "",
+            "n": "1__",
+            "lyric": "无"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤㅤBb2",
+            "n": "3__ 5_ ( 5__ sp | sp 5_ )",
+            "lyric": "论要付"
+          },
+          {
+            "chord": "",
+            "n": "4__ ( 4__ sp 4__ )",
+            "lyric": "什么"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2__ ( sp sp )",
+            "lyric": "代价，"
+          }
+        ],
+        [
+          {
+            "chord": "C/Bb",
+            "n": "( sp 2·_ )",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1__",
+            "lyric": "当"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤㅤAm7",
+            "n": "2__ 5_ ( 2__ sp | sp 2_ )",
+            "lyric": "我再次"
+          },
+          {
+            "chord": "",
+            "n": "1__ ( 1__ sp 1__ )",
+            "lyric": "说我"
+          },
+          {
+            "chord": "ㅤㅤㅤDm7",
+            "n": "7,_ ( 1__ 1 ) - sp | sp",
+            "lyric": "爱你"
+          },
+          {
+            "chord": "Gm7",
+            "n": "2_ 3__ ( 4__ sp 4__ )",
+            "lyric": "我会真"
+          },
+          {
+            "chord": "",
+            "n": "5_",
+            "lyric": "诚"
+          },
+          {
+            "chord": "ㅤㅤBb/C",
+            "n": "( 2__ sp 2_ ) 1__ ( 1__ 1__ )",
+            "lyric": "发ㅤ自我"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤFsus4",
+            "n": "7,_ ( 1__ sp | sp 1 ) -",
+            "lyric": "内心。"
+          },
+          {
+            "chord": "F",
+            "n": "- - sp ||/",
+            "lyric": "Fine"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "|:",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "Bb2",
+            "n": "5_ 5__ ( 5__ sp 5 )",
+            "lyric": "心与心，"
+          },
+          {
+            "chord": "C/Bb",
+            "n": "5_ 5__ ( 5__ sp 5 ) sp | sp",
+            "lyric": "心与心，"
+          },
+          {
+            "chord": "Am7",
+            "n": "5_ 5__ ( 5__ sp 5_ )",
+            "lyric": "深渊与"
+          },
+          {
+            "chord": "ㅤㅤㅤDm7",
+            "n": "5__ ( 5__ sp 5_ )",
+            "lyric": "深渊"
+          },
+          {
+            "chord": "",
+            "n": "5__ ( 5__ sp 5 ) sp | sp",
+            "lyric": "响应；"
+          },
+          {
+            "chord": "Gm7",
+            "n": "4_ 4__ ( 4__ sp 4 )",
+            "lyric": "被火炼，"
+          },
+          {
+            "chord": "Bb/C",
+            "n": "4_ 4__ ( 4__ sp 4·_ ) sp_",
+            "lyric": "被洁净，"
+          },
+          {
+            "chord": "",
+            "n": "1__ sp |",
+            "lyric": "按"
+          }
+        ],
+        [
+          {
+            "chord": "Eb/F",
+            "n": "[v1 4_ sp_ 4__ ( 4__ sp 4__ )",
+            "lyric": "你ㅤ所是"
+          },
+          {
+            "chord": "",
+            "n": "5·_ sp sp",
+            "lyric": "的"
+          },
+          {
+            "chord": "F",
+            "n": "4_ sp_ 3__ ( 3__ sp 3 ) sp :| ]v sp sp",
+            "lyric": "敬ㅤ拜祢"
+          },
+          {
+            "chord": "Eb/F",
+            "n": "[v2 4_ sp_ 4__ ( 4__ sp 4__ )",
+            "lyric": "你ㅤ所是"
+          },
+          {
+            "chord": "",
+            "n": "5·_ sp",
+            "lyric": "的"
+          },
+          {
+            "chord": "F",
+            "n": "4_ sp_ 3__ 3__ sp",
+            "lyric": "敬ㅤ拜祢/无"
+          },
+          {
+            "chord": "",
+            "n": "sp sp",
+            "lyric": ""
+          },
+          {
+            "chord": "Eb/FㅤㅤㅤㅤD.S.",
+            "n": "3__ 5_ ( 5__ sp sp || ) ]v",
+            "lyric": "论要付"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/jingbaidexin.mp3"
+}

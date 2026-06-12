@@ -1,0 +1,450 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-06-02 12:20:10",
+  "id": "huozheweiyaojingbaini",
+  "title": "活着为要敬拜祢",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉【将天敞开】(诗27:4) 郑懋柔词 游智婷曲",
+  "origKey": "D",
+  "timeSign": "4/4",
+  "bpm": 74,
+  "cover": "https://cecpadua.github.io/resouces/covers/jiangtianchangkai.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/huozheweiyaojingbaini.lrc",
+  "youtube": "https://youtu.be/z_HqOFsr210?si=4b1G_onvlL-KVc7O",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/huozheweiyaojingbainiD.jpg",
+  "sections": [
+    {
+      "name": "活着为要敬拜祢",
+      "lines": [
+        [
+          {
+            "chord": "",
+            "n": "sp sp sp sp sp sp sp sp sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_",
+            "lyric": "开我"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ sp | sp",
+            "lyric": "的眼"
+          },
+          {
+            "chord": "D",
+            "n": "3 -",
+            "lyric": "睛，"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_",
+            "lyric": "让我"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ sp | sp",
+            "lyric": "看见"
+          },
+          {
+            "chord": "Dmaj7",
+            "n": "2 -",
+            "lyric": "祢，"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_",
+            "lyric": "祢荣"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ sp | sp",
+            "lyric": "美彰"
+          },
+          {
+            "chord": "G/D",
+            "n": "1",
+            "lyric": "显"
+          },
+          {
+            "chord": "",
+            "n": "7,_ ( 1_ sp 1_ )",
+            "lyric": "吸引"
+          },
+          {
+            "chord": "",
+            "n": "3· sp |",
+            "lyric": "我"
+          }
+        ],
+        [
+          {
+            "chord": "A/D",
+            "n": "2 -",
+            "lyric": "心。"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_",
+            "lyric": "开我"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ sp | sp",
+            "lyric": "的耳"
+          },
+          {
+            "chord": "D",
+            "n": "3 -",
+            "lyric": "朵，"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_",
+            "lyric": "让我"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ sp | sp",
+            "lyric": "听见"
+          },
+          {
+            "chord": "Dmaj7",
+            "n": "2 -",
+            "lyric": "祢，"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_",
+            "lyric": "每句"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ sp | sp",
+            "lyric": "话都"
+          },
+          {
+            "chord": "G/D",
+            "n": "1",
+            "lyric": "让"
+          },
+          {
+            "chord": "",
+            "n": "7,_ ( 1_ sp 1_ )",
+            "lyric": "我更"
+          },
+          {
+            "chord": "",
+            "n": "6· sp |",
+            "lyric": "爱"
+          },
+          {
+            "chord": "Asus4",
+            "n": "([ 5 - - - sp |",
+            "lyric": "",
+            "lyric2": "祢！"
+          }
+        ],
+        [
+          {
+            "chord": "A",
+            "n": "]) 5 sp - sp",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3_ 4_",
+            "lyric": "活着",
+            "lyric2": "哦 ~"
+          },
+          {
+            "chord": "",
+            "n": "5_ 1_ sp | sp",
+            "lyric": "为要",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "D",
+            "n": "1 sp - sp",
+            "lyric": "敬",
+            "lyric2": "我"
+          },
+          {
+            "chord": "",
+            "n": "1' sp - sp | sp",
+            "lyric": "拜",
+            "lyric2": "爱"
+          },
+          {
+            "chord": "F#m",
+            "n": "7 sp - sp",
+            "lyric": "祢，",
+            "lyric2": "祢！"
+          },
+          {
+            "chord": "",
+            "n": "3_ 4_",
+            "lyric": "活着",
+            "lyric2": "哦 ~"
+          },
+          {
+            "chord": "",
+            "n": "5_ 1_ sp | sp",
+            "lyric": "为要",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "Bm",
+            "n": "1",
+            "lyric": "全",
+            "lyric2": "全"
+          },
+          {
+            "chord": "",
+            "n": "7,_ ( 1_ sp 1_ )",
+            "lyric": "心来",
+            "lyric2": "心敬"
+          },
+          {
+            "chord": "",
+            "n": "( 6 sp 5_ ) sp |",
+            "lyric": "爱",
+            "lyric2": "拜"
+          }
+        ],
+        [
+          {
+            "chord": "F#m",
+            "n": "5 sp - sp",
+            "lyric": "祢。",
+            "lyric2": "祢。"
+          },
+          {
+            "chord": "",
+            "n": "5_ 4_",
+            "lyric": "俯伏",
+            "lyric2": "日夜"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_ sp | sp",
+            "lyric": "在祢",
+            "lyric2": "不停"
+          },
+          {
+            "chord": "G",
+            "n": "2",
+            "lyric": "荣",
+            "lyric2": "歌"
+          },
+          {
+            "chord": "",
+            "n": "1_ ( 1_ sp 1 ) sp",
+            "lyric": "耀中，",
+            "lyric2": "ㅤ 唱，"
+          },
+          {
+            "chord": "",
+            "n": "0_ 1_ sp | sp",
+            "lyric": "ㅤ祢",
+            "lyric2": "ㅤ哈"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5",
+            "lyric": "的",
+            "lyric2": "利"
+          },
+          {
+            "chord": "",
+            "n": "3_ ( 1_ sp 1· ) sp",
+            "lyric": "荣美",
+            "lyric2": "路亚！"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp | sp",
+            "lyric": "无",
+            "lyric2": "我"
+          },
+          {
+            "chord": "Em",
+            "n": "3 sp",
+            "lyric": "人",
+            "lyric2": "爱"
+          },
+          {
+            "chord": "",
+            "n": "2_ ( 2_ sp 2 ) ([ sp - sp |",
+            "lyric": "能及。",
+            "lyric2": "ㅤ 祢。"
+          }
+        ],
+        [
+          {
+            "chord": "A",
+            "n": "]) 2 -",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3_ 4_",
+            "lyric": "活着",
+            "lyric2": "哦 ~"
+          },
+          {
+            "chord": "",
+            "n": "5_ 1_ sp |",
+            "lyric": "为要",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "D",
+            "n": "1 -",
+            "lyric": "敬",
+            "lyric2": "我"
+          },
+          {
+            "chord": "",
+            "n": "1' - sp | sp",
+            "lyric": "拜",
+            "lyric2": "爱"
+          },
+          {
+            "chord": "F#m",
+            "n": "7 -",
+            "lyric": "祢，",
+            "lyric2": "祢！"
+          },
+          {
+            "chord": "",
+            "n": "3_ 4_",
+            "lyric": "活着",
+            "lyric2": "哦 ~"
+          },
+          {
+            "chord": "",
+            "n": "5_ 1_ sp | sp",
+            "lyric": "为要",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "Bm",
+            "n": "1",
+            "lyric": "全",
+            "lyric2": "全"
+          },
+          {
+            "chord": "",
+            "n": "7,_ ( 1_ sp 1_ )",
+            "lyric": "心来",
+            "lyric2": "心敬"
+          },
+          {
+            "chord": "",
+            "n": "( 6 5_ ) sp | sp",
+            "lyric": "爱",
+            "lyric2": "拜"
+          },
+          {
+            "chord": "F#m",
+            "n": "5 -",
+            "lyric": "祢。",
+            "lyric2": "祢。"
+          },
+          {
+            "chord": "",
+            "n": "5_ 4_",
+            "lyric": "永远",
+            "lyric2": "日夜"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_ sp |",
+            "lyric": "住在",
+            "lyric2": "不停"
+          }
+        ],
+        [
+          {
+            "chord": "G",
+            "n": "2",
+            "lyric": "祢",
+            "lyric2": "歌"
+          },
+          {
+            "chord": "",
+            "n": "1_ ( 1_ sp 1· )",
+            "lyric": "殿中，",
+            "lyric2": "ㅤ 唱，"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp | sp",
+            "lyric": "昔",
+            "lyric2": "哈"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5",
+            "lyric": "在",
+            "lyric2": "利"
+          },
+          {
+            "chord": "",
+            "n": "3_ ( 1_ sp 1· ) sp",
+            "lyric": "金在",
+            "lyric2": "路亚！"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp | sp",
+            "lyric": "永",
+            "lyric2": "我"
+          },
+          {
+            "chord": "Em",
+            "n": "3",
+            "lyric": "在",
+            "lyric2": "爱"
+          },
+          {
+            "chord": "",
+            "n": "2_ ( 2_ sp 2 ) - sp || sp",
+            "lyric": "的主，",
+            "lyric2": "ㅤ 祢！"
+          },
+          {
+            "chord": "G/A",
+            "n": "0 0",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3",
+            "lyric": "我",
+            "lyric2": "我"
+          },
+          {
+            "chord": "",
+            "n": "( 2_ 1_ ) sp | sp",
+            "lyric": "爱",
+            "lyric2": "爱"
+          },
+          {
+            "chord": "",
+            "n": "1 - - - sp ||/",
+            "lyric": "祢！",
+            "lyric2": "祢！"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/huozheweiyaojingbaini.mp3"
+}

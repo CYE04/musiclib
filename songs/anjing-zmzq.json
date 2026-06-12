@@ -1,0 +1,351 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-05-14 19:01:22",
+  "id": "anjing-zmzq",
+  "title": "安静",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉【新的事将要成就】(2015)(诗46:10;可4:39) 郑懋柔词/游智婷曲",
+  "origKey": "D",
+  "timeSign": "4/4",
+  "bpm": 62,
+  "cover": "https://cecpadua.github.io/resouces/covers/nengbuneng.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/anjing-zmzq.lrc",
+  "youtube": "https://youtu.be/Za9UdGa-P6g?si=0yofkOHZxTrYGV7m",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/anjingD-zmzq.jpg",
+  "sections": [
+    {
+      "name": "安静-赞美之泉",
+      "lines": [
+        [
+          {
+            "chord": "D",
+            "n": "5 -",
+            "lyric": ""
+          },
+          {
+            "chord": "D/F#",
+            "n": "3· sp 1_ |",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "2_ 3_",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ 6,· sp 5,_ |",
+            "lyric": ""
+          },
+          {
+            "chord": "D/F#",
+            "n": "5,_ 1_",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "1_ 3_ 5",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "4_ 3_ |",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "2 - - - sp |",
+            "lyric": ""
+          },
+          {
+            "chord": "D",
+            "n": "5 -",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "3· sp 1_ sp |",
+            "lyric": ""
+          },
+          {
+            "chord": "G",
+            "n": "2_ 3_",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ 6,· sp 5,_ sp |",
+            "lyric": ""
+          }
+        ],
+        [
+          {
+            "chord": "D/F#",
+            "n": "5,_ 3_",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3_ 5,_",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "A",
+            "n": "5,_ 2_",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ sp | sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "D",
+            "n": "1 sp - sp - sp - sp || sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "D",
+            "n": "5 sp - sp",
+            "lyric": "安"
+          },
+          {
+            "chord": "D/F#ㅤ",
+            "n": "3· sp",
+            "lyric": "静,"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp | sp",
+            "lyric": "让"
+          },
+          {
+            "chord": "G",
+            "n": "2_ 3_ sp",
+            "lyric": "平安"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_",
+            "lyric": "入我"
+          },
+          {
+            "chord": "",
+            "n": "6,·",
+            "lyric": "心，"
+          },
+          {
+            "chord": "",
+            "n": "5,_ sp |",
+            "lyric": "深"
+          }
+        ],
+        [
+          {
+            "chord": "D/F#",
+            "n": "5,_ 1_",
+            "lyric": "深知"
+          },
+          {
+            "chord": "",
+            "n": "1_ 3_",
+            "lyric": "道你"
+          },
+          {
+            "chord": "",
+            "n": "5 sp",
+            "lyric": "是"
+          },
+          {
+            "chord": "",
+            "n": "4_ 3_ sp | sp",
+            "lyric": "我的"
+          },
+          {
+            "chord": "A",
+            "n": "2 sp - sp - sp - sp | sp",
+            "lyric": "神。"
+          },
+          {
+            "chord": "D",
+            "n": "5 sp - sp",
+            "lyric": "风"
+          },
+          {
+            "chord": "",
+            "n": "3· sp sp",
+            "lyric": "浪，"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp | sp",
+            "lyric": "让"
+          },
+          {
+            "chord": "G",
+            "n": "2_ 3_",
+            "lyric": "我灵"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_",
+            "lyric": "更坚"
+          },
+          {
+            "chord": "",
+            "n": "6,·",
+            "lyric": "定，"
+          },
+          {
+            "chord": "",
+            "n": "5,_ sp |",
+            "lyric": "在"
+          }
+        ],
+        [
+          {
+            "chord": "D/A",
+            "n": "5,_ sp_ 3_ sp",
+            "lyric": "我ㅤ身"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp_ 5,_ sp",
+            "lyric": "旁ㅤ你"
+          },
+          {
+            "chord": "A",
+            "n": "5,_ sp_ 2_ sp",
+            "lyric": "使ㅤ风"
+          },
+          {
+            "chord": "",
+            "n": "2_ sp_ 1_ sp | sp",
+            "lyric": "浪ㅤ平"
+          },
+          {
+            "chord": "D",
+            "n": "1 sp - sp - sp sp",
+            "lyric": "息。"
+          },
+          {
+            "chord": "【Chorus】",
+            "n": "3_ sp_ 4_ sp || sp",
+            "lyric": "我ㅤ不"
+          },
+          {
+            "chord": "D",
+            "n": "5 sp - sp",
+            "lyric": "害"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5· sp sp sp",
+            "lyric": "怕，"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp |",
+            "lyric": "我"
+          }
+        ],
+        [
+          {
+            "chord": "G",
+            "n": "6_ sp_ 5__ sp__ ( 5__ sp 5_ ) sp_ 3_",
+            "lyric": "仍ㅤ然ㅤ要ㅤㅤㅤ敬"
+          },
+          {
+            "chord": "",
+            "n": "5· sp sp",
+            "lyric": "拜，"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp | sp",
+            "lyric": "你"
+          },
+          {
+            "chord": "D/A",
+            "n": "2_ sp_ 1__ sp__ ( 1__ sp 1_ ) sp_ 3_",
+            "lyric": "陪ㅤ我ㅤ走ㅤㅤㅤ向"
+          },
+          {
+            "chord": "",
+            "n": "5 sp",
+            "lyric": "应"
+          },
+          {
+            "chord": "",
+            "n": "4_ sp_ 3_ sp | sp",
+            "lyric": "许ㅤ之"
+          },
+          {
+            "chord": "A",
+            "n": "2 sp - sp -",
+            "lyric": "处。"
+          },
+          {
+            "chord": "",
+            "n": "3_ 4_ sp |",
+            "lyric": "充满"
+          }
+        ],
+        [
+          {
+            "chord": "D",
+            "n": "5 -",
+            "lyric": "盼"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5· sp",
+            "lyric": "望，"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp | sp",
+            "lyric": "我"
+          },
+          {
+            "chord": "G",
+            "n": "6_ sp_ 5__ ( 5__ sp 5_ ) sp_ 3_",
+            "lyric": "一ㅤ生要ㅤㅤㅤ敬"
+          },
+          {
+            "chord": "",
+            "n": "5· sp",
+            "lyric": "拜，"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp | sp",
+            "lyric": "生"
+          },
+          {
+            "chord": "D/A",
+            "n": "5_ sp_ 5__ ( 5__ sp 5_ ) 3_",
+            "lyric": "命ㅤ满有ㅤㅤ你"
+          },
+          {
+            "chord": "A7",
+            "n": "2",
+            "lyric": "的"
+          },
+          {
+            "chord": "",
+            "n": "( 2_ 1_ ) sp | sp",
+            "lyric": "印"
+          },
+          {
+            "chord": "D",
+            "n": "1 - - - sp ||/",
+            "lyric": "记。"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/anjing-zmzq.mp3"
+}

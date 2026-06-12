@@ -1,0 +1,433 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-03-04 18:10:47",
+  "id": "shunfu",
+  "title": "顺服",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉《这里有荣耀》(2014) · 余盈盈 词曲（赛55:9｜罗8:28）",
+  "origKey": "A",
+  "timeSign": "4/4",
+  "bpm": 64,
+  "cover": "https://cecpadua.github.io/resouces/covers/shunfu.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/shunfu.lrc",
+  "youtube": "https://youtu.be/Zx1AMuYdykw?si=ySDQnSsh75SMQH8J",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/shunfuA.jpg",
+  "sections": [
+    {
+      "name": "前奏",
+      "lines": [
+        [
+          {
+            "chord": "A",
+            "n": "0 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "E/G#",
+            "n": "0 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "F#m",
+            "n": "0 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "A/E",
+            "n": "0 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "D",
+            "n": "0 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "A/C#",
+            "n": "0 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "Bm",
+            "n": "0 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "E",
+            "n": "0 0",
+            "lyric": "ㅤ"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "主歌",
+      "lines": [
+        [
+          {
+            "chord": "A",
+            "n": "3_ 3_ 3_ 2__ ([ 5_",
+            "lyric": "当我不明白ㅤ"
+          },
+          {
+            "chord": "E/G#",
+            "n": "]) 5",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "-",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "F#m",
+            "n": "2_ 1_ 1_ 2__ ([ 3__",
+            "lyric": "事情的由来ㅤ"
+          },
+          {
+            "chord": "A/E",
+            "n": "]) 3",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "-",
+            "lyric": "ㅤㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "D",
+            "n": "6_ 5_ 6_ 5_",
+            "lyric": "信心不足ㅤ"
+          },
+          {
+            "chord": "A/C#",
+            "n": "3_ 4__ ( 5__ 5 )",
+            "lyric": "的时候ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "Bm",
+            "n": "4·_ ( 3__ 3_ ) 5_",
+            "lyric": "求主ㅤ 帮ㅤ"
+          },
+          {
+            "chord": "E",
+            "n": "2 -",
+            "lyric": "助ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          }
+        ],
+        [
+          {
+            "chord": "A",
+            "n": "3_ 3_ 3_ 2__ ([ 5_",
+            "lyric": "生命属于你ㅤ"
+          },
+          {
+            "chord": "E/G#",
+            "n": "]) 5",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "-",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "F#m",
+            "n": "2_ 1_ 1_ 2__ ([ 3__",
+            "lyric": "万事皆属你ㅤ"
+          },
+          {
+            "chord": "A/E",
+            "n": "]) 3",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "-",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "D",
+            "n": "6_ 5_ 6_ 5_",
+            "lyric": "信心不足ㅤ"
+          },
+          {
+            "chord": "A/C#",
+            "n": "3_ 4__ ( 5__ 5 )",
+            "lyric": "的时候ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "Bm",
+            "n": "4·_ ( 3__ 3_ ) 5_",
+            "lyric": "我要ㅤ 信"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "E",
+            "n": "5 - -",
+            "lyric": "靠ㅤ"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "副歌",
+      "lines": [
+        [
+          {
+            "chord": "",
+            "n": "0_ 6__ 7__",
+            "lyric": "ㅤ我相"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "D",
+            "n": "1'_ 1'__ ( 1'__ 1'_ ) 6_",
+            "lyric": "信你的意ㅤ"
+          },
+          {
+            "chord": "E",
+            "n": "2' 0_ 2'__ 1'__",
+            "lyric": "念ㅤ高 过ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "C#m",
+            "n": "7·_ ( 5__ 5_ ) 7_",
+            "lyric": "我的意ㅤ"
+          },
+          {
+            "chord": "F#m",
+            "n": "( 1' 1'· )",
+            "lyric": "念ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3·__",
+            "lyric": "万ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "D",
+            "n": "5_ 4__ ( 4__ 4_ ) 3_",
+            "lyric": "事互相ㅤㅤ效ㅤ"
+          }
+        ],
+        [
+          {
+            "chord": "E",
+            "n": "4_ sp_ 6_ 5_ 2_",
+            "lyric": "力，叫爱神ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "A",
+            "n": "4_ 3_ 3_ 4__ ([ 5__",
+            "lyric": "的人得益处ㅤ"
+          },
+          {
+            "chord": "A/C#",
+            "n": "]) 5·__",
+            "lyric": "ㅤㅤ"
+          },
+          {
+            "chord": "",
+            "n": "6__ 7__",
+            "lyric": "我相"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "D",
+            "n": "1'_ 1'__ ( 1'__ 1'__ ) 3'·_",
+            "lyric": "信你的ㅤㅤ道"
+          },
+          {
+            "chord": "E",
+            "n": "2' 0_ 2'__ 1'__",
+            "lyric": "路，高过ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          }
+        ],
+        [
+          {
+            "chord": "C#m",
+            "n": "7·_ ( 5__ 5_ ) 7_",
+            "lyric": "我的ㅤㅤ道"
+          },
+          {
+            "chord": "F#m",
+            "n": "( 1'_ 1'·_ ) 3__",
+            "lyric": "路，我ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "D",
+            "n": "5_ 4_ 3_ ([ 4_",
+            "lyric": "甘愿谦卑ㅤ"
+          },
+          {
+            "chord": "E",
+            "n": "]) 4",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "2'",
+            "lyric": "顺ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "A",
+            "n": "1' - - -",
+            "lyric": "服ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " ||"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "Coda",
+      "lines": [
+        [
+          {
+            "chord": "",
+            "n": "6__ 7__",
+            "lyric": "我相ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "D",
+            "n": "1'_ 1'__ ( 1'__ 1'__ ) 3'·_",
+            "lyric": "信你的ㅤㅤ应ㅤ"
+          },
+          {
+            "chord": "E",
+            "n": "2' 0_ 2'__ 1'__",
+            "lyric": "许，倚靠ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "C#m",
+            "n": "7·_ ( 5__ 5_ ) 7_",
+            "lyric": "你的ㅤㅤ恩ㅤ"
+          },
+          {
+            "chord": "F#m",
+            "n": "( 1'_ 1'·_ ) 3__",
+            "lyric": "典， 我ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "D",
+            "n": "5_ 4_ 3_ ([ 4_",
+            "lyric": "甘愿谦卑ㅤ"
+          },
+          {
+            "chord": "E",
+            "n": "]) 4",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "2'",
+            "lyric": "顺ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " | "
+          },
+          {
+            "chord": "A",
+            "n": "1' - - -",
+            "lyric": "服ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": " ||"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/shunfu.mp3"
+}

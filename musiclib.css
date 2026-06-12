@@ -3433,6 +3433,12 @@ body.ml-fullscreen #music-library::after{
   margin-bottom:clamp(18px,2.4vw,32px) !important;
 }
 
+#music-library .ml-reveal,
+#music-library #ml-worship-picks.ml-reveal{
+  opacity:1 !important;
+  transform:none !important;
+}
+
 #music-library #ml-search-row{
   position:relative !important;
   left:auto !important;

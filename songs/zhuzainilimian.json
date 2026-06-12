@@ -1,0 +1,338 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-06-01 21:27:51",
+  "id": "zhuzainilimian",
+  "title": "住在祢里面",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉【相信有爱就有奇迹】(待63:1;赛30:15,40:31;15:4-5;约壹3:24) 曾祥怡词曲",
+  "origKey": "D",
+  "timeSign": "4/4",
+  "bpm": 66,
+  "cover": "https://cecpadua.github.io/resouces/covers/weiyouyesu.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/zhuzainilimian.lrc",
+  "youtube": "https://youtu.be/IKGazOdWmH4?si=NObO3iYtGf-IsHl5",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/zhuzainilimianD.jpg",
+  "sections": [
+    {
+      "name": "住在祢里面",
+      "lines": [
+        [
+          {
+            "chord": "D",
+            "n": "5_ 1_ sp",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "5_ 1_ sp",
+            "lyric": ""
+          },
+          {
+            "chord": "A/D",
+            "n": "5_ 7,_ sp",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "5_ 7,_ sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "G/D",
+            "n": "4_ 6,_ sp",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "4_ 6,_ sp",
+            "lyric": ""
+          },
+          {
+            "chord": "D",
+            "n": "3_ 5,_ sp",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "2__ 3__ 4_ sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "D",
+            "n": "5_ 1_ sp",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "5_ 1_ sp",
+            "lyric": ""
+          },
+          {
+            "chord": "A/D",
+            "n": "5_ 7,_ sp",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "5_ 7,_ sp |",
+            "lyric": ""
+          }
+        ],
+        [
+          {
+            "chord": "G/D",
+            "n": "4_ 6,_ sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "4_ 6,_ sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "D",
+            "n": "3 sp 0_",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1_ 2_ sp | sp",
+            "lyric": "在干"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2__ ( 3__ sp 3_ ) 4_",
+            "lyric": "旱无水 ㅤ 之"
+          },
+          {
+            "chord": "A/C#",
+            "n": "5·_ sp_ 5__",
+            "lyric": "地ㅤ我"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp_ ( 2__ 1__ ) sp | sp",
+            "lyric": "渴ㅤ慕"
+          },
+          {
+            "chord": "G/BㅤㅤㅤㅤD/A",
+            "n": "1 sp - sp - sp",
+            "lyric": "祢，"
+          },
+          {
+            "chord": "",
+            "n": "0_ sp_ 2__ 3__ sp |",
+            "lyric": "ㅤㅤ在旷"
+          }
+        ],
+        [
+          {
+            "chord": "G",
+            "n": "4_ sp_ 3__ ( 4__ sp 4_ ) 5_",
+            "lyric": "野ㅤ无人ㅤㅤ之"
+          },
+          {
+            "chord": "Em",
+            "n": "6·_ sp_ 6__",
+            "lyric": "处ㅤ我"
+          },
+          {
+            "chord": "",
+            "n": "4_ sp_ ( 3__ 2__ ) sp | sp",
+            "lyric": "寻ㅤ求"
+          },
+          {
+            "chord": "Asus4",
+            "n": "2 sp - sp - sp",
+            "lyric": "祢。"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp_ 1_ sp | sp",
+            "lyric": "得ㅤ救"
+          },
+          {
+            "chord": "G",
+            "n": "6_ 6_",
+            "lyric": "在乎"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤ A/G",
+            "n": "6_ 4__ ( 3__ sp 3_ )",
+            "lyric": "归回安"
+          },
+          {
+            "chord": "",
+            "n": "2",
+            "lyric": "息,"
+          },
+          {
+            "chord": "",
+            "n": "1__ 2__ sp |",
+            "lyric": "得力"
+          }
+        ],
+        [
+          {
+            "chord": "D",
+            "n": "3_ sp_ 4_ sp",
+            "lyric": "在ㅤ乎 ㅤ "
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤㅤㅤㅤBm",
+            "n": "3_ sp_ 2__ sp__ ( 2__ sp 2_ ) sp_ 1_ sp sp",
+            "lyric": "平ㅤ静ㅤ安ㅤㅤㅤ稳，"
+          },
+          {
+            "chord": "",
+            "n": "0_ sp_ sp_ 7,_ sp | sp",
+            "lyric": "ㅤㅤㅤ我"
+          },
+          {
+            "chord": "G",
+            "n": "6,_ sp_ 1__ sp__ ( 1__ sp 1_ ) sp_ 4_ sp",
+            "lyric": "等ㅤ候ㅤ祢 ㅤ ㅤ 如"
+          },
+          {
+            "chord": "G/A",
+            "n": "3_ sp_ 2_ sp sp",
+            "lyric": "鹰ㅤ展"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp_ 7,_ sp |",
+            "lyric": "翅ㅤ上"
+          }
+        ],
+        [
+          {
+            "chord": "D",
+            "n": "1 sp - sp",
+            "lyric": "腾。"
+          },
+          {
+            "chord": "G/A",
+            "n": "0_ sp_ 1_ sp",
+            "lyric": "ㅤㅤ住"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp_ 4_ sp | sp",
+            "lyric": "在ㅤ祢"
+          },
+          {
+            "chord": "D",
+            "n": "5·_ sp_ ( 5__ sp 5 )",
+            "lyric": "里ㅤ面"
+          },
+          {
+            "chord": "A/C",
+            "n": "0_ sp_ 3_ sp",
+            "lyric": "ㅤㅤ住"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤㅤㅤㅤBm",
+            "n": "2_ sp_ 3__ ( 2__ sp | sp 2_ ) sp_ ( 1_ sp 1 )",
+            "lyric": "在ㅤ祢里ㅤㅤㅤㅤ面，"
+          },
+          {
+            "chord": "D/A",
+            "n": "0_ sp_ 1_",
+            "lyric": "ㅤㅤ如"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp_ 5_ sp |",
+            "lyric": "同ㅤ枝"
+          }
+        ],
+        [
+          {
+            "chord": "G",
+            "n": "6_ sp_ 6__ ( 6__ sp 6__ ) ( 6_ sp_ 5__ )",
+            "lyric": "子ㅤ与葡 ㅤ 萄"
+          },
+          {
+            "chord": "A7sus4",
+            "n": "5_ sp_ 2_",
+            "lyric": "树ㅤ紧"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp_ 4_ sp | sp",
+            "lyric": "紧ㅤ相"
+          },
+          {
+            "chord": "D",
+            "n": "5 sp - sp",
+            "lyric": "连； ㅤ ㅤ"
+          },
+          {
+            "chord": "G/A",
+            "n": "0_ 1_",
+            "lyric": "ㅤ住"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp_ 4_ sp | sp",
+            "lyric": "祢ㅤ里"
+          },
+          {
+            "chord": "D",
+            "n": "5·_ sp_ ( 5__ sp 5 )",
+            "lyric": "里ㅤ面"
+          },
+          {
+            "chord": "F#",
+            "n": "0_ 3_",
+            "lyric": "ㅤ住"
+          },
+          {
+            "chord": "",
+            "n": "2_ sp_ ([ 3__ sp |",
+            "lyric": "祢ㅤ里"
+          }
+        ],
+        [
+          {
+            "chord": "BmㅤㅤㅤㅤD/A",
+            "n": "]) 2_ sp_ ( 1_ sp 1 )",
+            "lyric": "ㅤㅤ面， ㅤ"
+          },
+          {
+            "chord": "G#dim",
+            "n": "0_ sp_ 1_",
+            "lyric": "ㅤㅤ领"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp_ 5_ sp | sp",
+            "lyric": "受ㅤ生"
+          },
+          {
+            "chord": "Em",
+            "n": "6_ sp_ 6__ ( 6__ sp 6__ ) ( 6_ sp_ 5__ )",
+            "lyric": "命ㅤ活水 ㅤ 泉"
+          },
+          {
+            "chord": "A7sus4",
+            "n": "5_ sp_ 2_ sp",
+            "lyric": "源ㅤ永"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp_ 2_ sp | sp",
+            "lyric": "不ㅤ枯"
+          },
+          {
+            "chord": "D",
+            "n": "1 sp - sp - sp - sp ||",
+            "lyric": "竭。"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/zhuzainilimian.mp3"
+}

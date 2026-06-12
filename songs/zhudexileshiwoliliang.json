@@ -1,0 +1,524 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-03-15 15:58:09",
+  "id": "zhudexileshiwoliliang",
+  "title": "主的喜乐是我力量",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉【深触我心】(2014) 曾祥怡 词曲 (哈3:17-19)",
+  "origKey": "E",
+  "timeSign": "4/4",
+  "bpm": 138,
+  "cover": "https://cecpadua.github.io/resouces/covers/zhudexileshiwoliliang.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/zhudexileshiwoliliang.lrc",
+  "youtube": "https://youtu.be/eTEaZ6WA2dI?si=fPBrujL8EcjnfI90",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/zhudexileshiwoliliangE.jpg",
+  "sections": [
+    {
+      "name": "主歌",
+      "lines": [
+        [
+          {
+            "chord": "Emaj7",
+            "n": "0 1 7,_ 1 ([ 5,_",
+            "lyric": "   主的喜乐"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "",
+            "n": "]) 5,_ 1 7,_ 1 ([ 6,_",
+            "lyric": "   是我力量,"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "Amaj7",
+            "n": "]) 6, ([ - - -",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "",
+            "n": "]) 6, - - 0",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "Emaj7",
+            "n": "0 1 7,_ 1 ([ 5,_",
+            "lyric": "   你的救恩"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "",
+            "n": "]) 5,",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "n": "1 2_ 3 ( 2_ sp sp )",
+            "lyric": "是我盼望｜"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "( 2 ) ([ - - -",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "B7",
+            "n": "]) 2 - 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1_ 7,_",
+            "lyric": "虽然"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "Aadd2",
+            "n": "1 1_ ( 1_ 1_ ) 1_ 7,_ ([ 1_",
+            "lyric": "橄榄树  不效力"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "",
+            "n": "]) 1 - 0",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "n": "1_ 7,_",
+            "lyric": "也许"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "E/G#",
+            "n": "1 1_ ( 1_ 1_ )",
+            "lyric": "葡萄树"
+          },
+          {
+            "chord": "",
+            "n": "1_ 2_ ( 1_ sp sp )",
+            "lyric": "不结果,|"
+          }
+        ],
+        [
+          {
+            "chord": "(C#)",
+            "n": "( 1 ) - 0",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "n": "1_ 7,_",
+            "lyric": "我仍"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "F#m",
+            "n": "1 1_ ( 1_ 1_ )",
+            "lyric": "因救我"
+          },
+          {
+            "chord": "",
+            "n": "2",
+            "lyric": "的"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "(F#/A#)",
+            "n": "3 2_ ( 2_ 2_ )",
+            "lyric": "神欢喜"
+          },
+          {
+            "chord": "",
+            "n": "( 1_ 1_ )",
+            "lyric": "快 "
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "B7",
+            "n": "[v1 ( 2 - - - sp 2 ) - - 0",
+            "lyric": "乐。      ｜"
+          },
+          {
+            "chord": "",
+            "n": "]v",
+            "lyric": "||"
+          },
+          {
+            "chord": "B7",
+            "n": "[v2 5 - - -",
+            "lyric": "乐。"
+          },
+          {
+            "chord": "",
+            "n": "]v",
+            "lyric": "||"
+          }
+        ],
+        [
+          {
+            "chord": "【Chorus】",
+            "n": "0 sp 1 sp 1",
+            "lyric": "       我   要"
+          },
+          {
+            "chord": "",
+            "n": "5_ ([ 5_",
+            "lyric": "赞美"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "Emaj7",
+            "n": "]) 5 - - -",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "(E/G#)",
+            "n": "0 sp 1 1 5",
+            "lyric": "      无论得"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "Aadd2",
+            "n": "5 sp 4_ ( 4_ 4_ )",
+            "lyric": "时   或不"
+          },
+          {
+            "chord": "",
+            "n": "( 3_ 3_ )",
+            "lyric": "得"
+          },
+          {
+            "chord": "",
+            "n": "([ 2_",
+            "lyric": "时,"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "B7",
+            "n": "]) 2",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "n": "1 1 5_ ( 5_ sp sp sp )",
+            "lyric": "我要赞美,｜"
+          }
+        ],
+        [
+          {
+            "chord": "Emaj7",
+            "n": "( 5 ) - - -",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "(E/G#)",
+            "n": "0 sp 1 1 5",
+            "lyric": "      每天从"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "Aadd2",
+            "n": "5 4_ ( 4_ 4_ )",
+            "lyric": "日出到"
+          },
+          {
+            "chord": "",
+            "n": "( 3_ 3_ )",
+            "lyric": "日"
+          },
+          {
+            "chord": "",
+            "n": "([ 2_",
+            "lyric": "落"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "B7",
+            "n": "]) 2 - 0",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "n": "3",
+            "lyric": "我"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "F#m",
+            "n": "4 4_ ( 4_ 4 )",
+            "lyric": "心坚定"
+          },
+          {
+            "chord": "",
+            "n": "1",
+            "lyric": "于"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "",
+            "n": "7, - 0",
+            "lyric": "你"
+          },
+          {
+            "chord": "",
+            "n": "5,",
+            "lyric": "每"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          }
+        ],
+        [
+          {
+            "chord": "G#m",
+            "n": "5 sp 5_ ( 5_ 5 )",
+            "lyric": "天   赞美"
+          },
+          {
+            "chord": "",
+            "n": "2",
+            "lyric": "不"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "C#m",
+            "n": "1",
+            "lyric": "停,"
+          },
+          {
+            "chord": "",
+            "n": "1_ ( 1_ 1_ )",
+            "lyric": "我要"
+          },
+          {
+            "chord": "",
+            "n": "( 7,_ 7,_ )",
+            "lyric": "赞"
+          },
+          {
+            "chord": "",
+            "n": "([ 1_",
+            "lyric": "美"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "F#m",
+            "n": "]) 1",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "n": "1_ ( 1_ 1_ )",
+            "lyric": "跳舞"
+          },
+          {
+            "chord": "",
+            "n": "( 7,_ 7,_ )",
+            "lyric": "赞"
+          },
+          {
+            "chord": "",
+            "n": "([ 1_",
+            "lyric": "美"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "E/G#",
+            "n": "]) 1",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "n": "1_ ( 1_ 1_ )",
+            "lyric": "我要"
+          },
+          {
+            "chord": "",
+            "n": "( 7,_ 7,_ )",
+            "lyric": "赞"
+          },
+          {
+            "chord": "",
+            "n": "( 1_ sp sp sp )",
+            "lyric": "美，|"
+          }
+        ],
+        [
+          {
+            "chord": "Aadd2",
+            "n": "( 1 ) 1_ ( 2_ 2_ )",
+            "lyric": "   自由"
+          },
+          {
+            "chord": "",
+            "n": "( 3_ 3_ )",
+            "lyric": "赞"
+          },
+          {
+            "chord": "",
+            "n": "1_",
+            "lyric": "美,"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "E/G#",
+            "n": "0 1_ ( 1_ 1_ )",
+            "lyric": "   大声"
+          },
+          {
+            "chord": "",
+            "n": "( 7,_ 7,_ )",
+            "lyric": "欢"
+          },
+          {
+            "chord": "",
+            "n": "([ 1_",
+            "lyric": "呼:"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "F#m",
+            "n": "]) 1",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "n": "1_ ( 1_ 1_ )",
+            "lyric": "你是"
+          },
+          {
+            "chord": "",
+            "n": "( 5_ 5_ )",
+            "lyric": "永"
+          },
+          {
+            "chord": "",
+            "n": "([ 5_",
+            "lyric": "远"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "B7",
+            "n": "]) 5",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "n": "4_ ( 3_ 3_ )",
+            "lyric": "得胜"
+          },
+          {
+            "chord": "",
+            "n": "( 2_ 2_ )",
+            "lyric": "君"
+          },
+          {
+            "chord": "",
+            "n": "([ 1_",
+            "lyric": "王。"
+          },
+          {
+            "chord": "",
+            "n": "]) 1 - - -",
+            "lyric": " "
+          },
+          {
+            "chord": "",
+            "lyric": "||"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/zhudexileshiwoliliang.mp3"
+}

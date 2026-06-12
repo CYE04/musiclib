@@ -1,0 +1,348 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-05-01 12:44:40",
+  "id": "shenbujiandideai",
+  "title": "深不见底的爱",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉【听见这世代的呼唤】(2021) (创1:27：路12:7：弗3:18-19)  余盈盈 词曲",
+  "origKey": "G",
+  "timeSign": "4/4",
+  "bpm": 67,
+  "cover": "https://cecpadua.github.io/resouces/covers/budongyaodexinxin.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/shenbujiandideai.lrc",
+  "youtube": "https://youtu.be/H4MeSR_ilyY?si=KHuqtj3BJClBaGxL",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/shenbujiandideaiG.jpg",
+  "sections": [
+    {
+      "name": "深不见底的爱",
+      "lines": [
+        [
+          {
+            "chord": "",
+            "n": "{3 1'_ 2'_ 3'_ } sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "Cmaj7 D/C",
+            "n": "3'· sp 4'_ 2'· sp",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "7__ 1'__ sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "Bm7",
+            "n": "2'_ 3'__ ( 2'__ 2'__ ) 5'·_ sp",
+            "lyric": ""
+          },
+          {
+            "chord": "Em",
+            "n": "1' sp {3 1_ 2_ 3_ } sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "Cmaj7ㅤD/C",
+            "n": "3· sp 4_ 2 sp - sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "Dsus",
+            "n": "5 -",
+            "lyric": ""
+          },
+          {
+            "chord": "D",
+            "n": "- - sp |",
+            "lyric": ""
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "||",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "G",
+            "n": "3,_ 3,_ sp",
+            "lyric": "圣经"
+          },
+          {
+            "chord": "",
+            "n": "3,_ 4,_",
+            "lyric": "里面"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5,·",
+            "lyric": "说"
+          },
+          {
+            "chord": "",
+            "n": "2_ sp | sp",
+            "lyric": "天"
+          },
+          {
+            "chord": "Em",
+            "n": "1_ 7,_ sp",
+            "lyric": "父何"
+          },
+          {
+            "chord": "",
+            "n": "6,_ 3,_",
+            "lyric": "等爱"
+          },
+          {
+            "chord": "G/D",
+            "n": "5, sp - sp | sp",
+            "lyric": "我，"
+          },
+          {
+            "chord": "C",
+            "n": "4,_ 5,_ sp",
+            "lyric": "不管"
+          },
+          {
+            "chord": "",
+            "n": "6,_ 7,_",
+            "lyric": "做对"
+          },
+          {
+            "chord": "G/B",
+            "n": "5, 1 sp | sp",
+            "lyric": "做错，"
+          },
+          {
+            "chord": "Am7",
+            "n": "1_ 6,_",
+            "lyric": "爱我"
+          },
+          {
+            "chord": "",
+            "n": "7,_ 1_",
+            "lyric": "一样"
+          },
+          {
+            "chord": "D",
+            "n": "2 sp - sp |",
+            "lyric": "多。"
+          }
+        ],
+        [
+          {
+            "chord": "G",
+            "n": "3,_ sp_ 3,_ sp",
+            "lyric": "认ㅤ识"
+          },
+          {
+            "chord": "",
+            "n": "3,_ sp_ 4,_ sp",
+            "lyric": "你ㅤ之"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5,· sp",
+            "lyric": "后,"
+          },
+          {
+            "chord": "",
+            "n": "2_ sp | sp",
+            "lyric": "不"
+          },
+          {
+            "chord": "Em",
+            "n": "1_ sp_ 7,_ sp",
+            "lyric": "再ㅤ为"
+          },
+          {
+            "chord": "",
+            "n": "6,_ sp_ 3,_ sp",
+            "lyric": "自ㅤ己"
+          },
+          {
+            "chord": "G/D",
+            "n": "5, sp - sp | sp",
+            "lyric": "活，"
+          },
+          {
+            "chord": "C",
+            "n": "4,_ sp_ 5,_ sp",
+            "lyric": "愿ㅤ圣"
+          },
+          {
+            "chord": "",
+            "n": "6,_ sp_ 7,_ sp",
+            "lyric": "灵ㅤ帮"
+          },
+          {
+            "chord": "G/B",
+            "n": "5, sp",
+            "lyric": "助"
+          },
+          {
+            "chord": "",
+            "n": "1·_ sp_ 1__ sp |",
+            "lyric": "我，能"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "|",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "timeSign": "2/4",
+            "n": "sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "Am7",
+            "n": "3_ sp_ 4_",
+            "lyric": "经ㅤ历"
+          },
+          {
+            "chord": "",
+            "n": "2_ sp_ 1_ sp | sp",
+            "lyric": "你ㅤ更"
+          },
+          {
+            "chord": "",
+            "timeSign": "4/4",
+            "n": "sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "D",
+            "n": "2 sp - sp - sp",
+            "lyric": "多。"
+          },
+          {
+            "chord": "【Chorus】",
+            "n": "{3 1_ sp_ 2_ sp_ 3_ } sp || sp",
+            "lyric": "深ㅤ不ㅤ见"
+          },
+          {
+            "chord": "Cmaj7",
+            "n": "3· sp",
+            "lyric": "底"
+          },
+          {
+            "chord": "",
+            "n": "4_ sp",
+            "lyric": "的"
+          },
+          {
+            "chord": "D/C ",
+            "n": "2· sp sp",
+            "lyric": "爱，"
+          },
+          {
+            "chord": "",
+            "n": "7,__ sp__ 1__ sp |",
+            "lyric": "没ㅤ有"
+          }
+        ],
+        [
+          {
+            "chord": "Bm7",
+            "n": "2_ sp_ 3__ ( 2__ sp 2__ ) 5,·_ sp",
+            "lyric": "别ㅤ处能ㅤㅤ找"
+          },
+          {
+            "chord": "",
+            "n": "1 sp - sp | sp",
+            "lyric": "到，"
+          },
+          {
+            "chord": "Am",
+            "n": "6,_ sp_ 7,__ ( 1__ sp 1__ ) 2·_",
+            "lyric": "按ㅤ你形ㅤㅤ象"
+          },
+          {
+            "chord": "G/B",
+            "n": "1·_ sp_ ( 5,__ 5, ) sp | sp",
+            "lyric": "造ㅤ我"
+          },
+          {
+            "chord": "C",
+            "n": "3_ 4_ sp",
+            "lyric": "深深"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ sp",
+            "lyric": "认识"
+          },
+          {
+            "chord": "D",
+            "n": "2",
+            "lyric": "我。"
+          },
+          {
+            "chord": "",
+            "n": "{3 1_ sp_ 2_ sp_ 3_ } sp |",
+            "lyric": "我ㅤ每ㅤ一"
+          }
+        ],
+        [
+          {
+            "chord": "Cmaj7",
+            "n": "3·",
+            "lyric": "根"
+          },
+          {
+            "chord": "",
+            "n": "4_",
+            "lyric": "头"
+          },
+          {
+            "chord": "D/C",
+            "n": "2· sp",
+            "lyric": "发，"
+          },
+          {
+            "chord": "",
+            "n": "7,__ 1__ sp | sp",
+            "lyric": "天父"
+          },
+          {
+            "chord": "Bm7",
+            "n": "2_ sp_ 3__ ( 2__ sp 2__ ) 5,·_",
+            "lyric": "你ㅤ都细ㅤㅤ数"
+          },
+          {
+            "chord": "Em",
+            "n": "1 sp - sp |",
+            "lyric": "过，"
+          },
+          {
+            "chord": "Am",
+            "n": "1·_ sp_ ( 6,__ sp 6,_ ) 6,_",
+            "lyric": "恩ㅤ典ㅤㅤ如"
+          },
+          {
+            "chord": "C/D",
+            "n": "3_ 4_",
+            "lyric": "繁星"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1_ sp | sp",
+            "lyric": "一样"
+          },
+          {
+            "chord": "",
+            "n": "1 sp - sp - sp ||",
+            "lyric": "多。"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/shenbujiandideai.mp3"
+}

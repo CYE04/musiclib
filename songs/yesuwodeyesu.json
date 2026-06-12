@@ -1,0 +1,392 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-03-18 19:33:28",
+  "id": "yesuwodeyesu",
+  "title": "耶稣，我的耶稣",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉【展开清晨的翅膀】(2002)游智婷 词曲",
+  "origKey": "D",
+  "timeSign": "4/4",
+  "bpm": 60,
+  "cover": "https://cecpadua.github.io/resouces/covers/zhankaiqingchendechibang.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/yesuwodeyesu.lrc",
+  "youtube": "https://youtu.be/VG8nE8Ttyrk?si=jymuPW2jzoSFtDaT",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/yesuwodeyesuD.jpg",
+  "sections": [
+    {
+      "name": "前奏",
+      "lines": [
+        [
+          {
+            "chord": "D",
+            "n": "5 sp - sp 1",
+            "lyric": ""
+          },
+          {
+            "chord": "(D/E)",
+            "n": "( 3_ 4_ )",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "F#m",
+            "n": "5 sp - sp",
+            "lyric": ""
+          },
+          {
+            "chord": "Bm",
+            "n": "1· sp 1_",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "Em7",
+            "n": "4_ 3 sp 1_",
+            "lyric": ""
+          },
+          {
+            "chord": "A7",
+            "n": "1 sp ( 3_ 2__ 1__ )",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "D",
+            "n": "1 sp - sp - sp -",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "lyric": "||"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "主歌",
+      "lines": [
+        [
+          {
+            "chord": "",
+            "lyric": "||"
+          },
+          {
+            "chord": "D",
+            "n": "5_ sp_ 5__ ( 5__ sp 5_ ) sp_ 5__ 5__ sp",
+            "lyric": "我ㅤ的神，ㅤ 我要"
+          },
+          {
+            "chord": "A/C#",
+            "n": "5_ sp_ 4_ sp",
+            "lyric": "永ㅤ远"
+          },
+          {
+            "chord": "",
+            "n": "3_ sp_ 2_",
+            "lyric": "在ㅤ你"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "Bm",
+            "n": "2_ sp_ 1__ ( 1__ sp 1 )",
+            "lyric": "的ㅤ怀里，"
+          },
+          {
+            "chord": "ㅤㅤㅤ D",
+            "n": "sp sp - sp sp - sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          }
+        ],
+        [
+          {
+            "chord": "D/G或G",
+            "n": "5_ sp_ 5__ ( 5__ sp 5_ ) sp_ 5__ 5__ sp",
+            "lyric": "爱ㅤ慕你，ㅤ 屈膝"
+          },
+          {
+            "chord": "",
+            "lyric": ""
+          },
+          {
+            "chord": "D/F#",
+            "n": "5_ sp_ 3_ sp",
+            "lyric": "在ㅤ你"
+          },
+          {
+            "chord": "",
+            "n": "2_ sp_ 1_",
+            "lyric": "面ㅤ前"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "Em7",
+            "n": "4_ sp_ 3_ sp",
+            "lyric": "单ㅤ单"
+          },
+          {
+            "chord": "",
+            "n": "2_ sp_ 1_ sp",
+            "lyric": "敬ㅤ拜"
+          },
+          {
+            "chord": "A",
+            "n": "2· sp",
+            "lyric": "你 。"
+          },
+          {
+            "chord": "",
+            "n": "0__ 1__",
+            "lyric": "ㅤ我"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          }
+        ],
+        [
+          {
+            "chord": "G",
+            "n": "1_ sp ( 6 5_ )",
+            "lyric": "渴ㅤ慕"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5· sp",
+            "lyric": "你"
+          },
+          {
+            "chord": "",
+            "n": "3_",
+            "lyric": "我"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "F#",
+            "n": "3 sp ( 2·_ 1__ )",
+            "lyric": "敬ㅤ拜"
+          },
+          {
+            "chord": "Bm",
+            "n": "1",
+            "lyric": "你，"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_",
+            "lyric": "我的"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "Em7",
+            "n": "1·",
+            "lyric": "主，"
+          },
+          {
+            "chord": "",
+            "n": "1_",
+            "lyric": "我"
+          },
+          {
+            "chord": "A7",
+            "n": "1_ 7,_",
+            "lyric": "深爱"
+          },
+          {
+            "chord": "",
+            "n": "7,__ ( 2_ 1__ )",
+            "lyric": "的唯"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "D",
+            "n": "1 - - -",
+            "lyric": "一。"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          }
+        ]
+      ]
+    },
+    {
+      "name": "副歌",
+      "lines": [
+        {
+          "b": true,
+          "line": [
+            {
+              "chord": "D",
+              "n": "5 -",
+              "lyric": "耶"
+            },
+            {
+              "chord": "",
+              "n": "1",
+              "lyric": "稣,"
+            },
+            {
+              "chord": "（D/E）",
+              "n": "( 3_ 4_ )",
+              "lyric": "哦"
+            },
+            {
+              "chord": "",
+              "lyric": "｜"
+            },
+            {
+              "chord": "F#m7",
+              "n": "5 -",
+              "lyric": "耶"
+            },
+            {
+              "chord": "Bm7",
+              "n": "1· sp",
+              "lyric": "稣，"
+            },
+            {
+              "chord": "",
+              "n": "1_",
+              "lyric": "我"
+            },
+            {
+              "chord": "",
+              "lyric": "｜"
+            },
+            {
+              "chord": "Em7",
+              "n": "4 sp 3",
+              "lyric": "灵ㅤ最"
+            },
+            {
+              "chord": "E7",
+              "n": "2 sp sp",
+              "lyric": "深"
+            },
+            {
+              "chord": "",
+              "n": "1_ ([ 3_",
+              "lyric": "渴慕。"
+            },
+            {
+              "chord": "",
+              "lyric": "|"
+            },
+            {
+              "chord": "A",
+              "n": "]) 3_ ( 2_ 2 ) sp - sp -",
+              "lyric": "ㅤ"
+            },
+            {
+              "chord": "",
+              "lyric": "|"
+            }
+          ]
+        },
+        [
+          {
+            "chord": "D",
+            "n": "5 -",
+            "lyric": "耶"
+          },
+          {
+            "chord": "",
+            "n": "1",
+            "lyric": "稣,"
+          },
+          {
+            "chord": "（D/E）",
+            "n": "( 3_ 4_ )",
+            "lyric": "哦"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "F#m7",
+            "n": "5 -",
+            "lyric": "耶"
+          },
+          {
+            "chord": "Bm7",
+            "n": "1· sp",
+            "lyric": "稣，"
+          },
+          {
+            "chord": "",
+            "n": "1_",
+            "lyric": "你"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "Em7",
+            "n": "4 sp 3 sp",
+            "lyric": "医ㅤ治"
+          },
+          {
+            "chord": "",
+            "n": "1_",
+            "lyric": "我"
+          },
+          {
+            "chord": "A7",
+            "n": "1",
+            "lyric": "心"
+          },
+          {
+            "chord": "",
+            "n": "( 3_ sp_ 2__ 1__ ) 1__",
+            "lyric": "深"
+          },
+          {
+            "chord": "",
+            "lyric": "｜"
+          },
+          {
+            "chord": "D",
+            "n": "1 - - -",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "lyric": "ㅤ||"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/yesuwodeyesu.mp3"
+}

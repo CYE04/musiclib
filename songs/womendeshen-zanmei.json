@@ -1,0 +1,470 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-04-18 22:05:49",
+  "id": "womendeshen",
+  "title": "我们的神",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉【赞美中信心不断升起】(2022)(诗33:8-9;创2:7;诗145:10-21;诗19:1) 郑懋柔、游智婷词 游智婷曲",
+  "origKey": "G",
+  "timeSign": "4/4",
+  "bpm": 66,
+  "cover": "https://cecpadua.github.io/resouces/covers/zanmeizhongxinxinbuduanshengqi.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/womendeshen.lrc",
+  "youtube": "https://youtu.be/kvrRtRe9AoU?si=U9EoWPCoZbR9B-gq",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/womendeshenG-zanmei.jpg",
+  "sections": [
+    {
+      "name": "我们的神",
+      "lines": [
+        [
+          {
+            "chord": "G",
+            "n": "5,_ 1_ 3_ 1_ 5,_ 1_ 3_ 1_ |",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "5,_ 1_ 3_ 1_ 5,_ 1_ 4_ 3_ |",
+            "lyric": ""
+          },
+          {
+            "chord": "Em",
+            "n": "5,_ 1_ 3_ 1_ 5,_ 1_ 3_ 1_ |",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "5,_ 1_ 3_ 1_ 5,_ 1_ 4_ 3_ |",
+            "lyric": ""
+          },
+          {
+            "chord": "C",
+            "n": "5,_ 1_ 3_ 1_ 5,_ 1_ 3_ 1_ |",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "5,_ 1_ 3_ 1_ 5,_ 1_ 4_ 3_ |",
+            "lyric": ""
+          },
+          {
+            "chord": "D",
+            "n": "5,_ 7,_ 2_ 7,_ 5,_ 7,_ 2_ 7,_ |",
+            "lyric": ""
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "sp sp 5, sp - sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "0_ sp_ 5,_ sp",
+            "lyric": "ㅤㅤ诸"
+          },
+          {
+            "chord": "",
+            "n": "5,_ sp_ 4,_ sp | sp",
+            "lyric": "天ㅤ述"
+          },
+          {
+            "chord": "G",
+            "n": "( 3, sp - sp 3,_ ) sp_ 3,_ sp",
+            "lyric": "说ㅤㅤㅤㅤㅤ天"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5,_ sp_ 7,_ sp | sp",
+            "lyric": "父ㅤ的"
+          },
+          {
+            "chord": "Em",
+            "n": "2 sp 1",
+            "lyric": "荣ㅤ耀，"
+          },
+          {
+            "chord": "",
+            "n": "0_ sp_ 6,_ sp",
+            "lyric": "ㅤㅤ穹"
+          },
+          {
+            "chord": "",
+            "n": "6,_ sp_ 5,_ sp | sp",
+            "lyric": "苍ㅤ传"
+          },
+          {
+            "chord": "C",
+            "n": "( 6, sp - sp 6,_ ) sp_ 6,_ sp",
+            "lyric": "扬ㅤㅤㅤㅤㅤ奇"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp_ 6,_ sp |",
+            "lyric": "妙ㅤ的"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "sp sp",
+            "lyric": ""
+          },
+          {
+            "chord": "D",
+            "n": "6, sp 5,",
+            "lyric": "作ㅤ为。"
+          },
+          {
+            "chord": "",
+            "n": "0_ sp_ 5,_ sp",
+            "lyric": "ㅤㅤ张"
+          },
+          {
+            "chord": "",
+            "n": "5,_ sp_ 4,_ sp | sp",
+            "lyric": "开ㅤ双"
+          },
+          {
+            "chord": "G",
+            "n": "( 3, sp - sp 3,_ ) sp_ 3,_ sp",
+            "lyric": "手ㅤㅤㅤㅤㅤ万"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5,_ sp_ 7,_ sp | sp",
+            "lyric": "物ㅤ得"
+          },
+          {
+            "chord": "Em",
+            "n": "2 sp 1",
+            "lyric": "饱ㅤ足。"
+          },
+          {
+            "chord": "",
+            "n": "0_ sp_ 6,_ sp",
+            "lyric": "ㅤㅤ万"
+          },
+          {
+            "chord": "",
+            "n": "6,_ sp_ 5,_ sp | sp",
+            "lyric": "口ㅤ承"
+          },
+          {
+            "chord": "C",
+            "n": "6,·",
+            "lyric": "认"
+          },
+          {
+            "chord": "",
+            "n": "6,__ sp__ 6,__",
+            "lyric": "你ㅤ是"
+          },
+          {
+            "chord": "",
+            "n": "6,·_ sp_ ( 1__ sp 1_ ) 3_ sp |",
+            "lyric": "我ㅤ们ㅤㅤ的"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "sp sp",
+            "lyric": ""
+          },
+          {
+            "chord": "Dsus4",
+            "n": "2 sp - sp - sp - sp || sp",
+            "lyric": "神。"
+          },
+          {
+            "chord": "Dㅤㅤㅤㅤ【Chorus】",
+            "n": "0 sp 0 sp 0_ sp_ 5,_",
+            "lyric": "ㅤㅤㅤㅤㅤㅤ我"
+          },
+          {
+            "chord": "",
+            "n": "4·_ sp_ 3__ sp | sp",
+            "lyric": "们ㅤ的"
+          },
+          {
+            "chord": "G",
+            "n": "3 sp - sp",
+            "lyric": "神，"
+          },
+          {
+            "chord": "D/F#",
+            "n": "2_ sp_ 3_",
+            "lyric": "坐ㅤ在"
+          },
+          {
+            "chord": "",
+            "n": "5_ sp_ 2_ sp | sp",
+            "lyric": "宝ㅤ座"
+          },
+          {
+            "chord": "Em",
+            "n": "1 sp - sp",
+            "lyric": "上，"
+          },
+          {
+            "chord": "G/D",
+            "n": "7,_ sp_ 1_",
+            "lyric": "圣ㅤ殿"
+          },
+          {
+            "chord": "",
+            "n": "( 3_ 7,_ ) sp | sp",
+            "lyric": "充"
+          },
+          {
+            "chord": "C",
+            "n": "6,·",
+            "lyric": "满"
+          },
+          {
+            "chord": "ㅤG/B",
+            "n": "1_ 1·",
+            "lyric": "荣耀,"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp |",
+            "lyric": "万"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "sp sp",
+            "lyric": ""
+          },
+          {
+            "chord": "Am",
+            "n": "4 sp sp 3 sp sp",
+            "lyric": "民ㅤㅤ敬"
+          },
+          {
+            "chord": "D",
+            "n": "2_ sp_ 5,_ sp",
+            "lyric": "拜。全"
+          },
+          {
+            "chord": "",
+            "n": "4·_ sp_ 3__ sp | sp",
+            "lyric": "能ㅤ的"
+          },
+          {
+            "chord": "G",
+            "n": "3 sp - sp sp",
+            "lyric": "神，"
+          },
+          {
+            "chord": "D/F#",
+            "n": "2_ sp_ 3_ sp",
+            "lyric": "我ㅤ们"
+          },
+          {
+            "chord": "",
+            "n": "5_ sp_ 2_ sp | sp",
+            "lyric": "尊ㅤ崇"
+          },
+          {
+            "chord": "Em",
+            "n": "1 sp - sp",
+            "lyric": "你。"
+          },
+          {
+            "chord": "G/D",
+            "n": "7,_ sp_ 1_",
+            "lyric": "圣ㅤ洁、"
+          },
+          {
+            "chord": "",
+            "n": "( 3_ sp_ 7,_ ) sp | sp",
+            "lyric": "荣"
+          },
+          {
+            "chord": "C",
+            "n": "6,·",
+            "lyric": "耀、"
+          },
+          {
+            "chord": "ㅤ ㅤG/B",
+            "n": "1_ sp 1·",
+            "lyric": "尊ㅤ贵、"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp |",
+            "lyric": "能"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "sp sp",
+            "lyric": ""
+          },
+          {
+            "chord": "Am",
+            "n": "4 sp - sp",
+            "lyric": "力，"
+          },
+          {
+            "chord": "D",
+            "n": "4·_ sp_ ( 3__ sp 3_ ) sp_ 2_ sp | sp",
+            "lyric": "都ㅤ归ㅤㅤㅤ于"
+          },
+          {
+            "chord": "G ㅤㅤㅤㅤㅤㅤㅤFine",
+            "n": "1 sp - sp - sp - sp ||/ sp",
+            "lyric": "你。"
+          },
+          {
+            "chord": "",
+            "n": "0 0 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "【Bridge】",
+            "n": "1·_ sp_ 7,__ sp |: sp",
+            "lyric": "你ㅤ说"
+          },
+          {
+            "chord": "C",
+            "n": "( 1 sp - sp 1_ ) sp_ 1_",
+            "lyric": "话，ㅤㅤㅤㅤ命"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp_ 2_ sp | sp",
+            "lyric": "立ㅤ就"
+          },
+          {
+            "chord": "G或G/B",
+            "n": "5, - 0 sp",
+            "lyric": "立；"
+          },
+          {
+            "chord": "",
+            "n": "1·_ sp_ 7,__ sp |",
+            "lyric": "你ㅤ吹"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "sp sp",
+            "lyric": ""
+          },
+          {
+            "chord": "C",
+            "n": "( 1 sp sp - sp sp 1_ ) sp_ 1_ sp",
+            "lyric": "气，ㅤㅤㅤㅤ就"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp_ 3_ sp | sp",
+            "lyric": "得ㅤ生"
+          },
+          {
+            "chord": "G",
+            "n": "3 sp - sp sp",
+            "lyric": "命。"
+          },
+          {
+            "chord": "",
+            "n": "0_ sp_ 1_ sp",
+            "lyric": "ㅤㅤ万"
+          },
+          {
+            "chord": "",
+            "n": "1·_ sp_ 7__ sp | sp",
+            "lyric": "物ㅤ齐"
+          },
+          {
+            "chord": "C",
+            "n": "1 sp - sp - sp",
+            "lyric": "唱"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp_ 3_ sp | sp",
+            "lyric": "哈ㅤ利"
+          },
+          {
+            "chord": "GㅤㅤD/F#",
+            "n": "( 3 sp 2 ) sp",
+            "lyric": "路"
+          },
+          {
+            "chord": "Em",
+            "n": "1 sp sp",
+            "lyric": "亚！"
+          },
+          {
+            "chord": "",
+            "n": "1_ sp_ 2_ sp |",
+            "lyric": "圣ㅤ哉！"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "sp sp",
+            "lyric": ""
+          },
+          {
+            "chord": "C",
+            "n": "3 sp - sp",
+            "lyric": "圣"
+          },
+          {
+            "chord": "",
+            "n": "3",
+            "lyric": "哉！"
+          },
+          {
+            "chord": "",
+            "n": "3 sp | sp",
+            "lyric": "圣"
+          },
+          {
+            "chord": "D",
+            "n": "[v1 2 sp - sp -",
+            "lyric": "哉！"
+          },
+          {
+            "chord": "",
+            "n": "1·_ sp_ 7,__ sp :| ]v",
+            "lyric": "你ㅤ说"
+          },
+          {
+            "chord": "",
+            "n": "[v2",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "Dsus4ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤ E",
+            "n": "( 5 sp - sp ( 0·_ sp_ 3·__ sp 3_ sp_ 5_ sp | sp sp sp sp | sp 5 - ) ) sp sp",
+            "lyric": "哉！ㅤㅤㅤㅤㅤ(我 们ㅤ的ㅤㅤㅤㅤㅤㅤ 神！)"
+          },
+          {
+            "chord": "",
+            "n": "0_ sp_ 5,_ sp",
+            "lyric": "ㅤㅤ我ㅤ"
+          },
+          {
+            "chord": " ToChorus",
+            "n": "4·_ sp_ 3__ sp || ]v",
+            "lyric": "们ㅤ的"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": ""
+}

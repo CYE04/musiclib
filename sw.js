@@ -1,9 +1,10 @@
-const CACHE_NAME = "cecp-musiclib-vue-pwa-v2";
+const CACHE_NAME = "cecp-musiclib-vue-pwa-v3";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
-  "./musiclib.css?v=20260612",
-  "./app.js?v=20260612",
+  "./musiclib.css?v=20260612-3",
+  "./app.js?v=20260612-3",
+  "./songs/manifest.json",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
   "./icons/favicon.ico",

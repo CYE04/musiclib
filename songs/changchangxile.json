@@ -1,0 +1,441 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-04-09 18:32:52",
+  "id": "changchangxile",
+  "title": "常常喜乐",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉【全能的创造主】(2001) (腓4:4-6) 盛晓玫 词曲",
+  "origKey": "G",
+  "timeSign": "4/4",
+  "bpm": 130,
+  "cover": "https://cecpadua.github.io/resouces/covers/quannengdechuangzaozhu.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/changchangxile.lrc",
+  "youtube": "https://youtu.be/-58zzjhqLU8?si=4gZUmMqGv9eauCtl",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/changchangxileG.jpg",
+  "sections": [
+    {
+      "name": "常常喜乐",
+      "lines": [
+        [
+          {
+            "chord": "G",
+            "n": "5_ 5_",
+            "lyric": "常常",
+            "lyric2": "常常"
+          },
+          {
+            "chord": "",
+            "n": "0_ 3_",
+            "lyric": "ㅤ喜",
+            "lyric2": "ㅤ祷"
+          },
+          {
+            "chord": "",
+            "n": "5 0 sp | sp",
+            "lyric": "乐",
+            "lyric2": "告"
+          },
+          {
+            "chord": "C",
+            "n": "1'_ 4_",
+            "lyric": "向主",
+            "lyric2": "耐心"
+          },
+          {
+            "chord": "",
+            "n": "0_ 6_",
+            "lyric": "ㅤ高",
+            "lyric2": "ㅤ等"
+          },
+          {
+            "chord": "G",
+            "n": "5 0 sp | sp",
+            "lyric": "歌，",
+            "lyric2": "候，"
+          },
+          {
+            "chord": "C",
+            "n": "6_ 6_",
+            "lyric": "不论",
+            "lyric2": "主做"
+          },
+          {
+            "chord": "",
+            "n": "0_ 5_",
+            "lyric": "ㅤ环",
+            "lyric2": "ㅤ事"
+          },
+          {
+            "chord": "",
+            "n": "1 5 sp | sp",
+            "lyric": "境如",
+            "lyric2": "有定"
+          },
+          {
+            "chord": "G/B",
+            "n": "3 - - 0 sp |",
+            "lyric": "何。",
+            "lyric2": "时。"
+          },
+          {
+            "chord": "C",
+            "n": "[v1 6_ 6_",
+            "lyric": "高山",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "0_ 5_",
+            "lyric": "ㅤ或",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "6 1' sp | ]v",
+            "lyric": "低谷",
+            "lyric2": "ㅤ"
+          }
+        ],
+        [
+          {
+            "chord": "Em",
+            "n": "[v1 2'_ 1'_",
+            "lyric": "主都"
+          },
+          {
+            "chord": "",
+            "n": "0_ 3_",
+            "lyric": "ㅤ看"
+          },
+          {
+            "chord": "",
+            "n": "5 0 sp | sp",
+            "lyric": "顾，"
+          },
+          {
+            "chord": "Am",
+            "n": "6_ 6_",
+            "lyric": "相信"
+          },
+          {
+            "chord": "",
+            "n": "0_ 5_",
+            "lyric": "ㅤ就"
+          },
+          {
+            "chord": "",
+            "n": "6 1' sp | sp",
+            "lyric": "能蒙"
+          },
+          {
+            "chord": "D7",
+            "n": "( 2' - - - sp | sp 2' ) sp 0 0 0 sp :| ]v sp",
+            "lyric": "福。"
+          },
+          {
+            "chord": "C",
+            "n": "[v2 6_ 6_",
+            "lyric": "流泪"
+          },
+          {
+            "chord": "",
+            "n": "0_ 5_",
+            "lyric": "ㅤ撒"
+          },
+          {
+            "chord": "",
+            "n": "6 1' sp | ]v",
+            "lyric": "种必"
+          }
+        ],
+        [
+          {
+            "chord": "Em7",
+            "n": "2'_ 1'_",
+            "lyric": "欢呼"
+          },
+          {
+            "chord": "",
+            "n": "0_ 2'_",
+            "lyric": "ㅤ收"
+          },
+          {
+            "chord": "",
+            "n": "3' 0 sp | sp",
+            "lyric": "割，"
+          },
+          {
+            "chord": "Am",
+            "n": "2'_ 2'_",
+            "lyric": "相信"
+          },
+          {
+            "chord": "",
+            "n": "0_ 1'_",
+            "lyric": "ㅤ就"
+          },
+          {
+            "chord": "",
+            "n": "2' 3' sp | sp",
+            "lyric": "有喜"
+          },
+          {
+            "chord": "DㅤㅤㅤㅤㅤㅤㅤㅤㅤD7",
+            "n": "( 2' - - - sp | sp 2' ) 0",
+            "lyric": "乐。"
+          },
+          {
+            "chord": "【Chorus】",
+            "n": "5_ 6_ sp 1'_ 2'_ sp ||",
+            "lyric": "下垂ㅤ的手"
+          },
+          {
+            "chord": "G",
+            "n": "3'",
+            "lyric": "再"
+          },
+          {
+            "chord": "",
+            "n": "3'_ ( 2'_ sp 2' )",
+            "lyric": "一次"
+          },
+          {
+            "chord": "",
+            "n": "3' sp |",
+            "lyric": "举"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "2'_ 1'_ sp 0",
+            "lyric": "起来，"
+          },
+          {
+            "chord": "(D/F#)",
+            "n": "5_ 6_",
+            "lyric": "封闭"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 2'_ sp | sp",
+            "lyric": "的心"
+          },
+          {
+            "chord": "Em",
+            "n": "3' 3'_ ( 2'_ sp 2' )",
+            "lyric": "再一次"
+          },
+          {
+            "chord": "",
+            "n": "3' sp | sp",
+            "lyric": "敞"
+          },
+          {
+            "chord": "",
+            "n": "1' sp 0",
+            "lyric": "开，"
+          },
+          {
+            "chord": "",
+            "n": "6_ 1'_",
+            "lyric": "抛开"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 6_ sp | sp",
+            "lyric": "一切"
+          },
+          {
+            "chord": "Am",
+            "n": "3'_ 2'_ sp 0 sp",
+            "lyric": "忧虑，"
+          },
+          {
+            "chord": "",
+            "n": "6_ 1'_",
+            "lyric": "放下"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 6_ sp | sp",
+            "lyric": "一切"
+          }
+        ],
+        [
+          {
+            "chord": "Am7/G",
+            "n": "3'_ 2'_ sp 0 sp",
+            "lyric": "重担，"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤ",
+            "n": "6_ 1'_",
+            "lyric": "来到"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 6_ sp | sp",
+            "lyric": "主的"
+          },
+          {
+            "chord": "F",
+            "n": "{3 3' 2' 2' } sp",
+            "lyric": "面前我"
+          },
+          {
+            "chord": "",
+            "n": "{3 2' 1' 6 } sp | sp",
+            "lyric": "喜乐满"
+          },
+          {
+            "chord": "D7",
+            "n": "2' sp 0 sp",
+            "lyric": "怀。"
+          },
+          {
+            "chord": "",
+            "n": "5_ 6_",
+            "lyric": "冰冷"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 2'_ sp | sp",
+            "lyric": "的心"
+          },
+          {
+            "chord": "G",
+            "n": "3' sp",
+            "lyric": "被"
+          },
+          {
+            "chord": "",
+            "n": "3'_ ( 2'_ 2' )",
+            "lyric": "主爱"
+          },
+          {
+            "chord": "",
+            "n": "3' sp |",
+            "lyric": "来"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "2'_ 1'_ sp 0",
+            "lyric": "温暖，"
+          },
+          {
+            "chord": "(D/F#)",
+            "n": "5_ 6_",
+            "lyric": "干渴"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 2'_ sp | sp",
+            "lyric": "的灵"
+          },
+          {
+            "chord": "Em",
+            "n": "3'",
+            "lyric": "被"
+          },
+          {
+            "chord": "",
+            "n": "3'_ ( 2'_ sp 2' )",
+            "lyric": "主爱"
+          },
+          {
+            "chord": "",
+            "n": "3' sp | sp",
+            "lyric": "充"
+          },
+          {
+            "chord": "",
+            "n": "1' sp 0",
+            "lyric": "满，"
+          },
+          {
+            "chord": "",
+            "n": "6_ 1'_",
+            "lyric": "主是"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 6_ sp | sp",
+            "lyric": "我的"
+          },
+          {
+            "chord": "Am",
+            "n": "3'_ 2'_ sp 0 sp",
+            "lyric": "力量，"
+          },
+          {
+            "chord": "",
+            "n": "6_ 1'_",
+            "lyric": "主是"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 6_ sp | sp",
+            "lyric": "我的"
+          }
+        ],
+        [
+          {
+            "chord": "Am7/G",
+            "n": "3'_ 2'_ sp 0",
+            "lyric": "高台，"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤ",
+            "n": "6_ 1'_",
+            "lyric": "死荫"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 6_ sp | sp",
+            "lyric": "幽谷"
+          },
+          {
+            "chord": "F",
+            "n": "{3 3' 2' 2' } sp",
+            "lyric": "一路有"
+          },
+          {
+            "chord": "",
+            "n": "{3 2' 1' 6 } sp | sp",
+            "lyric": "耶稣陪"
+          },
+          {
+            "chord": "D7",
+            "n": "2'",
+            "lyric": "伴"
+          },
+          {
+            "chord": "",
+            "n": "0_ 5_",
+            "lyric": "，他"
+          },
+          {
+            "chord": "",
+            "n": "3' 3' sp | sp",
+            "lyric": "永不"
+          },
+          {
+            "chord": "G",
+            "n": "2'",
+            "lyric": "离"
+          },
+          {
+            "chord": "",
+            "n": "0_ ( 1'_ 1' ) ( - sp | sp 1' ) - - - ||/",
+            "lyric": "ㅤ开！"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/changchangxile.mp3"
+}

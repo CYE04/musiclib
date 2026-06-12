@@ -1,0 +1,428 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-04-10 19:18:59",
+  "id": "manyounengli",
+  "title": "满有能力",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉【不要放弃，满有能力】(2009)(约4:14；约壹4:4-6；加2:20；罗8:37) 郑懋柔 词/游智婷 曲",
+  "origKey": "A",
+  "timeSign": "4/4",
+  "bpm": 148,
+  "cover": "https://cecpadua.github.io/resouces/covers/manyounengli.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/manyounengli.lrc",
+  "youtube": "https://youtu.be/uTGPl8f-reQ?si=43It4EvoSrw-bV4i",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/manyounengliA.jpg",
+  "sections": [
+    {
+      "name": "满有能力",
+      "lines": [
+        [
+          {
+            "chord": "A",
+            "n": "5 4",
+            "lyric": "我的"
+          },
+          {
+            "chord": "",
+            "n": "( 3_ 4 )",
+            "lyric": "盼"
+          },
+          {
+            "chord": "",
+            "n": "( 5_ sp | sp 5 ) - 0",
+            "lyric": "望"
+          },
+          {
+            "chord": "",
+            "n": "5_ 5_ sp | sp",
+            "lyric": "就在"
+          },
+          {
+            "chord": "D",
+            "n": "6 5",
+            "lyric": "耶稣"
+          },
+          {
+            "chord": "",
+            "n": "6_ 5",
+            "lyric": "基督"
+          },
+          {
+            "chord": "",
+            "n": "( 1_ sp | sp 1 ) - 0",
+            "lyric": "里"
+          },
+          {
+            "chord": "",
+            "n": "5_ 5_ sp | sp",
+            "lyric": "在你"
+          },
+          {
+            "chord": "Eadd2",
+            "n": "( 6 5_ ) ( 5_ 5 ) - sp | sp",
+            "lyric": "里ㅤ面"
+          },
+          {
+            "chord": "",
+            "n": "4·",
+            "lyric": "满"
+          },
+          {
+            "chord": "",
+            "n": "( 3_ 3 )",
+            "lyric": "有"
+          },
+          {
+            "chord": "",
+            "n": "2 sp |",
+            "lyric": "平"
+          }
+        ],
+        [
+          {
+            "chord": "A",
+            "n": "3 - - - | 0 0 0 0 |",
+            "lyric": "安"
+          },
+          {
+            "chord": "A",
+            "n": "5 4",
+            "lyric": "生命"
+          },
+          {
+            "chord": "",
+            "n": "( 3_ 4 )",
+            "lyric": "泉"
+          },
+          {
+            "chord": "",
+            "n": "( 5_ sp | 5 ) - 0",
+            "lyric": "源"
+          },
+          {
+            "chord": "",
+            "n": "5_ 5_ sp | sp",
+            "lyric": "就在"
+          },
+          {
+            "chord": "D",
+            "n": "6 5",
+            "lyric": "耶稣"
+          },
+          {
+            "chord": "",
+            "n": "6_ 5",
+            "lyric": "基督"
+          },
+          {
+            "chord": "",
+            "n": "( 1_ sp | sp 1 ) - 0",
+            "lyric": "里"
+          },
+          {
+            "chord": "",
+            "n": "5_ 5_ sp | sp",
+            "lyric": "有主"
+          },
+          {
+            "chord": "Eadd2",
+            "n": "( 6 5_ ) ( 5_ 5 ) - |",
+            "lyric": "在ㅤ我"
+          }
+        ],
+        [
+          {
+            "chord": "E7",
+            "n": "6·",
+            "lyric": "里"
+          },
+          {
+            "chord": "",
+            "n": "( 1'_ 1' )",
+            "lyric": "面"
+          },
+          {
+            "chord": "",
+            "n": "7 sp | sp",
+            "lyric": "活"
+          },
+          {
+            "chord": "A",
+            "n": "1' - - - sp || sp",
+            "lyric": "着。"
+          },
+          {
+            "chord": "【Chorus】",
+            "n": "0 5 6 7 sp | sp",
+            "lyric": "ㅤ我宣告"
+          },
+          {
+            "chord": "A",
+            "n": "1' 1' 1'_",
+            "lyric": "在我里"
+          },
+          {
+            "chord": "",
+            "n": "5",
+            "lyric": "面"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤE/G#",
+            "n": "( 2'_ sp | sp 2' ) - 0",
+            "lyric": "的"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 7_ sp | sp",
+            "lyric": "比世"
+          },
+          {
+            "chord": "D",
+            "n": "1'",
+            "lyric": "上"
+          },
+          {
+            "chord": "",
+            "n": "1_ 1_",
+            "lyric": "一切"
+          },
+          {
+            "chord": "",
+            "n": "{3 1' 7 6 } sp |",
+            "lyric": "更有能"
+          }
+        ],
+        [
+          {
+            "chord": "A",
+            "n": "3 sp - sp - sp",
+            "lyric": "力，"
+          },
+          {
+            "chord": "",
+            "n": "5 sp | sp",
+            "lyric": "我"
+          },
+          {
+            "chord": "D",
+            "n": "{3 6 7 1' }",
+            "lyric": "不属这"
+          },
+          {
+            "chord": "A/C#",
+            "n": "{3 5 7 sp 1' } sp | sp",
+            "lyric": "世界, 我"
+          },
+          {
+            "chord": "B",
+            "n": "6 sp 6",
+            "lyric": "高ㅤ举"
+          },
+          {
+            "chord": "",
+            "n": "{3 6 7 1' } sp | sp",
+            "lyric": "耶稣的"
+          },
+          {
+            "chord": "E",
+            "n": "2' sp - sp - sp - sp | sp 0",
+            "lyric": "名。"
+          },
+          {
+            "chord": "",
+            "n": "4",
+            "lyric": "我"
+          },
+          {
+            "chord": "",
+            "n": "5",
+            "lyric": "宣"
+          },
+          {
+            "chord": "",
+            "n": "6 sp |",
+            "lyric": "告"
+          }
+        ],
+        [
+          {
+            "chord": "A",
+            "n": "1' 1'",
+            "lyric": "在我"
+          },
+          {
+            "chord": "",
+            "n": "1'_",
+            "lyric": "里"
+          },
+          {
+            "chord": "",
+            "n": "5",
+            "lyric": "面"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤE/G#",
+            "n": "( 2'_ sp | sp 2' ) sp - sp 0",
+            "lyric": "有"
+          },
+          {
+            "chord": "",
+            "n": "1'_ 7_ sp | sp",
+            "lyric": "活水"
+          },
+          {
+            "chord": "D",
+            "n": "1' 1'",
+            "lyric": "涌流"
+          },
+          {
+            "chord": "",
+            "n": "{3 1' 7 6 } sp | sp",
+            "lyric": "满有能"
+          },
+          {
+            "chord": "A",
+            "n": "5 sp - sp - sp",
+            "lyric": "力，"
+          },
+          {
+            "chord": "",
+            "n": "5 sp | sp",
+            "lyric": "有"
+          },
+          {
+            "chord": "D",
+            "n": "{3 6 7 1' } sp",
+            "lyric": "耶稣在"
+          },
+          {
+            "chord": "A/C#",
+            "n": "{3 5 6 1' } sp |",
+            "lyric": "我里面"
+          }
+        ],
+        [
+          {
+            "chord": "Bm",
+            "n": "{3 4 7 sp 1' }",
+            "lyric": "活着, 我"
+          },
+          {
+            "chord": "E",
+            "n": "{3 2' 1' 7 } sp | sp",
+            "lyric": "勇敢站"
+          },
+          {
+            "chord": "AㅤㅤㅤㅤFine",
+            "n": "1' - - - sp ||/ sp",
+            "lyric": "立。"
+          },
+          {
+            "chord": "【Bridge】",
+            "n": "0 0 0 1 sp | sp",
+            "lyric": "ㅤㅤㅤ有"
+          },
+          {
+            "chord": "D",
+            "n": "6 - -",
+            "lyric": "主"
+          },
+          {
+            "chord": "",
+            "n": "6_ 7_ sp | sp",
+            "lyric": "在我"
+          },
+          {
+            "chord": "A/C#",
+            "n": "1'·",
+            "lyric": "里"
+          },
+          {
+            "chord": "",
+            "n": "( 5_ sp 5 )",
+            "lyric": "面,"
+          },
+          {
+            "chord": "",
+            "n": "4_ 3_ sp | sp",
+            "lyric": "没有"
+          },
+          {
+            "chord": "Bm",
+            "n": "4",
+            "lyric": "惧"
+          },
+          {
+            "chord": "",
+            "n": "4_ 4_",
+            "lyric": "怕能"
+          }
+        ],
+        [
+          {
+            "chord": "E",
+            "n": "{3 4 3 2 } sp | sp",
+            "lyric": "战胜仇"
+          },
+          {
+            "chord": "A",
+            "n": "3 - -",
+            "lyric": "敌"
+          },
+          {
+            "chord": "",
+            "n": "1 sp | sp",
+            "lyric": "有"
+          },
+          {
+            "chord": "D",
+            "n": "6 - -",
+            "lyric": "主"
+          },
+          {
+            "chord": "",
+            "n": "6_ 7_ sp | sp",
+            "lyric": "在我"
+          },
+          {
+            "chord": "A/C#",
+            "n": "1'·",
+            "lyric": "里"
+          },
+          {
+            "chord": "",
+            "n": "( 5_ sp 5 )",
+            "lyric": "面,"
+          },
+          {
+            "chord": "",
+            "n": "5_ 5_ sp | sp",
+            "lyric": "没有"
+          },
+          {
+            "chord": "B",
+            "n": "6",
+            "lyric": "惧"
+          },
+          {
+            "chord": "",
+            "n": "6_ 6_",
+            "lyric": "怕还"
+          },
+          {
+            "chord": "",
+            "n": "{3 6_ 7_ 1'_ } sp | sp",
+            "lyric": "得胜有"
+          },
+          {
+            "chord": "EㅤTo Chorus",
+            "n": "2' - - - sp ||",
+            "lyric": "余。"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/manyounengli.mp3"
+}

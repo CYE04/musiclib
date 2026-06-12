@@ -1,0 +1,418 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-05-23 18:56:52",
+  "id": "dangwotaitouyangwang",
+  "title": "当我抬头仰望",
+  "artist": "火把音乐",
+  "sub": "火把音乐【当我抬头仰望】（2020）胡斯汉 词曲",
+  "origKey": "G",
+  "timeSign": "4/4",
+  "bpm": 72,
+  "cover": "https://cecpadua.github.io/resouces/covers/dangwotaitouyangwang.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/dangwotaitouyangwang.lrc",
+  "youtube": "https://youtu.be/QfkI1bd3djQ?si=qY6MytQzABjNo-7n",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/dangwotaitouyangwangG.jpg",
+  "sections": [
+    {
+      "name": "当我抬头仰望",
+      "lines": [
+        [
+          {
+            "chord": "",
+            "n": "0 0 0",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1__ 2·_ sp",
+            "lyric": "人算",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "|: sp",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "Gsus2",
+            "n": "2·_ sp_ 2__ 0",
+            "lyric": "什ㅤ么？",
+            "lyric2": "什ㅤ么？"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1__ ( 2__ sp 2__ ) 3·_ sp | sp",
+            "lyric": "你竟顾 ㅤ 念",
+            "lyric2": "你竟顾 ㅤ 念"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5, - 0",
+            "lyric": "他！",
+            "lyric2": "我！"
+          },
+          {
+            "chord": "",
+            "n": "1__ 1__ 2_ sp | sp",
+            "lyric": "世人算",
+            "lyric2": "我没做"
+          },
+          {
+            "chord": "Em7",
+            "n": "2·_ sp_ 2__ 0",
+            "lyric": "什ㅤ么？",
+            "lyric2": "什ㅤ么？"
+          },
+          {
+            "chord": "",
+            "n": "2_ 1__ ( 2__ sp 2__ ) 3·_ sp |",
+            "lyric": "你竟眷 ㅤ 顾",
+            "lyric2": "你却垂 ㅤ 怜"
+          }
+        ],
+        [
+          {
+            "chord": "G/D",
+            "n": "1 - 0",
+            "lyric": "他！",
+            "lyric2": "我！"
+          },
+          {
+            "chord": "(F/G)",
+            "n": "3_ 4_ sp | sp",
+            "lyric": "祢赐",
+            "lyric2": "当我"
+          },
+          {
+            "chord": "Cmaj7",
+            "n": "5",
+            "lyric": "下",
+            "lyric2": "未"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤD/C",
+            "n": "5_ 1__ ( 3__ sp 3__ ) ( 2·_ sp 2·_ ) sp_ 5,__ sp | sp",
+            "lyric": "荣耀尊 ㅤ 贵, ㅤㅤ 作",
+            "lyric2": "出生以 ㅤ 前, ㅤㅤ 你"
+          },
+          {
+            "chord": "Bm7",
+            "n": "5,_ 1_",
+            "lyric": "为他",
+            "lyric2": "已先"
+          },
+          {
+            "chord": "ㅤ Eus4",
+            "n": "4_ ( 3_ 3 )",
+            "lyric": "冠冕，",
+            "lyric2": "爱我，"
+          },
+          {
+            "chord": "E/G#",
+            "n": "3_ 4_ sp | sp",
+            "lyric": "使地",
+            "lyric2": "为了"
+          },
+          {
+            "chord": "Am7",
+            "n": "[v1 3_ 2__ ( 1__ 1 )",
+            "lyric": "上万物",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1_ 1__ ( 1__ 1 ) sp | ]v",
+            "lyric": "都俯伏",
+            "lyric2": "ㅤ"
+          }
+        ],
+        [
+          {
+            "chord": "Cm6",
+            "n": "[v1 1_ sp_ 2_",
+            "lyric": "在ㅤ他"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤDsus4",
+            "n": "3·_ sp_ ( 2__ 2 )",
+            "lyric": "面ㅤ前"
+          },
+          {
+            "chord": "",
+            "n": "1__ sp_ 2·_ sp :| ]v",
+            "lyric": "我ㅤ算"
+          },
+          {
+            "chord": "Am7",
+            "n": "[v2 3_ sp_ 2__ 1__ sp",
+            "lyric": "我ㅤ打造"
+          },
+          {
+            "chord": "",
+            "n": "0_ 2_ sp",
+            "lyric": "ㅤ专"
+          },
+          {
+            "chord": "",
+            "n": "3_ 1_ sp",
+            "lyric": "属的"
+          },
+          {
+            "chord": "",
+            "n": "1_ 3_ sp | sp",
+            "lyric": "人生"
+          },
+          {
+            "chord": "Cm6",
+            "n": "( 3_ 2· ) ]v",
+            "lyric": "路。"
+          },
+          {
+            "chord": "ㅤㅤㅤDsus4",
+            "n": "sp sp 0 sp sp sp",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1_ 2_ sp ||",
+            "lyric": "当我"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "|:",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "G",
+            "n": "3_ 3_",
+            "lyric": "抬头",
+            "lyric2": "放下"
+          },
+          {
+            "chord": "【Chorus】",
+            "n": "3_ 2_ sp 3_ 2_ sp",
+            "lyric": "仰望ㅤ你手",
+            "lyric2": "自己ㅤ垂靠"
+          },
+          {
+            "chord": "",
+            "n": "3_ 5_ sp | sp",
+            "lyric": "造的",
+            "lyric2": "你怀"
+          },
+          {
+            "chord": "D/F#",
+            "n": "5 sp - sp - sp",
+            "lyric": "天，",
+            "lyric2": "里，"
+          },
+          {
+            "chord": "(B/D#)",
+            "n": "1__ 2__ 3_ sp | sp",
+            "lyric": "深知祢",
+            "lyric2": "我的灵"
+          },
+          {
+            "chord": "Em",
+            "n": "3_ 3_ sp",
+            "lyric": "多么",
+            "lyric2": "雀跃"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_ sp",
+            "lyric": "爱我",
+            "lyric2": "欢欣"
+          },
+          {
+            "chord": "",
+            "n": "3_ 2_ sp",
+            "lyric": "远超",
+            "lyric2": "不停"
+          },
+          {
+            "chord": "",
+            "n": "3_ 6_ sp | sp",
+            "lyric": "过一",
+            "lyric2": "赞美"
+          },
+          {
+            "chord": "Bm/D",
+            "n": "5 -",
+            "lyric": "切。",
+            "lyric2": "祢。"
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "6_ 5_",
+            "lyric": "患难",
+            "lyric2": "耶稣"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤㅤCmaj7",
+            "n": "3_ ( 3_ sp | sp 3_ ) ( 1· )",
+            "lyric": "困苦，",
+            "lyric2": "基督，"
+          },
+          {
+            "chord": "",
+            "n": "6_ 5_",
+            "lyric": "死荫",
+            "lyric2": "我的"
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤㅤBm7ㅤㅤㅤㅤEm7",
+            "n": "5_ ( 5_ sp | sp 5_ ) ( 7· ) ( sp 1_ ) ( 1· ) sp",
+            "lyric": "幽谷，",
+            "lyric2": "救主，"
+          },
+          {
+            "chord": "",
+            "n": "2__ 3__ sp | sp",
+            "lyric": "也无",
+            "lyric2": "你的"
+          },
+          {
+            "chord": "Am7",
+            "n": "4_ 3__ ( 2__ sp 2_ ) 1__ ( 4__ sp 4_ ) 3__ ( 2__ sp 2_ ) 1__ ( 2__ sp | )",
+            "lyric": "法将我 ㅤ 与你 ㅤ 的爱 ㅤㅤ隔绝。",
+            "lyric2": "宝血赎 ㅤ 回了 ㅤ 我的 ㅤㅤ生命，"
+          }
+        ],
+        [
+          {
+            "chord": "ㅤㅤDsus4",
+            "n": "( sp 2 ) - 0 [v1",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1_ 2_ sp :| ]v",
+            "lyric": "当我",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "ㅤㅤDsus4",
+            "n": "( sp 2 ) - 0 [v2",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "ㅤ (Em Cmaj7 G Bm/F#)",
+            "n": "1_ ( 1_ sp | sp 1 ) - - - ]v",
+            "lyric": "耶稣",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "|:",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "Em7",
+            "n": "0",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "ㅤㅤ【Bridge】",
+            "n": "5_ ( 5_ sp 5_ ) 1",
+            "lyric": "不再 ㅤ 悲",
+            "lyric2": "我深 ㅤ 知"
+          },
+          {
+            "chord": "ㅤㅤCmaj7",
+            "n": "( 6,_ sp | 6, )",
+            "lyric": "伤，",
+            "lyric2": "道，"
+          },
+          {
+            "chord": "",
+            "n": "5_ ( 5_ sp 5_ ) 1",
+            "lyric": "不再 ㅤ 彷",
+            "lyric2": "世上 ㅤ 所"
+          },
+          {
+            "chord": "",
+            "n": "( 3_ sp | )",
+            "lyric": "徨，",
+            "lyric2": "有"
+          }
+        ],
+        [
+          {
+            "chord": "ㅤㅤG",
+            "n": "( sp 3 )",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1__ 2__ ( 3_ sp 3_ ) 1__ 2__",
+            "lyric": "你的爱 ㅤ 拥抱",
+            "lyric2": "都无法 ㅤ 将我"
+          },
+          {
+            "chord": "",
+            "n": "3 sp |",
+            "lyric": "我，",
+            "lyric2": "与"
+          },
+          {
+            "chord": "Bm/F#",
+            "n": "[v1 3_ 4__ ( 3__ sp 3__ ) 1_ sp_ ( 2__ 2· ) sp",
+            "lyric": "遮盖了 ㅤ 一ㅤ切;",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "1_ ]v",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": ":|",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "Dsus4ㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤㅤDsus4",
+            "n": "3_ 2__ ( 3__ sp 3__ ) 5_ ( 5__ 5 ) ( - sp | sp 5 ) - [v2",
+            "lyric": "你的爱 ㅤ 隔绝",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "D",
+            "n": "0",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "ㅤD.S.",
+            "n": "1_ 2_ ]v",
+            "lyric": "当我",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "||",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/dangwotaitouyangwang.mp3"
+}

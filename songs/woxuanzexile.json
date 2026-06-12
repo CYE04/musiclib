@@ -1,0 +1,483 @@
+{
+  "version": "1",
+  "created": "YuEn",
+  "createdTime": "2026-05-13 19:28:12",
+  "id": "woxuanzexile",
+  "title": "我选择喜乐",
+  "artist": "赞美之泉",
+  "sub": "赞美之泉【我能给你什么】(2024)(诗43:4；腓4:4；帖前5:16-18；林前13:7) 郑懋柔词 游智婷曲",
+  "origKey": "G",
+  "timeSign": "4/4",
+  "bpm": 145,
+  "cover": "https://cecpadua.github.io/resouces/covers/wonenggeinishenme.jpg",
+  "lrc": "https://cecpadua.github.io/resouces/lyrics/woxuanzexile.lrc",
+  "youtube": "https://youtu.be/hfNEM3uJfYc?si=2fUGHbWIrmlwNtVx",
+  "scoreImg": "https://cecpadua.github.io/resouces/scoreIMG/woxuanzexileG.jpg",
+  "sections": [
+    {
+      "name": "我选择喜乐",
+      "lines": [
+        [
+          {
+            "chord": "",
+            "n": "0 3 2 1 sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "C",
+            "n": "6,·",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "( 1_ sp 1 ) - sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "G",
+            "n": "7,·",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "( 2_ sp 2 ) - sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "Em",
+            "n": "2·",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "( 1_ sp 1 ) - sp | sp",
+            "lyric": ""
+          },
+          {
+            "chord": "D",
+            "n": "7,·",
+            "lyric": ""
+          },
+          {
+            "chord": "",
+            "n": "( 1_ sp 1_ )",
+            "lyric": ""
+          },
+          {
+            "chord": "ㅤㅤㅤㅤㅤG",
+            "n": "2· sp | sp 1 - - - sp |",
+            "lyric": ""
+          }
+        ],
+        [
+          {
+            "chord": "",
+            "n": "0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3",
+            "lyric": "我"
+          },
+          {
+            "chord": "",
+            "n": "2",
+            "lyric": "来"
+          },
+          {
+            "chord": "",
+            "n": "1 sp || sp",
+            "lyric": "到"
+          },
+          {
+            "chord": "C",
+            "n": "6,",
+            "lyric": "神"
+          },
+          {
+            "chord": "",
+            "n": "#5,_ ( 6,_ sp 6, ) - sp | sp",
+            "lyric": "面前，"
+          },
+          {
+            "chord": "D",
+            "n": "0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "2",
+            "lyric": "最"
+          },
+          {
+            "chord": "",
+            "n": "1",
+            "lyric": "喜"
+          },
+          {
+            "chord": "",
+            "n": "6, sp |",
+            "lyric": "乐"
+          },
+          {
+            "chord": "G",
+            "n": "5,",
+            "lyric": "神"
+          },
+          {
+            "chord": "",
+            "n": "#4,_ ( 5,_ sp 5, ) - sp |",
+            "lyric": "面前，"
+          },
+          {
+            "chord": "Em",
+            "n": "0 0 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "5, sp |",
+            "lyric": "弹"
+          },
+          {
+            "chord": "Am",
+            "n": "4, - - 1 sp |",
+            "lyric": "琴，ㅤ跳"
+          }
+        ],
+        [
+          {
+            "chord": "D",
+            "n": "7,",
+            "lyric": "舞,"
+          },
+          {
+            "chord": "",
+            "n": "7,",
+            "lyric": "大"
+          },
+          {
+            "chord": "",
+            "n": "1",
+            "lyric": "声"
+          },
+          {
+            "chord": "",
+            "n": "2 sp | sp",
+            "lyric": "欢"
+          },
+          {
+            "chord": "G",
+            "n": "5, sp - sp - sp - sp | sp",
+            "lyric": "呼；"
+          },
+          {
+            "chord": "",
+            "n": "0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3",
+            "lyric": "我"
+          },
+          {
+            "chord": "",
+            "n": "2",
+            "lyric": "来"
+          },
+          {
+            "chord": "",
+            "n": "1 sp | sp",
+            "lyric": "到"
+          },
+          {
+            "chord": "C",
+            "n": "6, sp",
+            "lyric": "神"
+          },
+          {
+            "chord": "",
+            "n": "#5,_ ( 6,_ sp 6, ) - sp | sp",
+            "lyric": "面前"
+          },
+          {
+            "chord": "D",
+            "n": "0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "2",
+            "lyric": "最"
+          },
+          {
+            "chord": "",
+            "n": "1",
+            "lyric": "喜"
+          },
+          {
+            "chord": "",
+            "n": "6 sp sp |",
+            "lyric": "乐"
+          }
+        ],
+        [
+          {
+            "chord": "G",
+            "n": "5,",
+            "lyric": "神"
+          },
+          {
+            "chord": "",
+            "n": "#4,_ ( 5,_ 5, ) - sp | sp",
+            "lyric": "面前，"
+          },
+          {
+            "chord": "Em",
+            "n": "0 0 0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "5, sp | sp",
+            "lyric": "有"
+          },
+          {
+            "chord": "Am",
+            "n": "4,·",
+            "lyric": "了"
+          },
+          {
+            "chord": "",
+            "n": "( 1_ 1 ) - sp | sp",
+            "lyric": "你，"
+          },
+          {
+            "chord": "D",
+            "n": "7,·",
+            "lyric": "我"
+          },
+          {
+            "chord": "",
+            "n": "( 1_ 1 )",
+            "lyric": "就"
+          },
+          {
+            "chord": "",
+            "n": "2 sp | sp",
+            "lyric": "喜"
+          },
+          {
+            "chord": "G",
+            "n": "1 - - - sp | sp",
+            "lyric": "乐。ㅤㅤㅤㅤㅤ"
+          },
+          {
+            "chord": "",
+            "n": "0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3",
+            "lyric": "我"
+          },
+          {
+            "chord": "",
+            "n": "2",
+            "lyric": "选"
+          },
+          {
+            "chord": "",
+            "n": "1 sp ||",
+            "lyric": "择"
+          }
+        ],
+        [
+          {
+            "chord": "ㅤㅤC【Chorus】",
+            "n": "|: 1· sp ( 1_ 1 ) - sp | sp",
+            "lyric": "ㅤ喜ㅤ乐，",
+            "lyric2": "ㅤ相ㅤ信，"
+          },
+          {
+            "chord": "D",
+            "n": "2· sp ( 2_ 2 ) - sp | sp",
+            "lyric": "喜ㅤ乐，",
+            "lyric2": "相ㅤ信，"
+          },
+          {
+            "chord": "G",
+            "n": "3· sp ( 3_ 3 ) - sp | sp",
+            "lyric": "喜ㅤ乐，",
+            "lyric2": "相ㅤ信，"
+          },
+          {
+            "chord": "Em",
+            "n": "2· sp ( 1_ 1 )",
+            "lyric": "喜ㅤ乐，",
+            "lyric2": "相ㅤ信，"
+          },
+          {
+            "chord": "",
+            "n": "5, sp |",
+            "lyric": "靠",
+            "lyric2": "祷"
+          },
+          {
+            "chord": "Am",
+            "n": "4, - -",
+            "lyric": "主",
+            "lyric2": "告，"
+          },
+          {
+            "chord": "",
+            "n": "1 sp |",
+            "lyric": "常",
+            "lyric2": "凡"
+          },
+          {
+            "chord": "",
+            "n": "7 -",
+            "lyric": "常",
+            "lyric2": "事"
+          },
+          {
+            "chord": "",
+            "n": "2 - sp |",
+            "lyric": "喜",
+            "lyric2": "谢"
+          }
+        ],
+        [
+          {
+            "chord": "G",
+            "n": "5, - - - sp |",
+            "lyric": "乐。",
+            "lyric2": "恩。"
+          },
+          {
+            "chord": "",
+            "n": "0",
+            "lyric": "ㅤ",
+            "lyric2": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3",
+            "lyric": "我",
+            "lyric2": "我"
+          },
+          {
+            "chord": "",
+            "n": "2",
+            "lyric": "选",
+            "lyric2": "选"
+          },
+          {
+            "chord": "",
+            "n": "1 sp |",
+            "lyric": "择",
+            "lyric2": "择"
+          },
+          {
+            "chord": "C",
+            "n": "1· sp ( 1_ 1 ) - sp |",
+            "lyric": "喜ㅤ乐，",
+            "lyric2": "相ㅤ信，"
+          },
+          {
+            "chord": "D",
+            "n": "2· sp ( 2_ 2 ) - sp |",
+            "lyric": "喜ㅤ乐，",
+            "lyric2": "相ㅤ信，"
+          },
+          {
+            "chord": "GㅤㅤD/F#",
+            "n": "( 3 - 2 ) - sp |",
+            "lyric": "喜",
+            "lyric2": "相"
+          },
+          {
+            "chord": "Em",
+            "n": "1 - - - sp |",
+            "lyric": "乐，",
+            "lyric2": "信，"
+          },
+          {
+            "chord": "Am",
+            "n": "6, 1",
+            "lyric": "神在",
+            "lyric2": "凡事"
+          },
+          {
+            "chord": "",
+            "n": "1 4 sp |",
+            "lyric": "这里，",
+            "lyric2": "感恩，"
+          }
+        ],
+        [
+          {
+            "chord": "D",
+            "n": "[v1 3 1",
+            "lyric": "喜乐"
+          },
+          {
+            "chord": "",
+            "n": "1_",
+            "lyric": "无"
+          },
+          {
+            "chord": "",
+            "n": "( 2 1_ ) sp | sp",
+            "lyric": "止"
+          },
+          {
+            "chord": "G",
+            "n": "1 - - - sp | sp",
+            "lyric": "尽。"
+          },
+          {
+            "chord": "",
+            "n": "0",
+            "lyric": "ㅤ"
+          },
+          {
+            "chord": "",
+            "n": "3",
+            "lyric": "我"
+          },
+          {
+            "chord": "",
+            "n": "2",
+            "lyric": "选"
+          },
+          {
+            "chord": "",
+            "n": "1 sp :| ]v",
+            "lyric": "择"
+          },
+          {
+            "chord": "",
+            "n": "[v2 3 1",
+            "lyric": "凡事"
+          },
+          {
+            "chord": "",
+            "n": "( 2· sp 1_ ) sp | sp",
+            "lyric": "相"
+          },
+          {
+            "chord": "G",
+            "n": "1 - - - sp | sp 0 0 0 0 sp ]v ||/",
+            "lyric": "信。"
+          }
+        ]
+      ]
+    }
+  ],
+  "mp3": "/upload/woxuanzexile.mp3"
+}
