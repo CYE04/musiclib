@@ -1182,9 +1182,9 @@ html,body,#music-library{
 #ml-audio-panel{
   --ap-accent:#e8c951;
   --ap-bg:#16181f;
-  --ap-card:rgba(255,255,255,.045);
-  --ap-card-hover:rgba(255,255,255,.08);
-  --ap-line:rgba(255,255,255,.08);
+  --ap-card:rgba(255,255,255,.06);
+  --ap-card-hover:rgba(255,255,255,.1);
+  --ap-line:rgba(255,255,255,.1);
   --ap-text:#f6f7fb;
   --ap-text2:rgba(246,247,251,.56);
   --ap-text3:rgba(246,247,251,.34);
@@ -1285,8 +1285,8 @@ html,body,#music-library{
   border:1px solid var(--ap-line);
   border-radius:16px;
   background:var(--ap-card);
-  padding:12px 14px;
-  margin-bottom:10px;
+  padding:14px 14px;
+  margin-bottom:16px;
 }
 .ml-audio-panel-row:last-of-type{margin-bottom:0;}
 
