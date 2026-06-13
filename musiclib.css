@@ -1104,51 +1104,58 @@ html,body,#music-library{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  gap:7px;
+  gap:10px;
   width:max-content;
   max-width:100%;
-  min-height:38px;
+  min-height:48px;
   margin:0 auto;
-  padding:5px 7px 5px 12px;
-  border:1px solid rgba(255,255,255,.16);
-  border-radius:999px;
-  background:linear-gradient(180deg,rgba(255,255,255,.14),rgba(255,255,255,.045)),rgba(8,10,16,.46);
+  padding:8px 9px 8px 15px;
+  border:1px solid rgba(255,255,255,.18);
+  border-radius:18px;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.055)),
+    radial-gradient(circle at 18% 0%,rgba(232,201,81,.16),transparent 46%),
+    rgba(9,11,18,.62);
   color:var(--player-text);
-  box-shadow:0 16px 34px rgba(0,0,0,.24),0 1px 0 rgba(255,255,255,.15) inset;
+  box-shadow:0 18px 42px rgba(0,0,0,.30),0 1px 0 rgba(255,255,255,.18) inset;
   cursor:pointer;
   font-weight:800;
   backdrop-filter:blur(14px);
   -webkit-backdrop-filter:blur(14px);
-  transition:transform .15s ease,border-color .15s ease,background .15s ease;
+  transition:transform .15s ease,border-color .15s ease,background .15s ease,box-shadow .15s ease;
 }
 .ml-audio-tool:hover{
-  transform:translateY(-1px);
-  border-color:rgba(227,191,66,.42);
-  background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,.065)),rgba(8,10,16,.58);
+  transform:translateY(-2px);
+  border-color:rgba(232,201,81,.48);
+  box-shadow:0 22px 50px rgba(0,0,0,.36),0 0 0 1px rgba(232,201,81,.12) inset;
 }
 .ml-audio-tool-k{
   color:rgba(255,255,255,.62);
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   font-size:10px;
   letter-spacing:.12em;
+  line-height:1;
 }
 .ml-audio-tool-v{
-  min-width:40px;
+  min-width:48px;
   color:#fff;
-  font-size:12px;
+  font-size:13px;
+  line-height:1.1;
+  white-space:nowrap;
 }
 .ml-audio-tool-mode{
-  min-width:34px;
-  height:22px;
-  border-radius:999px;
+  min-width:42px;
+  height:32px;
+  border-radius:12px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  background:rgba(255,255,255,.08);
+  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.055));
   color:rgba(255,255,255,.52);
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   font-size:8px;
   letter-spacing:.08em;
+  box-shadow:0 1px 0 rgba(255,255,255,.12) inset;
 }
 .ml-audio-tool.is-shifted .ml-audio-tool-v{color:#f6d978;}
 .ml-audio-tool.is-pro .ml-audio-tool-mode{
@@ -1177,21 +1184,23 @@ html,body,#music-library{
   z-index:2801;
   width:min(420px,calc(100vw - 28px));
   border:1px solid rgba(255,255,255,.13);
-  border-radius:20px;
-  background:linear-gradient(180deg,rgba(18,19,24,.96),rgba(8,9,13,.96));
+  border-radius:24px;
+  background:
+    radial-gradient(circle at 18% 0%,rgba(232,201,81,.10),transparent 34%),
+    linear-gradient(180deg,rgba(20,22,29,.97),rgba(8,9,14,.97));
   color:#f6f7fb;
   box-shadow:0 28px 90px rgba(0,0,0,.48),0 1px 0 rgba(255,255,255,.10) inset;
-  padding:10px;
+  padding:14px;
   backdrop-filter:blur(22px);
   -webkit-backdrop-filter:blur(22px);
 }
 #ml-audio-panel-head{
-  height:44px;
+  height:50px;
   display:grid;
   grid-template-columns:auto 1fr auto;
   align-items:center;
   gap:12px;
-  padding:0 4px 8px;
+  padding:0 2px 10px;
 }
 .ml-audio-panel-icons{display:flex;align-items:center;gap:12px;color:#f7f0d0;font-size:22px;}
 #ml-audio-panel-title{
@@ -1201,35 +1210,38 @@ html,body,#music-library{
   letter-spacing:.01em;
 }
 #ml-audio-panel-close{
-  width:34px;height:34px;border:0;border-radius:12px;background:rgba(255,255,255,.07);color:#fff;cursor:pointer;
+  width:40px;height:40px;border:0;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.055));color:#fff;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.12) inset;
 }
 #ml-audio-panel-play{
   width:100%;
-  min-height:60px;
+  min-height:66px;
   display:flex;
   align-items:center;
   justify-content:space-between;
   border:0;
-  border-radius:14px;
-  background:rgba(227,191,66,.11);
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(232,201,81,.18),rgba(232,201,81,.085));
   color:#f7f1df;
-  padding:0 18px;
+  padding:0 20px;
   font-size:16px;
   font-weight:900;
   cursor:pointer;
-  margin-bottom:10px;
+  margin-bottom:12px;
+  box-shadow:0 1px 0 rgba(255,255,255,.10) inset;
 }
 .ml-audio-panel-row{
-  border-radius:14px;
-  background:rgba(255,255,255,.035);
-  padding:16px 16px 14px;
-  margin-top:8px;
+  border:1px solid rgba(255,255,255,.065);
+  border-radius:18px;
+  background:linear-gradient(180deg,rgba(255,255,255,.052),rgba(255,255,255,.025));
+  padding:18px 18px 16px;
+  margin-top:10px;
+  box-shadow:0 14px 34px rgba(0,0,0,.16),0 1px 0 rgba(255,255,255,.06) inset;
 }
 .ml-audio-panel-rowtop{
   display:grid;
   grid-template-columns:1fr auto auto;
   align-items:center;
-  gap:12px;
+  gap:14px;
   color:rgba(255,255,255,.56);
   font-size:15px;
   font-weight:900;
@@ -1246,24 +1258,30 @@ html,body,#music-library{
 #ml-audio-panel-foot button{
   border:0;
   color:#f5f7fb;
-  background:rgba(255,255,255,.07);
-  border-radius:999px;
+  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.055));
+  border-radius:14px;
   cursor:pointer;
+  box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 10px 22px rgba(0,0,0,.14);
+  transition:transform .13s ease,background .13s ease,color .13s ease;
 }
-.ml-audio-panel-rowtop button{width:30px;height:30px;color:rgba(255,255,255,.44);}
+.ml-audio-panel-rowtop button:hover,
+.ml-audio-panel-control button:hover,
+#ml-audio-loop-toggle:hover,
+#ml-audio-panel-foot button:hover{transform:translateY(-1px);background:linear-gradient(180deg,rgba(255,255,255,.17),rgba(255,255,255,.075));color:#fff;}
+.ml-audio-panel-rowtop button{width:36px;height:36px;color:rgba(255,255,255,.54);}
 .ml-audio-panel-control{
   display:grid;
-  grid-template-columns:30px 1fr 30px;
+  grid-template-columns:42px 1fr 42px;
   align-items:center;
-  gap:12px;
-  margin-top:12px;
+  gap:14px;
+  margin-top:16px;
 }
-.ml-audio-panel-control button{height:30px;font-size:22px;line-height:1;color:rgba(255,255,255,.46);}
+.ml-audio-panel-control button{width:42px;height:42px;font-size:23px;line-height:1;color:rgba(255,255,255,.68);}
 .ml-audio-panel-control input{
   width:100%;
   appearance:none;
   -webkit-appearance:none;
-  height:5px;
+  height:6px;
   border-radius:999px;
   background:rgba(255,255,255,.14);
   outline:none;
@@ -1280,28 +1298,29 @@ html,body,#music-library{
   width:20px;height:20px;border:0;border-radius:50%;background:#e8c951;
 }
 #ml-audio-loop-toggle{
-  height:28px;
-  padding:0 12px;
+  height:36px;
+  padding:0 14px;
   color:#e8c951;
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
 }
 #ml-audio-loop-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:10px;
-  margin-top:12px;
+  gap:12px;
+  margin-top:14px;
 }
 #ml-audio-loop-grid button{
-  border:1px solid rgba(255,255,255,.08);
-  border-radius:12px;
-  background:rgba(255,255,255,.035);
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:16px;
+  background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));
   color:#fff;
-  min-height:44px;
+  min-height:54px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:0 12px;
+  padding:0 14px;
   cursor:pointer;
+  box-shadow:0 1px 0 rgba(255,255,255,.08) inset;
 }
 #ml-audio-loop-grid span{color:rgba(255,255,255,.45);font-weight:900;}
 #ml-audio-loop-grid strong{font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;}
@@ -1309,18 +1328,19 @@ html,body,#music-library{
   display:flex;
   justify-content:center;
   align-items:center;
-  gap:12px;
-  padding:18px 0 4px;
+  gap:14px;
+  padding:20px 0 6px;
 }
 #ml-audio-panel-foot button{
-  width:38px;
-  height:38px;
+  width:44px;
+  height:44px;
   color:rgba(255,255,255,.62);
 }
 #ml-audio-panel-main{
-  width:64px!important;
-  height:64px!important;
-  background:rgba(255,255,255,.12)!important;
+  width:68px!important;
+  height:68px!important;
+  border-radius:24px!important;
+  background:linear-gradient(180deg,rgba(232,201,81,.30),rgba(232,201,81,.12))!important;
   color:#fff!important;
   font-size:24px;
 }
