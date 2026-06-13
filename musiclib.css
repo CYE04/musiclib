@@ -1285,8 +1285,8 @@ html,body,#music-library{
   border:1px solid var(--ap-line);
   border-radius:16px;
   background:var(--ap-card);
-  padding:14px 14px;
-  margin-bottom:16px;
+  padding:14px;
+  margin:0 0 18px;
 }
 .ml-audio-panel-row:last-of-type{margin-bottom:0;}
 
@@ -1328,13 +1328,13 @@ html,body,#music-library{
 /* reset / round icon buttons inside rowtop */
 .ml-audio-panel-rowtop button{
   flex-shrink:0;
-  width:30px;
-  height:30px;
+  width:40px;
+  height:40px;
   border:0;
-  border-radius:10px;
+  border-radius:12px;
   background:rgba(255,255,255,.06);
   color:var(--ap-text2);
-  font-size:13px;
+  font-size:16px;
   cursor:pointer;
   display:flex;
   align-items:center;
