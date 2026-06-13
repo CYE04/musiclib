@@ -1234,7 +1234,7 @@ html,body,#music-library{
   border:1px solid rgba(255,255,255,.065);
   border-radius:22px;
   background:linear-gradient(180deg,rgba(255,255,255,.052),rgba(255,255,255,.025));
-  padding:22px 82px 22px 82px;
+  padding:20px 16px;
   margin-top:12px;
   min-height:132px;
   box-shadow:0 14px 34px rgba(0,0,0,.16),0 1px 0 rgba(255,255,255,.06) inset;
@@ -1245,17 +1245,19 @@ html,body,#music-library{
   justify-content:space-between;
   gap:12px;
   color:rgba(255,255,255,.56);
-  font-size:20px;
+  font-size:18px;
   font-weight:900;
   line-height:1.15;
   min-height:28px;
+  padding-right:74px;
 }
 .ml-audio-panel-rowtop strong{
-  min-width:54px;
+  min-width:64px;
   text-align:right;
   color:rgba(255,255,255,.9);
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   font-size:20px;
+  flex-shrink:0;
 }
 .ml-audio-panel-rowtop button,
 .ml-audio-panel-control button,
@@ -1276,32 +1278,27 @@ html,body,#music-library{
 .ml-audio-panel-rowtop button{
   position:absolute;
   right:16px;
-  top:16px;
-  width:58px;
-  height:58px;
-  border-radius:20px;
+  top:14px;
+  width:52px;
+  height:52px;
+  border-radius:18px;
   color:rgba(255,255,255,.58);
-  font-size:19px;
+  font-size:18px;
 }
 .ml-audio-panel-control{
   display:grid;
-  grid-template-columns:72px 1fr 72px;
+  grid-template-columns:64px 1fr 64px;
   align-items:center;
-  gap:18px;
+  gap:14px;
   margin-top:24px;
 }
 .ml-audio-panel-control button{
-  width:72px;
-  height:72px;
-  border-radius:24px;
-  font-size:34px;
+  width:64px;
+  height:64px;
+  border-radius:22px;
+  font-size:30px;
   line-height:1;
   color:rgba(255,255,255,.76);
-}
-.ml-audio-panel-control button:last-child{
-  position:absolute;
-  right:16px;
-  bottom:16px;
 }
 .ml-audio-panel-control input{
   width:100%;
@@ -1330,14 +1327,17 @@ html,body,#music-library{
 #ml-audio-panel .ml-audio-panel-row[data-control="speed"] .ml-audio-panel-rowtop span:last-of-type{
   text-align:right;
 }
+#ml-audio-panel .ml-audio-panel-row:has(#ml-audio-loop-toggle) .ml-audio-panel-rowtop{
+  padding-right:138px;
+}
 #ml-audio-loop-toggle{
   position:absolute;
-  right:88px;
-  top:16px;
-  min-width:58px;
-  height:58px;
+  right:76px;
+  top:14px;
+  min-width:52px;
+  height:52px;
   padding:0 14px;
-  border-radius:20px;
+  border-radius:18px;
   color:#e8c951;
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
 }
@@ -1400,37 +1400,38 @@ html,body,#music-library{
     border-radius:24px;
   }
   .ml-audio-panel-row{
-    min-height:126px;
-    padding:20px 72px 20px 72px;
+    min-height:122px;
+    padding:18px 14px;
   }
-  .ml-audio-panel-rowtop{font-size:18px;}
-  .ml-audio-panel-rowtop strong{font-size:18px;min-width:46px;}
+  .ml-audio-panel-rowtop{font-size:16px;padding-right:64px;}
+  .ml-audio-panel-rowtop strong{font-size:18px;min-width:54px;}
   .ml-audio-panel-control{
-    grid-template-columns:62px 1fr 62px;
-    gap:14px;
+    grid-template-columns:56px 1fr 56px;
+    gap:12px;
   }
   .ml-audio-panel-control button{
-    width:62px;
-    height:62px;
-    border-radius:22px;
+    width:56px;
+    height:56px;
+    border-radius:20px;
+    font-size:26px;
   }
   .ml-audio-panel-rowtop button{
-    width:52px;
-    height:52px;
-    border-radius:18px;
+    width:46px;
+    height:46px;
+    border-radius:16px;
     right:12px;
-    top:14px;
+    top:12px;
+    font-size:16px;
   }
-  .ml-audio-panel-control button:last-child{
-    right:12px;
-    bottom:14px;
+  #ml-audio-panel .ml-audio-panel-row:has(#ml-audio-loop-toggle) .ml-audio-panel-rowtop{
+    padding-right:122px;
   }
   #ml-audio-loop-toggle{
-    right:72px;
-    top:14px;
-    min-width:52px;
-    height:52px;
-    border-radius:18px;
+    right:64px;
+    top:12px;
+    min-width:46px;
+    height:46px;
+    border-radius:16px;
   }
   #ml-audio-loop-grid button{
     min-height:66px;
