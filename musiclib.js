@@ -181,10 +181,11 @@
         <button class="pl-btn pl-repeat" id="ml-mp-repeat" aria-label="循环"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
       </div>
       <div class="ml-audio-pitch" aria-label="音频变调">
-        <span class="ml-audio-pitch-label">音频调</span>
+        <span class="ml-audio-pitch-label">PITCH</span>
         <button class="ml-audio-pitch-btn" id="ml-mp-pitch-down" type="button" aria-label="音频降半音">−</button>
-        <button class="ml-audio-pitch-value" id="ml-mp-pitch-reset" type="button" aria-label="音频恢复原调">原调</button>
+        <button class="ml-audio-pitch-value" id="ml-mp-pitch-reset" type="button" aria-label="音频恢复原调">0 st</button>
         <button class="ml-audio-pitch-btn" id="ml-mp-pitch-up" type="button" aria-label="音频升半音">+</button>
+        <span class="ml-audio-pitch-mode">OFF</span>
       </div>
       <div class="pl-vol-wrap">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
@@ -263,10 +264,11 @@
         </div>
         <div id="ml-player-dock-right">
           <div class="ml-audio-pitch ml-audio-pitch-dock" aria-label="音频变调">
-            <span class="ml-audio-pitch-label">音频调</span>
+            <span class="ml-audio-pitch-label">PITCH</span>
             <button class="ml-audio-pitch-btn" id="ml-player-pitch-down" type="button" aria-label="音频降半音">−</button>
-            <button class="ml-audio-pitch-value" id="ml-player-pitch-reset" type="button" aria-label="音频恢复原调">原调</button>
+            <button class="ml-audio-pitch-value" id="ml-player-pitch-reset" type="button" aria-label="音频恢复原调">0 st</button>
             <button class="ml-audio-pitch-btn" id="ml-player-pitch-up" type="button" aria-label="音频升半音">+</button>
+            <span class="ml-audio-pitch-mode">OFF</span>
           </div>
           <span class="ml-player-vol-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></span>
           <input id="ml-player-dock-vol" type="range" min="0" max="1" step="0.02" value="1">
@@ -2278,7 +2280,7 @@
   }
 
   let _mpAudio=null,_mpSongs=[],_mpIdx=-1,_mpLoop=false,_mpShuffle=false,_mpLrc=[],_mpLrcIdx=-1,_mpCoverFallback='',_mpExpanded=false,_mpSideMode='song',_mpSideCollapsed=false;
-  let _mpAudioCtx=null,_mpPitchGraph=null,_mpPitchSemi=0,_mpPitchStore=null,_mpPitchWarned=false;
+  let _mpAudioCtx=null,_mpPitchGraph=null,_mpPitchSemi=0,_mpPitchMode='off',_mpPitchStore=null,_mpPitchWarned=false;
   const MP_PITCH_KEY='cecp:musiclib:audio-pitch:v1';
   const MP_PITCH_MIN=-12;
   const MP_PITCH_MAX=12;
@@ -2293,7 +2295,7 @@
   }
   function _mpPitchText(v){
     v=_mpClampPitch(v);
-    return v>0?'+'+v:(v<0?String(v):'原调');
+    return (v>0?'+'+v:String(v))+' st';
   }
   function _mpLoadPitchStore(){
     if(_mpPitchStore) return _mpPitchStore;
@@ -2317,7 +2319,7 @@
     if(!id) return 0;
     return _mpClampPitch(_mpLoadPitchStore()[id]||0);
   }
-  function _mpSetPitchUi(value){
+  function _mpSetPitchUi(value,mode){
     const text=_mpPitchText(value);
     ['ml-mp-pitch-reset','ml-player-pitch-reset'].forEach(id=>{
       const el=$(id);
@@ -2325,6 +2327,12 @@
     });
     document.querySelectorAll('.ml-audio-pitch').forEach(el=>{
       el.classList.toggle('is-shifted',_mpClampPitch(value)!==0);
+      el.classList.toggle('is-native',mode==='native');
+      el.classList.toggle('is-pro',mode==='pro');
+      el.dataset.pitchMode=mode||'off';
+      el.title=mode==='native'?'兼容变调：会随音高微调速度':(mode==='pro'?'专业变调：尽量保持速度':'音频原调');
+      const tag=el.querySelector('.ml-audio-pitch-mode');
+      if(tag) tag.textContent=mode==='pro'?'PRO':(mode==='native'?'LIVE':'OFF');
     });
   }
   function _mpCreatePitchShifter(ctx){
@@ -2437,23 +2445,27 @@
   }
   function _mpApplyPitch(){
     const semi=_mpClampPitch(_mpPitchSemi);
-    _mpSetPitchUi(semi);
+    _mpSetPitchUi(semi,_mpPitchMode);
+    if(_mpAudio){
+      const nativeMode=_mpPitchMode==='native';
+      const nativeRate=nativeMode?Math.pow(2,semi/12):1;
+      try{ _mpAudio.playbackRate=nativeRate; }catch(_){}
+      try{ _mpAudio.preservesPitch=!nativeMode; }catch(_){}
+      try{ _mpAudio.mozPreservesPitch=!nativeMode; }catch(_){}
+      try{ _mpAudio.webkitPreservesPitch=!nativeMode; }catch(_){}
+    }
     if(!_mpPitchGraph) return;
     const ratio=Math.pow(2,semi/12);
-    const shifted=semi!==0;
+    const shifted=semi!==0 && _mpPitchMode==='pro';
     _mpPitchGraph.dry.gain.setTargetAtTime(shifted?0:1,_mpAudioCtx.currentTime,0.012);
     _mpPitchGraph.wet.gain.setTargetAtTime(shifted?1:0,_mpAudioCtx.currentTime,0.012);
     _mpPitchGraph.shifter.setPitch(ratio);
   }
   function _mpSetPitch(value,save=true){
     const next=_mpClampPitch(value);
-    if(next!==0 && !_mpEnsurePitchGraph()){
-      _mpPitchSemi=0;
-      _mpSetPitchUi(0);
-      try{ showToast('当前音频暂不支持浏览器内变调，已保持原声'); }catch(_){}
-      return false;
-    }
     _mpPitchSemi=next;
+    if(next===0) _mpPitchMode='off';
+    else _mpPitchMode=_mpEnsurePitchGraph()?'pro':'native';
     if(save){
       const song=_mpSongs[_mpIdx];
       _mpSaveSongPitch(song&&song.id,_mpPitchSemi);
