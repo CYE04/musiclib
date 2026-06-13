@@ -1175,272 +1175,346 @@ html,body,#music-library{
   position:fixed;
   inset:0;
   z-index:2800;
-  background:rgba(0,0,0,.16);
+  background:rgba(10,8,6,.38);
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
 }
 #ml-audio-panel{
+  --ap-accent:#e8c951;
+  --ap-bg:#16181f;
+  --ap-card:rgba(255,255,255,.045);
+  --ap-card-hover:rgba(255,255,255,.08);
+  --ap-line:rgba(255,255,255,.08);
+  --ap-text:#f6f7fb;
+  --ap-text2:rgba(246,247,251,.56);
+  --ap-text3:rgba(246,247,251,.34);
   position:fixed;
-  right:clamp(14px,4vw,34px);
-  bottom:calc(26px + env(safe-area-inset-bottom,0px));
+  left:50%;
+  right:auto;
+  bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  transform:translateX(-50%);
   z-index:2801;
-  width:min(430px,calc(100vw - 28px));
-  border:1px solid rgba(255,255,255,.13);
-  border-radius:24px;
-  background:
-    radial-gradient(circle at 18% 0%,rgba(232,201,81,.10),transparent 34%),
-    linear-gradient(180deg,rgba(20,22,29,.97),rgba(8,9,14,.97));
-  color:#f6f7fb;
-  box-shadow:0 28px 90px rgba(0,0,0,.48),0 1px 0 rgba(255,255,255,.10) inset;
-  padding:16px;
-  backdrop-filter:blur(22px);
-  -webkit-backdrop-filter:blur(22px);
+  width:min(420px,calc(100vw - 24px));
+  max-height:calc(100vh - 40px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  border:1px solid var(--ap-line);
+  border-radius:26px;
+  background:var(--ap-bg);
+  color:var(--ap-text);
+  box-shadow:0 24px 70px rgba(0,0,0,.5);
+  padding:18px;
+  font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,sans-serif;
 }
+
+/* ── Header ── */
 #ml-audio-panel-head{
-  height:50px;
-  display:grid;
-  grid-template-columns:auto 1fr auto;
-  align-items:center;
-  gap:12px;
-  padding:0 2px 10px;
-}
-.ml-audio-panel-icons{display:flex;align-items:center;gap:12px;color:#f7f0d0;font-size:22px;}
-#ml-audio-panel-title{
-  text-align:center;
-  font-size:17px;
-  font-weight:900;
-  letter-spacing:.01em;
-}
-#ml-audio-panel-close{
-  width:40px;height:40px;border:0;border-radius:14px;background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.055));color:#fff;cursor:pointer;box-shadow:0 1px 0 rgba(255,255,255,.12) inset;
-}
-#ml-audio-panel-play{
-  width:100%;
-  min-height:66px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  border:0;
-  border-radius:18px;
-  background:linear-gradient(180deg,rgba(232,201,81,.18),rgba(232,201,81,.085));
-  color:#f7f1df;
-  padding:0 20px;
+  gap:10px;
+  margin-bottom:14px;
+}
+.ml-audio-panel-icons{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  color:var(--ap-accent);
+  font-size:18px;
+  line-height:1;
+}
+#ml-audio-panel-title{
+  flex:1;
+  text-align:left;
   font-size:16px;
-  font-weight:900;
+  font-weight:700;
+  letter-spacing:.01em;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#ml-audio-panel-close{
+  flex-shrink:0;
+  width:34px;
+  height:34px;
+  border:0;
+  border-radius:12px;
+  background:var(--ap-card);
+  color:var(--ap-text2);
+  font-size:14px;
   cursor:pointer;
-  margin-bottom:12px;
-  box-shadow:0 1px 0 rgba(255,255,255,.10) inset;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background .15s,color .15s;
 }
+#ml-audio-panel-close:hover{background:var(--ap-card-hover);color:var(--ap-text);}
+
+/* ── Status / start playback ── */
+#ml-audio-panel-play{
+  width:100%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  border:1px solid var(--ap-line);
+  border-radius:14px;
+  background:var(--ap-card);
+  color:var(--ap-text);
+  padding:12px 14px;
+  font-size:13px;
+  font-weight:600;
+  cursor:pointer;
+  margin-bottom:14px;
+  transition:background .15s;
+}
+#ml-audio-panel-play:hover{background:var(--ap-card-hover);}
+#ml-audio-panel-play span:first-child{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#ml-audio-panel-play-icon{
+  flex-shrink:0;
+  color:var(--ap-text3);
+  font-size:12px;
+}
+
+/* ── Control rows (transpose / pitch / speed / loop) ── */
 .ml-audio-panel-row{
-  position:relative;
-  border:1px solid rgba(255,255,255,.065);
-  border-radius:22px;
-  background:linear-gradient(180deg,rgba(255,255,255,.052),rgba(255,255,255,.025));
-  padding:20px 16px;
-  margin-top:12px;
-  min-height:132px;
-  box-shadow:0 14px 34px rgba(0,0,0,.16),0 1px 0 rgba(255,255,255,.06) inset;
+  border:1px solid var(--ap-line);
+  border-radius:16px;
+  background:var(--ap-card);
+  padding:12px 14px;
+  margin-bottom:10px;
 }
+.ml-audio-panel-row:last-of-type{margin-bottom:0;}
+
 .ml-audio-panel-rowtop{
   display:flex;
   align-items:center;
   justify-content:space-between;
-  gap:12px;
-  color:rgba(255,255,255,.56);
-  font-size:18px;
-  font-weight:900;
-  line-height:1.15;
-  min-height:28px;
-  padding-right:74px;
+  gap:10px;
+  margin-bottom:10px;
+  color:var(--ap-text2);
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+  min-height:24px;
+}
+.ml-audio-panel-rowtop > span{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  min-width:0;
+  overflow:hidden;
 }
 .ml-audio-panel-rowtop strong{
-  min-width:64px;
-  text-align:right;
-  color:rgba(255,255,255,.9);
-  font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-size:20px;
   flex-shrink:0;
+  min-width:54px;
+  text-align:center;
+  color:var(--ap-text);
+  font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:14px;
+  font-weight:700;
+  letter-spacing:0;
+  text-transform:none;
+  padding:3px 8px;
+  border-radius:8px;
+  background:rgba(255,255,255,.06);
 }
-.ml-audio-panel-rowtop button,
-.ml-audio-panel-control button,
-#ml-audio-loop-toggle,
-#ml-audio-panel-foot button{
-  border:0;
-  color:#f5f7fb;
-  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.055));
-  border-radius:14px;
-  cursor:pointer;
-  box-shadow:0 1px 0 rgba(255,255,255,.12) inset,0 10px 22px rgba(0,0,0,.14);
-  transition:transform .13s ease,background .13s ease,color .13s ease;
-}
-.ml-audio-panel-rowtop button:hover,
-.ml-audio-panel-control button:hover,
-#ml-audio-loop-toggle:hover,
-#ml-audio-panel-foot button:hover{transform:translateY(-1px);background:linear-gradient(180deg,rgba(255,255,255,.17),rgba(255,255,255,.075));color:#fff;}
+
+/* reset / round icon buttons inside rowtop */
 .ml-audio-panel-rowtop button{
-  position:absolute;
-  right:16px;
-  top:14px;
-  width:52px;
-  height:52px;
-  border-radius:18px;
-  color:rgba(255,255,255,.58);
-  font-size:18px;
+  flex-shrink:0;
+  width:30px;
+  height:30px;
+  border:0;
+  border-radius:10px;
+  background:rgba(255,255,255,.06);
+  color:var(--ap-text2);
+  font-size:13px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background .15s,color .15s,transform .12s;
 }
+.ml-audio-panel-rowtop button:hover{background:var(--ap-card-hover);color:var(--ap-text);}
+.ml-audio-panel-rowtop button:active{transform:scale(.9);}
+
+/* -/slider/+ control row */
 .ml-audio-panel-control{
   display:grid;
-  grid-template-columns:64px 1fr 64px;
+  grid-template-columns:40px 1fr 40px;
   align-items:center;
-  gap:14px;
-  margin-top:24px;
+  gap:10px;
 }
 .ml-audio-panel-control button{
-  width:64px;
-  height:64px;
-  border-radius:22px;
-  font-size:30px;
+  width:40px;
+  height:40px;
+  border:0;
+  border-radius:12px;
+  background:rgba(255,255,255,.06);
+  color:var(--ap-text);
+  font-size:18px;
+  font-weight:700;
   line-height:1;
-  color:rgba(255,255,255,.76);
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background .15s,transform .12s;
 }
+.ml-audio-panel-control button:hover{background:var(--ap-card-hover);}
+.ml-audio-panel-control button:active{transform:scale(.92);}
 .ml-audio-panel-control input{
   width:100%;
   appearance:none;
   -webkit-appearance:none;
-  height:8px;
+  height:5px;
   border-radius:999px;
-  background:rgba(255,255,255,.14);
+  background:rgba(255,255,255,.12);
   outline:none;
+  cursor:pointer;
 }
 .ml-audio-panel-control input::-webkit-slider-thumb{
   -webkit-appearance:none;
-  width:28px;
-  height:28px;
+  width:20px;
+  height:20px;
   border-radius:50%;
-  background:#e8c951;
-  box-shadow:0 0 0 9px rgba(232,201,81,.14),0 8px 24px rgba(0,0,0,.42);
+  background:var(--ap-accent);
+  box-shadow:0 0 0 5px rgba(232,201,81,.16);
+  cursor:pointer;
 }
 .ml-audio-panel-control input::-moz-range-thumb{
-  width:28px;height:28px;border:0;border-radius:50%;background:#e8c951;
+  width:20px;height:20px;border:0;border-radius:50%;background:var(--ap-accent);cursor:pointer;
 }
+
+/* row currently active / non-default value */
+.ml-audio-panel-row.is-active .ml-audio-panel-rowtop strong{
+  color:#15120a;
+  background:var(--ap-accent);
+}
+
+/* speed row: two labels side by side */
 #ml-audio-panel .ml-audio-panel-row[data-control="speed"] .ml-audio-panel-rowtop{
-  display:grid;
-  grid-template-columns:1fr 1fr;
+  flex-wrap:nowrap;
 }
-#ml-audio-panel .ml-audio-panel-row[data-control="speed"] .ml-audio-panel-rowtop span:last-of-type{
-  text-align:right;
+#ml-audio-panel .ml-audio-panel-row[data-control="speed"] .ml-audio-panel-rowtop > span{
+  flex:1 1 0;
+  min-width:0;
 }
-#ml-audio-panel .ml-audio-panel-row:has(#ml-audio-loop-toggle) .ml-audio-panel-rowtop{
-  padding-right:138px;
+#ml-audio-panel .ml-audio-panel-row[data-control="speed"] .ml-audio-panel-rowtop > span:last-of-type{
+  justify-content:flex-end;
 }
+
+/* loop row */
 #ml-audio-loop-toggle{
-  position:absolute;
-  right:76px;
-  top:14px;
-  min-width:52px;
-  height:52px;
-  padding:0 14px;
-  border-radius:18px;
-  color:#e8c951;
+  border:0;
+  min-width:48px;
+  height:30px;
+  padding:0 10px;
+  border-radius:10px;
+  background:rgba(255,255,255,.06);
+  color:var(--ap-text2);
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:11px;
+  font-weight:700;
+  letter-spacing:.06em;
+  cursor:pointer;
+  transition:background .15s,color .15s;
+}
+#ml-audio-loop-toggle:hover{background:var(--ap-card-hover);color:var(--ap-text);}
+.ml-audio-panel-row[data-control="loop"].is-active #ml-audio-loop-toggle{
+  background:var(--ap-accent);
+  color:#15120a;
 }
 #ml-audio-loop-grid{
   display:grid;
   grid-template-columns:1fr 1fr;
-  gap:12px;
-  margin-top:30px;
+  gap:8px;
 }
 #ml-audio-loop-grid button{
-  border:1px solid rgba(255,255,255,.09);
-  border-radius:22px;
-  background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));
-  color:#fff;
-  min-height:72px;
+  border:0;
+  border-radius:12px;
+  background:rgba(255,255,255,.06);
+  color:var(--ap-text);
+  min-height:48px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:0 20px;
+  padding:0 12px;
   cursor:pointer;
-  box-shadow:0 1px 0 rgba(255,255,255,.08) inset;
+  transition:background .15s;
 }
-#ml-audio-loop-grid span{color:rgba(255,255,255,.45);font-weight:900;font-size:18px;}
-#ml-audio-loop-grid strong{font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;}
+#ml-audio-loop-grid button:hover{background:var(--ap-card-hover);}
+#ml-audio-loop-grid span{
+  color:var(--ap-text3);
+  font-weight:800;
+  font-size:12px;
+  letter-spacing:.04em;
+}
+#ml-audio-loop-grid strong{
+  font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:14px;
+  font-weight:700;
+}
+
+/* ── Footer transport ── */
 #ml-audio-panel-foot{
-  display:flex;
-  justify-content:center;
+  display:grid;
+  grid-template-columns:1fr 1fr 1.4fr 1fr 1fr;
+  gap:8px;
   align-items:center;
-  gap:14px;
-  padding:20px 0 6px;
+  margin-top:14px;
 }
 #ml-audio-panel-foot button{
-  width:58px;
-  height:58px;
-  border-radius:18px;
-  color:rgba(255,255,255,.62);
+  border:0;
+  border-radius:14px;
+  background:rgba(255,255,255,.06);
+  color:var(--ap-text2);
+  height:48px;
+  font-size:16px;
+  cursor:pointer;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  transition:background .15s,color .15s,transform .12s;
 }
+#ml-audio-panel-foot button:hover{background:var(--ap-card-hover);color:var(--ap-text);}
+#ml-audio-panel-foot button:active{transform:scale(.94);}
 #ml-audio-panel-main{
-  width:84px!important;
-  height:84px!important;
-  border-radius:28px!important;
-  background:linear-gradient(180deg,rgba(232,201,81,.30),rgba(232,201,81,.12))!important;
-  color:#fff!important;
-  font-size:24px;
+  background:var(--ap-accent)!important;
+  color:#15120a!important;
+  font-size:18px;
+  font-weight:700;
 }
+
 #ml-audio-panel-status{
-  text-align:right;
-  color:rgba(255,255,255,.52);
-  font-size:13px;
-  font-weight:800;
-  padding:0 8px 4px;
+  text-align:center;
+  color:var(--ap-text3);
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:.04em;
+  margin-top:10px;
 }
-@media (max-width:640px){
+
+@media(max-width:480px){
   #ml-audio-panel{
     left:8px;
     right:8px;
     bottom:calc(8px + env(safe-area-inset-bottom,0px));
+    transform:none;
     width:auto;
-    padding:12px;
-    border-radius:24px;
+    max-height:calc(100vh - 16px);
+    padding:14px;
+    border-radius:22px;
   }
-  .ml-audio-panel-row{
-    min-height:122px;
-    padding:18px 14px;
-  }
-  .ml-audio-panel-rowtop{font-size:16px;padding-right:64px;}
-  .ml-audio-panel-rowtop strong{font-size:18px;min-width:54px;}
-  .ml-audio-panel-control{
-    grid-template-columns:56px 1fr 56px;
-    gap:12px;
-  }
-  .ml-audio-panel-control button{
-    width:56px;
-    height:56px;
-    border-radius:20px;
-    font-size:26px;
-  }
-  .ml-audio-panel-rowtop button{
-    width:46px;
-    height:46px;
-    border-radius:16px;
-    right:12px;
-    top:12px;
-    font-size:16px;
-  }
-  #ml-audio-panel .ml-audio-panel-row:has(#ml-audio-loop-toggle) .ml-audio-panel-rowtop{
-    padding-right:122px;
-  }
-  #ml-audio-loop-toggle{
-    right:64px;
-    top:12px;
-    min-width:46px;
-    height:46px;
-    border-radius:16px;
-  }
-  #ml-audio-loop-grid button{
-    min-height:66px;
-    padding:0 16px;
-  }
-  #ml-audio-loop-grid strong{font-size:16px;}
-  #ml-audio-panel-foot{gap:10px;}
-  #ml-audio-panel-foot button{width:52px;height:52px;}
-  #ml-audio-panel-main{width:76px!important;height:76px!important;}
+  .ml-audio-panel-control{grid-template-columns:36px 1fr 36px;gap:8px;}
+  .ml-audio-panel-control button{width:36px;height:36px;font-size:16px;border-radius:10px;}
+  #ml-audio-panel-foot button{height:44px;font-size:14px;}
 }
 
 /* Volume — compact centered strip */
