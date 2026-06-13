@@ -1286,7 +1286,7 @@ html,body,#music-library{
   border-radius:16px;
   background:var(--ap-card);
   padding:14px;
-  margin:0 0 18px;
+  margin:0 0 20px;
 }
 .ml-audio-panel-row:last-of-type{margin-bottom:0;}
 
