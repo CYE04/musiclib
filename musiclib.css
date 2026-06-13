@@ -1104,14 +1104,14 @@ html,body,#music-library{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  gap:10px;
-  width:max-content;
+  gap:12px;
+  min-width:148px;
   max-width:100%;
-  min-height:48px;
+  min-height:58px;
   margin:0 auto;
-  padding:8px 9px 8px 15px;
+  padding:10px 12px 10px 18px;
   border:1px solid rgba(255,255,255,.18);
-  border-radius:18px;
+  border-radius:22px;
   background:
     linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.055)),
     radial-gradient(circle at 18% 0%,rgba(232,201,81,.16),transparent 46%),
@@ -1132,28 +1132,28 @@ html,body,#music-library{
 .ml-audio-tool-k{
   color:rgba(255,255,255,.62);
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-size:10px;
+  font-size:11px;
   letter-spacing:.12em;
   line-height:1;
 }
 .ml-audio-tool-v{
-  min-width:48px;
+  min-width:54px;
   color:#fff;
-  font-size:13px;
+  font-size:15px;
   line-height:1.1;
   white-space:nowrap;
 }
 .ml-audio-tool-mode{
-  min-width:42px;
-  height:32px;
-  border-radius:12px;
+  min-width:48px;
+  height:38px;
+  border-radius:16px;
   display:inline-flex;
   align-items:center;
   justify-content:center;
   background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.055));
   color:rgba(255,255,255,.52);
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-size:8px;
+  font-size:9px;
   letter-spacing:.08em;
   box-shadow:0 1px 0 rgba(255,255,255,.12) inset;
 }
@@ -1182,7 +1182,7 @@ html,body,#music-library{
   right:clamp(14px,4vw,34px);
   bottom:calc(26px + env(safe-area-inset-bottom,0px));
   z-index:2801;
-  width:min(420px,calc(100vw - 28px));
+  width:min(430px,calc(100vw - 28px));
   border:1px solid rgba(255,255,255,.13);
   border-radius:24px;
   background:
@@ -1190,7 +1190,7 @@ html,body,#music-library{
     linear-gradient(180deg,rgba(20,22,29,.97),rgba(8,9,14,.97));
   color:#f6f7fb;
   box-shadow:0 28px 90px rgba(0,0,0,.48),0 1px 0 rgba(255,255,255,.10) inset;
-  padding:14px;
+  padding:16px;
   backdrop-filter:blur(22px);
   -webkit-backdrop-filter:blur(22px);
 }
@@ -1230,27 +1230,32 @@ html,body,#music-library{
   box-shadow:0 1px 0 rgba(255,255,255,.10) inset;
 }
 .ml-audio-panel-row{
+  position:relative;
   border:1px solid rgba(255,255,255,.065);
-  border-radius:18px;
+  border-radius:22px;
   background:linear-gradient(180deg,rgba(255,255,255,.052),rgba(255,255,255,.025));
-  padding:18px 18px 16px;
-  margin-top:10px;
+  padding:22px 82px 22px 82px;
+  margin-top:12px;
+  min-height:132px;
   box-shadow:0 14px 34px rgba(0,0,0,.16),0 1px 0 rgba(255,255,255,.06) inset;
 }
 .ml-audio-panel-rowtop{
-  display:grid;
-  grid-template-columns:1fr auto auto;
+  display:flex;
   align-items:center;
-  gap:14px;
+  justify-content:space-between;
+  gap:12px;
   color:rgba(255,255,255,.56);
-  font-size:15px;
+  font-size:20px;
   font-weight:900;
+  line-height:1.15;
+  min-height:28px;
 }
 .ml-audio-panel-rowtop strong{
-  min-width:48px;
-  text-align:left;
-  color:rgba(255,255,255,.78);
+  min-width:54px;
+  text-align:right;
+  color:rgba(255,255,255,.9);
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  font-size:20px;
 }
 .ml-audio-panel-rowtop button,
 .ml-audio-panel-control button,
@@ -1268,38 +1273,71 @@ html,body,#music-library{
 .ml-audio-panel-control button:hover,
 #ml-audio-loop-toggle:hover,
 #ml-audio-panel-foot button:hover{transform:translateY(-1px);background:linear-gradient(180deg,rgba(255,255,255,.17),rgba(255,255,255,.075));color:#fff;}
-.ml-audio-panel-rowtop button{width:36px;height:36px;color:rgba(255,255,255,.54);}
+.ml-audio-panel-rowtop button{
+  position:absolute;
+  right:16px;
+  top:16px;
+  width:58px;
+  height:58px;
+  border-radius:20px;
+  color:rgba(255,255,255,.58);
+  font-size:19px;
+}
 .ml-audio-panel-control{
   display:grid;
-  grid-template-columns:42px 1fr 42px;
+  grid-template-columns:72px 1fr 72px;
   align-items:center;
-  gap:14px;
-  margin-top:16px;
+  gap:18px;
+  margin-top:24px;
 }
-.ml-audio-panel-control button{width:42px;height:42px;font-size:23px;line-height:1;color:rgba(255,255,255,.68);}
+.ml-audio-panel-control button{
+  width:72px;
+  height:72px;
+  border-radius:24px;
+  font-size:34px;
+  line-height:1;
+  color:rgba(255,255,255,.76);
+}
+.ml-audio-panel-control button:last-child{
+  position:absolute;
+  right:16px;
+  bottom:16px;
+}
 .ml-audio-panel-control input{
   width:100%;
   appearance:none;
   -webkit-appearance:none;
-  height:6px;
+  height:8px;
   border-radius:999px;
   background:rgba(255,255,255,.14);
   outline:none;
 }
 .ml-audio-panel-control input::-webkit-slider-thumb{
   -webkit-appearance:none;
-  width:20px;
-  height:20px;
+  width:28px;
+  height:28px;
   border-radius:50%;
   background:#e8c951;
-  box-shadow:0 0 0 5px rgba(232,201,81,.10),0 6px 18px rgba(0,0,0,.35);
+  box-shadow:0 0 0 9px rgba(232,201,81,.14),0 8px 24px rgba(0,0,0,.42);
 }
 .ml-audio-panel-control input::-moz-range-thumb{
-  width:20px;height:20px;border:0;border-radius:50%;background:#e8c951;
+  width:28px;height:28px;border:0;border-radius:50%;background:#e8c951;
+}
+#ml-audio-panel .ml-audio-panel-row[data-control="speed"] .ml-audio-panel-rowtop{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+}
+#ml-audio-panel .ml-audio-panel-row[data-control="speed"] .ml-audio-panel-rowtop span:last-of-type{
+  text-align:right;
 }
 #ml-audio-loop-toggle{
-  height:36px;
+  position:absolute;
+  right:88px;
+  top:16px;
+  min-width:58px;
+  height:58px;
   padding:0 14px;
+  border-radius:20px;
   color:#e8c951;
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
 }
@@ -1307,23 +1345,23 @@ html,body,#music-library{
   display:grid;
   grid-template-columns:1fr 1fr;
   gap:12px;
-  margin-top:14px;
+  margin-top:30px;
 }
 #ml-audio-loop-grid button{
   border:1px solid rgba(255,255,255,.09);
-  border-radius:16px;
+  border-radius:22px;
   background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.03));
   color:#fff;
-  min-height:54px;
+  min-height:72px;
   display:flex;
   align-items:center;
   justify-content:space-between;
-  padding:0 14px;
+  padding:0 20px;
   cursor:pointer;
   box-shadow:0 1px 0 rgba(255,255,255,.08) inset;
 }
-#ml-audio-loop-grid span{color:rgba(255,255,255,.45);font-weight:900;}
-#ml-audio-loop-grid strong{font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px;}
+#ml-audio-loop-grid span{color:rgba(255,255,255,.45);font-weight:900;font-size:18px;}
+#ml-audio-loop-grid strong{font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;}
 #ml-audio-panel-foot{
   display:flex;
   justify-content:center;
@@ -1332,14 +1370,15 @@ html,body,#music-library{
   padding:20px 0 6px;
 }
 #ml-audio-panel-foot button{
-  width:44px;
-  height:44px;
+  width:58px;
+  height:58px;
+  border-radius:18px;
   color:rgba(255,255,255,.62);
 }
 #ml-audio-panel-main{
-  width:68px!important;
-  height:68px!important;
-  border-radius:24px!important;
+  width:84px!important;
+  height:84px!important;
+  border-radius:28px!important;
   background:linear-gradient(180deg,rgba(232,201,81,.30),rgba(232,201,81,.12))!important;
   color:#fff!important;
   font-size:24px;
@@ -1353,11 +1392,54 @@ html,body,#music-library{
 }
 @media (max-width:640px){
   #ml-audio-panel{
-    left:10px;
-    right:10px;
-    bottom:calc(10px + env(safe-area-inset-bottom,0px));
+    left:8px;
+    right:8px;
+    bottom:calc(8px + env(safe-area-inset-bottom,0px));
     width:auto;
+    padding:12px;
+    border-radius:24px;
   }
+  .ml-audio-panel-row{
+    min-height:126px;
+    padding:20px 72px 20px 72px;
+  }
+  .ml-audio-panel-rowtop{font-size:18px;}
+  .ml-audio-panel-rowtop strong{font-size:18px;min-width:46px;}
+  .ml-audio-panel-control{
+    grid-template-columns:62px 1fr 62px;
+    gap:14px;
+  }
+  .ml-audio-panel-control button{
+    width:62px;
+    height:62px;
+    border-radius:22px;
+  }
+  .ml-audio-panel-rowtop button{
+    width:52px;
+    height:52px;
+    border-radius:18px;
+    right:12px;
+    top:14px;
+  }
+  .ml-audio-panel-control button:last-child{
+    right:12px;
+    bottom:14px;
+  }
+  #ml-audio-loop-toggle{
+    right:72px;
+    top:14px;
+    min-width:52px;
+    height:52px;
+    border-radius:18px;
+  }
+  #ml-audio-loop-grid button{
+    min-height:66px;
+    padding:0 16px;
+  }
+  #ml-audio-loop-grid strong{font-size:16px;}
+  #ml-audio-panel-foot{gap:10px;}
+  #ml-audio-panel-foot button{width:52px;height:52px;}
+  #ml-audio-panel-main{width:76px!important;height:76px!important;}
 }
 
 /* Volume — compact centered strip */
