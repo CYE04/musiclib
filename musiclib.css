@@ -7160,3 +7160,84 @@ body.ml-detail-lock{overflow:hidden !important;}
     flex: 0 0 auto !important;
   }
 }
+
+/* ===== Fullscreen Lyrics View Fix (2026-06-14) ===== */
+#music-library #ml-player-view.lyrics-open #ml-player-view-grid{
+  grid-template-areas:"lyrics" !important;
+  grid-template-columns:minmax(0,1fr) !important;
+  gap:0 !important;
+  width:100% !important;
+  min-height:0 !important;
+}
+#music-library #ml-player-view.lyrics-open #ml-player-rail,
+#music-library #ml-player-view.lyrics-open #ml-player-side{
+  display:none !important;
+}
+#music-library #ml-player-view.lyrics-open #ml-player-lyrics{
+  display:block !important;
+  width:min(100%,1100px) !important;
+  height:100% !important;
+  min-height:0 !important;
+  margin:0 auto !important;
+  padding:clamp(22px,4vw,54px) clamp(18px,5vw,72px) !important;
+  border-radius:20px !important;
+  overflow-y:auto !important;
+  scroll-padding-block:40vh !important;
+  background:
+    linear-gradient(160deg,var(--player-surface-tint),transparent 58%),
+    rgba(8,14,28,.78) !important;
+  backdrop-filter:blur(24px) saturate(135%) !important;
+  -webkit-backdrop-filter:blur(24px) saturate(135%) !important;
+}
+#music-library #ml-player-view.lyrics-open #ml-player-lyrics-inner{
+  min-height:100% !important;
+  justify-content:center;
+  gap:clamp(18px,3vh,34px) !important;
+  padding:32vh 0 38vh !important;
+}
+#music-library #ml-player-view.lyrics-open .ml-player-lrc-line{
+  max-width:900px;
+  margin:0 auto;
+  text-align:center;
+  font-size:clamp(24px,4.2vw,62px) !important;
+  line-height:1.35 !important;
+  color:rgba(235,240,252,.42) !important;
+  opacity:1 !important;
+}
+#music-library #ml-player-view.lyrics-open .ml-player-lrc-line.active{
+  color:var(--player-accent) !important;
+  text-shadow:0 0 30px var(--player-accent-soft) !important;
+  transform:scale(1.035) !important;
+}
+#music-library #ml-player-view.lyrics-open #ml-player-lyrics-inner.is-static{
+  justify-content:flex-start;
+  padding-top:8vh !important;
+}
+#music-library #ml-player-view.lyrics-open .ml-player-lrc-line.is-static{
+  color:rgba(245,247,252,.9) !important;
+  font-size:clamp(19px,2.7vw,34px) !important;
+  font-weight:600;
+  text-shadow:none !important;
+  transform:none !important;
+}
+#music-library #ml-player-view.lyrics-open #ml-player-view-menu{
+  color:var(--player-accent) !important;
+  border-color:var(--player-accent-soft) !important;
+  background:var(--player-accent-soft) !important;
+}
+@media (max-width:860px){
+  #music-library #ml-player-view.lyrics-open #ml-player-lyrics{
+    width:100% !important;
+    border-radius:14px !important;
+    padding:18px 14px !important;
+  }
+  #music-library #ml-player-view.lyrics-open #ml-player-lyrics-inner{
+    padding:30vh 0 36vh !important;
+  }
+  #music-library #ml-player-view.lyrics-open .ml-player-lrc-line{
+    font-size:clamp(22px,7vw,36px) !important;
+  }
+  #music-library #ml-player-view.lyrics-open .ml-player-lrc-line.is-static{
+    font-size:clamp(17px,5vw,25px) !important;
+  }
+}
