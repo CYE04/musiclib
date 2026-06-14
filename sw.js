@@ -1,9 +1,9 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v13-lyrics-sync-v5";
+const CACHE_NAME = "cecp-musiclib-pwa-v14-audio-play-fix-v1";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
-  "./musiclib.css?v=20260614-lyrics-sync-v5",
-  "./musiclib.js?v=20260614-lyrics-sync-v5",
+  "./musiclib.css?v=20260614-audio-play-fix-v1",
+  "./musiclib.js?v=20260614-audio-play-fix-v1",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
   "./icons/favicon.ico",
