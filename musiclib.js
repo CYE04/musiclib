@@ -2395,69 +2395,15 @@
     }else{
       empty.style.display='none';
       $('ml-list-stage').style.display='';
+      list.classList.remove('is-grouped');
       if(q){
         $('ml-result-count').textContent=`找到 ${filtered.length} 首相关诗歌`;
-        list.classList.remove('is-grouped');
-        list.innerHTML=filtered.map(s=>cardHTML(s,q)).join('')+'<div id="ml-list-end"></div>';
       }else if(sourceFilter!=='全部'){
-        const grouped=new Map();
-        filtered.forEach(song=>{
-          const key=song.album||'未标注专辑';
-          if(!grouped.has(key)) grouped.set(key,[]);
-          grouped.get(key).push(song);
-        });
-        $('ml-result-count').textContent=`${sourceFilter}${intentFilter==='全部'?'':' · '+intentFilter} · ${grouped.size} 组专辑 · ${filtered.length} 首`;
-        list.classList.add('is-grouped');
-        list.innerHTML=Array.from(grouped.entries())
-          .sort((a,b)=>{
-            const ay=Math.max(...a[1].map(item=>+(item.albumYear||0)),0);
-            const by=Math.max(...b[1].map(item=>+(item.albumYear||0)),0);
-            const aUnknown=a[0]==='未标注专辑';
-            const bUnknown=b[0]==='未标注专辑';
-            if(aUnknown!==bUnknown) return aUnknown?1:-1;
-            if(ay!==by) return by-ay;
-            return a[0].localeCompare(b[0],'zh-Hans-CN');
-          })
-          .map(([name,items])=>`
-            <section class="ml-group">
-              <div class="ml-group-head">
-                <div>
-                  <div class="ml-group-kicker">专辑</div>
-                  <div class="ml-group-title">${name}</div>
-                </div>
-                <div class="ml-group-count">${items.length} 首</div>
-              </div>
-              <div class="ml-group-grid">
-                ${items.map(s=>cardHTML(s,q)).join('')}
-              </div>
-            </section>
-          `).join('')+'<div id="ml-list-end"></div>';
+        $('ml-result-count').textContent=`${sourceFilter}${intentFilter==='全部'?'':' · '+intentFilter} · ${filtered.length} 首`;
       }else{
         $('ml-result-count').textContent=`${intentFilter==='全部'?'全部':intentFilter} ${filtered.length} 首诗歌`;
-        list.classList.add('is-grouped');
-        const grouped=new Map();
-        filtered.forEach(song=>{
-          const key=song.source||'其他';
-          if(!grouped.has(key)) grouped.set(key,[]);
-          grouped.get(key).push(song);
-        });
-        list.innerHTML=Array.from(grouped.entries())
-          .sort((a,b)=>b[1].length-a[1].length||a[0].localeCompare(b[0],'zh-Hans-CN'))
-          .map(([name,items])=>`
-            <section class="ml-group">
-              <div class="ml-group-head">
-                <div>
-                  <div class="ml-group-kicker">歌手 / 团体</div>
-                  <div class="ml-group-title">${name}</div>
-                </div>
-                <div class="ml-group-count">${items.length} 首</div>
-              </div>
-              <div class="ml-group-grid">
-                ${items.map(s=>cardHTML(s,q)).join('')}
-              </div>
-            </section>
-          `).join('')+'<div id="ml-list-end"></div>';
       }
+      list.innerHTML=filtered.map(s=>cardHTML(s,q)).join('')+'<div id="ml-list-end"></div>';
       _mpRenderQueue();
       list.querySelectorAll('.ml-song-card').forEach(el=>{
         el.addEventListener('click',()=>{const s=songs.find(x=>x.id===el.dataset.id);if(s)openDetail(s);});
