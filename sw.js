@@ -1,9 +1,9 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v9-function-responsive";
+const CACHE_NAME = "cecp-musiclib-pwa-v10-gridfix-v2";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
-  "./musiclib.css?v=20260614-function-responsive",
-  "./musiclib.js?v=20260614-function-responsive",
+  "./musiclib.css?v=20260614-gridfix-v2",
+  "./musiclib.js?v=20260614-gridfix-v2",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
   "./icons/favicon.ico",

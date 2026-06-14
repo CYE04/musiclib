@@ -45,17 +45,17 @@
       }
     </script>
 
-    <link id="ml-style" rel="stylesheet" href="./musiclib.css?v=20260614-function-responsive">
+    <link id="ml-style" rel="stylesheet" href="./musiclib.css?v=20260614-gridfix-v2">
   </head>
 
   <body>
     <div id="music-library"></div>
 
-    <script src="./musiclib.js?v=20260614-function-responsive"></script>
+    <script src="./musiclib.js?v=20260614-gridfix-v2"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-          navigator.serviceWorker.register("./sw.js").catch(() => {});
+          navigator.serviceWorker.register("./sw.js?v=20260614-gridfix-v2").catch(() => {});
         });
       }
     </script>
