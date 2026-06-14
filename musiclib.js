@@ -2435,7 +2435,16 @@
       }else{
         $('ml-result-count').textContent=`${intentFilter==='全部'?'全部':intentFilter} ${filtered.length} 首诗歌`;
       }
-      list.innerHTML=filtered.map(s=>cardHTML(s,q)).join('')+'<div id="ml-list-end"></div>';
+      const shouldGroup=!q;
+      if(shouldGroup){
+        list.classList.add('is-grouped');
+        list.dataset.groupMode=sourceFilter!=='全部'?'album':'artist';
+        list.innerHTML=renderGroupedSongList(filtered,q)+(filtered.length?'<div id="ml-list-end"></div>':'');
+      }else{
+        list.classList.remove('is-grouped');
+        delete list.dataset.groupMode;
+        list.innerHTML=filtered.map(s=>cardHTML(s,q)).join('')+'<div id="ml-list-end"></div>';
+      }
       _mpRenderQueue();
       list.querySelectorAll('.ml-song-card').forEach(el=>{
         el.addEventListener('click',()=>{const s=songs.find(x=>x.id===el.dataset.id);if(s)openDetail(s);});
@@ -2476,6 +2485,82 @@
       });
     }
     observeRevealItems();
+  }
+
+  function getArtistGroupName(song){
+    return cleanText(song.displayArtist||song.source||song.artist)||'其他';
+  }
+  function getAlbumGroupName(song){
+    return cleanText(song.album)||'单曲与其他';
+  }
+  function sourceSortIndex(name){
+    const idx=SOURCE_RULES.findIndex(rule=>rule.name===name);
+    return idx<0?999:idx;
+  }
+  function sortSongsForGroup(items){
+    return items.slice().sort((a,b)=>{
+      const yearA=Number(a.albumYear||0),yearB=Number(b.albumYear||0);
+      if(yearA!==yearB) return yearB-yearA;
+      return String(a.title||'').localeCompare(String(b.title||''),'zh-Hans-CN',{numeric:true});
+    });
+  }
+  function groupSongsBy(items,keyFn){
+    const map=new Map();
+    items.forEach(song=>{
+      const key=keyFn(song);
+      if(!map.has(key)) map.set(key,[]);
+      map.get(key).push(song);
+    });
+    return Array.from(map.entries()).map(([name,groupSongs])=>({name,songs:sortSongsForGroup(groupSongs)}));
+  }
+  function groupCoverHTML(group,mode){
+    const first=group.songs.find(song=>song.cover)||group.songs[0];
+    if(mode==='album'&&first&&first.cover){
+      return `<div class="ml-group-cover"><img src="${esc(first.cover)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='♪'"></div>`;
+    }
+    const label=cleanText(group.name);
+    const initial=(label&&label!=='单曲与其他')?Array.from(label)[0]:'♪';
+    return `<div class="ml-group-cover is-letter" aria-hidden="true">${esc(initial)}</div>`;
+  }
+  function renderGroupedSongList(items,q){
+    const mode=sourceFilter!=='全部'?'album':'artist';
+    let groups=groupSongsBy(items,mode==='album'?getAlbumGroupName:getArtistGroupName);
+    if(mode==='artist'){
+      groups.sort((a,b)=>{
+        const ai=sourceSortIndex(a.name),bi=sourceSortIndex(b.name);
+        if(ai!==bi) return ai-bi;
+        if(a.songs.length!==b.songs.length) return b.songs.length-a.songs.length;
+        return a.name.localeCompare(b.name,'zh-Hans-CN');
+      });
+    }else{
+      groups.sort((a,b)=>{
+        const ay=Math.max(...a.songs.map(s=>Number(s.albumYear||0))),by=Math.max(...b.songs.map(s=>Number(s.albumYear||0)));
+        if(ay!==by) return by-ay;
+        if(a.name==='单曲与其他') return 1;
+        if(b.name==='单曲与其他') return -1;
+        return a.name.localeCompare(b.name,'zh-Hans-CN',{numeric:true});
+      });
+    }
+    return groups.map(group=>{
+      const years=Array.from(new Set(group.songs.map(s=>cleanText(s.albumYear)).filter(Boolean))).sort((a,b)=>Number(b)-Number(a));
+      const subtitle=mode==='album'
+        ? [sourceFilter,years[0]||''].filter(Boolean).join(' · ')
+        : '作者 / 团队';
+      return `<section class="ml-group ml-group--${mode}" data-group="${esc(group.name)}">
+        <div class="ml-group-head">
+          <div class="ml-group-head-main">
+            ${groupCoverHTML(group,mode)}
+            <div class="ml-group-copy">
+              <div class="ml-group-kicker">${mode==='album'?'专辑':'作者'}</div>
+              <h3 class="ml-group-title">${esc(group.name)}</h3>
+              <div class="ml-group-subtitle">${esc(subtitle)}</div>
+            </div>
+          </div>
+          <span class="ml-group-count">${group.songs.length} 首</span>
+        </div>
+        <div class="ml-group-grid">${group.songs.map(song=>cardHTML(song,q)).join('')}</div>
+      </section>`;
+    }).join('');
   }
 
   function cardHTML(s,q){
