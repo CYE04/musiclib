@@ -1,9 +1,9 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v16-pitch-speed-lock-v1";
+const CACHE_NAME = "cecp-musiclib-pwa-v15-card-size-lock-v1";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
-  "./musiclib.css?v=20260614-pitch-speed-lock-v1",
-  "./musiclib.js?v=20260614-pitch-speed-lock-v1",
+  "./musiclib.css?v=20260614-card-size-lock-v1",
+  "./musiclib.js?v=20260614-card-size-lock-v1",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
   "./icons/favicon.ico",

@@ -2581,10 +2581,6 @@ html,body,#music-library{
   background:rgba(239,203,92,.16);
   color:#f6d978;
 }
-.ml-audio-tool.is-unavailable .ml-audio-tool-mode{
-  background:rgba(239,92,92,.16);
-  color:#fca5a5;
-}
 .ml-audio-tool.is-rate .ml-audio-tool-mode{
   background:rgba(125,211,252,.14);
   color:#9ddcff;
