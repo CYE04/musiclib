@@ -278,7 +278,7 @@
           <div id="ml-mp-title" class="pl-title"></div>
           <div id="ml-mp-artist" class="pl-artist"></div>
         </div>
-        <button class="pl-btn" id="ml-mp-expand" aria-label="展开播放器"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M21 3l-7 7"/><path d="M9 21H3v-6"/><path d="M3 21l7-7"/></svg></button>
+        <button class="pl-btn" id="ml-mp-expand" type="button" aria-label="全屏查看歌词" title="全屏查看歌词"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M21 3l-7 7"/><path d="M9 21H3v-6"/><path d="M3 21l7-7"/></svg></button>
       </div>
       <div class="pl-progress-wrap">
         <div class="pl-progress-bar"><div class="pl-progress-fill" id="ml-mp-fill"></div></div>
@@ -3807,7 +3807,20 @@
       if(e.target.closest('.pl-btn, .pl-progress-wrap, .pl-vol-wrap, #ml-mp-expand, .pl-vol, .ml-audio-tool')) return;
       _mpSetExpanded(true);
     });
-    $('ml-mp-expand')?.addEventListener('click',()=>_mpSetExpanded(true));
+    $('ml-mp-expand')?.addEventListener('click',(e)=>{
+      e.preventDefault();
+      e.stopPropagation();
+      _mpSideCollapsed=true;
+      _mpSetLyricsMode(true);
+      _mpSetExpanded(true);
+      requestAnimationFrame(()=>{
+        const pv=$('ml-player-view');
+        if(pv){
+          pv.classList.add('open','lyrics-open','side-collapsed');
+          pv.setAttribute('data-player-view','lyrics');
+        }
+      });
+    });
     $('ml-player-view-close')?.addEventListener('click',()=>_mpSetExpanded(false));
     $('ml-player-view')?.addEventListener('click',e=>{ if(e.target.id==='ml-player-view') _mpSetExpanded(false); });
     $('ml-player-tab-song')?.addEventListener('click',()=>{_mpSideCollapsed=false;_mpSetLyricsMode(false);_mpSetSideMode('song');_mpSetExpanded(true);});
