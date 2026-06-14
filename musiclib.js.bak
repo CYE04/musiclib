@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.14.2-dialog-score';
+  const ML_VER='2026.06.14.1-redesign';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -263,7 +263,6 @@
     <div id="ml-detail">
       <div id="ml-detail-overlay"></div>
       <div id="ml-detail-swipe-hint"></div>
-      <section id="ml-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="ml-detail-title">
       <div id="ml-detail-header">
         <button id="ml-back" type="button">${icon('chevronLeft')}<span>返回</span></button>
         <div id="ml-detail-title"></div>
@@ -315,7 +314,6 @@
     </div>
 
       <div id="ml-detail-body"></div>
-      </section>
     </div>
     <div id="ml-player-view">
       <div id="ml-player-view-top">
@@ -528,7 +526,7 @@
     detailNotice.type='button';
     detailNotice.setAttribute('aria-label','版权与申请新歌说明');
     detailNotice.innerHTML=noticeHTML;
-    ($('ml-detail-dialog')||detail).insertBefore(detailNotice, $('ml-detail-body'));
+    detail.insertBefore(detailNotice, $('ml-detail-body'));
 
     const modal=document.createElement('div');
     modal.id='ml-notice-modal';
@@ -597,17 +595,6 @@
     render();
   });
   $('ml-back').addEventListener('click',closeDetail);
-  $('ml-detail-overlay')?.addEventListener('click',()=>closeDetail());
-  document.addEventListener('keydown',e=>{
-    if(e.key!=='Escape') return;
-    if($('ml-lightbox')?.classList.contains('open')){
-      $('ml-lightbox').classList.remove('open');
-      return;
-    }
-    if(detail?.classList.contains('open')){
-      closeDetail();
-    }
-  });
   $('ml-nav-search')?.addEventListener('click',()=>{$('ml-search')?.focus();});
   $('ml-nav-settings')?.addEventListener('click',cycleMusicTheme);
   $('ml-weather-pill')?.addEventListener('click',updateWorshipGreeting);
@@ -1481,8 +1468,6 @@
     stopMetronome();
     _mpSetExpanded(false);
     detail.classList.remove('open');
-    root.classList.remove('ml-has-detail-open');
-    document.body.classList.remove('ml-detail-lock');
     detail.style.transform='';
     detail.classList.remove('swiping');
     $('ml-detail-overlay').style.opacity='0';
@@ -2026,14 +2011,6 @@
     if(!song) return [];
     const raw= song.scoreImg ?? song.scoreIMG ?? song.scoreIMGs ?? song.scoreImages ?? song.score;
     const list=Array.isArray(raw)?raw:(raw?[raw]:[]);
-    const looksLikeImagePath=value=>{
-      const v=String(value||'').trim();
-      if(!v) return false;
-      if(/^(https?:|data:image\/|blob:)/i.test(v)) return true;
-      if(/\.(png|jpe?g|webp|gif|avif|svg)(\?.*)?$/i.test(v)) return true;
-      if(/^\.{0,2}\//.test(v)&&/(score|sheet|image|img|upload|resource|resouces)/i.test(v)) return true;
-      return false;
-    };
     return list
       .map(item=>{
         if(typeof item==='string') return item;
@@ -2041,7 +2018,6 @@
         return '';
       })
       .map(v=>String(v||'').trim())
-      .filter(looksLikeImagePath)
       .filter(Boolean)
       .map(resolveMediaUrl);
   }
@@ -3789,8 +3765,6 @@
       if(!body) return false;
       const scroller=t.closest('#ml-detail-body');
       if(scroller && scroller.scrollTop>0) return false;
-      const dialog=t.closest('#ml-detail-dialog');
-      if(dialog && dialog.scrollTop>0) return false;
       return (window.innerWidth<=900);
     }
     panel.addEventListener('touchstart',e=>{
@@ -3849,7 +3823,7 @@
     stopMetronome();
     syncHaloTheme();
     _activeDetailSongId=s.id||'';
-    setSongState(s.id,{openedAt:Date.now()});
+    setSongState(s.id,{openedAt:Date.now(),lastKey:s.origKey||'C'});
     updateDetailStateButtons(s);
     renderHomePanels();
 
@@ -3909,15 +3883,7 @@
     const body=$('ml-detail-body');
     body.innerHTML='';
 
-    const songState=getSongState(s.id);
-    const hasRenderedScore=hasRenderableScore(s);
-    const scoreImages=normalizeScoreImages(s);
-    const hasImageScore=scoreImages.length>0;
-    let scoreMode=(songState.scoreMode==='image'||songState.scoreMode==='rendered')?songState.scoreMode:'';
-    if(scoreMode==='rendered'&&!hasRenderedScore) scoreMode='';
-    if(scoreMode==='image'&&!hasImageScore) scoreMode='';
-    if(!scoreMode) scoreMode=hasRenderedScore?'rendered':(hasImageScore?'image':'empty');
-    let curKey=songState.lastKey||s.origKey||'C';
+    let curKey=s.origKey||'C';
     let preferFlat=FLAT_KEYS.has(parseKeyName(curKey).root);
 
     const wrap=document.createElement('div');wrap.className='sw-wrap';
@@ -3963,38 +3929,7 @@
     const panelInner=document.createElement('div');panelInner.className='sw-panel-inner';
     panelInner.appendChild(ksDiv);panelInner.appendChild(capoEl);panelInner.appendChild(lbDiv);
     const panel=document.createElement('div');panel.className='sw-panel';panel.appendChild(panelInner);wrap.appendChild(panel);
-
-    const scoreModeShell=document.createElement('section');
-    scoreModeShell.className='ml-score-mode-shell';
-    const scoreTabs=document.createElement('div');
-    scoreTabs.className='ml-score-mode-tabs';
-    const renderedPanel=document.createElement('div');
-    renderedPanel.className='ml-score-mode-panel';
-    renderedPanel.dataset.scorePanel='rendered';
-    const imagePanel=document.createElement('div');
-    imagePanel.className='ml-score-mode-panel';
-    imagePanel.dataset.scorePanel='image';
-    const emptyPanel=document.createElement('div');
-    emptyPanel.className='ml-score-empty';
-    emptyPanel.textContent='这首歌暂时没有可显示的歌谱。';
-    renderedPanel.appendChild(wrap);
-
-    function addScoreModeButton(mode,label,sub){
-      const btn=document.createElement('button');
-      btn.type='button';
-      btn.dataset.scoreMode=mode;
-      btn.innerHTML=`<strong>${label}</strong>${sub?`<span>${sub}</span>`:''}`;
-      btn.addEventListener('click',()=>setScoreMode(mode,true));
-      scoreTabs.appendChild(btn);
-      return btn;
-    }
-    if(hasRenderedScore) addScoreModeButton('rendered','可移调谱','和弦随调性变化');
-    if(hasImageScore) addScoreModeButton('image','原图谱','保持原始图片');
-    if(scoreTabs.children.length>1) scoreModeShell.appendChild(scoreTabs);
-    scoreModeShell.appendChild(renderedPanel);
-    scoreModeShell.appendChild(imagePanel);
-    if(!hasRenderedScore&&!hasImageScore) scoreModeShell.appendChild(emptyPanel);
-    body.appendChild(scoreModeShell);
+    body.appendChild(wrap);
 
     let fitRaf=0;
     const getViewportBox=()=>{
@@ -4069,29 +4004,6 @@
       togBtn.classList.toggle('on',panel.classList.contains('open'));
       scheduleFitRows();
     });
-
-    function setScoreMode(nextMode,save){
-      if(nextMode==='rendered'&&!hasRenderedScore) return;
-      if(nextMode==='image'&&!hasImageScore) return;
-      if(nextMode==='empty'&&(hasRenderedScore||hasImageScore)) return;
-      scoreMode=nextMode;
-      scoreModeShell.dataset.activeMode=scoreMode;
-      renderedPanel.hidden=scoreMode!=='rendered';
-      imagePanel.hidden=scoreMode!=='image';
-      emptyPanel.hidden=scoreMode!=='empty';
-      kPill.textContent=scoreMode==='image'
-        ? '原图谱 · 原调 '+(s.origKey||'—')
-        : '1 = '+curKey;
-      scoreTabs.querySelectorAll('[data-score-mode]').forEach(btn=>{
-        btn.classList.toggle('active',btn.dataset.scoreMode===scoreMode);
-        btn.setAttribute('aria-pressed',btn.dataset.scoreMode===scoreMode?'true':'false');
-      });
-      togBtn.disabled=scoreMode!=='rendered';
-      togBtn.setAttribute('aria-disabled',scoreMode!=='rendered'?'true':'false');
-      togBtn.title=scoreMode==='rendered'?'打开移调控制':'原图谱不可移调，切换到可移调谱后可用';
-      if(save&&scoreMode!=='empty') setSongState(s.id,{scoreMode});
-      if(scoreMode==='rendered') scheduleFitRows();
-    }
 
     function setCurrentKey(nextKey,flatMode){
       if(flatMode!==undefined)preferFlat=flatMode;
@@ -4192,68 +4104,27 @@
       lrc.style.cssText='font-size:12px;padding:5px 12px;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;';
       lrc.textContent='📝 LRC';toolsRow.appendChild(lrc);
     }
-    if(toolsRow.children.length){tools.appendChild(toolsRow);renderedPanel.appendChild(tools);}
+    if(toolsRow.children.length){tools.appendChild(toolsRow);body.appendChild(tools);}
 
-    renderedPanel.appendChild(createMetronome(s.bpm || 72));
+    body.appendChild(createMetronome(s.bpm || 72));
 
-    function renderImageScore(){
-      imagePanel.innerHTML='';
-      if(!hasImageScore) return;
-      const scoreDiv=document.createElement('div');
-      scoreDiv.className='sw-score ml-score-image-score';
-      const scoreTop=document.createElement('div');
-      scoreTop.className='sw-score-top';
-      const lbl=document.createElement('span');
-      lbl.className='sw-score-lbl';
-      lbl.textContent='原图谱';
-      const keyBadge=document.createElement('span');
-      keyBadge.className='sw-score-key';
-      keyBadge.textContent='原调 '+(s.origKey||'—');
-      scoreTop.appendChild(lbl);
-      scoreTop.appendChild(keyBadge);
-      scoreDiv.appendChild(scoreTop);
-      const hint=document.createElement('div');
-      hint.className='ml-score-image-hint';
-      hint.textContent='图片谱保持原始内容，不会随当前调移调。';
-      scoreDiv.appendChild(hint);
-      scoreImages.forEach((src,index)=>{
-        const page=document.createElement('figure');
-        page.className='ml-score-image-page';
-        const cap=document.createElement('figcaption');
-        cap.textContent=scoreImages.length>1?`第 ${index+1} / ${scoreImages.length} 页`:'原始图片谱';
-        const img=document.createElement('img');
-        img.src=src;
-        img.loading='lazy';
-        img.alt=(s.title||'诗歌')+' 原图谱 '+(index+1);
-        img.addEventListener('load',()=>page.classList.add('is-loaded'));
-        img.addEventListener('error',()=>{
-          page.classList.add('is-error');
-          const err=document.createElement('div');
-          err.className='ml-score-image-error';
-          err.textContent='这张图片谱加载失败，可以尝试打开原图。';
-          page.appendChild(err);
-        },{once:true});
-        img.addEventListener('click',()=>openLightbox(src,scoreImages));
-        const actions=document.createElement('div');
-        actions.className='ml-score-image-actions';
-        const open=document.createElement('a');
-        open.href=src;
-        open.target='_blank';
-        open.rel='noopener';
-        open.textContent='打开原图';
-        actions.appendChild(open);
-        page.appendChild(cap);
-        page.appendChild(img);
-        page.appendChild(actions);
-        scoreDiv.appendChild(page);
-      });
-      imagePanel.appendChild(scoreDiv);
+    let scoreKeyBadge=null;
+    if(s.scoreImg){
+      const scoreDiv=document.createElement('div');scoreDiv.className='sw-score';
+      const scoreTop=document.createElement('div');scoreTop.className='sw-score-top';
+      scoreKeyBadge=document.createElement('span');scoreKeyBadge.className='sw-score-key';scoreKeyBadge.textContent='1 = '+curKey;
+      const lbl=document.createElement('span');lbl.className='sw-score-lbl';lbl.textContent='简谱原稿';
+      scoreTop.appendChild(lbl);scoreTop.appendChild(scoreKeyBadge);
+      const img=document.createElement('img');img.src=s.scoreImg;img.loading='lazy';img.alt='简谱';
+      img.addEventListener('click',()=>openLightbox(s.scoreImg));
+      scoreDiv.appendChild(scoreTop);scoreDiv.appendChild(img);
+      body.appendChild(scoreDiv);
     }
-    renderImageScore();
 
     function renderScore(){
       const info=calcCapo(curKey,s.origKey||'C'),st=info.st,useFlat=preferFlat;
       kPill.textContent='1 = '+curKey;
+      if(scoreKeyBadge)scoreKeyBadge.textContent='1 = '+curKey;
       if(curKey===(s.origKey||'C')){
         capoEl.className='sw-capo plain';
         capoEl.querySelector('.sw-capo-t').textContent='原调演奏';
@@ -4339,7 +4210,6 @@
       lbDiv.style.marginBottom=(natural.height*(scaleY-1)+18)+'px';
     }
     renderScore();
-    setScoreMode(scoreMode,false);
     scheduleFitRows();
     if(window._mlFitCleanup)window._mlFitCleanup();
     const onViewportChange=()=>scheduleFitRows();
@@ -4375,10 +4245,7 @@
     };
 
     detail.classList.add('open');
-    root.classList.add('ml-has-detail-open');
-    document.body.classList.add('ml-detail-lock');
     detail.scrollTop=0;
-    $('ml-detail-dialog')?.scrollTo?.({top:0,left:0});
   }
 
   attachSwipeBack();
