@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.14.8-card-size-lock';
+  const ML_VER='2026.06.14.9-transpose-tempo-fix';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -387,10 +387,9 @@
     <div id="ml-audio-panel-backdrop" hidden></div>
     <section id="ml-audio-panel" hidden aria-label="MP3 变调面板">
       <div id="ml-audio-panel-head">
-        <button class="ml-audio-panel-head-btn" id="ml-audio-panel-menu" type="button" aria-label="播放列表">☰♬</button>
-        <div class="ml-audio-panel-icons" aria-hidden="true">✧✦</div>
-        <div id="ml-audio-panel-title">Transpose ▲▼</div>
-        <button class="ml-audio-panel-head-btn" id="ml-audio-panel-close" type="button" aria-label="关闭 MP3 变调面板">☷</button>
+        <div class="ml-audio-panel-brand" aria-hidden="true"><span>♫</span><span>✦</span></div>
+        <div id="ml-audio-panel-title">MP3 Transpose</div>
+        <button class="ml-audio-panel-head-btn" id="ml-audio-panel-close" type="button" aria-label="关闭 MP3 变调面板">×</button>
       </div>
       <button id="ml-audio-panel-play" type="button">
         <span>Start playback</span>
@@ -3035,11 +3034,11 @@
       el.classList.toggle('is-pro',mode==='pro');
       el.classList.toggle('is-rate',displayMode==='rate');
       el.dataset.pitchMode=displayMode||'off';
-      el.title=mode==='rate'?'兼容变调：跨域音频会通过播放率改变音高':(mode==='pro'?'实时变调：尽量保持速度':'MP3 练习控制');
+      el.title=mode==='limited'?'MP3 服务器未允许 CORS，无法独立变调':(mode==='pro'?'实时变调：调性与速度互不影响':'MP3 练习控制');
       const v=el.querySelector('.ml-audio-tool-v');
       const tag=el.querySelector('.ml-audio-tool-mode');
       if(v) v.textContent=active ? `调性 ${_mpPitchText(trans)} · Pitch ${_mpFinePitchText(fine)} · ${_mpSpeedText(speed)}` : '练习';
-      if(tag) tag.textContent=mode==='pro'?'PRO':(displayMode==='rate'?'RATE':'OFF');
+      if(tag) tag.textContent=mode==='pro'?'ON':(mode==='limited'?'CORS':'OFF');
     });
     const set=(id,val)=>{ const el=$(id); if(el) el.textContent=val; };
     const setVal=(id,val)=>{ const el=$(id); if(el) el.value=String(val); };
@@ -3144,14 +3143,7 @@
     if(_mpPitchGraph) return true;
     const AC=window.AudioContext||window.webkitAudioContext;
     if(!AC) return false;
-    try{
-      const srcUrl=new URL(_mpAudio.currentSrc||_mpAudio.src||'',location.href);
-      if(location.protocol==='file:' || (srcUrl.origin!==location.origin && !_mpAudio.crossOrigin)){
-        return false;
-      }
-    }catch(_){
-      return false;
-    }
+    if(location.protocol==='file:') return false;
     try{
       _mpAudioCtx=_mpAudioCtx||new AC();
       const source=_mpAudioCtx.createMediaElementSource(_mpAudio);
@@ -3179,12 +3171,12 @@
     const total=_mpTotalPitch();
     _mpSetPitchUi(semi,_mpPitchMode);
     if(_mpAudio){
-      const rateMode=_mpPitchMode==='rate';
-      const nativeRate=_mpClampSpeed(_mpSpeed)*(rateMode?Math.pow(2,total/12):1);
+      /* Speed controls tempo only. Pitch is handled by the Web Audio graph. */
+      const nativeRate=_mpClampSpeed(_mpSpeed);
       try{ _mpAudio.playbackRate=nativeRate; }catch(_){}
-      try{ _mpAudio.preservesPitch=!rateMode; }catch(_){}
-      try{ _mpAudio.mozPreservesPitch=!rateMode; }catch(_){}
-      try{ _mpAudio.webkitPreservesPitch=!rateMode; }catch(_){}
+      try{ _mpAudio.preservesPitch=true; }catch(_){}
+      try{ _mpAudio.mozPreservesPitch=true; }catch(_){}
+      try{ _mpAudio.webkitPreservesPitch=true; }catch(_){}
     }
     if(!_mpPitchGraph) return;
     const ratio=Math.pow(2,total/12);
@@ -3200,9 +3192,9 @@
     if(total===0) _mpPitchMode='off';
     else{
       const canShift=_mpEnsurePitchGraph();
-      _mpPitchMode=canShift?'pro':'rate';
+      _mpPitchMode=canShift?'pro':'limited';
       if(!canShift && save){
-        showToast('当前音频跨域，已使用兼容变调');
+        showToast('无法启动独立变调：请确认 MP3 服务器已允许 CORS');
       }
     }
     if(save){
@@ -3237,21 +3229,18 @@
   function _mpPrepareAudioSrc(url){
     if(!_mpAudio) return url||'';
     const next=url||'';
+    /*
+     * Web Audio can only process a remote MP3 when the media element is
+     * created in CORS mode. The previous code removed crossOrigin for every
+     * cross-domain file, which forced the fallback based on playbackRate.
+     * That fallback raises pitch by speeding the song up and lowers pitch by
+     * slowing it down. Keep anonymous CORS enabled before assigning src so
+     * transpose and tempo can be processed independently.
+     */
     try{
-      const mediaUrl=new URL(next,location.href);
-      if(mediaUrl.origin===location.origin){
-        _mpAudio.crossOrigin='anonymous';
-        _mpAudio.setAttribute('crossorigin','anonymous');
-      }else{
-        _mpAudio.removeAttribute('crossorigin');
-        _mpAudio.crossOrigin=null;
-      }
-    }catch(_){
-      try{
-        _mpAudio.removeAttribute('crossorigin');
-        _mpAudio.crossOrigin=null;
-      }catch(__){}
-    }
+      _mpAudio.crossOrigin='anonymous';
+      _mpAudio.setAttribute('crossorigin','anonymous');
+    }catch(_){}
     return next;
   }
   function _mpSetCover(src){
@@ -3774,7 +3763,7 @@
     if(play) play.querySelector('span') && (play.querySelector('span').textContent=playing?'Pause playback':'Start playback');
     if(main) main.textContent=playing?'Ⅱ':'▶';
     if(status){
-      const mode=_mpPitchMode==='pro'?'PRO pitch shift':(_mpPitchMode==='rate'?'RATE pitch shift':'Start media...');
+      const mode=_mpPitchMode==='pro'?'Pitch shift active':(_mpPitchMode==='limited'?'CORS required':'Start media...');
       status.textContent=has ? mode : 'Start media...';
     }
     const loopBtn=$('ml-audio-loop-toggle');
