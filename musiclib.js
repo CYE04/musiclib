@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.14.8-card-size-lock';
+  const ML_VER='2026.06.14.9-pitch-speed-lock';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -3003,19 +3003,22 @@
     const trans=_mpClampPitch(value);
     const fine=_mpClampFinePitch(_mpFinePitch);
     const speed=_mpClampSpeed(_mpSpeed);
-    const active=trans!==0||fine!==0||Math.round(speed*100)!==100;
+    const pitchWanted=trans!==0||fine!==0;
+    const unavailable=mode==='unavailable';
+    const active=(pitchWanted&&!unavailable)||Math.round(speed*100)!==100;
     const displayMode=(mode==='off'&&Math.round(speed*100)!==100)?'rate':mode;
     document.querySelectorAll('.ml-audio-tool').forEach(el=>{
-      el.classList.toggle('is-shifted',active);
+      el.classList.toggle('is-shifted',active||unavailable);
       el.classList.toggle('is-native',mode==='native');
       el.classList.toggle('is-pro',mode==='pro');
+      el.classList.toggle('is-unavailable',unavailable);
       el.classList.toggle('is-rate',displayMode==='rate');
       el.dataset.pitchMode=displayMode||'off';
-      el.title=mode==='native'?'兼容变调：会随音高微调速度':(mode==='pro'?'专业变调：尽量保持速度':'MP3 变调');
+      el.title=unavailable?'当前音频不能安全保持速度变调，已保持原速':(mode==='pro'?'专业变调：保持速度':'MP3 变调');
       const v=el.querySelector('.ml-audio-tool-v');
       const tag=el.querySelector('.ml-audio-tool-mode');
-      if(v) v.textContent=active ? `${_mpPitchText(trans)}${fine?` ${_mpFinePitchText(fine)}`:''}` : '变调';
-      if(tag) tag.textContent=mode==='pro'?'PRO':(mode==='native'?'LIVE':(displayMode==='rate'?'RATE':'OFF'));
+      if(v) v.textContent=unavailable?'保持原速':(active ? `${_mpPitchText(trans)}${fine?` ${_mpFinePitchText(fine)}`:''}` : '变调');
+      if(tag) tag.textContent=mode==='pro'?'PRO':(unavailable?'原速':(displayMode==='rate'?'RATE':'OFF'));
     });
     const set=(id,val)=>{ const el=$(id); if(el) el.textContent=val; };
     const setVal=(id,val)=>{ const el=$(id); if(el) el.value=String(val); };
@@ -3138,17 +3141,21 @@
       return false;
     }
   }
+  function _mpShowPitchUnavailable(){
+    const now=Date.now();
+    if(_mpShowPitchUnavailable._last&&now-_mpShowPitchUnavailable._last<2200) return;
+    _mpShowPitchUnavailable._last=now;
+    showToast('当前音频不能安全变调，已保持原速');
+  }
   function _mpApplyPitch(){
     const semi=_mpClampPitch(_mpPitchSemi);
     const total=_mpTotalPitch();
     _mpSetPitchUi(semi,_mpPitchMode);
     if(_mpAudio){
-      const nativeMode=_mpPitchMode==='native';
-      const nativeRate=_mpClampSpeed(_mpSpeed)*(nativeMode?Math.pow(2,total/12):1);
-      try{ _mpAudio.playbackRate=nativeRate; }catch(_){}
-      try{ _mpAudio.preservesPitch=!nativeMode; }catch(_){}
-      try{ _mpAudio.mozPreservesPitch=!nativeMode; }catch(_){}
-      try{ _mpAudio.webkitPreservesPitch=!nativeMode; }catch(_){}
+      try{ _mpAudio.playbackRate=_mpClampSpeed(_mpSpeed); }catch(_){}
+      try{ _mpAudio.preservesPitch=true; }catch(_){}
+      try{ _mpAudio.mozPreservesPitch=true; }catch(_){}
+      try{ _mpAudio.webkitPreservesPitch=true; }catch(_){}
     }
     if(!_mpPitchGraph) return;
     const ratio=Math.pow(2,total/12);
@@ -3162,7 +3169,8 @@
     _mpPitchSemi=next;
     const total=_mpTotalPitch();
     if(total===0) _mpPitchMode='off';
-    else _mpPitchMode=_mpEnsurePitchGraph()?'pro':'native';
+    else _mpPitchMode=_mpEnsurePitchGraph()?'pro':'unavailable';
+    if(save&&_mpPitchMode==='unavailable') _mpShowPitchUnavailable();
     if(save){
       const song=_mpSongs[_mpIdx];
       _mpSaveSongPitch(song&&song.id,_mpPitchSemi);
@@ -3639,7 +3647,7 @@
     if(play) play.querySelector('span') && (play.querySelector('span').textContent=playing?'Pause playback':'Start playback');
     if(main) main.textContent=playing?'Ⅱ':'▶';
     if(status){
-      const mode=_mpPitchMode==='pro'?'PRO pitch shift':(_mpPitchMode==='native'?'LIVE pitch shift':'Start media...');
+      const mode=_mpPitchMode==='pro'?'PRO pitch shift':(_mpPitchMode==='unavailable'?'Keep speed; pitch unavailable':'Start media...');
       status.textContent=has ? mode : 'Start media...';
     }
     const loopBtn=$('ml-audio-loop-toggle');
@@ -3794,7 +3802,7 @@
     $('ml-audio-panel-prev')?.addEventListener('click',()=>_mpPlayIdx(_mpIdx-1,true));
     $('ml-audio-panel-back')?.addEventListener('click',()=>{ if(_mpAudio?.src) _mpAudio.currentTime=Math.max(0,(_mpAudio.currentTime||0)-5); });
     $('ml-audio-panel-forward')?.addEventListener('click',()=>{ if(_mpAudio?.src) _mpAudio.currentTime=Math.min(_mpAudio.duration||1e9,(_mpAudio.currentTime||0)+5); });
-    $('ml-audio-panel-help')?.addEventListener('click',()=>showToast('PRO 保持速度；LIVE 为兼容变调，播放不断。'));
+    $('ml-audio-panel-help')?.addEventListener('click',()=>showToast('PRO 保持速度；不可用时保持原速，不再变快变慢。'));
     $('ml-audio-transpose-down')?.addEventListener('click',()=>_mpNudgePitch(-1));
     $('ml-audio-transpose-up')?.addEventListener('click',()=>_mpNudgePitch(1));
     $('ml-audio-transpose-reset')?.addEventListener('click',()=>_mpSetPitch(0,true));
