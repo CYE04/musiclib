@@ -2806,6 +2806,51 @@ html,body,#music-library{
 #ml-audio-panel .ml-audio-panel-control input::-moz-range-thumb{
   width:20px;height:20px;border:0;border-radius:50%;background:var(--ap-accent);cursor:pointer;
 }
+.ml-audio-speed-presets{
+  display:grid;
+  grid-template-columns:repeat(6,minmax(0,1fr));
+  gap:6px;
+  margin-top:10px;
+}
+.ml-audio-speed-presets button,
+#ml-audio-reset-all{
+  border:0;
+  border-radius:10px;
+  background:rgba(255,255,255,.06);
+  color:var(--ap-text2);
+  min-height:34px;
+  padding:0 8px;
+  font:700 11px/1 'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+  cursor:pointer;
+  transition:background .15s,color .15s,transform .12s;
+}
+.ml-audio-speed-presets button:hover,
+#ml-audio-reset-all:hover{
+  background:var(--ap-card-hover);
+  color:var(--ap-text);
+}
+.ml-audio-speed-presets button.active{
+  background:var(--ap-accent);
+  color:#15120a;
+}
+#ml-audio-loop-message{
+  min-height:18px;
+  margin-top:9px;
+  color:var(--ap-text3);
+  font-size:11px;
+  line-height:1.45;
+}
+#ml-audio-loop-message.is-error{
+  color:#ffb2a8;
+}
+#ml-audio-reset-all{
+  width:100%;
+  min-height:42px;
+  margin-top:14px;
+  font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,sans-serif;
+  font-size:13px;
+  letter-spacing:0;
+}
 
 /* row currently active / non-default value */
 #ml-audio-panel .ml-audio-panel-row.is-active .ml-audio-panel-rowtop strong{
@@ -2929,6 +2974,7 @@ html,body,#music-library{
   }
   .ml-audio-panel-control{grid-template-columns:36px 1fr 36px;gap:8px;}
   .ml-audio-panel-control button{width:36px;height:36px;font-size:16px;border-radius:10px;}
+  .ml-audio-speed-presets{grid-template-columns:repeat(3,minmax(0,1fr));}
   #ml-audio-panel-foot button{height:44px;font-size:14px;}
 }
 
