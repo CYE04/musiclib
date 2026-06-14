@@ -1,9 +1,9 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v5-dialog-score";
+const CACHE_NAME = "cecp-musiclib-pwa-v9-function-responsive";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
-  "./musiclib.css?v=20260614-dialog-score",
-  "./musiclib.js?v=20260614-dialog-score",
+  "./musiclib.css?v=20260614-function-responsive",
+  "./musiclib.js?v=20260614-function-responsive",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
   "./icons/favicon.ico",
