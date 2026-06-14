@@ -7294,3 +7294,28 @@ body.ml-detail-lock{overflow:hidden !important;}
 #music-library #ml-player-view.open.lyrics-open #ml-player-dock{
   flex:0 0 auto !important;
 }
+
+
+/* ===== Lyrics auto-follow + active line emphasis (2026-06-14 v5) ===== */
+#music-library #ml-player-view.open.lyrics-open .ml-player-lrc-line.active,
+#music-library #ml-player-view.open.lyrics-open .ml-player-lrc-line.is-static.active {
+  color: var(--player-accent) !important;
+  opacity: 1 !important;
+  font-weight: 800 !important;
+  transform: scale(1.045) !important;
+  text-shadow: 0 0 28px var(--player-accent-soft) !important;
+}
+#music-library #ml-player-view.open.lyrics-open .ml-player-lrc-line:not(.active) {
+  opacity: .38 !important;
+}
+#music-library #ml-player-view.open.lyrics-open #ml-player-lyrics {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  #music-library #ml-player-view.open.lyrics-open #ml-player-lyrics {
+    scroll-behavior: auto;
+  }
+  #music-library #ml-player-view.open.lyrics-open .ml-player-lrc-line {
+    transition: none !important;
+  }
+}

@@ -3572,7 +3572,7 @@
       inner.classList.toggle('is-static',!_mpLrcTimed);
       _mpLrc.forEach((it,i)=>{
         const d=document.createElement('div');
-        d.className=lineClass+(_mpLrcTimed&&i===0?' active':'')+(!_mpLrcTimed?' is-static':'');
+        d.className=lineClass+(i===0?' active':'')+(!_mpLrcTimed?' is-static':'');
         d.textContent=it.tx || '…';
         d.addEventListener('click',()=>{
           if(_mpAudio && isFinite(_mpLrc[i].t)) _mpAudio.currentTime=_mpLrc[i].t;
@@ -3587,13 +3587,26 @@
     const nbLyric=$('ml-nowbar-lyric');
     if(nbLyric) nbLyric.textContent=_mpLrc[0]?.tx || '歌词将在播放时显示';
   }
-  function _mpSyncLrc(cur){
-    if(!_mpLrc.length || !_mpLrcTimed) return;
+  function _mpSyncLrc(cur,force=false){
+    if(!_mpLrc.length) return;
     let idx=0;
-    for(let i=0;i<_mpLrc.length;i++){
-      if(cur>=_mpLrc[i].t) idx=i; else break;
+    if(_mpLrcTimed){
+      for(let i=0;i<_mpLrc.length;i++){
+        if(cur>=_mpLrc[i].t) idx=i; else break;
+      }
+    }else{
+      // No timestamped LRC: keep the lyrics moving with playback using
+      // an even, duration-based estimate rather than leaving the page static.
+      const dur=Number(_mpAudio&&_mpAudio.duration);
+      if(Number.isFinite(dur)&&dur>0){
+        const progress=Math.max(0,Math.min(0.999999,(Number(cur)||0)/dur));
+        idx=Math.min(_mpLrc.length-1,Math.floor(progress*_mpLrc.length));
+      }else{
+        idx=Math.max(0,Math.min(_mpLrc.length-1,_mpLrcIdx<0?0:_mpLrcIdx));
+      }
     }
-    if(idx===_mpLrcIdx) return;
+    const needsPaint=force||idx!==_mpLrcIdx||!document.querySelector('#ml-player-lyrics-inner .active');
+    if(!needsPaint) return;
     _mpLrcIdx=idx;
     function sync(innerId,panelId){
       const inner=$(innerId), panel=$(panelId);
@@ -3602,7 +3615,8 @@
       const active=inner.children[idx];
       if(active){
         const y=active.offsetTop - panel.clientHeight/2 + active.clientHeight/2;
-        panel.scrollTo({ top: Math.max(0,y), behavior:'smooth' });
+        const reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        panel.scrollTo({ top: Math.max(0,y), behavior:reduceMotion?'auto':'smooth' });
       }
     }
     sync('ml-mp-lrc-inner','ml-mp-lrc-panel');
@@ -3819,6 +3833,7 @@
           pv.classList.add('open','lyrics-open','side-collapsed');
           pv.setAttribute('data-player-view','lyrics');
         }
+        _mpSyncLrc(_mpAudio?.currentTime||0,true);
       });
     });
     $('ml-player-view-close')?.addEventListener('click',()=>_mpSetExpanded(false));
@@ -4150,7 +4165,30 @@
         _mpLrc=[]; _mpLrcIdx=-1;
         _mpAudio.src=resolveMediaUrl(s.mp3)||'';
         _mpApplySongPitchSettings(s,false);
-        if(s.lrc) fetch(s.lrc).then(r=>r.text()).then(text=>{_mpLrc=_mpParseLrc(text);_mpRenderLrc();}).catch(()=>{});
+        if(s.lrc){
+          fetch(resolveMediaUrl(s.lrc)).then(r=>{
+            if(!r.ok) throw new Error('LRC '+r.status);
+            return r.text();
+          }).then(text=>{
+            const parsed=_mpParseLrc(text);
+            if(parsed.length){
+              _mpLrc=parsed;
+              _mpLrcTimed=true;
+              _mpLrcIdx=-1;
+              _mpRenderLrc();
+              _mpSyncLrc(_mpAudio.currentTime||0,true);
+            }else{
+              _mpUseFallbackLyrics(s);
+              _mpSyncLrc(_mpAudio.currentTime||0,true);
+            }
+          }).catch(()=>{
+            _mpUseFallbackLyrics(s);
+            _mpSyncLrc(_mpAudio.currentTime||0,true);
+          });
+        }else{
+          _mpUseFallbackLyrics(s);
+          _mpSyncLrc(_mpAudio.currentTime||0,true);
+        }
       }else{
         _mpSetPitchUi(_mpPitchSemi);
       }
