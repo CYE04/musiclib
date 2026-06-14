@@ -387,11 +387,10 @@
     <div id="ml-audio-panel-backdrop" hidden></div>
     <section id="ml-audio-panel" hidden aria-label="MP3 变调面板">
       <div id="ml-audio-panel-head">
-        <div class="ml-audio-panel-icons" aria-hidden="true">
-          <span>♬</span><span>✦</span>
-        </div>
-        <div id="ml-audio-panel-title">MP3 Transpose</div>
-        <button id="ml-audio-panel-close" type="button" aria-label="关闭 MP3 变调面板">✕</button>
+        <button class="ml-audio-panel-head-btn" id="ml-audio-panel-menu" type="button" aria-label="播放列表">☰♬</button>
+        <div class="ml-audio-panel-icons" aria-hidden="true">✧✦</div>
+        <div id="ml-audio-panel-title">Transpose ▲▼</div>
+        <button class="ml-audio-panel-head-btn" id="ml-audio-panel-close" type="button" aria-label="关闭 MP3 变调面板">☷</button>
       </div>
       <button id="ml-audio-panel-play" type="button">
         <span>Start playback</span>
@@ -409,10 +408,22 @@
           <button id="ml-audio-transpose-up" type="button" aria-label="升半音">+</button>
         </div>
       </div>
+      <div class="ml-audio-panel-row" data-control="pitch">
+        <div class="ml-audio-panel-rowtop">
+          <span>Pitch</span>
+          <strong id="ml-audio-pitch-value">0</strong>
+          <button id="ml-audio-pitch-reset" type="button" aria-label="重置音高细调">↻</button>
+        </div>
+        <div class="ml-audio-panel-control">
+          <button id="ml-audio-pitch-down" type="button" aria-label="音高降低">−</button>
+          <input id="ml-audio-pitch-range" type="range" min="-100" max="100" step="1" value="0">
+          <button id="ml-audio-pitch-up" type="button" aria-label="音高升高">+</button>
+        </div>
+      </div>
       <div class="ml-audio-panel-row" data-control="speed">
         <div class="ml-audio-panel-rowtop">
           <span>Speed <strong id="ml-audio-speed-value">100%</strong></span>
-          <span>Tempo <strong id="ml-audio-tempo-value">— bpm</strong></span>
+          <span>Tempo <strong id="ml-audio-tempo-value">bpm</strong></span>
           <button id="ml-audio-speed-reset" type="button" aria-label="重置速度">↻</button>
         </div>
         <div class="ml-audio-panel-control">
@@ -432,23 +443,38 @@
       <div class="ml-audio-panel-row" data-control="loop">
         <div class="ml-audio-panel-rowtop">
           <span>Loop</span>
-          <button id="ml-audio-loop-toggle" type="button">OFF</button>
-          <button id="ml-audio-loop-reset" type="button" aria-label="清除循环">↻</button>
+          <div class="ml-audio-loop-actions">
+            <button id="ml-audio-loop-toggle" type="button" aria-label="开启或关闭 A/B 循环">↻</button>
+            <button id="ml-audio-loop-reset" type="button" aria-label="清除循环">◷</button>
+            <button id="ml-audio-loop-use-current" type="button" aria-label="用当前位置补齐 A/B">☰</button>
+            <button id="ml-audio-reset-all" type="button" aria-label="全部重置">☰＋</button>
+          </div>
         </div>
         <div id="ml-audio-loop-grid">
-          <button id="ml-audio-loop-a" type="button"><span>A</span><strong>00:00.0</strong></button>
-          <button id="ml-audio-loop-b" type="button"><span>B</span><strong>00:30.0</strong></button>
+          <div class="ml-audio-loop-point" data-point="a">
+            <button id="ml-audio-loop-a" class="ml-audio-loop-mark" type="button" aria-label="设置 A 点">▱</button>
+            <input id="ml-audio-loop-a-time" class="ml-audio-loop-time" type="text" inputmode="decimal" value="00:00.0" aria-label="A 点时间">
+            <button id="ml-audio-loop-a-jump" class="ml-audio-loop-jump" type="button" aria-label="跳到 A 点">▶▌</button>
+            <input id="ml-audio-loop-a-label" class="ml-audio-loop-label" type="text" value="marker 1" aria-label="A 点标记名称">
+          </div>
+          <div class="ml-audio-loop-point" data-point="b">
+            <button id="ml-audio-loop-b" class="ml-audio-loop-mark" type="button" aria-label="设置 B 点">▱</button>
+            <input id="ml-audio-loop-b-time" class="ml-audio-loop-time" type="text" inputmode="decimal" value="00:30.0" aria-label="B 点时间">
+            <button id="ml-audio-loop-b-jump" class="ml-audio-loop-jump" type="button" aria-label="跳到 B 点">▶▌</button>
+            <input id="ml-audio-loop-b-label" class="ml-audio-loop-label" type="text" value="marker 2" aria-label="B 点标记名称">
+          </div>
+          <button id="ml-audio-loop-swap" type="button" aria-label="交换 A/B 点">⇄</button>
         </div>
         <div id="ml-audio-loop-message" role="status" aria-live="polite"></div>
       </div>
-      <button id="ml-audio-reset-all" type="button">全部重置</button>
       <div id="ml-audio-panel-foot">
-        <button id="ml-audio-panel-prev" type="button" aria-label="上一首">◀</button>
-        <button id="ml-audio-panel-back" type="button" aria-label="后退">◁</button>
+        <button id="ml-audio-panel-prev" type="button" aria-label="上一首">▌◀</button>
+        <button id="ml-audio-panel-back" type="button" aria-label="后退">◀◀</button>
         <button id="ml-audio-panel-main" type="button" aria-label="播放或暂停">▶</button>
-        <button id="ml-audio-panel-forward" type="button" aria-label="前进">▷</button>
+        <button id="ml-audio-panel-forward" type="button" aria-label="前进">▶▶</button>
         <button id="ml-audio-panel-help" type="button" aria-label="帮助">?</button>
       </div>
+      <div id="ml-audio-panel-time">00:00 / 00:00</div>
       <div id="ml-audio-panel-status">Start media...</div>
     </section>
     <div id="ml-nowbar" aria-label="正在播放">
@@ -2930,7 +2956,7 @@
 
   let _mpAudio=null,_mpSongs=[],_mpIdx=-1,_mpLoop=false,_mpShuffle=false,_mpLrc=[],_mpLrcIdx=-1,_mpLrcTimed=false,_mpCurrentSong=null,_mpCoverFallback='',_mpExpanded=false,_mpSideMode='song',_mpSideCollapsed=false,_mpLyricsOpen=true,_mpPlayRequestId=0,_mpReturnUrl='';
   let _mpAudioCtx=null,_mpPitchGraph=null,_mpPitchSemi=0,_mpFinePitch=0,_mpSpeed=1,_mpPitchMode='off',_mpPitchStore=null,_mpPitchWarned=false;
-  let _mpAbLoop=false,_mpLoopA=null,_mpLoopB=null,_mpPanelOpen=false;
+  let _mpAbLoop=false,_mpLoopA=0,_mpLoopB=30,_mpPanelOpen=false;
   const MP_PITCH_KEY='cecp:musiclib:audio-pitch:v1';
   const MP_PITCH_MIN=-12;
   const MP_PITCH_MAX=12;
@@ -2958,7 +2984,7 @@
   }
   function _mpFinePitchText(v){
     v=_mpClampFinePitch(v);
-    return (v>0?'+'+v:String(v))+'¢';
+    return v>0?'+'+v:String(v);
   }
   function _mpSpeedText(v){
     return Math.round(_mpClampSpeed(v)*100)+'%';
@@ -2977,7 +3003,7 @@
     const store=_mpLoadPitchStore();
     const next={
       transpose:_mpClampPitch(value),
-      pitch:0,
+      pitch:_mpClampFinePitch(_mpFinePitch),
       speed:Math.round(_mpClampSpeed(_mpSpeed)*100)
     };
     if(next.transpose||next.pitch||next.speed!==100) store[songId]=next;
@@ -2991,7 +3017,7 @@
     if(raw&&typeof raw==='object'){
       return {
         transpose:_mpClampPitch(raw.transpose),
-        pitch:0,
+        pitch:_mpClampFinePitch(raw.pitch),
         speed:Math.round(_mpClampSpeed((raw.speed||100)/100)*100)
       };
     }
@@ -3001,7 +3027,7 @@
     const trans=_mpClampPitch(value);
     const fine=_mpClampFinePitch(_mpFinePitch);
     const speed=_mpClampSpeed(_mpSpeed);
-    const active=trans!==0||Math.round(speed*100)!==100;
+    const active=trans!==0||fine!==0||Math.round(speed*100)!==100;
     const displayMode=(mode==='off'&&Math.round(speed*100)!==100)?'rate':mode;
     document.querySelectorAll('.ml-audio-tool').forEach(el=>{
       el.classList.toggle('is-shifted',active);
@@ -3009,11 +3035,11 @@
       el.classList.toggle('is-pro',mode==='pro');
       el.classList.toggle('is-rate',displayMode==='rate');
       el.dataset.pitchMode=displayMode||'off';
-      el.title=mode==='limited'?'当前浏览器暂不支持实时变调，速度仍可用':(mode==='pro'?'实时变调：尽量保持速度':'MP3 练习控制');
+      el.title=mode==='rate'?'兼容变调：跨域音频会通过播放率改变音高':(mode==='pro'?'实时变调：尽量保持速度':'MP3 练习控制');
       const v=el.querySelector('.ml-audio-tool-v');
       const tag=el.querySelector('.ml-audio-tool-mode');
-      if(v) v.textContent=active ? `调性 ${_mpPitchText(trans)} · ${_mpSpeedText(speed)}` : '练习';
-      if(tag) tag.textContent=mode==='pro'?'PRO':(mode==='limited'?'LIMIT':(displayMode==='rate'?'RATE':'OFF'));
+      if(v) v.textContent=active ? `调性 ${_mpPitchText(trans)} · Pitch ${_mpFinePitchText(fine)} · ${_mpSpeedText(speed)}` : '练习';
+      if(tag) tag.textContent=mode==='pro'?'PRO':(displayMode==='rate'?'RATE':'OFF');
     });
     const set=(id,val)=>{ const el=$(id); if(el) el.textContent=val; };
     const setVal=(id,val)=>{ const el=$(id); if(el) el.value=String(val); };
@@ -3028,8 +3054,10 @@
     set('ml-audio-tempo-value',bpm?`${Math.round(bpm*speed)} bpm`:'— bpm');
     const transRow=document.querySelector('#ml-audio-panel .ml-audio-panel-row[data-control="transpose"]');
     const speedRow=document.querySelector('#ml-audio-panel .ml-audio-panel-row[data-control="speed"]');
+    const pitchRow=document.querySelector('#ml-audio-panel .ml-audio-panel-row[data-control="pitch"]');
     const loopRow=document.querySelector('#ml-audio-panel .ml-audio-panel-row[data-control="loop"]');
     if(transRow) transRow.classList.toggle('is-active',trans!==0);
+    if(pitchRow) pitchRow.classList.toggle('is-active',fine!==0);
     if(speedRow) speedRow.classList.toggle('is-active',Math.round(speed*100)!==100);
     if(loopRow) loopRow.classList.toggle('is-active',!!_mpAbLoop);
     document.querySelectorAll('.ml-audio-speed-presets button').forEach(btn=>{
@@ -3151,10 +3179,12 @@
     const total=_mpTotalPitch();
     _mpSetPitchUi(semi,_mpPitchMode);
     if(_mpAudio){
-      try{ _mpAudio.playbackRate=_mpClampSpeed(_mpSpeed); }catch(_){}
-      try{ _mpAudio.preservesPitch=true; }catch(_){}
-      try{ _mpAudio.mozPreservesPitch=true; }catch(_){}
-      try{ _mpAudio.webkitPreservesPitch=true; }catch(_){}
+      const rateMode=_mpPitchMode==='rate';
+      const nativeRate=_mpClampSpeed(_mpSpeed)*(rateMode?Math.pow(2,total/12):1);
+      try{ _mpAudio.playbackRate=nativeRate; }catch(_){}
+      try{ _mpAudio.preservesPitch=!rateMode; }catch(_){}
+      try{ _mpAudio.mozPreservesPitch=!rateMode; }catch(_){}
+      try{ _mpAudio.webkitPreservesPitch=!rateMode; }catch(_){}
     }
     if(!_mpPitchGraph) return;
     const ratio=Math.pow(2,total/12);
@@ -3166,14 +3196,13 @@
   function _mpSetPitch(value,save=true){
     const next=_mpClampPitch(value);
     _mpPitchSemi=next;
-    _mpFinePitch=0;
     const total=_mpTotalPitch();
     if(total===0) _mpPitchMode='off';
     else{
       const canShift=_mpEnsurePitchGraph();
-      _mpPitchMode=canShift?'pro':'limited';
+      _mpPitchMode=canShift?'pro':'rate';
       if(!canShift && save){
-        showToast('当前浏览器暂不支持实时变调，速度控制仍可使用');
+        showToast('当前音频跨域，已使用兼容变调');
       }
     }
     if(save){
@@ -3204,6 +3233,26 @@
     _mpFinePitch=settings.pitch;
     _mpSpeed=_mpClampSpeed(settings.speed/100);
     _mpSetPitch(_mpPitchSemi,save);
+  }
+  function _mpPrepareAudioSrc(url){
+    if(!_mpAudio) return url||'';
+    const next=url||'';
+    try{
+      const mediaUrl=new URL(next,location.href);
+      if(mediaUrl.origin===location.origin){
+        _mpAudio.crossOrigin='anonymous';
+        _mpAudio.setAttribute('crossorigin','anonymous');
+      }else{
+        _mpAudio.removeAttribute('crossorigin');
+        _mpAudio.crossOrigin=null;
+      }
+    }catch(_){
+      try{
+        _mpAudio.removeAttribute('crossorigin');
+        _mpAudio.crossOrigin=null;
+      }catch(__){}
+    }
+    return next;
   }
   function _mpSetCover(src){
     const el=$('ml-mp-cover');
@@ -3678,6 +3727,35 @@
     const s=(t%60).toFixed(1).padStart(4,'0');
     return `${String(m).padStart(2,'0')}:${s}`;
   }
+  function _mpParseLoopTime(value){
+    const raw=String(value||'').trim();
+    if(!raw) return NaN;
+    if(/^\d+(?:\.\d+)?$/.test(raw)) return Math.max(0,parseFloat(raw));
+    const parts=raw.split(':').map(part=>part.trim());
+    if(parts.length===2 && parts.every(Boolean)){
+      const m=parseInt(parts[0],10);
+      const s=parseFloat(parts[1]);
+      if(Number.isFinite(m)&&Number.isFinite(s)&&s>=0) return Math.max(0,m*60+s);
+    }
+    if(parts.length===3 && parts.every(Boolean)){
+      const h=parseInt(parts[0],10);
+      const m=parseInt(parts[1],10);
+      const s=parseFloat(parts[2]);
+      if(Number.isFinite(h)&&Number.isFinite(m)&&Number.isFinite(s)&&m>=0&&s>=0) return Math.max(0,h*3600+m*60+s);
+    }
+    return NaN;
+  }
+  function _mpSetLoopInput(which,value){
+    const input=$(which==='a'?'ml-audio-loop-a-time':'ml-audio-loop-b-time');
+    if(input) input.value=_mpFmtMs(value);
+  }
+  function _mpSyncPanelTime(){
+    const time=$('ml-audio-panel-time');
+    if(!time) return;
+    const cur=_mpAudio?(_mpAudio.currentTime||0):0;
+    const dur=_mpAudio?(_mpAudio.duration||0):0;
+    time.textContent=`${_mpFmt(cur)} / ${_mpFmt(dur)}`;
+  }
   function _mpLoopIsValid(){
     return Number.isFinite(_mpLoopA)&&Number.isFinite(_mpLoopB)&&_mpLoopB>_mpLoopA;
   }
@@ -3696,15 +3774,17 @@
     if(play) play.querySelector('span') && (play.querySelector('span').textContent=playing?'Pause playback':'Start playback');
     if(main) main.textContent=playing?'Ⅱ':'▶';
     if(status){
-      const mode=_mpPitchMode==='pro'?'PRO pitch shift':(_mpPitchMode==='limited'?'Pitch unavailable on this browser':'Start media...');
+      const mode=_mpPitchMode==='pro'?'PRO pitch shift':(_mpPitchMode==='rate'?'RATE pitch shift':'Start media...');
       status.textContent=has ? mode : 'Start media...';
     }
     const loopBtn=$('ml-audio-loop-toggle');
-    if(loopBtn) loopBtn.textContent=_mpAbLoop?'ON':'OFF';
-    const a=$('ml-audio-loop-a')?.querySelector('strong');
-    const b=$('ml-audio-loop-b')?.querySelector('strong');
-    if(a) a.textContent=_mpFmtMs(_mpLoopA);
-    if(b) b.textContent=_mpFmtMs(_mpLoopB);
+    if(loopBtn){
+      loopBtn.classList.toggle('active',!!_mpAbLoop);
+      loopBtn.setAttribute('aria-pressed',String(!!_mpAbLoop));
+    }
+    _mpSetLoopInput('a',_mpLoopA);
+    _mpSetLoopInput('b',_mpLoopB);
+    _mpSyncPanelTime();
     const loopRow=document.querySelector('#ml-audio-panel .ml-audio-panel-row[data-control="loop"]');
     if(loopRow) loopRow.classList.toggle('is-active',!!_mpAbLoop);
   }
@@ -3740,6 +3820,36 @@
     }
     _mpSyncPanelPlaybackUi();
   }
+  function _mpCommitLoopInput(which){
+    const input=$(which==='a'?'ml-audio-loop-a-time':'ml-audio-loop-b-time');
+    if(!input) return;
+    const next=_mpParseLoopTime(input.value);
+    if(!Number.isFinite(next)){
+      _mpSetLoopMessage('时间格式无效，请输入 00:30.0 或秒数。',true);
+      showToast('Loop 时间格式无效');
+      _mpSyncPanelPlaybackUi();
+      return;
+    }
+    if(which==='a') _mpLoopA=next;
+    else _mpLoopB=next;
+    if(Number.isFinite(_mpLoopA)&&Number.isFinite(_mpLoopB)&&_mpLoopB<=_mpLoopA){
+      _mpAbLoop=false;
+      _mpSetLoopMessage('B 点必须晚于 A 点，请重新设置。',true);
+      showToast('B 点必须晚于 A 点');
+    }else{
+      _mpSetLoopMessage(`${which==='a'?'A':'B'} 点已更新`);
+    }
+    _mpSyncPanelPlaybackUi();
+  }
+  function _mpJumpLoopPoint(which){
+    if(!_mpAudio||!_mpAudio.src) return;
+    const t=which==='a'?_mpLoopA:_mpLoopB;
+    if(!Number.isFinite(t)){
+      _mpSetLoopMessage(`请先设置 ${which==='a'?'A':'B'} 点。`,true);
+      return;
+    }
+    _mpAudio.currentTime=Math.max(0,Math.min(_mpAudio.duration||1e9,t));
+  }
   function _mpToggleAbLoop(){
     if(_mpAbLoop){
       _mpAbLoop=false;
@@ -3760,9 +3870,42 @@
   }
   function _mpClearAbLoop(){
     _mpAbLoop=false;
-    _mpLoopA=null;
-    _mpLoopB=null;
+    _mpLoopA=0;
+    _mpLoopB=30;
     _mpSetLoopMessage('循环已清除');
+    _mpSyncPanelPlaybackUi();
+  }
+  function _mpUseCurrentForLoop(){
+    if(!_mpAudio||!_mpAudio.src){
+      _mpSetLoopMessage('请先打开一首可播放的 MP3。',true);
+      showToast('请先打开一首可播放的 MP3');
+      return;
+    }
+    const cur=Math.max(0,_mpAudio.currentTime||0);
+    if(!Number.isFinite(_mpLoopA)){
+      _mpLoopA=cur;
+      _mpSetLoopMessage('已用当前位置设置 A 点');
+    }else{
+      _mpLoopB=cur;
+      _mpSetLoopMessage('已用当前位置设置 B 点');
+    }
+    if(Number.isFinite(_mpLoopA)&&Number.isFinite(_mpLoopB)&&_mpLoopB<=_mpLoopA){
+      _mpAbLoop=false;
+      _mpSetLoopMessage('B 点必须晚于 A 点，请重新设置。',true);
+      showToast('B 点必须晚于 A 点');
+    }
+    _mpSyncPanelPlaybackUi();
+  }
+  function _mpSwapLoopPoints(){
+    const oldA=_mpLoopA;
+    _mpLoopA=_mpLoopB;
+    _mpLoopB=oldA;
+    if(Number.isFinite(_mpLoopA)&&Number.isFinite(_mpLoopB)&&_mpLoopB<=_mpLoopA){
+      _mpAbLoop=false;
+      _mpSetLoopMessage('交换后 B 点不晚于 A 点，循环已关闭。',true);
+    }else{
+      _mpSetLoopMessage('A/B 点已交换');
+    }
     _mpSyncPanelPlaybackUi();
   }
   function _mpResetAudioPractice(){
@@ -3839,6 +3982,7 @@
     _mpAudio.addEventListener('loadedmetadata',()=>{
       $('ml-mp-dur').textContent=_mpFmt(_mpAudio.duration);
       const xd=$('ml-player-dur'); if(xd) xd.textContent=_mpFmt(_mpAudio.duration);
+      _mpSyncPanelTime();
     });
     _mpAudio.addEventListener('timeupdate',()=>{
       $('ml-mp-cur').textContent=_mpFmt(_mpAudio.currentTime);
@@ -3849,6 +3993,7 @@
       const nf=$('ml-nowbar-fill'); if(nf) nf.style.width=dur?((_mpAudio.currentTime/dur)*100)+'%':'0%';
       _mpSyncLrc(_mpAudio.currentTime);
       _mpHandleAbLoop();
+      _mpSyncPanelTime();
     });
     _mpAudio.addEventListener('play',()=>{
       if(_mpAudioCtx&&_mpAudioCtx.state==='suspended') _mpAudioCtx.resume().catch(()=>{});
@@ -3908,6 +4053,10 @@
     $('ml-audio-transpose-up')?.addEventListener('click',()=>_mpNudgePitch(1));
     $('ml-audio-transpose-reset')?.addEventListener('click',()=>_mpSetPitch(0,true));
     $('ml-audio-transpose-range')?.addEventListener('input',e=>_mpSetPitch(e.target.value,true));
+    $('ml-audio-pitch-down')?.addEventListener('click',()=>_mpSetFinePitch(_mpFinePitch-1,true));
+    $('ml-audio-pitch-up')?.addEventListener('click',()=>_mpSetFinePitch(_mpFinePitch+1,true));
+    $('ml-audio-pitch-reset')?.addEventListener('click',()=>_mpSetFinePitch(0,true));
+    $('ml-audio-pitch-range')?.addEventListener('input',e=>_mpSetFinePitch(e.target.value,true));
     $('ml-audio-speed-down')?.addEventListener('click',()=>_mpSetSpeed(_mpSpeed-0.05,true));
     $('ml-audio-speed-up')?.addEventListener('click',()=>_mpSetSpeed(_mpSpeed+0.05,true));
     $('ml-audio-speed-reset')?.addEventListener('click',()=>_mpSetSpeed(1,true));
@@ -3919,6 +4068,14 @@
     $('ml-audio-loop-reset')?.addEventListener('click',_mpClearAbLoop);
     $('ml-audio-loop-a')?.addEventListener('click',()=>_mpSetLoopPoint('a'));
     $('ml-audio-loop-b')?.addEventListener('click',()=>_mpSetLoopPoint('b'));
+    $('ml-audio-loop-a-time')?.addEventListener('change',()=>_mpCommitLoopInput('a'));
+    $('ml-audio-loop-b-time')?.addEventListener('change',()=>_mpCommitLoopInput('b'));
+    $('ml-audio-loop-a-time')?.addEventListener('keydown',e=>{ if(e.key==='Enter') _mpCommitLoopInput('a'); });
+    $('ml-audio-loop-b-time')?.addEventListener('keydown',e=>{ if(e.key==='Enter') _mpCommitLoopInput('b'); });
+    $('ml-audio-loop-a-jump')?.addEventListener('click',()=>_mpJumpLoopPoint('a'));
+    $('ml-audio-loop-b-jump')?.addEventListener('click',()=>_mpJumpLoopPoint('b'));
+    $('ml-audio-loop-use-current')?.addEventListener('click',_mpUseCurrentForLoop);
+    $('ml-audio-loop-swap')?.addEventListener('click',_mpSwapLoopPoints);
     $('ml-audio-reset-all')?.addEventListener('click',_mpResetAudioPractice);
     $('ml-mp-vol')?.addEventListener('input',e=>{
       const v=parseFloat(e.target.value||'1');
@@ -4087,7 +4244,7 @@
     _mpSetCover(s.cover||'');
     _mpApplyPlayerAccent(s);
     _mpPlayRequestId++;
-    _mpAudio.src=resolveMediaUrl(s.mp3)||'';
+    _mpAudio.src=_mpPrepareAudioSrc(resolveMediaUrl(s.mp3));
     _mpApplySongPitchSettings(s,false);
     $('ml-mp-cur').textContent='0:00';
     $('ml-mp-dur').textContent='0:00';
@@ -4294,7 +4451,7 @@
         _mpRenderQueue();
         _mpLrc=[]; _mpLrcIdx=-1;
         _mpPlayRequestId++;
-        _mpAudio.src=resolveMediaUrl(s.mp3)||'';
+        _mpAudio.src=_mpPrepareAudioSrc(resolveMediaUrl(s.mp3));
         _mpApplySongPitchSettings(s,false);
         if(s.lrc){
           fetch(resolveMediaUrl(s.lrc)).then(r=>{
