@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.14.9-transpose-tempo-fix';
+  const ML_VER='2026.06.14.9-transpose-safe';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -387,8 +387,11 @@
     <div id="ml-audio-panel-backdrop" hidden></div>
     <section id="ml-audio-panel" hidden aria-label="MP3 变调面板">
       <div id="ml-audio-panel-head">
-        <div class="ml-audio-panel-brand" aria-hidden="true"><span>♫</span><span>✦</span></div>
-        <div id="ml-audio-panel-title">MP3 Transpose</div>
+        <div class="ml-audio-panel-brand">
+          <span class="ml-audio-panel-note" aria-hidden="true">♫</span>
+          <span class="ml-audio-panel-spark" aria-hidden="true">✦</span>
+          <div id="ml-audio-panel-title">MP3 Transpose</div>
+        </div>
         <button class="ml-audio-panel-head-btn" id="ml-audio-panel-close" type="button" aria-label="关闭 MP3 变调面板">×</button>
       </div>
       <button id="ml-audio-panel-play" type="button">
@@ -3027,18 +3030,18 @@
     const fine=_mpClampFinePitch(_mpFinePitch);
     const speed=_mpClampSpeed(_mpSpeed);
     const active=trans!==0||fine!==0||Math.round(speed*100)!==100;
-    const displayMode=(mode==='off'&&Math.round(speed*100)!==100)?'rate':mode;
+    const displayMode=(mode==='off'&&Math.round(speed*100)!==100)?'speed':mode;
     document.querySelectorAll('.ml-audio-tool').forEach(el=>{
       el.classList.toggle('is-shifted',active);
       el.classList.toggle('is-native',mode==='limited');
       el.classList.toggle('is-pro',mode==='pro');
-      el.classList.toggle('is-rate',displayMode==='rate');
+      el.classList.toggle('is-rate',false);
       el.dataset.pitchMode=displayMode||'off';
-      el.title=mode==='limited'?'MP3 服务器未允许 CORS，无法独立变调':(mode==='pro'?'实时变调：调性与速度互不影响':'MP3 练习控制');
+      el.title=mode==='pro'?'独立变调：速度保持不变':(mode==='limited'?'音频可播放，但服务器未开放独立变调权限':'MP3 练习控制');
       const v=el.querySelector('.ml-audio-tool-v');
       const tag=el.querySelector('.ml-audio-tool-mode');
       if(v) v.textContent=active ? `调性 ${_mpPitchText(trans)} · Pitch ${_mpFinePitchText(fine)} · ${_mpSpeedText(speed)}` : '练习';
-      if(tag) tag.textContent=mode==='pro'?'ON':(mode==='limited'?'CORS':'OFF');
+      if(tag) tag.textContent=mode==='pro'?'PRO':(mode==='limited'?'AUDIO':'OFF');
     });
     const set=(id,val)=>{ const el=$(id); if(el) el.textContent=val; };
     const setVal=(id,val)=>{ const el=$(id); if(el) el.value=String(val); };
@@ -3143,7 +3146,14 @@
     if(_mpPitchGraph) return true;
     const AC=window.AudioContext||window.webkitAudioContext;
     if(!AC) return false;
-    if(location.protocol==='file:') return false;
+    try{
+      const srcUrl=new URL(_mpAudio.currentSrc||_mpAudio.src||'',location.href);
+      if(location.protocol==='file:' || (srcUrl.origin!==location.origin && !_mpAudio.crossOrigin)){
+        return false;
+      }
+    }catch(_){
+      return false;
+    }
     try{
       _mpAudioCtx=_mpAudioCtx||new AC();
       const source=_mpAudioCtx.createMediaElementSource(_mpAudio);
@@ -3171,7 +3181,9 @@
     const total=_mpTotalPitch();
     _mpSetPitchUi(semi,_mpPitchMode);
     if(_mpAudio){
-      /* Speed controls tempo only. Pitch is handled by the Web Audio graph. */
+      // Speed only changes tempo. Never use playbackRate as a transpose fallback.
+      // This keeps ordinary MP3 playback working even when the remote server
+      // does not allow Web Audio/CORS processing.
       const nativeRate=_mpClampSpeed(_mpSpeed);
       try{ _mpAudio.playbackRate=nativeRate; }catch(_){}
       try{ _mpAudio.preservesPitch=true; }catch(_){}
@@ -3194,7 +3206,7 @@
       const canShift=_mpEnsurePitchGraph();
       _mpPitchMode=canShift?'pro':'limited';
       if(!canShift && save){
-        showToast('无法启动独立变调：请确认 MP3 服务器已允许 CORS');
+        showToast('音频会继续正常播放；独立变调需要 MP3 服务器允许跨域音频处理');
       }
     }
     if(save){
@@ -3229,18 +3241,24 @@
   function _mpPrepareAudioSrc(url){
     if(!_mpAudio) return url||'';
     const next=url||'';
-    /*
-     * Web Audio can only process a remote MP3 when the media element is
-     * created in CORS mode. The previous code removed crossOrigin for every
-     * cross-domain file, which forced the fallback based on playbackRate.
-     * That fallback raises pitch by speeding the song up and lowers pitch by
-     * slowing it down. Keep anonymous CORS enabled before assigning src so
-     * transpose and tempo can be processed independently.
-     */
     try{
-      _mpAudio.crossOrigin='anonymous';
-      _mpAudio.setAttribute('crossorigin','anonymous');
-    }catch(_){}
+      const mediaUrl=new URL(next,location.href);
+      if(mediaUrl.origin===location.origin){
+        // Same-origin files can safely enter the Web Audio graph.
+        _mpAudio.crossOrigin='anonymous';
+        _mpAudio.setAttribute('crossorigin','anonymous');
+      }else{
+        // Do not force CORS on remote MP3 files. If their server does not send
+        // Access-Control-Allow-Origin, forcing anonymous CORS blocks playback.
+        _mpAudio.removeAttribute('crossorigin');
+        _mpAudio.crossOrigin=null;
+      }
+    }catch(_){
+      try{
+        _mpAudio.removeAttribute('crossorigin');
+        _mpAudio.crossOrigin=null;
+      }catch(__){}
+    }
     return next;
   }
   function _mpSetCover(src){
@@ -3763,7 +3781,7 @@
     if(play) play.querySelector('span') && (play.querySelector('span').textContent=playing?'Pause playback':'Start playback');
     if(main) main.textContent=playing?'Ⅱ':'▶';
     if(status){
-      const mode=_mpPitchMode==='pro'?'Pitch shift active':(_mpPitchMode==='limited'?'CORS required':'Start media...');
+      const mode=_mpPitchMode==='pro'?'Pitch shift active':(_mpPitchMode==='limited'?'Playback active · transpose permission required':'Start media...');
       status.textContent=has ? mode : 'Start media...';
     }
     const loopBtn=$('ml-audio-loop-toggle');
