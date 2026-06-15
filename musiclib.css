@@ -9076,3 +9076,132 @@ body.ml-detail-lock{overflow:hidden !important;}
     font-size:18px !important;
   }
 }
+
+/* ===== Loop time visibility hotfix (2026-06-15) =====
+   Keep A/B cards side-by-side, but give the time field its own full-width row area.
+   No IDs or event bindings are changed. */
+#ml-audio-panel #ml-audio-loop-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  gap:12px !important;
+  align-items:stretch !important;
+}
+#ml-audio-panel .ml-audio-loop-point{
+  position:relative !important;
+  min-width:0 !important;
+  min-height:112px !important;
+  display:grid !important;
+  grid-template-columns:44px minmax(0,1fr) !important;
+  grid-template-rows:48px 40px !important;
+  align-items:center !important;
+  column-gap:10px !important;
+  row-gap:8px !important;
+  padding:12px !important;
+  overflow:hidden !important;
+}
+#ml-audio-panel .ml-audio-loop-mark.ml-ap-icon-btn{
+  grid-column:1 !important;
+  grid-row:1 !important;
+  width:44px !important;
+  min-width:44px !important;
+  height:44px !important;
+  min-height:44px !important;
+  align-self:center !important;
+  justify-self:center !important;
+}
+#ml-audio-panel .ml-audio-loop-time{
+  grid-column:2 !important;
+  grid-row:1 !important;
+  display:block !important;
+  width:100% !important;
+  min-width:0 !important;
+  max-width:none !important;
+  height:48px !important;
+  padding:0 2px !important;
+  border:0 !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+  white-space:nowrap !important;
+  text-align:center !important;
+  font-size:clamp(18px,3.1vw,25px) !important;
+  font-weight:750 !important;
+  line-height:48px !important;
+  letter-spacing:-.045em !important;
+  font-variant-numeric:tabular-nums !important;
+  font-feature-settings:"tnum" 1 !important;
+  color:#f4f1ea !important;
+  background:transparent !important;
+  box-sizing:border-box !important;
+}
+#ml-audio-panel .ml-audio-loop-jump.ml-ap-icon-btn{
+  grid-column:1 / -1 !important;
+  grid-row:2 !important;
+  width:44px !important;
+  min-width:44px !important;
+  height:40px !important;
+  min-height:40px !important;
+  justify-self:end !important;
+  align-self:center !important;
+  margin:0 !important;
+}
+
+@media (max-width:700px){
+  #ml-audio-panel #ml-audio-loop-grid{
+    gap:8px !important;
+  }
+  #ml-audio-panel .ml-audio-loop-point{
+    min-height:104px !important;
+    grid-template-columns:38px minmax(0,1fr) !important;
+    grid-template-rows:44px 36px !important;
+    column-gap:6px !important;
+    row-gap:6px !important;
+    padding:10px !important;
+  }
+  #ml-audio-panel .ml-audio-loop-mark.ml-ap-icon-btn{
+    width:38px !important;
+    min-width:38px !important;
+    height:38px !important;
+    min-height:38px !important;
+  }
+  #ml-audio-panel .ml-audio-loop-time{
+    height:44px !important;
+    line-height:44px !important;
+    font-size:clamp(16px,4.4vw,21px) !important;
+    letter-spacing:-.06em !important;
+  }
+  #ml-audio-panel .ml-audio-loop-jump.ml-ap-icon-btn{
+    width:38px !important;
+    min-width:38px !important;
+    height:36px !important;
+    min-height:36px !important;
+  }
+}
+
+@media (max-width:420px){
+  #ml-audio-panel #ml-audio-loop-grid{
+    grid-template-columns:1fr !important;
+  }
+  #ml-audio-panel .ml-audio-loop-point{
+    grid-template-columns:42px minmax(0,1fr) 42px !important;
+    grid-template-rows:48px !important;
+    min-height:72px !important;
+  }
+  #ml-audio-panel .ml-audio-loop-mark.ml-ap-icon-btn{
+    grid-column:1 !important;
+    grid-row:1 !important;
+  }
+  #ml-audio-panel .ml-audio-loop-time{
+    grid-column:2 !important;
+    grid-row:1 !important;
+    font-size:22px !important;
+    letter-spacing:-.035em !important;
+  }
+  #ml-audio-panel .ml-audio-loop-jump.ml-ap-icon-btn{
+    grid-column:3 !important;
+    grid-row:1 !important;
+    justify-self:center !important;
+    width:42px !important;
+    min-width:42px !important;
+    height:42px !important;
+    min-height:42px !important;
+  }
+}
