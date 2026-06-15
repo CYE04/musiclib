@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.15.3-fixed-sidebar';
+  const ML_VER='2026.06.15.15-notice-under-search';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -561,7 +561,13 @@
     listNotice.type='button';
     listNotice.setAttribute('aria-label','版权与申请新歌说明');
     listNotice.innerHTML=noticeHTML;
-    root.insertBefore(listNotice, $('ml-header'));
+    // Keep the copyright notice inside the main header area, directly
+    // below the complete search section (including optional search history).
+    // This preserves the fixed sidebar and prevents the notice from becoming
+    // a separate top-level grid row above the page content.
+    const noticeAnchor=$('ml-search-history') || $('ml-search-row');
+    if(noticeAnchor) noticeAnchor.insertAdjacentElement('afterend',listNotice);
+    else ($('ml-header') || root).appendChild(listNotice);
 
     const detailNotice=document.createElement('button');
     detailNotice.id='ml-detail-notice';
