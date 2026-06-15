@@ -8643,3 +8643,235 @@ body.ml-detail-lock{overflow:hidden !important;}
   .ml-audio-panel-brandmark img{width:31px !important;height:31px !important;}
   #ml-audio-panel-close{width:44px !important;height:44px !important;border-radius:14px !important;}
 }
+
+
+/* ===== CECP Transpose unified Yesicon-style controls + optical logo fix (2026-06-15) ===== */
+#ml-audio-panel-title .ml-audio-panel-brandmark{
+  width:42px !important;
+  height:42px !important;
+  flex-basis:42px !important;
+  padding:3px !important;
+  border-radius:14px !important;
+}
+#ml-audio-panel-title .ml-audio-panel-brandmark img{
+  width:100% !important;
+  height:100% !important;
+  object-fit:contain !important;
+  object-position:center !important;
+  transform:none !important;
+}
+
+#ml-audio-panel .ml-ap-icon-btn{
+  --ml-ap-btn-size:46px;
+  width:var(--ml-ap-btn-size) !important;
+  min-width:var(--ml-ap-btn-size) !important;
+  height:var(--ml-ap-btn-size) !important;
+  min-height:var(--ml-ap-btn-size) !important;
+  padding:0 !important;
+  border:1px solid rgba(255,255,255,.10) !important;
+  border-radius:14px !important;
+  background:#30343a !important;
+  color:#d2d5da !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  line-height:0 !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 5px 14px rgba(0,0,0,.10) !important;
+  -webkit-tap-highlight-color:transparent !important;
+  touch-action:manipulation !important;
+  transition:transform .17s cubic-bezier(.2,.8,.25,1),background .17s ease,border-color .17s ease,color .17s ease,box-shadow .17s ease !important;
+}
+#ml-audio-panel .ml-ap-icon-btn > svg{
+  width:21px !important;
+  height:21px !important;
+  display:block !important;
+  pointer-events:none !important;
+  transform-origin:50% 50% !important;
+  transition:transform .2s cubic-bezier(.2,.8,.25,1),opacity .17s ease !important;
+}
+#ml-audio-panel .ml-ap-icon-btn:hover,
+#ml-audio-panel .ml-ap-icon-btn:focus-visible{
+  transform:translateY(-2px) !important;
+  border-color:rgba(242,207,69,.30) !important;
+  background:#393e45 !important;
+  color:#fff !important;
+  box-shadow:0 8px 18px rgba(0,0,0,.18),0 0 0 3px rgba(242,207,69,.055),inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+#ml-audio-panel .ml-ap-icon-btn:active{
+  transform:translateY(0) scale(.92) !important;
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.20) !important;
+}
+#ml-audio-panel .ml-ap-icon-btn:hover > svg,
+#ml-audio-panel .ml-ap-icon-btn:focus-visible > svg{transform:scale(1.08) !important;}
+#ml-audio-panel .ml-ap-motion-reset:hover > svg,
+#ml-audio-panel .ml-ap-motion-reset:focus-visible > svg{transform:rotate(-55deg) scale(1.06) !important;}
+#ml-audio-panel .ml-ap-motion-plus:hover > svg{transform:rotate(90deg) scale(1.06) !important;}
+#ml-audio-panel .ml-ap-motion-minus:hover > svg{transform:scaleX(1.16) !important;}
+#ml-audio-panel .ml-ap-motion-left:hover > svg{transform:translateX(-2px) scale(1.06) !important;}
+#ml-audio-panel .ml-ap-motion-right:hover > svg{transform:translateX(2px) scale(1.06) !important;}
+#ml-audio-panel .ml-ap-motion-target:hover > svg{transform:scale(1.12) rotate(12deg) !important;}
+#ml-audio-panel .ml-ap-motion-swap:hover > svg{transform:scale(1.06) rotate(180deg) !important;}
+#ml-audio-panel .ml-ap-motion-mark:hover > svg{transform:translateY(-2px) rotate(-5deg) !important;}
+#ml-audio-panel .ml-ap-motion-help:hover > svg{transform:rotate(8deg) scale(1.08) !important;}
+
+#ml-audio-panel .ml-audio-panel-rowtop button.ml-ap-icon-btn,
+#ml-audio-panel .ml-audio-panel-control button.ml-ap-icon-btn,
+#ml-audio-panel .ml-audio-loop-actions button.ml-ap-icon-btn,
+#ml-audio-panel-foot button.ml-ap-icon-btn{
+  --ml-ap-btn-size:46px;
+  width:46px !important;
+  min-width:46px !important;
+  height:46px !important;
+  min-height:46px !important;
+  border-radius:14px !important;
+  font-size:0 !important;
+}
+#ml-audio-panel .ml-audio-panel-control{
+  grid-template-columns:46px minmax(0,1fr) 46px !important;
+  gap:12px !important;
+  align-items:center !important;
+}
+#ml-audio-panel-foot{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  gap:10px !important;
+}
+#ml-audio-panel-foot button.ml-ap-icon-btn{
+  flex:0 0 46px !important;
+}
+#ml-audio-panel #ml-audio-panel-main.ml-ap-icon-btn{
+  width:52px !important;
+  min-width:52px !important;
+  height:52px !important;
+  min-height:52px !important;
+  flex-basis:52px !important;
+  border-radius:16px !important;
+  border-color:#f2cf45 !important;
+  background:#f2cf45 !important;
+  color:#181818 !important;
+  box-shadow:0 10px 24px rgba(242,207,69,.18),inset 0 1px 0 rgba(255,255,255,.30) !important;
+}
+#ml-audio-panel #ml-audio-panel-main.ml-ap-icon-btn:hover{
+  background:#f6d85e !important;
+  color:#101010 !important;
+  box-shadow:0 13px 28px rgba(242,207,69,.25),0 0 0 4px rgba(242,207,69,.08) !important;
+}
+#ml-audio-panel #ml-audio-panel-main.is-playing > svg{animation:ml-ap-pulse .9s ease-in-out infinite alternate;}
+@keyframes ml-ap-pulse{from{transform:scale(.92)}to{transform:scale(1.08)}}
+
+#ml-audio-panel #ml-audio-panel-play{
+  gap:12px !important;
+  transition:transform .17s ease,background .17s ease,border-color .17s ease,box-shadow .17s ease !important;
+}
+#ml-audio-panel #ml-audio-panel-play:hover{
+  transform:translateY(-1px) !important;
+  border-color:rgba(242,207,69,.26) !important;
+  background:#2b3036 !important;
+  box-shadow:0 9px 22px rgba(0,0,0,.16) !important;
+}
+#ml-audio-panel #ml-audio-panel-play:active{transform:scale(.985) !important;}
+#ml-audio-panel #ml-audio-panel-play-icon{
+  width:34px !important;
+  height:34px !important;
+  margin-left:auto !important;
+  border-radius:11px !important;
+  background:rgba(255,255,255,.055) !important;
+  color:#f2cf45 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+}
+#ml-audio-panel #ml-audio-panel-play-icon svg{width:20px !important;height:20px !important;transition:transform .2s ease !important;}
+#ml-audio-panel #ml-audio-panel-play:hover #ml-audio-panel-play-icon svg{transform:scale(1.10) !important;}
+#ml-audio-panel #ml-audio-panel-play.is-playing #ml-audio-panel-play-icon{background:rgba(242,207,69,.14) !important;}
+
+#ml-audio-panel .ml-audio-loop-actions{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  gap:10px !important;
+}
+#ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch{
+  height:46px !important;
+  min-height:46px !important;
+  width:94px !important;
+  min-width:94px !important;
+  border-radius:999px !important;
+  transition:transform .17s ease,background .17s ease,border-color .17s ease,color .17s ease,box-shadow .17s ease !important;
+}
+#ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch:hover{
+  transform:translateY(-2px) !important;
+  border-color:rgba(242,207,69,.28) !important;
+  box-shadow:0 8px 18px rgba(0,0,0,.16) !important;
+}
+#ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch:active{transform:scale(.96) !important;}
+#ml-audio-panel .ml-audio-loop-switch-knob{
+  transition:background .2s ease,transform .22s cubic-bezier(.2,.85,.25,1),box-shadow .2s ease !important;
+}
+#ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch.active .ml-audio-loop-switch-knob{
+  transform:scale(1.04) !important;
+}
+
+#ml-audio-panel .ml-audio-loop-point{
+  grid-template-columns:46px minmax(0,1fr) !important;
+  min-height:70px !important;
+  align-items:center !important;
+  gap:10px !important;
+  padding:12px !important;
+}
+#ml-audio-panel .ml-audio-loop-mark.ml-ap-icon-btn{
+  display:inline-flex !important;
+  --ml-ap-btn-size:46px;
+  width:46px !important;
+  height:46px !important;
+  color:#bfc3ca !important;
+}
+#ml-audio-panel .ml-audio-loop-time{
+  min-width:0 !important;
+  font-variant-numeric:tabular-nums !important;
+}
+
+#ml-audio-panel .ml-audio-speed-presets button{
+  transition:transform .16s ease,background .16s ease,border-color .16s ease,color .16s ease !important;
+}
+#ml-audio-panel .ml-audio-speed-presets button:hover{
+  transform:translateY(-2px) !important;
+  border-color:rgba(242,207,69,.28) !important;
+}
+#ml-audio-panel .ml-audio-speed-presets button:active{transform:scale(.94) !important;}
+
+@media (max-width:480px){
+  #ml-audio-panel-title .ml-audio-panel-brandmark{width:38px !important;height:38px !important;flex-basis:38px !important;}
+  #ml-audio-panel .ml-audio-panel-rowtop button.ml-ap-icon-btn,
+  #ml-audio-panel .ml-audio-panel-control button.ml-ap-icon-btn,
+  #ml-audio-panel .ml-audio-loop-actions button.ml-ap-icon-btn,
+  #ml-audio-panel-foot button.ml-ap-icon-btn{
+    --ml-ap-btn-size:42px;
+    width:42px !important;
+    min-width:42px !important;
+    height:42px !important;
+    min-height:42px !important;
+    border-radius:13px !important;
+  }
+  #ml-audio-panel .ml-audio-panel-control{grid-template-columns:42px minmax(0,1fr) 42px !important;gap:9px !important;}
+  #ml-audio-panel .ml-audio-loop-actions{gap:7px !important;}
+  #ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch{width:82px !important;min-width:82px !important;height:42px !important;min-height:42px !important;}
+  #ml-audio-panel .ml-audio-loop-point{grid-template-columns:42px minmax(0,1fr) !important;min-height:64px !important;}
+  #ml-audio-panel .ml-audio-loop-mark.ml-ap-icon-btn{width:42px !important;height:42px !important;}
+  #ml-audio-panel-foot{gap:8px !important;}
+  #ml-audio-panel-foot button.ml-ap-icon-btn{flex-basis:42px !important;}
+  #ml-audio-panel #ml-audio-panel-main.ml-ap-icon-btn{width:48px !important;min-width:48px !important;height:48px !important;min-height:48px !important;flex-basis:48px !important;}
+}
+@media (prefers-reduced-motion:reduce){
+  #ml-audio-panel .ml-ap-icon-btn,
+  #ml-audio-panel .ml-ap-icon-btn > svg,
+  #ml-audio-panel #ml-audio-panel-play,
+  #ml-audio-panel #ml-audio-panel-play-icon svg,
+  #ml-audio-panel .ml-audio-loop-switch,
+  #ml-audio-panel .ml-audio-loop-switch-knob,
+  #ml-audio-panel .ml-audio-speed-presets button{
+    transition:none !important;
+    animation:none !important;
+  }
+}

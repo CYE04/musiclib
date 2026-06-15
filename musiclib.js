@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.15.23-cecp-transpose-brand';
+  const ML_VER='2026.06.15.24-cecp-transpose-icons';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -127,7 +127,23 @@
       more:`<svg ${common}><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>`,
       chevronLeft:`<svg ${common}><path d="m15 18-6-6 6-6"/></svg>`,
       sun:`<svg ${common}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
-      system:`<svg ${common}><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>`
+      system:`<svg ${common}><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>`,
+      listMusic:`<svg ${common}><path d="M4 6h10"/><path d="M4 10h10"/><path d="M4 14h7"/><path d="M16 5v11"/><path d="m16 8 4-1v8"/><circle cx="14" cy="18" r="2"/><circle cx="18" cy="16" r="2"/></svg>`,
+      chevronDown:`<svg ${common}><path d="m6 9 6 6 6-6"/></svg>`,
+      rotateCcw:`<svg ${common}><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>`,
+      refreshCcw:`<svg ${common}><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M6.1 9a7 7 0 0 1 11.4-2.6L20 11"/><path d="M17.9 15a7 7 0 0 1-11.4 2.6L4 13"/></svg>`,
+      minus:`<svg ${common}><path d="M5 12h14"/></svg>`,
+      plus:`<svg ${common}><path d="M12 5v14"/><path d="M5 12h14"/></svg>`,
+      timerReset:`<svg ${common}><path d="M10 2h4"/><path d="M12 14v-4"/><circle cx="12" cy="14" r="8"/><path d="m4 4 2.5 2.5"/><path d="M3 9V4h5"/></svg>`,
+      crosshair:`<svg ${common}><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/></svg>`,
+      flag:`<svg ${common}><path d="M5 21V4"/><path d="M5 4h11l-1 4 1 4H5"/></svg>`,
+      arrowLeftRight:`<svg ${common}><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>`,
+      skipBack:`<svg ${common}><path d="M19 20 9 12l10-8v16Z"/><path d="M5 19V5"/></svg>`,
+      rewind:`<svg ${common}><path d="m11 19-9-7 9-7v14Z"/><path d="m22 19-9-7 9-7v14Z"/></svg>`,
+      pause:`<svg ${filled}><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`,
+      fastForward:`<svg ${common}><path d="m13 5 9 7-9 7V5Z"/><path d="m2 5 9 7-9 7V5Z"/></svg>`,
+      circleHelp:`<svg ${common}><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.3 2.3 0 1 1 3.7 1.8c-.9.6-1.5 1.1-1.5 2.2"/><path d="M12 17h.01"/></svg>`,
+      circlePlay:`<svg ${common}><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4V8Z"/></svg>`
     };
     return map[name]||map.more;
   }
@@ -404,7 +420,7 @@
     <div id="ml-audio-panel-backdrop" hidden></div>
     <section id="ml-audio-panel" hidden aria-label="MP3 变调面板">
       <div id="ml-audio-panel-head">
-        <button class="ml-audio-panel-head-btn" id="ml-audio-panel-menu" type="button" aria-label="播放列表">☰♬</button>
+        <button class="ml-audio-panel-head-btn ml-ap-icon-btn ml-ap-motion-list" id="ml-audio-panel-menu" type="button" aria-label="播放列表">${icon('listMusic',21)}</button>
         <div class="ml-audio-panel-icons" aria-hidden="true">✧✦</div>
         <div id="ml-audio-panel-title">
           <span class="ml-audio-panel-brandmark"><img src="${TRANSPOSE_LOGO_SRC}" alt=""></span>
@@ -414,42 +430,42 @@
       </div>
       <button id="ml-audio-panel-play" type="button">
         <span>Start playback</span>
-        <span id="ml-audio-panel-play-icon">⌄</span>
+        <span id="ml-audio-panel-play-icon">${icon('circlePlay',21)}</span>
       </button>
       <div class="ml-audio-panel-row" data-control="transpose">
         <div class="ml-audio-panel-rowtop">
           <span>Transpose</span>
           <strong id="ml-audio-transpose-value">0</strong>
-          <button id="ml-audio-transpose-reset" type="button" aria-label="重置半音">↻</button>
+          <button id="ml-audio-transpose-reset" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="重置半音">${icon('rotateCcw',20)}</button>
         </div>
         <div class="ml-audio-panel-control">
-          <button id="ml-audio-transpose-down" type="button" aria-label="降半音">−</button>
+          <button id="ml-audio-transpose-down" class="ml-ap-icon-btn ml-ap-motion-minus" type="button" aria-label="降半音">${icon('minus',22)}</button>
           <input id="ml-audio-transpose-range" type="range" min="-12" max="12" step="1" value="0">
-          <button id="ml-audio-transpose-up" type="button" aria-label="升半音">+</button>
+          <button id="ml-audio-transpose-up" class="ml-ap-icon-btn ml-ap-motion-plus" type="button" aria-label="升半音">${icon('plus',22)}</button>
         </div>
       </div>
       <div class="ml-audio-panel-row" data-control="pitch">
         <div class="ml-audio-panel-rowtop">
           <span>Pitch</span>
           <strong id="ml-audio-pitch-value">0</strong>
-          <button id="ml-audio-pitch-reset" type="button" aria-label="重置音高细调">↻</button>
+          <button id="ml-audio-pitch-reset" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="重置音高细调">${icon('rotateCcw',20)}</button>
         </div>
         <div class="ml-audio-panel-control">
-          <button id="ml-audio-pitch-down" type="button" aria-label="音高降低">−</button>
+          <button id="ml-audio-pitch-down" class="ml-ap-icon-btn ml-ap-motion-minus" type="button" aria-label="音高降低">${icon('minus',22)}</button>
           <input id="ml-audio-pitch-range" type="range" min="-100" max="100" step="1" value="0">
-          <button id="ml-audio-pitch-up" type="button" aria-label="音高升高">+</button>
+          <button id="ml-audio-pitch-up" class="ml-ap-icon-btn ml-ap-motion-plus" type="button" aria-label="音高升高">${icon('plus',22)}</button>
         </div>
       </div>
       <div class="ml-audio-panel-row" data-control="speed">
         <div class="ml-audio-panel-rowtop">
           <span>Speed <strong id="ml-audio-speed-value">100%</strong></span>
           <span>Tempo <strong id="ml-audio-tempo-value">bpm</strong></span>
-          <button id="ml-audio-speed-reset" type="button" aria-label="重置速度">↻</button>
+          <button id="ml-audio-speed-reset" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="重置速度">${icon('rotateCcw',20)}</button>
         </div>
         <div class="ml-audio-panel-control">
-          <button id="ml-audio-speed-down" type="button" aria-label="降低速度">−</button>
+          <button id="ml-audio-speed-down" class="ml-ap-icon-btn ml-ap-motion-minus" type="button" aria-label="降低速度">${icon('minus',22)}</button>
           <input id="ml-audio-speed-range" type="range" min="25" max="400" step="5" value="100">
-          <button id="ml-audio-speed-up" type="button" aria-label="提高速度">+</button>
+          <button id="ml-audio-speed-up" class="ml-ap-icon-btn ml-ap-motion-plus" type="button" aria-label="提高速度">${icon('plus',22)}</button>
         </div>
         <div class="ml-audio-speed-presets" aria-label="常用速度">
           <button type="button" data-speed="0.5">50%</button>
@@ -468,34 +484,34 @@
               <span class="ml-audio-loop-switch-text">OFF</span>
               <span class="ml-audio-loop-switch-knob" aria-hidden="true"></span>
             </button>
-            <button id="ml-audio-loop-reset" type="button" aria-label="清除循环">◷</button>
-            <button id="ml-audio-loop-use-current" type="button" aria-label="用当前位置补齐 A/B">☰</button>
-            <button id="ml-audio-reset-all" type="button" aria-label="全部重置">☰＋</button>
+            <button id="ml-audio-loop-reset" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="清除循环">${icon('timerReset',20)}</button>
+            <button id="ml-audio-loop-use-current" class="ml-ap-icon-btn ml-ap-motion-target" type="button" aria-label="用当前位置补齐 A/B">${icon('crosshair',20)}</button>
+            <button id="ml-audio-reset-all" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="全部重置">${icon('refreshCcw',20)}</button>
           </div>
         </div>
         <div id="ml-audio-loop-grid">
           <div class="ml-audio-loop-point" data-point="a">
-            <button id="ml-audio-loop-a" class="ml-audio-loop-mark" type="button" aria-label="设置 A 点">▱</button>
+            <button id="ml-audio-loop-a" class="ml-audio-loop-mark ml-ap-icon-btn ml-ap-motion-mark" type="button" aria-label="设置 A 点">${icon('flag',18)}</button>
             <input id="ml-audio-loop-a-time" class="ml-audio-loop-time" type="text" inputmode="decimal" value="00:00.0" aria-label="A 点时间">
-            <button id="ml-audio-loop-a-jump" class="ml-audio-loop-jump" type="button" aria-label="跳到 A 点">▶▌</button>
+            <button id="ml-audio-loop-a-jump" class="ml-audio-loop-jump ml-ap-icon-btn ml-ap-motion-left" type="button" aria-label="跳到 A 点">${icon('skipBack',18)}</button>
             <input id="ml-audio-loop-a-label" class="ml-audio-loop-label" type="text" value="marker 1" aria-label="A 点标记名称">
           </div>
           <div class="ml-audio-loop-point" data-point="b">
-            <button id="ml-audio-loop-b" class="ml-audio-loop-mark" type="button" aria-label="设置 B 点">▱</button>
+            <button id="ml-audio-loop-b" class="ml-audio-loop-mark ml-ap-icon-btn ml-ap-motion-mark" type="button" aria-label="设置 B 点">${icon('flag',18)}</button>
             <input id="ml-audio-loop-b-time" class="ml-audio-loop-time" type="text" inputmode="decimal" value="00:30.0" aria-label="B 点时间">
-            <button id="ml-audio-loop-b-jump" class="ml-audio-loop-jump" type="button" aria-label="跳到 B 点">▶▌</button>
+            <button id="ml-audio-loop-b-jump" class="ml-audio-loop-jump ml-ap-icon-btn ml-ap-motion-right" type="button" aria-label="跳到 B 点">${icon('fastForward',18)}</button>
             <input id="ml-audio-loop-b-label" class="ml-audio-loop-label" type="text" value="marker 2" aria-label="B 点标记名称">
           </div>
-          <button id="ml-audio-loop-swap" type="button" aria-label="交换 A/B 点">⇄</button>
+          <button id="ml-audio-loop-swap" class="ml-ap-icon-btn ml-ap-motion-swap" type="button" aria-label="交换 A/B 点">${icon('arrowLeftRight',20)}</button>
         </div>
         <div id="ml-audio-loop-message" role="status" aria-live="polite"></div>
       </div>
       <div id="ml-audio-panel-foot">
-        <button id="ml-audio-panel-prev" type="button" aria-label="上一首">▌◀</button>
-        <button id="ml-audio-panel-back" type="button" aria-label="后退">◀◀</button>
-        <button id="ml-audio-panel-main" type="button" aria-label="播放或暂停">▶</button>
-        <button id="ml-audio-panel-forward" type="button" aria-label="前进">▶▶</button>
-        <button id="ml-audio-panel-help" type="button" aria-label="帮助">?</button>
+        <button id="ml-audio-panel-prev" class="ml-ap-icon-btn ml-ap-motion-left" type="button" aria-label="上一首">${icon('skipBack',21)}</button>
+        <button id="ml-audio-panel-back" class="ml-ap-icon-btn ml-ap-motion-left" type="button" aria-label="后退">${icon('rewind',21)}</button>
+        <button id="ml-audio-panel-main" class="ml-ap-icon-btn ml-ap-motion-main" type="button" aria-label="播放或暂停">${icon('play',21)}</button>
+        <button id="ml-audio-panel-forward" class="ml-ap-icon-btn ml-ap-motion-right" type="button" aria-label="前进">${icon('fastForward',21)}</button>
+        <button id="ml-audio-panel-help" class="ml-ap-icon-btn ml-ap-motion-help" type="button" aria-label="帮助">${icon('circleHelp',21)}</button>
       </div>
       <div id="ml-audio-panel-time">00:00 / 00:00</div>
       <div id="ml-audio-panel-status">Start media...</div>
@@ -3912,8 +3928,17 @@
     const status=$('ml-audio-panel-status');
     const has=!!(_mpAudio&&_mpAudio.src);
     const playing=has&&!_mpAudio.paused;
-    if(play) play.querySelector('span') && (play.querySelector('span').textContent=playing?'Pause playback':'Start playback');
-    if(main) main.textContent=playing?'Ⅱ':'▶';
+    if(play){
+      const label=play.querySelector('span');
+      const stateIcon=$('ml-audio-panel-play-icon');
+      if(label) label.textContent=playing?'Pause playback':'Start playback';
+      if(stateIcon) stateIcon.innerHTML=playing?icon('pause',21):icon('circlePlay',21);
+      play.classList.toggle('is-playing',playing);
+    }
+    if(main){
+      main.innerHTML=playing?icon('pause',21):icon('play',21);
+      main.classList.toggle('is-playing',playing);
+    }
     if(status){
       const mode=_mpPitchMode==='pro'?'SoundTouch active':(_mpPitchMode==='loading'?'Starting processor...':(_mpPitchMode==='limited'?'Processor unavailable':'Start media...'));
       status.textContent=has ? mode : 'Start media...';
