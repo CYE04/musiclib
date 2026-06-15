@@ -8305,3 +8305,54 @@ body.ml-detail-lock{overflow:hidden !important;}
     -webkit-overflow-scrolling:auto !important;
   }
 }
+
+/* =====================================================================
+   YUEN DESKTOP SIDEBAR LOCK (2026-06-15)
+   The desktop sidebar is a completely independent viewport-fixed panel.
+   Only the right content/document scrolls.
+   ===================================================================== */
+@media (min-width:901px){
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-sidebar{
+    position:fixed !important;
+    top:0 !important;
+    bottom:0 !important;
+    left:0 !important;
+    width:240px !important;
+    height:100vh !important;
+    height:100dvh !important;
+    min-height:0 !important;
+    max-height:none !important;
+    margin:0 !important;
+    transform:none !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    overscroll-behavior:contain !important;
+    -webkit-overflow-scrolling:touch !important;
+    z-index:900 !important;
+  }
+
+  /* The sidebar is removed from grid flow by position:fixed. Keep the
+     desktop content permanently aligned to the reserved second column. */
+  html.ml-fullscreen body.ml-fullscreen #music-library{
+    grid-template-columns:240px minmax(0,1fr) !important;
+  }
+
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-notice,
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-header,
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-loading,
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-list-stage,
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-empty{
+    grid-column:2 !important;
+    min-width:0 !important;
+  }
+}
+
+@media (min-width:901px) and (max-width:1180px){
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-sidebar{
+    width:210px !important;
+  }
+
+  html.ml-fullscreen body.ml-fullscreen #music-library{
+    grid-template-columns:210px minmax(0,1fr) !important;
+  }
+}
