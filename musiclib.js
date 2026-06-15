@@ -452,7 +452,10 @@
         <div class="ml-audio-panel-rowtop">
           <span>Loop</span>
           <div class="ml-audio-loop-actions">
-            <button id="ml-audio-loop-toggle" type="button" aria-label="开启或关闭 A/B 循环">↻</button>
+            <button id="ml-audio-loop-toggle" class="ml-audio-loop-switch" type="button" aria-label="开启 A/B 循环" aria-pressed="false">
+              <span class="ml-audio-loop-switch-text">OFF</span>
+              <span class="ml-audio-loop-switch-knob" aria-hidden="true"></span>
+            </button>
             <button id="ml-audio-loop-reset" type="button" aria-label="清除循环">◷</button>
             <button id="ml-audio-loop-use-current" type="button" aria-label="用当前位置补齐 A/B">☰</button>
             <button id="ml-audio-reset-all" type="button" aria-label="全部重置">☰＋</button>
@@ -3905,8 +3908,13 @@
     }
     const loopBtn=$('ml-audio-loop-toggle');
     if(loopBtn){
-      loopBtn.classList.toggle('active',!!_mpAbLoop);
-      loopBtn.setAttribute('aria-pressed',String(!!_mpAbLoop));
+      const enabled=!!_mpAbLoop;
+      loopBtn.classList.toggle('active',enabled);
+      loopBtn.setAttribute('aria-pressed',String(enabled));
+      loopBtn.setAttribute('aria-label',enabled?'关闭 A/B 循环':'开启 A/B 循环');
+      loopBtn.title=enabled?'Loop ON · 点击关闭':'Loop OFF · 点击开启';
+      const switchText=loopBtn.querySelector('.ml-audio-loop-switch-text');
+      if(switchText) switchText.textContent=enabled?'ON':'OFF';
     }
     _mpSetLoopInput('a',_mpLoopA);
     _mpSetLoopInput('b',_mpLoopB);

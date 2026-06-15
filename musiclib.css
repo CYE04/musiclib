@@ -8450,3 +8450,77 @@ body.ml-detail-lock{overflow:hidden !important;}
     min-width:0 !important;
   }
 }
+
+
+/* ===== Loop ON/OFF switch refinement (2026-06-15) ===== */
+#ml-audio-panel .ml-audio-loop-actions{
+  gap:12px !important;
+}
+#ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch{
+  position:relative !important;
+  width:92px !important;
+  min-width:92px !important;
+  height:42px !important;
+  padding:0 8px 0 12px !important;
+  border:1px solid rgba(255,255,255,.12) !important;
+  border-radius:999px !important;
+  background:#30343a !important;
+  color:#b9bdc5 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:space-between !important;
+  gap:8px !important;
+  font:800 13px/1 Inter,"Noto Sans SC",system-ui,sans-serif !important;
+  letter-spacing:.04em !important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.04) !important;
+  transition:background .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease !important;
+}
+#ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch:hover{
+  background:#373c43 !important;
+  color:#f3f0e9 !important;
+}
+#ml-audio-panel .ml-audio-loop-switch-text{
+  min-width:28px !important;
+  text-align:center !important;
+  pointer-events:none !important;
+}
+#ml-audio-panel .ml-audio-loop-switch-knob{
+  width:26px !important;
+  height:26px !important;
+  flex:0 0 26px !important;
+  border-radius:50% !important;
+  background:#727781 !important;
+  box-shadow:0 2px 7px rgba(0,0,0,.28) !important;
+  pointer-events:none !important;
+  transition:background .18s ease,transform .18s ease,box-shadow .18s ease !important;
+}
+#ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch.active{
+  border-color:rgba(242,207,69,.62) !important;
+  background:rgba(242,207,69,.16) !important;
+  color:#f2cf45 !important;
+  box-shadow:0 0 0 3px rgba(242,207,69,.08),inset 0 1px 0 rgba(255,255,255,.06) !important;
+}
+#ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch.active .ml-audio-loop-switch-knob{
+  background:#f2cf45 !important;
+  box-shadow:0 0 0 5px rgba(242,207,69,.12),0 2px 7px rgba(0,0,0,.28) !important;
+}
+#ml-audio-panel .ml-audio-panel-row[data-control="loop"].is-active{
+  border-color:rgba(242,207,69,.24) !important;
+}
+@media (max-width:700px){
+  #ml-audio-panel .ml-audio-loop-actions{
+    gap:8px !important;
+  }
+  #ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch{
+    width:82px !important;
+    min-width:82px !important;
+    height:40px !important;
+    padding:0 7px 0 10px !important;
+    font-size:12px !important;
+  }
+  #ml-audio-panel .ml-audio-loop-switch-knob{
+    width:24px !important;
+    height:24px !important;
+    flex-basis:24px !important;
+  }
+}
