@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.15.24-cecp-transpose-icons';
+  const ML_VER='2026.06.15.25-loop-layout';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -484,9 +484,15 @@
               <span class="ml-audio-loop-switch-text">OFF</span>
               <span class="ml-audio-loop-switch-knob" aria-hidden="true"></span>
             </button>
-            <button id="ml-audio-loop-reset" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="清除循环">${icon('timerReset',20)}</button>
-            <button id="ml-audio-loop-use-current" class="ml-ap-icon-btn ml-ap-motion-target" type="button" aria-label="用当前位置补齐 A/B">${icon('crosshair',20)}</button>
-            <button id="ml-audio-reset-all" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="全部重置">${icon('refreshCcw',20)}</button>
+            <button id="ml-audio-loop-use-current" class="ml-ap-icon-btn ml-ap-motion-target ml-loop-action-btn" type="button" aria-label="用当前位置补齐 A/B">
+              ${icon('crosshair',19)}<span class="ml-loop-action-label">当前</span>
+            </button>
+            <button id="ml-audio-loop-swap" class="ml-ap-icon-btn ml-ap-motion-swap ml-loop-action-btn" type="button" aria-label="交换 A/B 点">
+              ${icon('arrowLeftRight',19)}<span class="ml-loop-action-label">交换</span>
+            </button>
+            <button id="ml-audio-reset-all" class="ml-ap-icon-btn ml-ap-motion-reset ml-loop-action-btn" type="button" aria-label="恢复全部练习设置">
+              ${icon('refreshCcw',19)}<span class="ml-loop-action-label">恢复</span>
+            </button>
           </div>
         </div>
         <div id="ml-audio-loop-grid">
@@ -502,7 +508,6 @@
             <button id="ml-audio-loop-b-jump" class="ml-audio-loop-jump ml-ap-icon-btn ml-ap-motion-right" type="button" aria-label="跳到 B 点">${icon('fastForward',18)}</button>
             <input id="ml-audio-loop-b-label" class="ml-audio-loop-label" type="text" value="marker 2" aria-label="B 点标记名称">
           </div>
-          <button id="ml-audio-loop-swap" class="ml-ap-icon-btn ml-ap-motion-swap" type="button" aria-label="交换 A/B 点">${icon('arrowLeftRight',20)}</button>
         </div>
         <div id="ml-audio-loop-message" role="status" aria-live="polite"></div>
       </div>
