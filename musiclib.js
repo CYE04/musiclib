@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.15.21-ipad-scroll-fixed';
+  const ML_VER='2026.06.15.23-cecp-transpose-brand';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -17,6 +17,14 @@
       return cur ? new URL('olive-fellowship-logo.png', cur.href).href : 'olive-fellowship-logo.png';
     }catch(_){
       return 'musiclib/olive-fellowship-logo.png';
+    }
+  })();
+  const TRANSPOSE_LOGO_SRC=(function(){
+    try{
+      const cur=document.currentScript && document.currentScript.src ? new URL(document.currentScript.src, location.href) : null;
+      return cur ? new URL('cecp-olive-logo.svg', cur.href).href : 'cecp-olive-logo.svg';
+    }catch(_){
+      return 'cecp-olive-logo.svg';
     }
   })();
   const SOUNDTOUCH_PROCESSOR_URL=(function(){
@@ -113,7 +121,8 @@
       user:`<svg ${common}><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>`,
       play:`<svg ${filled}><path d="M8 5.14v14l11-7-11-7Z"/></svg>`,
       score:`<svg ${common}><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>`,
-      close:`<svg ${common}><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>`,
+      close:`<svg class="ml-motion-icon ml-motion-icon-close" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path class="ml-motion-line ml-motion-line-a" d="M6 6 18 18"/><path class="ml-motion-line ml-motion-line-b" d="M18 6 6 18"/></svg>`,
+      collapse:`<svg class="ml-motion-icon ml-motion-icon-collapse" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`,
       theme:`<svg ${common}><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z"/></svg>`,
       more:`<svg ${common}><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>`,
       chevronLeft:`<svg ${common}><path d="m15 18-6-6 6-6"/></svg>`,
@@ -317,7 +326,7 @@
     </div>
     <div id="ml-player-view">
       <div id="ml-player-view-top">
-        <button id="ml-player-view-close" type="button" aria-label="收起播放器"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
+        <button id="ml-player-view-close" class="ml-motion-close-btn" type="button" aria-label="收起播放器">${icon('collapse',20)}</button>
         <div id="ml-player-view-now">
           <div id="ml-player-now-title">正在播放</div>
           <div id="ml-player-now-sub"></div>
@@ -397,8 +406,11 @@
       <div id="ml-audio-panel-head">
         <button class="ml-audio-panel-head-btn" id="ml-audio-panel-menu" type="button" aria-label="播放列表">☰♬</button>
         <div class="ml-audio-panel-icons" aria-hidden="true">✧✦</div>
-        <div id="ml-audio-panel-title">Transpose ▲▼</div>
-        <button class="ml-audio-panel-head-btn" id="ml-audio-panel-close" type="button" aria-label="关闭 MP3 变调面板">☷</button>
+        <div id="ml-audio-panel-title">
+          <span class="ml-audio-panel-brandmark"><img src="${TRANSPOSE_LOGO_SRC}" alt=""></span>
+          <span>CECP Transpose</span>
+        </div>
+        <button class="ml-audio-panel-head-btn ml-motion-close-btn" id="ml-audio-panel-close" type="button" aria-label="关闭 CECP Transpose">${icon('close',22)}</button>
       </div>
       <button id="ml-audio-panel-play" type="button">
         <span>Start playback</span>
@@ -528,7 +540,7 @@
           </div>
           <div id="ml-playlist-actions">
             <button id="ml-playlist-clear" type="button">清空</button>
-            <button id="ml-playlist-close" type="button" aria-label="关闭播放列表">${icon('close',16)}</button>
+            <button id="ml-playlist-close" class="ml-motion-close-btn" type="button" aria-label="关闭播放列表">${icon('close',18)}</button>
           </div>
         </div>
         <div id="ml-playlist-now"></div>
@@ -537,7 +549,7 @@
       </section>
     </div>
     <div id="ml-lightbox">
-      <button id="ml-lightbox-close">✕</button>
+      <button id="ml-lightbox-close" class="ml-motion-close-btn" type="button" aria-label="关闭图片预览">${icon('close',22)}</button>
       <button id="ml-lightbox-prev" class="ml-lightbox-nav" type="button" aria-label="上一张">‹</button>
       <img id="ml-lightbox-img" src="" alt="">
       <button id="ml-lightbox-next" class="ml-lightbox-nav" type="button" aria-label="下一张">›</button>
@@ -583,7 +595,7 @@
     modal.id='ml-notice-modal';
     modal.innerHTML=`
       <div id="ml-notice-dialog" role="dialog" aria-modal="true" aria-labelledby="ml-notice-modal-title">
-        <button id="ml-notice-close" type="button" aria-label="关闭">✕</button>
+        <button id="ml-notice-close" class="ml-motion-close-btn" type="button" aria-label="关闭">${icon('close',20)}</button>
         <div id="ml-notice-kicker">COPYRIGHT NOTICE</div>
         <h2 id="ml-notice-modal-title">诗歌版权与申请新歌</h2>
         <div id="ml-notice-copy">本站所展示之诗歌、歌词、曲谱、音频及相关资料，其著作权及相关权利均归原权利人所有。本站内容仅用于教会内部诗歌练习、学习与敬拜辅助，不以营利为目的。若相关权利人认为本站任何内容涉及侵权，请与我们联系，我们将在核实后及时处理、修改或下架相关内容。</div>
