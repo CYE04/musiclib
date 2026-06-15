@@ -8265,3 +8265,43 @@ body.ml-detail-lock{overflow:hidden !important;}
   }
 }
 
+
+/* =====================================================================
+   YUEN SCROLL RESTORE HOTFIX (2026-06-15)
+   Safari desktop also matches -webkit-touch-callout, so the old iOS rule
+   fixed <body> and made #music-library the only scroll container. The
+   desktop layout patch then changed that container to overflow:visible,
+   leaving no scrollable element. Restore normal document scrolling only
+   on precise-pointer desktop devices; iPhone/iPad behavior is untouched.
+   ===================================================================== */
+@media (min-width:901px) and (hover:hover) and (pointer:fine){
+  html.ml-fullscreen{
+    height:auto !important;
+    min-height:100% !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+  }
+
+  html.ml-fullscreen body.ml-fullscreen{
+    position:static !important;
+    inset:auto !important;
+    width:100% !important;
+    height:auto !important;
+    min-height:100% !important;
+    overflow-x:hidden !important;
+    overflow-y:visible !important;
+  }
+
+  html.ml-fullscreen body.ml-fullscreen #music-library{
+    position:relative !important;
+    inset:auto !important;
+    width:100% !important;
+    max-width:100% !important;
+    height:auto !important;
+    min-height:100vh !important;
+    min-height:100dvh !important;
+    overflow-x:clip !important;
+    overflow-y:visible !important;
+    -webkit-overflow-scrolling:auto !important;
+  }
+}
