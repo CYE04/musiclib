@@ -8511,3 +8511,168 @@ body.ml-detail-lock{overflow:hidden !important;}
     font-size:10px !important;
   }
 }
+
+/* ===== Unified recommendation color system (2026-06-15) ===== */
+#music-library{
+  --ml-zone-page:var(--bg);
+  --ml-zone-bg:var(--surface);
+  --ml-zone-panel:var(--surface);
+  --ml-zone-panel-soft:var(--surface-secondary);
+  --ml-zone-panel-strong:var(--surface);
+  --ml-zone-hover:var(--surface-hover);
+  --ml-zone-line:var(--divider);
+  --ml-zone-line-strong:var(--border-md);
+  --ml-zone-shadow:var(--shadow-sm);
+}
+
+html[data-resolved-theme="dark"] #music-library{
+  --ml-zone-page:
+    radial-gradient(circle at 12% 8%,rgba(232,199,101,.25),transparent 28%),
+    radial-gradient(circle at 84% 22%,rgba(65,108,210,.22),transparent 36%),
+    linear-gradient(135deg,#070b16 0%,#0b1732 48%,#060915 100%);
+  --ml-zone-bg:
+    radial-gradient(circle at 12% 8%,rgba(232,199,101,.25),transparent 28%),
+    radial-gradient(circle at 84% 22%,rgba(65,108,210,.22),transparent 36%),
+    linear-gradient(135deg,#070b16 0%,#0b1732 48%,#060915 100%);
+  --ml-zone-panel:linear-gradient(180deg,rgba(10,16,31,.56),rgba(8,13,26,.38));
+  --ml-zone-panel-soft:rgba(247,243,232,.055);
+  --ml-zone-panel-strong:linear-gradient(180deg,rgba(9,14,27,.72),rgba(8,13,26,.50));
+  --ml-zone-hover:rgba(232,199,101,.10);
+  --ml-zone-line:rgba(255,255,255,.14);
+  --ml-zone-line-strong:rgba(255,255,255,.24);
+  --ml-zone-shadow:0 28px 90px rgba(0,0,0,.32),0 1px 0 rgba(255,255,255,.06) inset;
+  background:var(--ml-zone-page) !important;
+}
+
+html[data-resolved-theme="light"] #music-library{
+  --ml-zone-page:
+    radial-gradient(circle at 12% 8%,rgba(203,151,45,.20),transparent 30%),
+    radial-gradient(circle at 86% 22%,rgba(80,118,196,.18),transparent 36%),
+    linear-gradient(135deg,#f8fafc 0%,#e9eef7 48%,#f7f0df 100%);
+  --ml-zone-bg:
+    radial-gradient(circle at 12% 8%,rgba(203,151,45,.20),transparent 30%),
+    radial-gradient(circle at 86% 22%,rgba(80,118,196,.18),transparent 36%),
+    linear-gradient(135deg,#f8fafc 0%,#e9eef7 48%,#f7f0df 100%);
+  --ml-zone-panel:linear-gradient(180deg,rgba(255,255,255,.62),rgba(255,255,255,.42));
+  --ml-zone-panel-soft:rgba(255,255,255,.52);
+  --ml-zone-panel-strong:linear-gradient(180deg,rgba(255,255,255,.78),rgba(255,255,255,.54));
+  --ml-zone-hover:rgba(203,151,45,.12);
+  --ml-zone-line:rgba(23,32,51,.12);
+  --ml-zone-line-strong:rgba(23,32,51,.22);
+  --ml-zone-shadow:0 24px 70px rgba(42,48,67,.12),0 1px 0 rgba(255,255,255,.72) inset;
+  background:var(--ml-zone-page) !important;
+}
+
+html.ml-fullscreen body.ml-fullscreen #music-library{
+  background:var(--ml-zone-page) !important;
+}
+
+#music-library > #ml-sidebar,
+#music-library > #ml-notice,
+#music-library #ml-bottom-nav,
+#music-library #ml-playlist-panel{
+  background:var(--ml-zone-panel) !important;
+  border-color:var(--ml-zone-line) !important;
+  box-shadow:none !important;
+}
+
+#music-library #ml-worship-picks{
+  background:var(--ml-zone-bg) !important;
+  border-color:var(--ml-zone-line) !important;
+  box-shadow:var(--ml-zone-shadow) !important;
+}
+
+#music-library #ml-wp-hero,
+#music-library #ml-wp-side{
+  background:var(--ml-zone-panel) !important;
+  border-color:var(--ml-zone-line) !important;
+}
+
+#music-library > #ml-header,
+#music-library > #ml-list-stage,
+#music-library #ml-home-grid,
+#music-library #ml-filter-section,
+#music-library #ml-source-section-head,
+#music-library #ml-list-head{
+  background:transparent !important;
+}
+
+#music-library #ml-hero{
+  background:transparent !important;
+  border-color:transparent !important;
+  box-shadow:none !important;
+}
+
+#music-library #ml-hero-meta,
+#music-library #ml-search,
+#music-library #ml-count-wrap,
+#music-library .ml-weather-pill,
+#music-library .ml-nav-icon-btn,
+#music-library .ml-compact-list,
+#music-library .ml-category-card,
+#music-library #ml-list.is-grouped > .ml-group,
+#music-library #ml-list > .ml-song-card,
+#music-library #ml-list .ml-group-grid > .ml-song-card{
+  background:var(--ml-zone-panel) !important;
+  border-color:var(--ml-zone-line) !important;
+  box-shadow:none !important;
+}
+
+#music-library .ml-hero-chip,
+#music-library .ml-brand-dot,
+#music-library .ml-profile-avatar,
+#music-library .ml-side-link.active,
+#music-library #ml-side-profile,
+#music-library .ml-filter-chip,
+#music-library .ml-source-chip,
+#music-library #ml-search-history button,
+#music-library .ml-group-count,
+#music-library #ml-list.is-grouped .ml-group-count,
+#music-library .ml-song-tag,
+#music-library #ml-list > .ml-song-card > .ml-card-actions > button,
+#music-library #ml-list .ml-group-grid > .ml-song-card > .ml-card-actions > button{
+  background:var(--ml-zone-panel-soft) !important;
+  border-color:var(--ml-zone-line) !important;
+}
+
+#music-library .ml-compact-row{
+  border-color:var(--ml-zone-line) !important;
+}
+
+#music-library .ml-compact-row:hover,
+#music-library .ml-side-link:hover,
+#music-library #ml-side-profile:hover,
+#music-library .ml-category-card:hover,
+#music-library #ml-list > .ml-song-card:hover,
+#music-library #ml-list .ml-group-grid > .ml-song-card:hover,
+#music-library .ml-filter-chip:hover,
+#music-library .ml-source-chip:hover,
+#music-library #ml-search-history button:hover{
+  background:var(--ml-zone-hover) !important;
+  border-color:var(--ml-zone-line-strong) !important;
+}
+
+#music-library .ml-filter-chip.active,
+#music-library .ml-source-chip.active,
+#music-library #ml-list > .ml-song-card .ml-card-play,
+#music-library #ml-list .ml-group-grid > .ml-song-card .ml-card-play{
+  background:var(--accent) !important;
+  border-color:var(--accent) !important;
+  color:var(--bg) !important;
+}
+
+#music-library .ml-filter-chip strong,
+#music-library .ml-source-chip strong{
+  background:var(--ml-zone-panel-soft) !important;
+  color:var(--text-muted) !important;
+}
+
+#music-library #ml-list.is-grouped > .ml-group > .ml-group-head{
+  border-color:var(--ml-zone-line) !important;
+}
+
+#music-library .ml-group-cover,
+#music-library .ml-cover-placeholder{
+  background:var(--ml-zone-panel-soft) !important;
+  border-color:var(--ml-zone-line) !important;
+}
