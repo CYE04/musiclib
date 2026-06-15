@@ -8278,3 +8278,236 @@ body.ml-detail-lock{overflow:hidden !important;}
     display:none !important;
   }
 }
+
+/* ===== Layout repair v2: real two-column shell + natural card tags ===== */
+@media (min-width:861px){
+  html.ml-fullscreen body.ml-fullscreen #music-library{
+    --ml-sidebar-width:260px;
+    display:grid !important;
+    grid-template-columns:var(--ml-sidebar-width) minmax(0,1fr) !important;
+    grid-auto-rows:max-content !important;
+    align-content:start !important;
+    column-gap:0 !important;
+    width:100vw !important;
+    max-width:100vw !important;
+    height:100vh !important;
+    height:100dvh !important;
+    min-height:100dvh !important;
+    margin:0 !important;
+    padding:0 !important;
+    overflow-x:hidden !important;
+    overflow-y:auto !important;
+    background:var(--bg) !important;
+  }
+
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-sidebar{
+    grid-column:1 !important;
+    grid-row:1 / span 999 !important;
+    position:sticky !important;
+    inset:auto !important;
+    top:0 !important;
+    align-self:start !important;
+    width:auto !important;
+    height:100vh !important;
+    height:100dvh !important;
+    max-height:100dvh !important;
+    overflow-y:auto !important;
+    border-right:1px solid var(--divider) !important;
+    background:var(--surface) !important;
+    z-index:20 !important;
+  }
+
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-notice,
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-header,
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-loading,
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-list-stage,
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-empty{
+    grid-column:2 !important;
+    width:100% !important;
+    max-width:100% !important;
+    min-width:0 !important;
+    margin-left:0 !important;
+    margin-right:0 !important;
+    justify-self:stretch !important;
+  }
+
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-header{
+    padding:24px clamp(24px,3.2vw,56px) 18px !important;
+  }
+
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-list-stage{
+    padding:20px clamp(24px,3.2vw,56px) 72px !important;
+    overflow-x:hidden !important;
+  }
+}
+
+@media (min-width:861px) and (max-width:1180px){
+  html.ml-fullscreen body.ml-fullscreen #music-library{
+    --ml-sidebar-width:220px;
+  }
+}
+
+#music-library #ml-list,
+#music-library .ml-group-grid,
+#music-library #ml-list.is-grouped > .ml-group > .ml-group-grid{
+  display:grid !important;
+  gap:16px !important;
+  align-items:stretch !important;
+  width:100% !important;
+  min-width:0 !important;
+  grid-auto-rows:auto !important;
+}
+
+@media (min-width:1280px){
+  #music-library #ml-list,
+  #music-library .ml-group-grid,
+  #music-library #ml-list.is-grouped > .ml-group > .ml-group-grid{
+    grid-template-columns:repeat(4,minmax(0,1fr)) !important;
+  }
+}
+
+@media (min-width:768px) and (max-width:1279px){
+  #music-library #ml-list,
+  #music-library .ml-group-grid,
+  #music-library #ml-list.is-grouped > .ml-group > .ml-group-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr)) !important;
+  }
+}
+
+@media (min-width:576px) and (max-width:767px){
+  #music-library #ml-list,
+  #music-library .ml-group-grid,
+  #music-library #ml-list.is-grouped > .ml-group > .ml-group-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;
+  }
+}
+
+@media (max-width:575px){
+  #music-library #ml-list,
+  #music-library .ml-group-grid,
+  #music-library #ml-list.is-grouped > .ml-group > .ml-group-grid{
+    grid-template-columns:1fr !important;
+  }
+}
+
+#music-library #ml-list > .ml-song-card,
+#music-library #ml-list .ml-group-grid > .ml-song-card{
+  width:100% !important;
+  min-width:0 !important;
+  max-width:100% !important;
+  height:auto !important;
+  min-height:0 !important;
+  padding:12px !important;
+  grid-template-columns:82px minmax(0,1fr) !important;
+  grid-template-rows:auto auto !important;
+  grid-template-areas:"art body" "actions actions" !important;
+  gap:10px 12px !important;
+  overflow:hidden !important;
+}
+
+#music-library #ml-list > .ml-song-card > .ml-card-art,
+#music-library #ml-list .ml-group-grid > .ml-song-card > .ml-card-art{
+  width:82px !important;
+  height:82px !important;
+  min-width:82px !important;
+}
+
+#music-library #ml-list > .ml-song-card > .ml-card-body,
+#music-library #ml-list .ml-group-grid > .ml-song-card > .ml-card-body{
+  min-width:0 !important;
+  gap:4px !important;
+  overflow:hidden !important;
+}
+
+#music-library #ml-list > .ml-song-card .ml-song-title,
+#music-library #ml-list .ml-group-grid > .ml-song-card .ml-song-title{
+  font-size:16px !important;
+  line-height:1.25 !important;
+}
+
+#music-library #ml-list > .ml-song-card .ml-song-tags,
+#music-library #ml-list .ml-group-grid > .ml-song-card .ml-song-tags{
+  display:flex !important;
+  flex-wrap:wrap !important;
+  align-items:center !important;
+  align-content:flex-start !important;
+  gap:5px !important;
+  width:100% !important;
+  min-width:0 !important;
+  height:auto !important;
+  min-height:24px !important;
+  max-height:none !important;
+  margin-top:4px !important;
+  overflow:visible !important;
+}
+
+#music-library #ml-list > .ml-song-card .ml-song-tag,
+#music-library #ml-list .ml-group-grid > .ml-song-card .ml-song-tag{
+  flex:0 0 auto !important;
+  height:24px !important;
+  min-height:24px !important;
+  max-width:100% !important;
+  padding:0 8px !important;
+  overflow:visible !important;
+  text-overflow:clip !important;
+}
+
+#music-library #ml-list > .ml-song-card > .ml-card-actions,
+#music-library #ml-list .ml-group-grid > .ml-song-card > .ml-card-actions{
+  grid-template-columns:minmax(76px,1fr) 38px 38px 38px !important;
+  gap:6px !important;
+  overflow:visible !important;
+}
+
+#music-library #ml-list > .ml-song-card > .ml-card-actions > button,
+#music-library #ml-list .ml-group-grid > .ml-song-card > .ml-card-actions > button{
+  height:38px !important;
+  min-height:38px !important;
+  max-height:38px !important;
+}
+
+#music-library #ml-list > .ml-song-card .ml-card-play,
+#music-library #ml-list .ml-group-grid > .ml-song-card .ml-card-play{
+  min-width:0 !important;
+  padding:0 10px !important;
+}
+
+#music-library #ml-list > .ml-song-card .ml-card-queue,
+#music-library #ml-list > .ml-song-card .ml-card-share,
+#music-library #ml-list > .ml-song-card .ml-card-favorite,
+#music-library #ml-list .ml-group-grid > .ml-song-card .ml-card-queue,
+#music-library #ml-list .ml-group-grid > .ml-song-card .ml-card-share,
+#music-library #ml-list .ml-group-grid > .ml-song-card .ml-card-favorite{
+  width:38px !important;
+  min-width:38px !important;
+  max-width:38px !important;
+}
+
+@media (max-width:575px){
+  #music-library #ml-list > .ml-song-card,
+  #music-library #ml-list .ml-group-grid > .ml-song-card{
+    grid-template-columns:68px minmax(0,1fr) !important;
+    grid-template-areas:"art body" "actions actions" !important;
+  }
+
+  #music-library #ml-list > .ml-song-card > .ml-card-art,
+  #music-library #ml-list .ml-group-grid > .ml-song-card > .ml-card-art{
+    width:68px !important;
+    height:68px !important;
+    min-width:68px !important;
+  }
+
+  #music-library #ml-list > .ml-song-card .ml-song-tags,
+  #music-library #ml-list .ml-group-grid > .ml-song-card .ml-song-tags{
+    display:flex !important;
+    gap:4px !important;
+  }
+
+  #music-library #ml-list > .ml-song-card .ml-song-tag,
+  #music-library #ml-list .ml-group-grid > .ml-song-card .ml-song-tag{
+    height:20px !important;
+    min-height:20px !important;
+    padding:0 6px !important;
+    font-size:10px !important;
+  }
+}

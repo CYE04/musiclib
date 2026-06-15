@@ -1,9 +1,9 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v16-layout-tags-v1";
+const CACHE_NAME = "cecp-musiclib-pwa-v17-layout-repair-v2";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
-  "./musiclib.css?v=20260615-layout-tags-v1",
-  "./musiclib.js?v=20260615-layout-tags-v1",
+  "./musiclib.css?v=20260615-layout-repair-v2",
+  "./musiclib.js?v=20260615-layout-repair-v2",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
   "./icons/favicon.ico",

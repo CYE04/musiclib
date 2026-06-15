@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.15.1-layout-tags';
+  const ML_VER='2026.06.15.2-layout-repair';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -2570,19 +2570,13 @@
       :`<div class="ml-cover-placeholder">封面</div>`;
     const overline=getSongCardOverline(s);
     const meta=getSongCardMeta(s);
-    const mainTags=[
+    const tags=[
       s.origKey?`<span class="ml-song-tag is-key">${s.origKey}</span>`:'',
       s.timeSign?`<span class="ml-song-tag">${s.timeSign}</span>`:'',
-      s.bpm?`<span class="ml-song-tag">${s.bpm}</span>`:''
-    ].filter(Boolean).join('');
-    const statusTags=[
+      s.bpm?`<span class="ml-song-tag">${s.bpm}</span>`:'',
       hasSongAudio(s)?`<span class="ml-song-tag is-audio">音频</span>`:'',
       state.serviceUsed?`<span class="ml-song-tag is-service">本堂</span>`:'',
       state.favorite?`<span class="ml-song-tag is-fav">收藏</span>`:''
-    ].filter(Boolean).join('');
-    const tags=[
-      mainTags?`<div class="ml-song-tags-main">${mainTags}</div>`:'',
-      statusTags?`<div class="ml-song-tags-secondary">${statusTags}</div>`:''
     ].filter(Boolean).join('');
     return`<div class="ml-song-card ml-reveal" data-id="${s.id}">
       <div class="ml-card-art">${cover}</div>
