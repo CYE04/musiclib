@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.15.3-color-unify';
+  const ML_VER='2026.06.15.1-layout-smooth';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -2570,10 +2570,12 @@
       :`<div class="ml-cover-placeholder">封面</div>`;
     const overline=getSongCardOverline(s);
     const meta=getSongCardMeta(s);
-    const tags=[
+    const primaryTags=[
       s.origKey?`<span class="ml-song-tag is-key">${s.origKey}</span>`:'',
       s.timeSign?`<span class="ml-song-tag">${s.timeSign}</span>`:'',
-      s.bpm?`<span class="ml-song-tag">${s.bpm}</span>`:'',
+      s.bpm?`<span class="ml-song-tag">${s.bpm}</span>`:''
+    ].filter(Boolean).join('');
+    const secondaryTags=[
       hasSongAudio(s)?`<span class="ml-song-tag is-audio">音频</span>`:'',
       state.serviceUsed?`<span class="ml-song-tag is-service">本堂</span>`:'',
       state.favorite?`<span class="ml-song-tag is-fav">收藏</span>`:''
@@ -2584,7 +2586,10 @@
         <div class="ml-song-overline">${hi(overline,q)}</div>
         <div class="ml-song-title">${hi(s.title,q)}</div>
         <div class="ml-song-meta">${hi(meta||'收录歌词、简谱与练习资料',q)}</div>
-        <div class="ml-song-tags">${tags}</div>
+        <div class="ml-song-tags">
+          <div class="ml-song-tags-row ml-song-tags-primary">${primaryTags}</div>
+          <div class="ml-song-tags-row ml-song-tags-secondary${secondaryTags?'':' is-empty'}">${secondaryTags}</div>
+        </div>
       </div>
       <div class="ml-card-actions" aria-label="诗歌快捷操作">
         <button class="ml-card-play" type="button" ${hasSongAudio(s)?'':'disabled'} aria-label="播放">${icon('play',15)}<span>播放</span></button>
