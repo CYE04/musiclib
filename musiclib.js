@@ -5053,10 +5053,20 @@
       if(!avail)return;
 
       const vw=Math.max(window.innerWidth||0, document.documentElement.clientWidth||0);
-      const touchLike=matchMedia('(pointer:coarse)').matches||vw<=1024;
-      const maxScale=touchLike?1.22:1.34;
+      let maxScale=1;
+      let minScale=0.72;
+      if(vw<=768){
+        maxScale=1.00;   // 手机：不再额外放大，优先保证整页看全
+        minScale=0.62;
+      }else if(vw<=1180){
+        maxScale=1.06;   // 平板：只轻微横向填充
+        minScale=0.68;
+      }else{
+        maxScale=1.00;   // 电脑：保持正常显示，不主动放大
+        minScale=0.72;
+      }
       const rawScale=avail/maxW;
-      const scale=Math.max(0.72,Math.min(maxScale,rawScale));
+      const scale=Math.max(minScale,Math.min(maxScale,rawScale));
 
       lbDiv.style.transform='scaleX('+scale+')';
       lbDiv.style.transformOrigin='left top';
