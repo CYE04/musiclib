@@ -3003,10 +3003,30 @@
     return String(text||'').replace(/\u3164/g,pickRenderableGapChar(el));
   }
   function setChordContent(el,text){
-    el.textContent=normalizeRenderableGapText(el,text);
+    const raw=String(text||'');
+    if(!IS_APPLE_DEVICE){
+      el.textContent=normalizeRenderableGapText(el,raw);
+      return;
+    }
+    const gapWidth=measureGapWidth(el,'0');
+    el.textContent='';
+    for(const ch of raw){
+      if(ch==='\u3164') appendGapNode(el,'chord-gap',gapWidth,ch);
+      else el.appendChild(document.createTextNode(ch));
+    }
   }
   function setLyricContent(el,text){
-    el.textContent=normalizeRenderableGapText(el,text);
+    const raw=String(text||'');
+    const gapChar=pickRenderableGapChar(el);
+    const gapWidth=IS_APPLE_DEVICE?measureGapWidth(el,'我'):0;
+    el.textContent='';
+    for(const ch of raw){
+      if(ch==='\u3164'){
+        appendGapNode(el,'lyric-gap',gapWidth,gapChar);
+      }else{
+        el.appendChild(document.createTextNode(ch));
+      }
+    }
   }
   function trChordToken(ch,st,useFlat){
     const raw=String(ch||'');
@@ -4780,6 +4800,9 @@
       lbDiv.style.transformOrigin='';
       lbDiv.style.width='';
       lbDiv.style.marginBottom='';
+      lbDiv.style.padding='8px 18px 16px 8px';
+      lbDiv.style.boxSizing='border-box';
+      if(lbDiv.parentElement)lbDiv.parentElement.style.overflow='hidden';
     };
     const normalizePreviewRowHeights=()=>{
       lbDiv.querySelectorAll('.prev-row').forEach(row=>{
@@ -5040,38 +5063,30 @@
       const parent=lbDiv.parentElement;
       if(!parent||!lbDiv.isConnected)return;
 
-      let maxW=0;
-      lbDiv.querySelectorAll('.prev-row').forEach(row=>{
-        const prevDisplay=row.style.display;
-        row.style.display='inline-flex';
-        if(row.scrollWidth>maxW)maxW=row.scrollWidth;
-        row.style.display=prevDisplay;
-      });
-      if(!maxW)return;
+      const natural=measureNaturalScore();
+      if(!natural)return;
 
-      const avail=parent.clientWidth||maxW;
-      if(!avail)return;
+      const availableWidth=parent.clientWidth||natural.width;
+      if(!availableWidth)return;
 
-      const vw=Math.max(window.innerWidth||0, document.documentElement.clientWidth||0);
-      let maxScale=1;
-      let minScale=0.72;
-      if(vw<=768){
-        maxScale=1.00;   // 手机：不再额外放大，优先保证整页看全
-        minScale=0.62;
-      }else if(vw<=1180){
-        maxScale=1.06;   // 平板：只轻微横向填充
-        minScale=0.68;
-      }else{
-        maxScale=1.00;   // 电脑：保持正常显示，不主动放大
-        minScale=0.72;
+      let scaleX=availableWidth/natural.width;
+      if(!isFinite(scaleX)||scaleX<=0)scaleX=1;
+      let scaleY=scaleX;
+      if(shouldUseScreenHeightFit()){
+        const availableHeight=getAvailableScoreHeight();
+        if(availableHeight>0){
+          const fittedHeight=natural.height*scaleX;
+          if(fittedHeight>availableHeight){
+            scaleY=scaleX*(availableHeight/fittedHeight);
+          }
+        }
       }
-      const rawScale=avail/maxW;
-      const scale=Math.max(minScale,Math.min(maxScale,rawScale));
+      if(!isFinite(scaleY)||scaleY<=0)scaleY=scaleX;
 
-      lbDiv.style.transform='scaleX('+scale+')';
+      lbDiv.style.transform='scale('+scaleX+','+scaleY+')';
       lbDiv.style.transformOrigin='left top';
-      lbDiv.style.width=maxW+'px';
-      lbDiv.style.marginBottom='0px';
+      lbDiv.style.width=natural.width+'px';
+      lbDiv.style.marginBottom=(natural.height*(scaleY-1)+18)+'px';
     }
     if(hasRenderedScore){
       renderScore();
