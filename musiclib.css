@@ -663,7 +663,7 @@ body.ml-fullscreen #music-library{
   font-weight:700;
   overflow:hidden;
   text-overflow:ellipsis;
-  white-space:pre;
+  white-space:nowrap;
 }
 .ml-row-meta{
   grid-column:1;
@@ -1446,7 +1446,7 @@ html[data-resolved-theme="dark"] #music-library{
     max-width:124px;
     overflow:hidden;
     text-overflow:ellipsis;
-    white-space:pre;
+    white-space:nowrap;
   }
   #ml-category-grid{
     grid-template-columns:repeat(2,minmax(0,1fr));
@@ -1895,7 +1895,7 @@ html,body,#music-library{
   text-transform:uppercase;
   color:var(--text3);
   margin-bottom:6px;
-  white-space:pre;
+  white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
@@ -1903,7 +1903,7 @@ html,body,#music-library{
   font-family:'Noto Serif SC',serif;
   font-size:22px;
   font-weight:700;
-  white-space:pre;
+  white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
   margin-bottom:4px;
@@ -2000,7 +2000,7 @@ html,body,#music-library{
 }
 #ml-back{display:flex;align-items:center;gap:3px;background:rgba(255,255,255,.3);border:1px solid var(--border);color:var(--accent);font-size:15px;font-family:inherit;font-weight:500;padding:8px 12px;border-radius:999px;cursor:pointer;transition:background .12s,transform .12s;}
 #ml-back:hover{background:var(--accent-light);transform:translateX(-1px);}
-#ml-detail-title{font-size:15px;font-weight:600;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:pre;margin-right:72px;}
+#ml-detail-title{font-size:15px;font-weight:600;flex:1;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-right:72px;}
 
 
 /* slur / tuplet */
@@ -2052,7 +2052,7 @@ html,body,#music-library{
 #music-library .sw-pills{display:flex;gap:6px;flex-wrap:wrap;}
 #music-library .sw-pill{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.5px;padding:7px 12px;border-radius:999px;border:1px solid var(--border-md);background:rgba(255,255,255,.5);color:var(--text2);text-decoration:none;}
 #music-library .sw-kpill{color:var(--accent);border-color:var(--accent);background:var(--accent-light);}
-#music-library .sw-tog{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:999px;border:1px solid var(--border-md);background:var(--text);font-size:13px;font-weight:600;color:var(--bg2);font-family:'Noto Sans SC',sans-serif;cursor:pointer;white-space:pre;margin-top:2px;box-shadow:var(--shadow);transition:all .2s;}
+#music-library .sw-tog{flex-shrink:0;display:inline-flex;align-items:center;gap:6px;padding:10px 16px;border-radius:999px;border:1px solid var(--border-md);background:var(--text);font-size:13px;font-weight:600;color:var(--bg2);font-family:'Noto Sans SC',sans-serif;cursor:pointer;white-space:nowrap;margin-top:2px;box-shadow:var(--shadow);transition:all .2s;}
 #music-library .sw-tog:hover{background:var(--bg3);transform:translateY(-1px);}
 #music-library .sw-tog.on{background:var(--accent);color:#fff;border-color:transparent;}
 #music-library .sw-tog svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s cubic-bezier(.4,0,.2,1);}
@@ -2100,16 +2100,17 @@ html,body,#music-library{
 #music-library .sw-lyric2{display:block;font-size:22px;opacity:0.6;margin-top:1px;}
 #music-library .sw-lyric3{display:block;font-size:22px;opacity:0.6;margin-top:1px;}
 #music-library .sw-lyric4{display:block;font-size:22px;opacity:0.6;margin-top:1px;}
-#music-library .prev-row{--volta-rail:0px;--volta-top:2px;--row-note-height:0px;display:flex;flex-wrap:nowrap;align-items:flex-end;margin-bottom:10px;overflow-x:auto;padding-top:var(--volta-rail);padding-bottom:2px;}
+#music-library .prev-row{--volta-rail:0px;--volta-top:2px;--row-note-height:0px;display:flex;flex-wrap:nowrap;align-items:flex-end;margin-bottom:10px;overflow:visible;padding-top:var(--volta-rail);padding-bottom:2px;}
 #music-library .prev-row.has-volta{--volta-rail:18px;}
 #music-library .prev-seg{display:inline-flex;flex-direction:column;align-items:flex-start;margin-right:4px;flex-shrink:0;}
-#music-library .p-chord{font-family:'Space Mono',monospace;font-size:12px;font-weight:800;color:var(--accent);margin-bottom:2px;min-height:13px;white-space:pre;}
+#music-library .p-chord{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--accent);margin-bottom:2px;min-height:13px;white-space:pre;}
 #music-library .p-chord.empty{visibility:hidden;}
-#music-library .p-n{font-family:'Space Mono',monospace;color:var(--text);margin-bottom:1px;line-height:1.2;display:flex;align-items:flex-end;min-height:var(--row-note-height);white-space:pre;font-weight:600;}
-#music-library .p-lyric{font-family:'Noto Serif SC',serif;font-size:18px;color:var(--text2);white-space:pre;font-weight:500;}
+#music-library .p-n{font-family:'Space Mono',monospace;color:var(--text);margin-bottom:1px;line-height:1.2;display:flex;align-items:flex-end;min-height:var(--row-note-height);}
+#music-library .p-lyric{font-family:'Noto Serif SC',serif;font-size:18px;color:var(--text2);white-space:pre-wrap;}
 #music-library .p-lyric.bold{font-weight:700;color:var(--text);}
 #music-library .p-lyric2,#music-library .p-lyric3,#music-library .p-lyric4{opacity:0.65;margin-top:1px;}
-
+#music-library .chord-gap,
+#music-library .lyric-gap{display:inline-block;white-space:pre;visibility:hidden;pointer-events:none;font:inherit;line-height:inherit;}
 #music-library .prev-volta{display:inline-flex;align-items:flex-end;position:relative;}
 #music-library .prev-volta::before{content:'';position:absolute;top:calc(var(--volta-top,2px) - var(--volta-rail,0px));left:0;right:0;height:13px;border-top:1.5px solid var(--text);border-left:1.5px solid var(--text);pointer-events:none;box-sizing:border-box;opacity:0.5;}
 #music-library .prev-volta.closed::before{border-right:1.5px solid var(--text);}
@@ -2393,8 +2394,8 @@ html,body,#music-library{
 }
 .pl-cover img { width:100%; height:100%; object-fit:cover; border-radius:10px; display:block; }
 .pl-info { flex:1; min-width:0; }
-.pl-title { font-size:14px; font-weight:600; color:var(--player-text); white-space:pre; overflow:hidden; text-overflow:ellipsis; }
-.pl-artist { font-size:12px; color:var(--player-text2); white-space:pre; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
+.pl-title { font-size:14px; font-weight:600; color:var(--player-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pl-artist { font-size:12px; color:var(--player-text2); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:2px; }
 
 /* Progress */
 .pl-progress-wrap { padding:10px 2px; cursor:pointer; margin:0 -2px; }
@@ -2450,7 +2451,7 @@ html,body,#music-library{
   font-size:9px;
   letter-spacing:.14em;
   text-transform:uppercase;
-  white-space:pre;
+  white-space:nowrap;
   padding:0 8px 0 9px;
 }
 .ml-audio-pitch-btn,
@@ -2555,7 +2556,7 @@ html,body,#music-library{
   color:#fff;
   font-size:15px;
   line-height:1.1;
-  white-space:pre;
+  white-space:nowrap;
 }
 .ml-audio-tool-mode{
   min-width:48px;
@@ -2643,7 +2644,7 @@ html,body,#music-library{
   font-size:16px;
   font-weight:700;
   letter-spacing:.01em;
-  white-space:pre;
+  white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
@@ -2684,7 +2685,7 @@ html,body,#music-library{
 }
 #ml-audio-panel-play:hover{background:var(--ap-card-hover);}
 #ml-audio-panel-play span:first-child{
-  white-space:pre;
+  white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
@@ -3400,7 +3401,7 @@ html,body,#music-library{
 .ml-notice-item{
   display:inline-flex; align-items:center; gap:14px;
   min-width:max-content; padding:22px 40px;
-  font-size:19px; line-height:1.4; white-space:pre;
+  font-size:19px; line-height:1.4; white-space:nowrap;
   color:var(--notice-text);
   font-weight:400;
 }
@@ -3673,7 +3674,7 @@ html,body,#music-library{
   color:var(--text2);font-size:12px;font-weight:600;display:inline-flex;align-items:center;gap:8px;
   box-shadow:none;
   line-height:1;
-  white-space:pre;
+  white-space:nowrap;
 }
 .ml-source-name{
   font-size:clamp(13px,1.2vw,16px);
@@ -3983,10 +3984,10 @@ html,body,#music-library{
 #ml-player-dock-cover img{width:100%;height:100%;object-fit:cover;}
 #ml-player-dock-meta{min-width:0;}
 #ml-player-dock-title{
-  font-size:15px;font-weight:700;white-space:pre;overflow:hidden;text-overflow:ellipsis;
+  font-size:15px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 #ml-player-dock-artist{
-  margin-top:3px;font-size:12px;color:#b3bccf;white-space:pre;overflow:hidden;text-overflow:ellipsis;
+  margin-top:3px;font-size:12px;color:#b3bccf;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
 #ml-player-dock-center{min-width:0;}
 #ml-player-controls{
@@ -4678,14 +4679,14 @@ html,body,#music-library{
   font-size:13px;
   line-height:1.2;
   color:#f7f9ff;
-  white-space:pre;
+  white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
 #music-library .ml-player-queue-artist{
   font-size:11px;
   color:#97a6c4;
-  white-space:pre;
+  white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
@@ -5146,7 +5147,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   color:rgba(255,255,255,.78);
   font-size:12px;
   font-weight:600;
-  white-space:pre;
+  white-space:nowrap;
 }
 #music-library #ml-wp-actions{
   display:flex;
@@ -5293,7 +5294,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   display:block;
   overflow:hidden;
   text-overflow:ellipsis;
-  white-space:pre;
+  white-space:nowrap;
 }
 #music-library .ml-wp-card-kicker{
   color:rgba(232,199,101,.82);
@@ -5501,14 +5502,14 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   font-size:16px;
   font-weight:800;
   line-height:1.15;
-  white-space:pre;
+  white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
 #music-library #ml-nowbar-artist{
   font-size:12px;
   color:rgba(17,24,39,.62);
-  white-space:pre;
+  white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
@@ -5518,7 +5519,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   font-size:14px;
   line-height:1.35;
   color:rgba(17,24,39,.78);
-  white-space:pre;
+  white-space:nowrap;
   overflow:hidden;
   text-overflow:ellipsis;
 }
