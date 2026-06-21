@@ -1530,6 +1530,7 @@
     const waitFonts=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
     return waitFonts
       .then(()=>{
+        refreshGapContent(panelInner);
         const snap=buildExportClone(panelInner,{tight:!!opt.tight});
         if(opt.hideTransposeOptions){
           const keyZone=snap.node.querySelector('.sw-ks');
@@ -3004,6 +3005,7 @@
   }
   function setChordContent(el,text){
     const raw=String(text||'');
+    el.dataset.gapRaw=raw;
     if(!IS_APPLE_DEVICE){
       el.textContent=normalizeRenderableGapText(el,raw);
       return;
@@ -3017,6 +3019,7 @@
   }
   function setLyricContent(el,text){
     const raw=String(text||'');
+    el.dataset.gapRaw=raw;
     const gapChar=pickRenderableGapChar(el);
     const gapWidth=IS_APPLE_DEVICE?measureGapWidth(el,'我'):0;
     el.textContent='';
@@ -3027,6 +3030,16 @@
         el.appendChild(document.createTextNode(ch));
       }
     }
+  }
+  function refreshGapContent(root){
+    if(!root)return;
+    GAP_CHAR_CACHE.clear();
+    GAP_WIDTH_CACHE.clear();
+    root.querySelectorAll('[data-gap-raw]').forEach(el=>{
+      const raw=el.dataset.gapRaw;
+      if(el.classList.contains('p-chord'))setChordContent(el,raw);
+      else setLyricContent(el,raw);
+    });
   }
   function trChordToken(ch,st,useFlat){
     const raw=String(ch||'');
@@ -5109,7 +5122,10 @@
     }
     if(document.fonts&&document.fonts.ready){
       document.fonts.ready.then(()=>{
-        if(lbDiv.isConnected)scheduleFitRows();
+        if(lbDiv.isConnected){
+          refreshGapContent(lbDiv);
+          scheduleFitRows();
+        }
       }).catch(()=>{});
     }
     window._mlFitObs=fitObs;
