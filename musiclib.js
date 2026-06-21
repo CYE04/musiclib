@@ -2990,9 +2990,9 @@
     const gap=document.createElement('span');
     gap.className=cls;
     gap.setAttribute('aria-hidden','true');
-    if(width>0){
+    if(width){
       gap.style.display='inline-block';
-      gap.style.width=width+'px';
+      gap.style.width=typeof width==='number'?width+'px':width;
       gap.textContent=' ';
     }else{
       gap.textContent=ch;
@@ -3008,7 +3008,7 @@
       el.textContent=normalizeRenderableGapText(el,raw);
       return;
     }
-    const gapWidth=measureGapWidth(el,'0');
+    const gapWidth='2ch';
     el.textContent='';
     for(const ch of raw){
       if(ch==='\u3164') appendGapNode(el,'chord-gap',gapWidth,ch);
@@ -3018,7 +3018,7 @@
   function setLyricContent(el,text){
     const raw=String(text||'');
     const gapChar=pickRenderableGapChar(el);
-    const gapWidth=IS_APPLE_DEVICE?measureGapWidth(el,'我'):0;
+    const gapWidth=IS_APPLE_DEVICE?'1em':0;
     el.textContent='';
     for(const ch of raw){
       if(ch==='\u3164'){
@@ -3042,11 +3042,27 @@
       return lead+out;
     });
   }
-  function resizeChordGap(gap,len){
+  function chordGapUnits(text){
+    let units=0;
+    for(const ch of String(text||'')) units+=ch==='\u3164'?2:1;
+    return units;
+  }
+  function resizeChordGap(gap,units){
     const chars=[...String(gap||'')];
-    if(!chars.length||len<=0)return '';
+    if(!chars.length||units<=0)return '';
     let out='';
-    for(let i=0;i<len;i++)out+=chars[i%chars.length];
+    let used=0;
+    for(let i=0;used<units;i++){
+      const ch=chars[i%chars.length];
+      const width=ch==='\u3164'?2:1;
+      if(used+width<=units){
+        out+=ch;
+        used+=width;
+      }else{
+        out+=' ';
+        used+=1;
+      }
+    }
     return out;
   }
   function trChord(ch,st,useFlat){
@@ -3060,9 +3076,9 @@
       out+=tr;
       if(i+1<parts.length&&/[ \t\u3164]+/.test(parts[i+1])){
         const gap=parts[i+1];
-        let nextLen=Math.max(0,[...gap].length + ([...part].length - [...tr].length));
-        if(nextLen===0 && i+2<parts.length && /[^\s\u3164]/.test(parts[i+2]))nextLen=1;
-        out+=resizeChordGap(gap,nextLen);
+        let nextUnits=Math.max(0,chordGapUnits(gap) + ([...part].length - [...tr].length));
+        if(nextUnits===0 && i+2<parts.length && /[^\s\u3164]/.test(parts[i+2]))nextUnits=1;
+        out+=resizeChordGap(gap,nextUnits);
         i++;
       }
     }
