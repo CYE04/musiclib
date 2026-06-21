@@ -4785,7 +4785,7 @@
       lbDiv.style.transformOrigin='';
       lbDiv.style.width='';
       lbDiv.style.marginBottom='';
-      lbDiv.style.padding='8px 18px 16px 8px';
+      lbDiv.style.padding='12px 0';
       lbDiv.style.boxSizing='border-box';
       if(lbDiv.parentElement){
         lbDiv.parentElement.style.overflowX='hidden';
@@ -4812,7 +4812,7 @@
         row.style.display=prevDisplay;
       });
       if(!maxW)return null;
-      const naturalWidth=maxW+24;
+      const naturalWidth=maxW;
       lbDiv.style.width=naturalWidth+'px';
       const naturalHeight=lbDiv.scrollHeight;
       if(!naturalHeight)return null;
@@ -5059,30 +5059,19 @@
       const availableWidth=parent.clientWidth||natural.width;
       if(!availableWidth)return;
 
-      let scaleX=availableWidth/natural.width;
-      if(!isFinite(scaleX)||scaleX<=0)scaleX=1;
-      const minReadableScale=shouldUseScreenHeightFit()?0.78:0.86;
-      const useHorizontalScroll=scaleX<minReadableScale;
-      if(useHorizontalScroll)scaleX=minReadableScale;
-      let scaleY=scaleX;
-      if(shouldUseScreenHeightFit()){
-        const availableHeight=getAvailableScoreHeight();
-        if(availableHeight>0){
-          const fittedHeight=natural.height*scaleX;
-          if(fittedHeight>availableHeight){
-            scaleY=scaleX*(availableHeight/fittedHeight);
-          }
-        }
-      }
-      if(!isFinite(scaleY)||scaleY<=0)scaleY=scaleX;
-      if(scaleY<minReadableScale)scaleY=minReadableScale;
-
-      parent.style.overflowX=useHorizontalScroll?'auto':'hidden';
       parent.style.overflowY='hidden';
-      lbDiv.style.transform='scale('+scaleX+','+scaleY+')';
-      lbDiv.style.transformOrigin='left top';
-      lbDiv.style.width=natural.width+'px';
-      lbDiv.style.marginBottom=(natural.height*(scaleY-1)+18)+'px';
+      if(natural.width>availableWidth){
+        const scale=availableWidth/natural.width;
+        parent.style.overflowX='hidden';
+        lbDiv.style.transform='scale('+scale+')';
+        lbDiv.style.transformOrigin='left top';
+        lbDiv.style.width=natural.width+'px';
+        lbDiv.style.marginBottom=(natural.height*(scale-1))+'px';
+      }else{
+        parent.style.overflowX='hidden';
+        lbDiv.style.width='';
+        lbDiv.style.marginBottom='';
+      }
     }
     if(hasRenderedScore){
       renderScore();
