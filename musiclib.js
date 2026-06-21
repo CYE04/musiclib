@@ -3016,17 +3016,8 @@
     }
   }
   function setLyricContent(el,text){
-    const raw=String(text||'');
-    const gapChar=pickRenderableGapChar(el);
-    const gapWidth=IS_APPLE_DEVICE?measureGapWidth(el,'我'):0;
-    el.textContent='';
-    for(const ch of raw){
-      if(ch==='\u3164'){
-        appendGapNode(el,'lyric-gap',gapWidth,gapChar);
-      }else{
-        el.appendChild(document.createTextNode(ch));
-      }
-    }
+    // 与 musictool 保持一致：交给浏览器原生渲染普通空格与 U+3164（ㅤ）
+    el.textContent=String(text||'');
   }
   function trChordToken(ch,st,useFlat){
     const raw=String(ch||'');
