@@ -9289,7 +9289,7 @@ body.ml-detail-lock{overflow:hidden !important;}
 }
 #music-library .p-n{
   font-family:'Space Mono',monospace !important;
-  font-weight:400 !important;
+  font-weight:700 !important;
   color:var(--text) !important;
   margin-bottom:1px !important;
   line-height:1.2 !important;
@@ -9300,13 +9300,13 @@ body.ml-detail-lock{overflow:hidden !important;}
 #music-library .p-lyric{
   font-family:'Noto Serif SC',serif !important;
   font-size:18px !important;
-  font-weight:400 !important;
+  font-weight:600 !important;
   line-height:normal !important;
   color:var(--text2) !important;
   white-space:normal !important;
 }
 #music-library .p-lyric.bold{
-  font-weight:700 !important;
+  font-weight:800 !important;
   color:var(--text) !important;
 }
 #music-library .p-lyric2,
@@ -9367,7 +9367,7 @@ body.ml-detail-lock{overflow:hidden !important;}
 }
 #music-library .jp-plain-sym{
   font-size:15px !important;
-  font-weight:400 !important;
+  font-weight:700 !important;
   line-height:1 !important;
   text-align:center !important;
   display:inline-flex !important;
@@ -9387,7 +9387,7 @@ body.ml-detail-lock{overflow:hidden !important;}
 #music-library .jp-dot-bot{
   width:1em !important;
   font-size:8px !important;
-  font-weight:400 !important;
+  font-weight:700 !important;
   line-height:.6 !important;
   color:var(--text) !important;
   text-align:center !important;
@@ -9421,7 +9421,7 @@ body.ml-detail-lock{overflow:hidden !important;}
 }
 #music-library .jp-num{
   font-size:19px !important;
-  font-weight:400 !important;
+  font-weight:700 !important;
   line-height:1 !important;
   display:inline-flex !important;
   align-items:center !important;
@@ -9438,13 +9438,23 @@ body.ml-detail-lock{overflow:hidden !important;}
   top:50% !important;
   transform:translateY(-50%) !important;
   font-size:10px !important;
-  font-weight:400 !important;
+  font-weight:700 !important;
   line-height:1 !important;
   pointer-events:none !important;
 }
 #music-library .jp-acc{
   font-size:12px !important;
-  font-weight:700 !important;
+  font-weight:800 !important;
+}
+#music-library .chord-gap,
+#music-library .lyric-gap{
+  display:inline-block !important;
+  flex:0 0 auto !important;
+  white-space:pre !important;
+  visibility:hidden !important;
+  pointer-events:none !important;
+  font-weight:400 !important;
+  line-height:inherit !important;
 }
 #music-library .jp-u1-line{
   display:block !important;
@@ -9535,7 +9545,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   left:50% !important;
   transform:translateX(-50%) !important;
   font-size:8px !important;
-  font-weight:400 !important;
+  font-weight:700 !important;
   line-height:1 !important;
   padding:0 3px !important;
   background:var(--bg) !important;

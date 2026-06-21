@@ -2922,14 +2922,16 @@
     GAP_CHAR_CACHE.set(key,pick);
     return pick;
   }
-  function measureGapWidth(el,sample){
+  function measureGapWidth(el,sample,weight){
     if(!el||!document.body)return 0;
     const cs=getComputedStyle(el);
-    const key=[sample,cs.font,cs.letterSpacing,cs.wordSpacing,cs.lineHeight].join('|');
+    const fixedWeight=weight||'400';
+    const key=[sample,cs.font,fixedWeight,cs.letterSpacing,cs.wordSpacing,cs.lineHeight].join('|');
     if(GAP_WIDTH_CACHE.has(key))return GAP_WIDTH_CACHE.get(key);
     const probe=document.createElement('span');
     probe.style.cssText='position:absolute;left:-9999px;top:-9999px;visibility:hidden;white-space:pre;pointer-events:none;';
     probe.style.font=cs.font;
+    probe.style.fontWeight=fixedWeight;
     probe.style.letterSpacing=cs.letterSpacing;
     probe.style.wordSpacing=cs.wordSpacing;
     probe.style.lineHeight=cs.lineHeight;
@@ -2940,14 +2942,23 @@
     GAP_WIDTH_CACHE.set(key,w);
     return w;
   }
+  function measureFilledGapWidth(el,gapChar,fallbackSample){
+    const fallback=measureGapWidth(el,fallbackSample,'400');
+    const actual=measureGapWidth(el,gapChar||'\u3164','400');
+    return Math.max(fallback,actual,0);
+  }
   function appendGapNode(el,cls,width,ch){
     const gap=document.createElement('span');
     gap.className=cls;
     gap.setAttribute('aria-hidden','true');
+    gap.style.fontWeight='400';
+    gap.style.flex='0 0 auto';
+    gap.style.minWidth=width>0?width+'px':'';
+    gap.style.boxSizing='border-box';
     if(width>0){
       gap.style.display='inline-block';
       gap.style.width=width+'px';
-      gap.textContent=' ';
+      gap.textContent=ch;
     }else{
       gap.textContent=ch;
     }
@@ -2958,21 +2969,18 @@
   }
   function setChordContent(el,text){
     const raw=String(text||'');
-    if(!IS_APPLE_DEVICE){
-      el.textContent=normalizeRenderableGapText(el,raw);
-      return;
-    }
-    const gapWidth=measureGapWidth(el,'0');
+    const gapChar=pickRenderableGapChar(el);
+    const gapWidth=measureFilledGapWidth(el,gapChar,'0');
     el.textContent='';
     for(const ch of raw){
-      if(ch==='\u3164') appendGapNode(el,'chord-gap',gapWidth,ch);
+      if(ch==='\u3164') appendGapNode(el,'chord-gap',gapWidth,gapChar);
       else el.appendChild(document.createTextNode(ch));
     }
   }
   function setLyricContent(el,text){
     const raw=String(text||'');
     const gapChar=pickRenderableGapChar(el);
-    const gapWidth=IS_APPLE_DEVICE?measureGapWidth(el,'我'):0;
+    const gapWidth=measureFilledGapWidth(el,gapChar,'我');
     el.textContent='';
     for(const ch of raw){
       if(ch==='\u3164'){
