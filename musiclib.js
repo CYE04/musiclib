@@ -3003,17 +3003,7 @@
     return String(text||'').replace(/\u3164/g,pickRenderableGapChar(el));
   }
   function setChordContent(el,text){
-    const raw=String(text||'');
-    if(!IS_APPLE_DEVICE){
-      el.textContent=normalizeRenderableGapText(el,raw);
-      return;
-    }
-    const gapWidth=measureGapWidth(el,'0');
-    el.textContent='';
-    for(const ch of raw){
-      if(ch==='\u3164') appendGapNode(el,'chord-gap',gapWidth,ch);
-      else el.appendChild(document.createTextNode(ch));
-    }
+    el.textContent=String(text||'');
   }
   function setLyricContent(el,text){
     el.textContent=String(text||'');
@@ -4790,9 +4780,6 @@
       lbDiv.style.transformOrigin='';
       lbDiv.style.width='';
       lbDiv.style.marginBottom='';
-      lbDiv.style.padding='8px 18px 16px 8px';
-      lbDiv.style.boxSizing='border-box';
-      if(lbDiv.parentElement)lbDiv.parentElement.style.overflow='hidden';
     };
     const normalizePreviewRowHeights=()=>{
       lbDiv.querySelectorAll('.prev-row').forEach(row=>{
@@ -5053,30 +5040,26 @@
       const parent=lbDiv.parentElement;
       if(!parent||!lbDiv.isConnected)return;
 
-      const natural=measureNaturalScore();
-      if(!natural)return;
+      let maxW=0;
+      lbDiv.querySelectorAll('.prev-row').forEach(row=>{
+        const prevDisplay=row.style.display;
+        row.style.display='inline-flex';
+        if(row.scrollWidth>maxW)maxW=row.scrollWidth;
+        row.style.display=prevDisplay;
+      });
+      if(!maxW)return;
 
-      const availableWidth=parent.clientWidth||natural.width;
-      if(!availableWidth)return;
+      const avail=parent.clientWidth||maxW;
+      if(!avail)return;
 
-      let scaleX=availableWidth/natural.width;
-      if(!isFinite(scaleX)||scaleX<=0)scaleX=1;
-      let scaleY=scaleX;
-      if(shouldUseScreenHeightFit()){
-        const availableHeight=getAvailableScoreHeight();
-        if(availableHeight>0){
-          const fittedHeight=natural.height*scaleX;
-          if(fittedHeight>availableHeight){
-            scaleY=scaleX*(availableHeight/fittedHeight);
-          }
-        }
+      if(maxW>avail){
+        const scale=avail/maxW;
+        lbDiv.style.transform='scale('+scale+')';
+        lbDiv.style.transformOrigin='left top';
+        lbDiv.style.width=maxW+'px';
+        const h=lbDiv.offsetHeight;
+        lbDiv.style.marginBottom=(h*(scale-1))+'px';
       }
-      if(!isFinite(scaleY)||scaleY<=0)scaleY=scaleX;
-
-      lbDiv.style.transform='scale('+scaleX+','+scaleY+')';
-      lbDiv.style.transformOrigin='left top';
-      lbDiv.style.width=natural.width+'px';
-      lbDiv.style.marginBottom=(natural.height*(scaleY-1)+18)+'px';
     }
     if(hasRenderedScore){
       renderScore();
