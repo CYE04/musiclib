@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.17.2-transpose-lightbox';
+  const ML_VER='2026.06.15.26-loop-time-visible';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -11,18 +11,30 @@
     if(String(url).startsWith('/')) return HALO_BASE+url;
     return HALO_BASE+'/'+url;
   }
-  function resolveLocalAsset(file,fallback=file,useLocationFallback=false){
+  const LOGO_SRC=(function(){
     try{
       const cur=document.currentScript && document.currentScript.src ? new URL(document.currentScript.src, location.href) : null;
-      if(cur) return new URL(file, cur.href).href;
-      return useLocationFallback ? new URL(file, location.href).href : file;
+      return cur ? new URL('olive-fellowship-logo.png', cur.href).href : 'olive-fellowship-logo.png';
     }catch(_){
-      return fallback;
+      return 'musiclib/olive-fellowship-logo.png';
     }
-  }
-  const LOGO_SRC=resolveLocalAsset('olive-fellowship-logo.png','musiclib/olive-fellowship-logo.png');
-  const TRANSPOSE_LOGO_SRC=resolveLocalAsset('cecp-olive-logo.svg');
-  const SOUNDTOUCH_PROCESSOR_URL=resolveLocalAsset('soundtouch-processor.js','soundtouch-processor.js',true);
+  })();
+  const TRANSPOSE_LOGO_SRC=(function(){
+    try{
+      const cur=document.currentScript && document.currentScript.src ? new URL(document.currentScript.src, location.href) : null;
+      return cur ? new URL('cecp-olive-logo.svg', cur.href).href : 'cecp-olive-logo.svg';
+    }catch(_){
+      return 'cecp-olive-logo.svg';
+    }
+  })();
+  const SOUNDTOUCH_PROCESSOR_URL=(function(){
+    try{
+      const cur=document.currentScript && document.currentScript.src ? new URL(document.currentScript.src, location.href) : null;
+      return cur ? new URL('soundtouch-processor.js', cur.href).href : new URL('soundtouch-processor.js', location.href).href;
+    }catch(_){
+      return 'soundtouch-processor.js';
+    }
+  })();
   const WECHAT='CYuen_290104';
   const INTERNAL_KEY='cecp2026';
   const THEME_KEY='cecp:musiclib:theme';
@@ -93,7 +105,6 @@
   let _detailStatePushed=false;
   let _revealObserver=null,_weatherCache=null;
   let _pullRefreshing=false;
-  let _renderRaf=0;
 
   function icon(name,size=18){
     const common=`width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"`;
@@ -267,10 +278,10 @@
       <div id="ml-list"></div>
     </div>
     <div id="ml-empty">
-      <div id="ml-empty-icon" aria-hidden="true">${icon('search',34)}</div>
+      <div id="ml-empty-icon">🎵</div>
       <div id="ml-empty-msg">找不到「<span id="ml-query-text"></span>」</div>
       <div id="ml-empty-sub">库里暂时还没有这首歌，你可以联系 YuEn 申请添加。</div>
-      <button id="ml-contact" type="button">${icon('user',16)}<span>复制微信号 YuEn</span></button>
+      <button id="ml-contact">💬 复制微信号 YuEn</button>
     </div>
     <div id="ml-detail">
       <div id="ml-detail-overlay"></div>
@@ -562,7 +573,6 @@
       <button id="ml-lightbox-close" class="ml-motion-close-btn" type="button" aria-label="关闭图片预览">${icon('close',22)}</button>
       <button id="ml-lightbox-prev" class="ml-lightbox-nav" type="button" aria-label="上一张">‹</button>
       <img id="ml-lightbox-img" src="" alt="">
-      <div id="ml-lightbox-score" hidden></div>
       <button id="ml-lightbox-next" class="ml-lightbox-nav" type="button" aria-label="下一张">›</button>
       <div id="ml-lightbox-toolbar">
         <span id="ml-lightbox-count">1 / 1</span>
@@ -647,13 +657,12 @@
   observeThemeChanges();
   renderSearchHistory();
   renderQuickFilters();
-  $('ml-list')?.addEventListener('click',handleSongListClick);
 
   $('ml-search').addEventListener('input',e=>{
     query=e.target.value.trim();
     updateSearchControls();
     scheduleRememberSearch(query);
-    scheduleRender();
+    render();
   });
   $('ml-search').addEventListener('keydown',e=>{
     if(e.key==='Enter') rememberSearchTerm(query);
@@ -674,7 +683,7 @@
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape') return;
     if($('ml-lightbox')?.classList.contains('open')){
-      closeLightbox();
+      $('ml-lightbox').classList.remove('open');
       return;
     }
     if($('ml-playlist-drawer')?.classList.contains('open')){
@@ -840,48 +849,28 @@
   $('ml-notice-close')?.addEventListener('click',closeNoticeModal);
   $('ml-notice-modal')?.addEventListener('click',e=>{ if(e.target===e.currentTarget) closeNoticeModal(); });
 
-  let _lightboxImages=[],_lightboxIndex=0,_lightboxZoom=false,_lightboxMode='image';
+  let _lightboxImages=[],_lightboxIndex=0,_lightboxZoom=false;
   $('ml-lightbox').addEventListener('click',e=>{
-    if(e.target===e.currentTarget||e.target.closest?.('#ml-lightbox-close')) closeLightbox();
+    if(e.target===e.currentTarget||e.target.id==='ml-lightbox-close') $('ml-lightbox').classList.remove('open');
   });
   $('ml-lightbox-img').addEventListener('click',e=>e.stopPropagation());
   $('ml-lightbox-img').addEventListener('dblclick',()=>{
     _lightboxZoom=!_lightboxZoom;
     $('ml-lightbox').classList.toggle('is-zoomed',_lightboxZoom);
   });
-  $('ml-lightbox-score')?.addEventListener('click',e=>e.stopPropagation());
-  $('ml-lightbox-score')?.addEventListener('dblclick',()=>{
-    _lightboxZoom=!_lightboxZoom;
-    $('ml-lightbox').classList.toggle('is-zoomed',_lightboxZoom);
-  });
-  $('ml-lightbox-prev')?.addEventListener('click',e=>{ e.stopPropagation(); if(_lightboxMode==='image')showLightboxImage(_lightboxIndex-1); });
-  $('ml-lightbox-next')?.addEventListener('click',e=>{ e.stopPropagation(); if(_lightboxMode==='image')showLightboxImage(_lightboxIndex+1); });
+  $('ml-lightbox-prev')?.addEventListener('click',e=>{ e.stopPropagation(); showLightboxImage(_lightboxIndex-1); });
+  $('ml-lightbox-next')?.addEventListener('click',e=>{ e.stopPropagation(); showLightboxImage(_lightboxIndex+1); });
   $('ml-lightbox-reset')?.addEventListener('click',e=>{ e.stopPropagation(); _lightboxZoom=false; $('ml-lightbox').classList.remove('is-zoomed'); });
-
-  function closeLightbox(){
-    const box=$('ml-lightbox');
-    if(!box) return;
-    box.classList.remove('open','is-zoomed','is-score-mode');
-    _lightboxZoom=false;
-    const score=$('ml-lightbox-score');
-    if(score) score.innerHTML='';
-  }
 
   function showLightboxImage(index){
     if(!_lightboxImages.length) return;
-    _lightboxMode='image';
     _lightboxIndex=(index+_lightboxImages.length)%_lightboxImages.length;
     const src=_lightboxImages[_lightboxIndex];
     const img=$('ml-lightbox-img');
-    const score=$('ml-lightbox-score');
-    if(score){score.hidden=true;score.innerHTML='';}
-    img.hidden=false;
     img.src=src;
     img.alt='原始图片谱 '+(_lightboxIndex+1);
-    $('ml-lightbox').classList.remove('is-score-mode');
     $('ml-lightbox-count').textContent=(_lightboxIndex+1)+' / '+_lightboxImages.length;
     $('ml-lightbox-open').href=src;
-    $('ml-lightbox-open').hidden=false;
     $('ml-lightbox-prev').hidden=_lightboxImages.length<=1;
     $('ml-lightbox-next').hidden=_lightboxImages.length<=1;
   }
@@ -893,41 +882,6 @@
     $('ml-lightbox').classList.remove('is-zoomed');
     showLightboxImage(_lightboxIndex);
     $('ml-lightbox').classList.add('open');
-  }
-
-  function openTransposeLightbox(scoreNode,title,key){
-    if(!scoreNode) return;
-    const box=$('ml-lightbox');
-    const score=$('ml-lightbox-score');
-    const img=$('ml-lightbox-img');
-    if(!box||!score||!img) return;
-    _lightboxMode='score';
-    _lightboxImages=[];
-    _lightboxIndex=0;
-    _lightboxZoom=false;
-    box.classList.remove('is-zoomed');
-    box.classList.add('is-score-mode');
-    img.hidden=true;
-    img.removeAttribute('src');
-    score.innerHTML='';
-    const clone=scoreNode.cloneNode(true);
-    clone.removeAttribute('style');
-    clone.classList.add('ml-lightbox-score-inner');
-    score.appendChild(clone);
-    score.hidden=false;
-    box.classList.add('open');
-    clone.querySelectorAll('.prev-row').forEach(row=>{
-      row.style.removeProperty('--row-note-height');
-      let maxH=0;
-      row.querySelectorAll('.p-n').forEach(noteLane=>{
-        maxH=Math.max(maxH,Math.ceil(noteLane.getBoundingClientRect().height||0));
-      });
-      if(maxH) row.style.setProperty('--row-note-height',maxH+'px');
-    });
-    $('ml-lightbox-count').textContent=[title||'移调谱',key?('1 = '+key):''].filter(Boolean).join(' · ');
-    $('ml-lightbox-open').hidden=true;
-    $('ml-lightbox-prev').hidden=true;
-    $('ml-lightbox-next').hidden=true;
   }
 
   function getSongIdFromUrl(){
@@ -1201,17 +1155,17 @@
         const isDarkBg=toLuma(bgColor||'#ffffff')<140;
 
         const fontFor=type=>{
-          if(type==='sec') return '800 20px "Noto Serif SC","PingFang SC",serif';
-          if(type==='jianpu') return '800 21px "Space Mono","DM Mono",monospace';
-          if(type==='lyric') return '600 22px "Noto Serif SC","PingFang SC",serif';
-          return '800 16px "Space Mono","DM Mono",monospace';
+          if(type==='sec') return '700 18px "Noto Serif SC","PingFang SC",serif';
+          if(type==='jianpu') return '700 18px "Space Mono","DM Mono",monospace';
+          if(type==='lyric') return '500 19px "Noto Serif SC","PingFang SC",serif';
+          return '700 14px "Space Mono","DM Mono",monospace';
         };
         const lhFor=type=>{
-          if(type==='sec') return 34;
-          if(type==='jianpu') return 30;
-          if(type==='lyric') return 32;
+          if(type==='sec') return 30;
+          if(type==='jianpu') return 26;
+          if(type==='lyric') return 28;
           if(type==='gap') return 14;
-          return 26;
+          return 24;
         };
         const colorFor=type=>{
           if(type==='sec') return isDarkBg ? '#a6b3cf' : '#8a5a3b';
@@ -1268,6 +1222,95 @@
     a.click();
     a.remove();
     setTimeout(()=>URL.revokeObjectURL(url),800);
+  }
+
+  function withExportJpFix(scope,work){
+    const touched=[];
+    const setStyle=(el,prop,val,pri='')=>{
+      touched.push([el,prop,el.style.getPropertyValue(prop),el.style.getPropertyPriority(prop)]);
+      el.style.setProperty(prop,val,pri);
+    };
+    const styleUnderlineLine=(line,isU2)=>{
+      setStyle(line,'display','block');
+      setStyle(line,'position','absolute');
+      setStyle(line,'left','0');
+      setStyle(line,'right','0');
+      setStyle(line,'bottom',isU2?'0':'3px');
+      setStyle(line,'height','1.5px');
+      setStyle(line,'background','currentColor');
+      setStyle(line,'margin-top','0');
+      setStyle(line,'align-self','auto');
+      setStyle(line,'pointer-events','none');
+      setStyle(line,'z-index','1');
+    };
+    const addTempLine=(wrap,isU2,beforeNode)=>{
+      const ln=document.createElement('span');
+      ln.className=isU2?'jp-u2-line':'jp-u1-line';
+      ln.setAttribute('data-export-temp-line','1');
+      wrap.insertBefore(ln,beforeNode||null);
+      return ln;
+    };
+    const nextPaint=()=>new Promise(resolve=>{
+      requestAnimationFrame(()=>requestAnimationFrame(resolve));
+    });
+
+    // If legacy renderer left border-bottom on number row, convert it to underline element for export.
+    scope.querySelectorAll('.jp-lines-wrap').forEach(wrap=>{
+      const row=wrap.querySelector('.jp-num-row');
+      if(!row) return;
+      const cs=getComputedStyle(row);
+      const hadBorder=(parseFloat(cs.borderBottomWidth||'0')>0)&&(cs.borderBottomStyle!=='none');
+      const hasU1=!!wrap.querySelector('.jp-u1-line');
+      if(hadBorder && !hasU1){
+        const beforeU2=wrap.querySelector('.jp-u2-line');
+        addTempLine(wrap,false,beforeU2||null);
+      }
+    });
+
+    scope.querySelectorAll('.jp-num-row').forEach(row=>{
+      setStyle(row,'padding-bottom','8px');
+      setStyle(row,'border-bottom','none');
+      setStyle(row,'min-height','1.15em');
+      setStyle(row,'display','inline-flex');
+      setStyle(row,'align-items','center');
+      setStyle(row,'justify-content','center');
+    });
+    scope.querySelectorAll('.jp-num').forEach(num=>{
+      setStyle(num,'line-height','1');
+      setStyle(num,'display','inline-block');
+      setStyle(num,'vertical-align','baseline');
+    });
+    scope.querySelectorAll('.jp-plain-sym.is-dash').forEach(d=>{
+      setStyle(d,'top','-0.08em');
+      setStyle(d,'height','1em');
+      setStyle(d,'display','inline-flex');
+      setStyle(d,'align-items','center');
+      setStyle(d,'justify-content','center');
+      setStyle(d,'line-height','1');
+      setStyle(d,'font-size','19px');
+      setStyle(d,'transform','none');
+    });
+    scope.querySelectorAll('.jp-aug').forEach(a=>{
+      setStyle(a,'top','50%');
+      setStyle(a,'transform','translateY(-50%)');
+      setStyle(a,'right','-0.46em');
+      setStyle(a,'line-height','1');
+      setStyle(a,'display','inline-block');
+    });
+    scope.querySelectorAll('.jp-u1-line,.jp-u2-line').forEach(line=>{
+      styleUnderlineLine(line,line.classList.contains('jp-u2-line'));
+    });
+
+    return nextPaint()
+      .then(work)
+      .finally(()=>{
+        for(let i=touched.length-1;i>=0;i--){
+          const [el,prop,old,pri]=touched[i];
+          if(old) el.style.setProperty(prop,old,pri||'');
+          else el.style.removeProperty(prop);
+        }
+        scope.querySelectorAll('[data-export-temp-line="1"]').forEach(n=>n.remove());
+      });
   }
 
   function buildExportClone(panelInner,opt={}){
@@ -1335,7 +1378,7 @@
         '.jp-slur-open::before{top:3px!important;left:12%!important;right:-4px!important;height:11px!important;border-top:2.4px solid #111!important;border-left:2.4px solid #111!important;background:transparent!important;z-index:2!important;}',
         '.jp-slur-close::before{top:3px!important;left:-4px!important;right:12%!important;height:11px!important;border-top:2.4px solid #111!important;border-right:2.4px solid #111!important;background:transparent!important;z-index:2!important;}',
         '.jp-tuplet-br{top:3px!important;left:2px!important;right:2px!important;height:11px!important;border-top:2.4px solid #111!important;border-left:2.4px solid #111!important;border-right:2.4px solid #111!important;background:transparent!important;z-index:1!important;}',
-        '.jp-tuplet-num{top:-4px!important;font-size:11px!important;font-weight:800!important;line-height:1!important;padding:0 5px!important;background:#fff!important;color:#111!important;-webkit-text-fill-color:#111!important;z-index:4!important;}'
+        '.jp-tuplet-num{top:-4px!important;font-size:10px!important;line-height:1!important;padding:0 5px!important;background:#fff!important;color:#111!important;-webkit-text-fill-color:#111!important;z-index:4!important;}'
       ].join('\n');
       scope.insertBefore(style,scope.firstChild);
     }
@@ -1430,7 +1473,7 @@
         line.style.left='0';
         line.style.right='0';
         line.style.bottom=line.classList.contains('jp-u2-line')?'0':'4px';
-        line.style.height='1.8px';
+        line.style.height='1.5px';
         line.style.background='currentColor';
         line.style.margin='0';
         line.style.pointerEvents='none';
@@ -1453,7 +1496,7 @@
       d.style.alignItems='center';
       d.style.justifyContent='center';
       d.style.lineHeight='1';
-      d.style.fontSize='21px';
+      d.style.fontSize='19px';
       d.style.transform='none';
       d.style.overflow='visible';
       let dashLine=d.querySelector('.jp-dash-line');
@@ -1540,6 +1583,12 @@
     requestAnimationFrame(()=>{
       root.scrollTo({top:_detailReturnScroll||0,left:0,behavior:'auto'});
     });
+  }
+
+  function tryColor(el, prop){
+    if(!el)return '';
+    const v=getComputedStyle(el).getPropertyValue(prop).trim();
+    return v && v!=='transparent' && v!=='rgba(0, 0, 0, 0)' ? v : '';
   }
 
   function getStoredTheme(){
@@ -1660,6 +1709,20 @@
     root.dataset.theme=mode;
   }
 
+  function colorMix(color, alpha){
+    if(color.startsWith('rgb')){
+      const m=color.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+      if(m)return `rgba(${m[1]},${m[2]},${m[3]},${alpha})`;
+    }
+    if(color.startsWith('#')){
+      const hex=color.slice(1);
+      const full=hex.length===3?hex.split('').map(x=>x+x).join(''):hex;
+      const r=parseInt(full.slice(0,2),16),g=parseInt(full.slice(2,4),16),b=parseInt(full.slice(4,6),16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+    return `rgba(0,122,255,${alpha})`;
+  }
+
   function observeThemeChanges(){
     if(_themeObserver)_themeObserver.disconnect();
     _themeObserver=new MutationObserver(()=>syncHaloTheme());
@@ -1691,6 +1754,12 @@
     }
   }
 
+  function hasLyricMatch(s,q){
+    for(const sec of s.sections||[])for(const line of sec.lines||[]){
+      const arr=Array.isArray(line)?line:(line.line||[]);
+      for(const c of arr)if((c.lyric||'').toLowerCase().includes(q)||(c.lyric2||'').toLowerCase().includes(q)||(c.lyric3||'').toLowerCase().includes(q)||(c.lyric4||'').toLowerCase().includes(q))return true;
+    }return false;
+  }
   function lower(v){ return String(v||'').trim().toLowerCase(); }
   function escapeRegExp(v){ return String(v||'').replace(/[.*+?^${}()|[\]\\]/g,'\\$&'); }
   function cleanText(v){ return String(v||'').replace(/\s+/g,' ').trim(); }
@@ -1864,7 +1933,7 @@
     $('ml-wp-title').textContent=song.title||'今日敬拜推荐';
     $('ml-wp-artist').textContent=song.displayArtist||song.artist||song.source||'诗歌';
     $('ml-wp-lyric').textContent=getSongLyricHighlight(song);
-    $('ml-wp-tags').innerHTML=getWorshipTags(song,index).map(t=>`<span>${esc(t)}</span>`).join('');
+    $('ml-wp-tags').innerHTML=getWorshipTags(song,index).map(t=>`<span>${t}</span>`).join('');
     $('ml-wp-play').disabled=!hasSongAudio(song);
     $('ml-wp-open').disabled=false;
   }
@@ -1880,13 +1949,13 @@
     setWorshipHero(picks[0],0);
     list.innerHTML=picks.map((song,index)=>`
       <button class="ml-wp-card${index===0?' active':''} ml-reveal is-visible" type="button" data-id="${song.id}">
-        <span class="ml-wp-card-cover">${song.cover?`<img src="${esc(song.cover)}" alt="" loading="lazy" decoding="async">`:'<span>♪</span>'}</span>
+        <span class="ml-wp-card-cover">${song.cover?`<img src="${song.cover}" alt="" loading="lazy">`:'<span>♪</span>'}</span>
         <span class="ml-wp-card-copy">
           <span class="ml-wp-card-kicker">推荐 0${index+1}</span>
-          <strong>${esc(song.title||'未命名诗歌')}</strong>
-          <small>${esc(song.displayArtist||song.artist||song.source||'诗歌')}</small>
+          <strong>${song.title||'未命名诗歌'}</strong>
+          <small>${song.displayArtist||song.artist||song.source||'诗歌'}</small>
         </span>
-        <span class="ml-wp-card-tag">${esc(song.origKey?`调性 ${song.origKey}`:(song.bpm?`速度 ${song.bpm}`:'今日推荐'))}</span>
+        <span class="ml-wp-card-tag">${song.origKey?`调性 ${song.origKey}`:(song.bpm?`速度 ${song.bpm}`:'今日推荐')}</span>
       </button>
     `).join('');
     list.querySelectorAll('.ml-wp-card[data-id]').forEach((btn,index)=>{
@@ -1985,41 +2054,15 @@
     if(code>=95) return '雷雨';
     return '今日天气';
   }
-  function buildSearchText(song){
-    const lyricParts=[];
-    for(const sec of song.sections||[]){
-      for(const line of sec.lines||[]){
-        const arr=Array.isArray(line)?line:(line.line||[]);
-        for(const c of arr){
-          lyricParts.push(c.lyric,c.lyric2,c.lyric3,c.lyric4);
-        }
-      }
-    }
-    return lower([
-      song.title,
-      song.artist,
-      song.source,
-      song.displayArtist,
-      song.album,
-      song.albumYear,
-      song.sub,
-      song.origKey,
-      song.timeSign,
-      song.bpm,
-      lyricParts.join(' ')
-    ].filter(Boolean).join(' '));
-  }
   function enrichSong(song){
     const source=detectSongSource(song);
     const {album,albumYear}=parseAlbumInfo(Object.assign({},song,{source}));
-    const enriched=Object.assign({},song,{
+    return Object.assign({},song,{
       source,
       album,
       albumYear,
       displayArtist:(song.artist||source||'未知来源').trim()
     });
-    enriched.searchText=buildSearchText(enriched);
-    return enriched;
   }
   function ensureNoIndexMeta(){
     [
@@ -2384,58 +2427,19 @@
     setIntentFilter('全部',{clearQuery:mode!=='library',resetSource:mode!=='library',scrollList:mode==='library'});
   }
   function hi(t,q){
-    const text=String(t||'');
-    const needle=String(q||'').trim().toLowerCase();
-    if(!needle) return esc(text);
-    const lowerText=text.toLowerCase();
-    let out='',pos=0;
-    while(pos<text.length){
-      const idx=lowerText.indexOf(needle,pos);
-      if(idx<0) break;
-      out+=esc(text.slice(pos,idx));
-      out+='<mark class="ml-highlight">'+esc(text.slice(idx,idx+needle.length))+'</mark>';
-      pos=idx+needle.length;
-    }
-    return out+esc(text.slice(pos));
+    if(!q||!t)return t||'';
+    return t.replace(new RegExp(`(${escapeRegExp(q)})`,'gi'),'<mark class="ml-highlight">$1</mark>');
   }
-  function scheduleRender(){
-    cancelAnimationFrame(_renderRaf);
-    _renderRaf=requestAnimationFrame(()=>{
-      _renderRaf=0;
-      render();
-    });
-  }
-
-  function findSongByCard(card){
-    if(!card) return null;
-    const id=card.dataset.id;
-    return id ? songs.find(x=>x.id===id) : null;
-  }
-
-  function handleSongListClick(e){
-    const target=e.target instanceof Element ? e.target : null;
-    if(!target) return;
-    const list=$('ml-list');
-    const card=target.closest('.ml-song-card');
-    if(!card||!list||!list.contains(card)) return;
-    const song=findSongByCard(card);
-    if(!song) return;
-    const action=target.closest('.ml-card-favorite,.ml-card-service,.ml-card-share,.ml-card-play,.ml-card-queue');
-    if(action){
-      e.preventDefault();
-      e.stopPropagation();
-      if(action.classList.contains('ml-card-favorite')) toggleFavorite(song);
-      else if(action.classList.contains('ml-card-service')) toggleServiceUsed(song);
-      else if(action.classList.contains('ml-card-share')) shareSong(song);
-      else if(action.classList.contains('ml-card-play')&&hasSongAudio(song)) playSongNow(song);
-      else if(action.classList.contains('ml-card-queue')&&hasSongAudio(song)) addSongToPlaylist(song);
-      return;
-    }
-    openDetail(song);
+  function renderSourceBar(){
+    const bar=$('ml-source-bar');
+    if(!bar) return;
+    bar.hidden=true;
+    bar.innerHTML='';
   }
 
   function render(){
     const list=$('ml-list'),empty=$('ml-empty'),q=query.toLowerCase();
+    renderSourceBar();
     renderQuickFilters();
     renderHomePanels();
     updateSearchControls();
@@ -2446,7 +2450,12 @@
       if(!sourceOk) return false;
       if(!intentOk) return false;
       if(!q) return true;
-      return (s.searchText||'').includes(q);
+      return (s.title||'').toLowerCase().includes(q)
+        || (s.artist||'').toLowerCase().includes(q)
+        || (s.source||'').toLowerCase().includes(q)
+        || (s.album||'').toLowerCase().includes(q)
+        || (s.sub||'').toLowerCase().includes(q)
+        || hasLyricMatch(s,q);
     });
     if(!filtered.length){
       $('ml-result-count').textContent=q
@@ -2479,6 +2488,43 @@
         list.innerHTML=filtered.map(s=>cardHTML(s,q)).join('')+'<div id="ml-list-end"></div>';
       }
       _mpRenderQueue();
+      list.querySelectorAll('.ml-song-card').forEach(el=>{
+        el.addEventListener('click',()=>{const s=songs.find(x=>x.id===el.dataset.id);if(s)openDetail(s);});
+
+        el.querySelector('.ml-card-favorite')?.addEventListener('click',e=>{
+          e.stopPropagation();
+          const s=songs.find(x=>x.id===el.dataset.id);
+          if(s) toggleFavorite(s);
+        });
+
+        el.querySelector('.ml-card-service')?.addEventListener('click',e=>{
+          e.stopPropagation();
+          const s=songs.find(x=>x.id===el.dataset.id);
+          if(s) toggleServiceUsed(s);
+        });
+
+        el.querySelector('.ml-card-share')?.addEventListener('click',e=>{
+          e.stopPropagation();
+          const s=songs.find(x=>x.id===el.dataset.id);
+          if(s) shareSong(s);
+        });
+
+        el.querySelector('.ml-card-play')?.addEventListener('click',e=>{
+          e.preventDefault();
+          e.stopPropagation();
+          const s=songs.find(x=>x.id===el.dataset.id);
+          if(!hasSongAudio(s)) return;
+          playSongNow(s);
+        });
+
+        el.querySelector('.ml-card-queue')?.addEventListener('click',e=>{
+          e.preventDefault();
+          e.stopPropagation();
+          const s=songs.find(x=>x.id===el.dataset.id);
+          if(!hasSongAudio(s)) return;
+          addSongToPlaylist(s);
+        });
+      });
     }
     observeRevealItems();
   }
@@ -2512,7 +2558,7 @@
   function groupCoverHTML(group,mode){
     const first=group.songs.find(song=>song.cover)||group.songs[0];
     if(mode==='album'&&first&&first.cover){
-      return `<div class="ml-group-cover"><img src="${esc(first.cover)}" alt="" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML='♪'"></div>`;
+      return `<div class="ml-group-cover"><img src="${esc(first.cover)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='♪'"></div>`;
     }
     const label=cleanText(group.name);
     const initial=(label&&label!=='单曲与其他')?Array.from(label)[0]:'♪';
@@ -2562,7 +2608,7 @@
   function cardHTML(s,q){
     const state=getSongState(s.id);
     const cover=s.cover
-      ?`<img class="ml-cover" src="${esc(s.cover)}" alt="${esc(s.title||'诗歌')} 封面" loading="lazy" decoding="async" onerror="this.outerHTML='<div class=\\'ml-cover-placeholder\\'>封面</div>'">`
+      ?`<img class="ml-cover" src="${s.cover}" loading="lazy" onerror="this.outerHTML='<div class=\\'ml-cover-placeholder\\'>♪</div>'">`
       :`<div class="ml-cover-placeholder">封面</div>`;
     const overline=getSongCardOverline(s);
     const meta=getSongCardMeta(s);
@@ -2728,10 +2774,10 @@
     ln.className=level===2?'jp-u2-line':'jp-u1-line';
     ln.style.display='block';
     ln.style.position='absolute';
-  ln.style.left='0';
-  ln.style.right='0';
-  ln.style.bottom=level===2?'0':'3px';
-  ln.style.height='1.5px';
+    ln.style.left='0';
+    ln.style.right='0';
+    ln.style.bottom=level===2?'0':'3px';
+    ln.style.height='1.5px';
     ln.style.background='currentColor';
     ln.style.marginTop='0';
     ln.style.alignSelf='auto';
@@ -2922,16 +2968,14 @@
     GAP_CHAR_CACHE.set(key,pick);
     return pick;
   }
-  function measureGapWidth(el,sample,weight){
+  function measureGapWidth(el,sample){
     if(!el||!document.body)return 0;
     const cs=getComputedStyle(el);
-    const fixedWeight=weight||'400';
-    const key=[sample,cs.font,fixedWeight,cs.letterSpacing,cs.wordSpacing,cs.lineHeight].join('|');
+    const key=[sample,cs.font,cs.letterSpacing,cs.wordSpacing,cs.lineHeight].join('|');
     if(GAP_WIDTH_CACHE.has(key))return GAP_WIDTH_CACHE.get(key);
     const probe=document.createElement('span');
     probe.style.cssText='position:absolute;left:-9999px;top:-9999px;visibility:hidden;white-space:pre;pointer-events:none;';
     probe.style.font=cs.font;
-    probe.style.fontWeight=fixedWeight;
     probe.style.letterSpacing=cs.letterSpacing;
     probe.style.wordSpacing=cs.wordSpacing;
     probe.style.lineHeight=cs.lineHeight;
@@ -2942,23 +2986,14 @@
     GAP_WIDTH_CACHE.set(key,w);
     return w;
   }
-  function measureFilledGapWidth(el,gapChar,fallbackSample){
-    const fallback=measureGapWidth(el,fallbackSample,'400');
-    const actual=measureGapWidth(el,gapChar||'\u3164','400');
-    return Math.max(fallback,actual,0);
-  }
   function appendGapNode(el,cls,width,ch){
     const gap=document.createElement('span');
     gap.className=cls;
     gap.setAttribute('aria-hidden','true');
-    gap.style.fontWeight='400';
-    gap.style.flex='0 0 auto';
-    gap.style.minWidth=width>0?width+'px':'';
-    gap.style.boxSizing='border-box';
     if(width>0){
       gap.style.display='inline-block';
       gap.style.width=width+'px';
-      gap.textContent=ch;
+      gap.textContent=' ';
     }else{
       gap.textContent=ch;
     }
@@ -2969,18 +3004,21 @@
   }
   function setChordContent(el,text){
     const raw=String(text||'');
-    const gapChar=pickRenderableGapChar(el);
-    const gapWidth=measureFilledGapWidth(el,gapChar,'0');
+    if(!IS_APPLE_DEVICE){
+      el.textContent=normalizeRenderableGapText(el,raw);
+      return;
+    }
+    const gapWidth=measureGapWidth(el,'0');
     el.textContent='';
     for(const ch of raw){
-      if(ch==='\u3164') appendGapNode(el,'chord-gap',gapWidth,gapChar);
+      if(ch==='\u3164') appendGapNode(el,'chord-gap',gapWidth,ch);
       else el.appendChild(document.createTextNode(ch));
     }
   }
   function setLyricContent(el,text){
     const raw=String(text||'');
     const gapChar=pickRenderableGapChar(el);
-    const gapWidth=measureFilledGapWidth(el,gapChar,'我');
+    const gapWidth=IS_APPLE_DEVICE?measureGapWidth(el,'我'):0;
     el.textContent='';
     for(const ch of raw){
       if(ch==='\u3164'){
@@ -4684,10 +4722,10 @@
 
     const infoDiv=document.createElement('div');infoDiv.className='sw-info';
     const detailNote=getSongDetailNote(s);
-    infoDiv.innerHTML=`<div class="sw-eyebrow">${esc(s.displayArtist||s.source||'诗歌库')}</div>
-      <div class="sw-title">${esc(s.title||'')}</div>
-      <div class="sw-sub">${esc(getSongDetailSub(s))}</div>
-      ${detailNote?`<div class="sw-note">${esc(detailNote)}</div>`:''}`;
+    infoDiv.innerHTML=`<div class="sw-eyebrow">${s.displayArtist||s.source||'诗歌库'}</div>
+      <div class="sw-title">${s.title||''}</div>
+      <div class="sw-sub">${getSongDetailSub(s)}</div>
+      ${detailNote?`<div class="sw-note">${detailNote}</div>`:''}`;
     const pillsDiv=document.createElement('div');pillsDiv.className='sw-pills';
     pillsDiv.appendChild(kPill);
     if(s.timeSign){const p=document.createElement('span');p.className='sw-pill';p.textContent=s.timeSign;pillsDiv.appendChild(p);}
@@ -4705,33 +4743,10 @@
     const kg=document.createElement('div');kg.className='sw-kg';
     const capoEl=document.createElement('div');
     capoEl.className='sw-capo plain';
-    capoEl.innerHTML=`<div style="font-size:15px;flex-shrink:0" aria-hidden="true">${icon('score',16)}</div>
+    capoEl.innerHTML=`<div style="font-size:15px;flex-shrink:0">🎸</div>
       <div style="flex:1"><div class="sw-capo-t"></div><div class="sw-capo-s"></div></div>
       <div class="sw-capo-n"></div>`;
-    const lbDiv=document.createElement('div');lbDiv.className='sw-lb ml-transpose-score-zoom';
-    lbDiv.tabIndex=0;
-    lbDiv.setAttribute('role','button');
-    lbDiv.setAttribute('aria-label','放大查看移调谱');
-    lbDiv.title='放大查看';
-    let scoreTapStart=null;
-    lbDiv.addEventListener('pointerdown',e=>{
-      scoreTapStart={x:e.clientX||0,y:e.clientY||0};
-    });
-    lbDiv.addEventListener('click',e=>{
-      if(window.getSelection&&String(window.getSelection()).trim()) return;
-      if(scoreTapStart){
-        const dx=Math.abs((e.clientX||0)-scoreTapStart.x);
-        const dy=Math.abs((e.clientY||0)-scoreTapStart.y);
-        if(dx>12||dy>12) return;
-      }
-      openTransposeLightbox(lbDiv,s.title||'移调谱',curKey);
-    });
-    lbDiv.addEventListener('keydown',e=>{
-      if(e.key==='Enter'||e.key===' '){
-        e.preventDefault();
-        openTransposeLightbox(lbDiv,s.title||'移调谱',curKey);
-      }
-    });
+    const lbDiv=document.createElement('div');lbDiv.className='sw-lb';
 
     const ksDiv=document.createElement('div');ksDiv.className='sw-ks';
     const slabel=document.createElement('div');slabel.className='sw-slabel';slabel.textContent='目标调';
@@ -4785,13 +4800,9 @@
       lbDiv.style.transformOrigin='';
       lbDiv.style.width='';
       lbDiv.style.marginBottom='';
-      lbDiv.style.padding='12px 0';
+      lbDiv.style.padding='8px 18px 16px 8px';
       lbDiv.style.boxSizing='border-box';
-      if(lbDiv.parentElement){
-        lbDiv.parentElement.style.overflowX='hidden';
-        lbDiv.parentElement.style.overflowY='hidden';
-        lbDiv.parentElement.style.webkitOverflowScrolling='touch';
-      }
+      if(lbDiv.parentElement)lbDiv.parentElement.style.overflow='hidden';
     };
     const normalizePreviewRowHeights=()=>{
       lbDiv.querySelectorAll('.prev-row').forEach(row=>{
@@ -4812,7 +4823,7 @@
         row.style.display=prevDisplay;
       });
       if(!maxW)return null;
-      const naturalWidth=maxW;
+      const naturalWidth=maxW+24;
       lbDiv.style.width=naturalWidth+'px';
       const naturalHeight=lbDiv.scrollHeight;
       if(!naturalHeight)return null;
@@ -4880,7 +4891,7 @@
     shareBtn.className='sw-pill';
     shareBtn.type='button';
     shareBtn.style.cssText='font-size:12px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;';
-    shareBtn.textContent='分享';
+    shareBtn.textContent='🔗 分享';
     shareBtn.addEventListener('click',()=>shareSong(s));
     toolsRow.appendChild(shareBtn);
 
@@ -4888,7 +4899,7 @@
     exportBtn.className='sw-pill';
     exportBtn.type='button';
     exportBtn.style.cssText='font-size:12px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;';
-    exportBtn.textContent='下载图片';
+    exportBtn.textContent='🖼 下载图片';
     exportBtn.addEventListener('click',()=>{
       if(exportBtn.disabled) return;
       const old=exportBtn.textContent;
@@ -4929,7 +4940,7 @@
       const lrc=document.createElement('a');lrc.className='sw-pill';
       lrc.href=s.lrc;lrc.target='_blank';
       lrc.style.cssText='font-size:12px;padding:5px 12px;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;';
-      lrc.textContent='LRC';toolsRow.appendChild(lrc);
+      lrc.textContent='📝 LRC';toolsRow.appendChild(lrc);
     }
     if(hasRenderedScore&&toolsRow.children.length){tools.appendChild(toolsRow);scoreModeShell.appendChild(tools);}
 
@@ -4963,7 +4974,6 @@
         const img=document.createElement('img');
         img.src=src;
         img.loading='lazy';
-        img.decoding='async';
         img.alt=(s.title||'诗歌')+' 原图谱 '+(index+1);
         img.addEventListener('load',()=>page.classList.add('is-loaded'));
         img.addEventListener('error',()=>{
@@ -5059,19 +5069,24 @@
       const availableWidth=parent.clientWidth||natural.width;
       if(!availableWidth)return;
 
-      parent.style.overflowY='hidden';
-      if(natural.width>availableWidth){
-        const scale=availableWidth/natural.width;
-        parent.style.overflowX='hidden';
-        lbDiv.style.transform='scale('+scale+')';
-        lbDiv.style.transformOrigin='left top';
-        lbDiv.style.width=natural.width+'px';
-        lbDiv.style.marginBottom=(natural.height*(scale-1))+'px';
-      }else{
-        parent.style.overflowX='hidden';
-        lbDiv.style.width='';
-        lbDiv.style.marginBottom='';
+      let scaleX=availableWidth/natural.width;
+      if(!isFinite(scaleX)||scaleX<=0)scaleX=1;
+      let scaleY=scaleX;
+      if(shouldUseScreenHeightFit()){
+        const availableHeight=getAvailableScoreHeight();
+        if(availableHeight>0){
+          const fittedHeight=natural.height*scaleX;
+          if(fittedHeight>availableHeight){
+            scaleY=scaleX*(availableHeight/fittedHeight);
+          }
+        }
       }
+      if(!isFinite(scaleY)||scaleY<=0)scaleY=scaleX;
+
+      lbDiv.style.transform='scale('+scaleX+','+scaleY+')';
+      lbDiv.style.transformOrigin='left top';
+      lbDiv.style.width=natural.width+'px';
+      lbDiv.style.marginBottom=(natural.height*(scaleY-1)+18)+'px';
     }
     if(hasRenderedScore){
       renderScore();
