@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.15.26-loop-time-visible';
+  const ML_VER='2026.05.23.1';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -19,42 +19,8 @@
       return 'musiclib/olive-fellowship-logo.png';
     }
   })();
-  const TRANSPOSE_LOGO_SRC=(function(){
-    try{
-      const cur=document.currentScript && document.currentScript.src ? new URL(document.currentScript.src, location.href) : null;
-      return cur ? new URL('cecp-olive-logo.svg', cur.href).href : 'cecp-olive-logo.svg';
-    }catch(_){
-      return 'cecp-olive-logo.svg';
-    }
-  })();
-  const SOUNDTOUCH_PROCESSOR_URL=(function(){
-    try{
-      const cur=document.currentScript && document.currentScript.src ? new URL(document.currentScript.src, location.href) : null;
-      return cur ? new URL('soundtouch-processor.js', cur.href).href : new URL('soundtouch-processor.js', location.href).href;
-    }catch(_){
-      return 'soundtouch-processor.js';
-    }
-  })();
   const WECHAT='CYuen_290104';
   const INTERNAL_KEY='cecp2026';
-  const THEME_KEY='cecp:musiclib:theme';
-  const SONG_STATE_KEY='cecp:musiclib:song-state:v1';
-  const SEARCH_HISTORY_KEY='cecp:musiclib:search-history:v1';
-  const THEME_MODES=['system','light','dark'];
-  const SLOW_BPM_MAX=99;
-  const FAST_BPM_MIN=100;
-  const QUICK_FILTERS=[
-    {id:'全部',label:'全部',match:()=>true},
-    {id:'快歌',label:'快歌',match:s=>{const bpm=getSongBpm(s);return Number.isFinite(bpm)&&bpm>=FAST_BPM_MIN;}},
-    {id:'慢歌',label:'慢歌',match:s=>{const bpm=getSongBpm(s);return Number.isFinite(bpm)&&bpm<=SLOW_BPM_MAX;}},
-    {id:'本堂',label:'本堂',match:s=>!!getSongState(s.id).serviceUsed},
-    {id:'收藏',label:'收藏',visible:false,match:s=>!!getSongState(s.id).favorite}
-  ];
-  const HOME_CATEGORIES=[
-    {id:'快歌',label:'快歌',tone:'sky'},
-    {id:'慢歌',label:'慢歌',tone:'sage'},
-    {id:'收藏',label:'收藏',tone:'violet'}
-  ];
   const SOURCE_RULES=[
     {name:'赞美之泉',patterns:['赞美之泉','stream of praise']},
     {name:'约书亚乐团',patterns:['约书亚乐团','joshua band','约书亚']},
@@ -97,118 +63,29 @@
     return;
   }
 
-  let songs=[],query='',sourceFilter='全部',intentFilter='全部',_activeDetailSongId='',_detailReturnScroll=0;
-  let searchHistory=loadSearchHistory(),_searchHistoryTimer=null;
+  let songs=[],query='',sourceFilter='全部';
   let _apLoaded=false,_ap=null;
   let _audioCtx=null,_metroTimer=null,_metroNext=0,_metroRunning=false,_metroBpm=72;
   let _themeObserver=null;
   let _detailStatePushed=false;
   let _revealObserver=null,_weatherCache=null;
-  let _pullRefreshing=false;
-
-  function icon(name,size=18){
-    const common=`width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"`;
-    const filled=`width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"`;
-    const map={
-      home:`<svg ${common}><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>`,
-      search:`<svg ${common}><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`,
-      library:`<svg ${common}><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5Z"/><path d="M8 7h6"/><path d="M8 11h7"/></svg>`,
-      queue:`<svg ${common}><path d="M4 6h12"/><path d="M4 12h10"/><path d="M4 18h8"/><path d="M18 14v6"/><path d="M15 17h6"/></svg>`,
-      heart:`<svg ${common}><path d="M20.8 8.6c0 5.2-8.8 11.4-8.8 11.4S3.2 13.8 3.2 8.6a4.8 4.8 0 0 1 8.8-2.6 4.8 4.8 0 0 1 8.8 2.6Z"/></svg>`,
-      heartFill:`<svg ${filled}><path d="M12 21s-8.8-6.2-8.8-12.4A4.8 4.8 0 0 1 12 6a4.8 4.8 0 0 1 8.8 2.6C20.8 14.8 12 21 12 21Z"/></svg>`,
-      check:`<svg ${common}><path d="M20 6 9 17l-5-5"/></svg>`,
-      settings:`<svg ${common}><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.07A1.7 1.7 0 0 0 9 19.37a1.7 1.7 0 0 0-1.88.34l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.7 1.7 0 0 0 4.63 15 1.7 1.7 0 0 0 3.07 14H3a2 2 0 1 1 0-4h.07A1.7 1.7 0 0 0 4.63 9a1.7 1.7 0 0 0-.34-1.88l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.7 1.7 0 0 0 9 4.63 1.7 1.7 0 0 0 10 3.07V3a2 2 0 1 1 4 0v.07A1.7 1.7 0 0 0 15 4.63a1.7 1.7 0 0 0 1.88-.34l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.7 1.7 0 0 0 19.37 9c.25.61.84 1 1.56 1H21a2 2 0 1 1 0 4h-.07A1.7 1.7 0 0 0 19.4 15Z"/></svg>`,
-      user:`<svg ${common}><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>`,
-      play:`<svg ${filled}><path d="M8 5.14v14l11-7-11-7Z"/></svg>`,
-      score:`<svg ${common}><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>`,
-      close:`<svg class="ml-motion-icon ml-motion-icon-close" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path class="ml-motion-line ml-motion-line-a" d="M6 6 18 18"/><path class="ml-motion-line ml-motion-line-b" d="M18 6 6 18"/></svg>`,
-      collapse:`<svg class="ml-motion-icon ml-motion-icon-collapse" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>`,
-      theme:`<svg ${common}><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z"/></svg>`,
-      more:`<svg ${common}><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>`,
-      chevronLeft:`<svg ${common}><path d="m15 18-6-6 6-6"/></svg>`,
-      sun:`<svg ${common}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
-      system:`<svg ${common}><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>`,
-      listMusic:`<svg ${common}><path d="M4 6h10"/><path d="M4 10h10"/><path d="M4 14h7"/><path d="M16 5v11"/><path d="m16 8 4-1v8"/><circle cx="14" cy="18" r="2"/><circle cx="18" cy="16" r="2"/></svg>`,
-      chevronDown:`<svg ${common}><path d="m6 9 6 6 6-6"/></svg>`,
-      rotateCcw:`<svg ${common}><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>`,
-      refreshCcw:`<svg ${common}><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M6.1 9a7 7 0 0 1 11.4-2.6L20 11"/><path d="M17.9 15a7 7 0 0 1-11.4 2.6L4 13"/></svg>`,
-      minus:`<svg ${common}><path d="M5 12h14"/></svg>`,
-      plus:`<svg ${common}><path d="M12 5v14"/><path d="M5 12h14"/></svg>`,
-      timerReset:`<svg ${common}><path d="M10 2h4"/><path d="M12 14v-4"/><circle cx="12" cy="14" r="8"/><path d="m4 4 2.5 2.5"/><path d="M3 9V4h5"/></svg>`,
-      crosshair:`<svg ${common}><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/></svg>`,
-      flag:`<svg ${common}><path d="M5 21V4"/><path d="M5 4h11l-1 4 1 4H5"/></svg>`,
-      arrowLeftRight:`<svg ${common}><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>`,
-      skipBack:`<svg ${common}><path d="M19 20 9 12l10-8v16Z"/><path d="M5 19V5"/></svg>`,
-      rewind:`<svg ${common}><path d="m11 19-9-7 9-7v14Z"/><path d="m22 19-9-7 9-7v14Z"/></svg>`,
-      pause:`<svg ${filled}><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`,
-      fastForward:`<svg ${common}><path d="m13 5 9 7-9 7V5Z"/><path d="m2 5 9 7-9 7V5Z"/></svg>`,
-      circleHelp:`<svg ${common}><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.3 2.3 0 1 1 3.7 1.8c-.9.6-1.5 1.1-1.5 2.2"/><path d="M12 17h.01"/></svg>`,
-      circlePlay:`<svg ${common}><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4V8Z"/></svg>`
-    };
-    return map[name]||map.more;
-  }
 
   root.innerHTML=`
-    <aside id="ml-sidebar" aria-label="诗歌库导航">
-      <div id="ml-sidebar-brand">
-        <span class="ml-brand-dot"><img src="${LOGO_SRC}" alt="橄榄树团契"></span>
-        <span>
-          <strong>CECP 诗歌库</strong>
-          <small>Worship Library</small>
-        </span>
-      </div>
-      <nav id="ml-side-nav" aria-label="主要页面">
-        <button class="ml-side-link active" type="button" data-nav="home">${icon('home')}<span>首页</span></button>
-        <button class="ml-side-link" type="button" data-nav="search">${icon('search')}<span>搜索</span></button>
-        <button class="ml-side-link" type="button" data-nav="library">${icon('library')}<span>诗歌库</span></button>
-        <button class="ml-side-link" type="button" data-nav="playlist">${icon('queue')}<span>播放列表</span></button>
-        <button class="ml-side-link" type="button" data-nav="favorites">${icon('heart')}<span>收藏</span></button>
-      </nav>
-      <button id="ml-side-profile" type="button" aria-label="切换主题">
-        <span class="ml-profile-avatar">${icon('theme',17)}</span>
-        <span><strong>主题切换</strong><small>跟随系统 / 浅色 / 深色</small></span>
-      </button>
-    </aside>
     <div id="ml-header">
       <div id="ml-nav">
         <div id="ml-brand">
           <span class="ml-brand-dot"><img src="${LOGO_SRC}" alt="橄榄树团契"></span>
-          <span class="ml-brand-copy">
-            <span class="ml-brand-name">CECP 诗歌库</span>
-            <span class="ml-brand-sub">敬拜练习 · 歌谱 · 音频</span>
-          </span>
+          <span class="ml-brand-name">诗歌库</span>
         </div>
         <div id="ml-nav-actions">
-          <button class="ml-weather-pill" id="ml-weather-pill" type="button" aria-label="今日天气">Padova · --°C</button>
-          <button class="ml-nav-icon-btn" id="ml-nav-search" type="button" aria-label="聚焦搜索">${icon('search')}</button>
-          <button class="ml-nav-icon-btn" id="ml-nav-theme" type="button" aria-label="切换深浅主题">${icon('system')}</button>
+          <button class="ml-nav-icon-btn" id="ml-nav-search" type="button" aria-label="聚焦搜索">⌕</button>
+          <button class="ml-nav-icon-btn" id="ml-nav-theme" type="button" aria-label="切换深浅主题">◐</button>
         </div>
       </div>
       <div id="ml-hero">
-        <div class="ml-hero-copy">
-          <div id="ml-header-kicker">CECP MUSIC LIBRARY</div>
-          <h1 id="ml-title">今天想唱什么?</h1>
-          <div id="ml-subtitle">搜索歌名、歌手、歌词、调性与主题，快速找到敬拜练习需要的诗歌。</div>
-        </div>
-        <div id="ml-hero-meta">
-          <div class="ml-hero-chip"><span class="ml-hero-chip-label">歌曲</span><strong id="ml-hero-song-count">--</strong></div>
-          <div class="ml-hero-chip"><span class="ml-hero-chip-label">收藏</span><strong id="ml-hero-fav-count">0</strong></div>
-          <div class="ml-hero-chip"><span class="ml-hero-chip-label">本堂</span><strong id="ml-hero-service-count">0</strong></div>
-        </div>
+        <h1 id="ml-title">诗歌库</h1>
+        <div id="ml-subtitle">精选敬拜诗歌集合，含歌词、简谱、移调与音频练习。</div>
       </div>
-      <div id="ml-search-row">
-        <div id="ml-search-wrap">
-          <span id="ml-search-icon">${icon('search')}</span>
-          <input id="ml-search" type="search" placeholder="搜索歌名、歌手、歌词、调性、主题..." autocomplete="off" autocorrect="off"/>
-          <button id="ml-search-clear" type="button" aria-label="清空搜索" hidden>${icon('close',16)}</button>
-        </div>
-        <button id="ml-search-submit" type="button" aria-label="搜索">${icon('search',20)}</button>
-        <div id="ml-count-wrap">
-          <span class="ml-count-label">总数</span>
-          <strong id="ml-count"></strong>
-        </div>
-      </div>
-      <div id="ml-search-history" hidden></div>
       <section id="ml-worship-picks" class="ml-reveal" aria-label="每日推荐">
         <div id="ml-wp-glow" aria-hidden="true"></div>
         <div id="ml-wp-bg" aria-hidden="true"></div>
@@ -222,12 +99,12 @@
             <div id="ml-wp-tags"></div>
             <div id="ml-wp-actions">
               <button id="ml-wp-play" class="ml-wp-action is-primary" type="button" disabled>
-                <span class="ml-wp-action-icon">${icon('play',15)}</span>
+                <span class="ml-wp-action-icon">▶</span>
                 <span>快速播放</span>
               </button>
               <button id="ml-wp-open" class="ml-wp-action" type="button" disabled>
-                <span class="ml-wp-action-icon">${icon('score',15)}</span>
-                <span>查看歌谱</span>
+                <span class="ml-wp-action-icon">↗</span>
+                <span>打开详情</span>
               </button>
             </div>
           </div>
@@ -240,34 +117,17 @@
           </div>
         </div>
       </section>
-      <div id="ml-home-grid">
-        <section class="ml-home-panel" id="ml-recent-panel" aria-label="最近使用">
-          <div class="ml-panel-head">
-            <div>
-              <div class="ml-section-label">最近使用</div>
-              <h2>继续上次练习</h2>
-            </div>
-            <button class="ml-panel-link" type="button" data-nav="library">查看全部</button>
-          </div>
-          <div id="ml-recent-list" class="ml-compact-list"></div>
-        </section>
-        <section class="ml-home-panel" id="ml-category-panel" aria-label="快捷分类">
-          <div class="ml-panel-head">
-            <div>
-              <div class="ml-section-label">快捷分类</div>
-              <h2>按服事场景找歌</h2>
-            </div>
-          </div>
-          <div id="ml-category-grid"></div>
-        </section>
-      </div>
-      <div id="ml-filter-section">
-        <div id="ml-filter-section-head">
-          <div class="ml-section-label">筛选诗歌</div>
-          <h2>全部歌曲</h2>
+      <div id="ml-search-row">
+        <div id="ml-search-wrap">
+          <span id="ml-search-icon">⌕</span>
+          <input id="ml-search" type="text" placeholder="搜索歌名、歌手或歌词..." autocomplete="off" autocorrect="off"/>
         </div>
-        <div id="ml-filter-bar" aria-label="快捷筛选"></div>
+        <div id="ml-count-wrap">
+          <span class="ml-count-label">总数</span>
+          <strong id="ml-count"></strong>
+        </div>
       </div>
+      <div id="ml-source-bar"></div>
     </div>
     <div id="ml-loading"><div id="ml-spinner"></div>正在载入诗歌…</div>
     <div id="ml-list-stage">
@@ -286,15 +146,9 @@
     <div id="ml-detail">
       <div id="ml-detail-overlay"></div>
       <div id="ml-detail-swipe-hint"></div>
-      <section id="ml-detail-dialog" role="dialog" aria-modal="true" aria-labelledby="ml-detail-title">
       <div id="ml-detail-header">
-        <button id="ml-back" type="button">${icon('chevronLeft')}<span>返回</span></button>
+        <button id="ml-back">‹ 返回</button>
         <div id="ml-detail-title"></div>
-        <div id="ml-detail-actions">
-          <button id="ml-detail-service" class="ml-detail-action" type="button" aria-label="标记本堂唱过">${icon('check',16)}<span>本堂</span></button>
-          <button id="ml-detail-favorite" class="ml-detail-action" type="button" aria-label="收藏诗歌">${icon('heart',16)}</button>
-          <button id="ml-detail-more" class="ml-detail-action" type="button" aria-label="更多操作">${icon('more',16)}</button>
-        </div>
       </div>
       <div id="ml-miniplayer">
         <audio id="ml-mp-audio"></audio>
@@ -311,7 +165,7 @@
           <div id="ml-mp-title" class="pl-title"></div>
           <div id="ml-mp-artist" class="pl-artist"></div>
         </div>
-        <button class="pl-btn" id="ml-mp-expand" type="button" aria-label="全屏查看歌词" title="全屏查看歌词"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M21 3l-7 7"/><path d="M9 21H3v-6"/><path d="M3 21l7-7"/></svg></button>
+        <button class="pl-btn" id="ml-mp-expand" aria-label="展开播放器"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M21 3l-7 7"/><path d="M9 21H3v-6"/><path d="M3 21l7-7"/></svg></button>
       </div>
       <div class="pl-progress-wrap">
         <div class="pl-progress-bar"><div class="pl-progress-fill" id="ml-mp-fill"></div></div>
@@ -325,11 +179,6 @@
         <button class="pl-btn" id="ml-mp-seek-fwd" aria-label="前进15秒"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/><text x="12" y="15.5" text-anchor="middle" font-size="5.5" fill="currentColor" font-family="system-ui,sans-serif" font-weight="600">15</text></svg></button>
         <button class="pl-btn pl-repeat" id="ml-mp-repeat" aria-label="循环"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
       </div>
-      <button class="ml-audio-tool" id="ml-mp-pitch-open" type="button" aria-label="打开 MP3 变调面板">
-        <span class="ml-audio-tool-k">MP3</span>
-        <span class="ml-audio-tool-v">变调</span>
-        <span class="ml-audio-tool-mode">OFF</span>
-      </button>
       <div class="pl-vol-wrap">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
         <input class="pl-vol" id="ml-mp-vol" type="range" min="0" max="1" step="0.02" value="1">
@@ -338,20 +187,19 @@
     </div>
 
       <div id="ml-detail-body"></div>
-      </section>
     </div>
     <div id="ml-player-view">
       <div id="ml-player-view-top">
-        <button id="ml-player-view-close" class="ml-motion-close-btn" type="button" aria-label="收起播放器">${icon('collapse',20)}</button>
+        <button id="ml-player-view-close" type="button" aria-label="收起播放器"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg></button>
         <div id="ml-player-view-now">
           <div id="ml-player-now-title">正在播放</div>
           <div id="ml-player-now-sub"></div>
         </div>
-        <button id="ml-player-view-menu" type="button" aria-label="歌词" title="歌词"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h8"/><path d="M7 11h10"/><path d="M9 16h6"/></svg></button>
+        <button id="ml-player-view-menu" type="button" aria-label="播放设置"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="18" x2="20" y2="18"/></svg></button>
       </div>
       <div id="ml-player-view-grid">
         <aside id="ml-player-rail" aria-hidden="true">
-          <button class="ml-player-rail-btn active" type="button" aria-label="歌词"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h8"/><path d="M7 11h10"/><path d="M9 16h6"/></svg></button>
+          <button class="ml-player-rail-btn active" type="button" aria-label="歌曲面板"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="5" width="4" height="14" rx="1"/><rect x="10" y="5" width="4" height="14" rx="1"/><rect x="16" y="5" width="4" height="14" rx="1"/></svg></button>
           <button class="ml-player-rail-btn" type="button" aria-label="队列面板"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="14" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/><line x1="18" y1="10" x2="18" y2="20"/><line x1="13" y1="15" x2="23" y2="15"/></svg></button>
           <div class="ml-player-rail-dot"></div>
           <div class="ml-player-rail-dot"></div>
@@ -407,120 +255,11 @@
           </div>
         </div>
         <div id="ml-player-dock-right">
-          <button class="ml-audio-tool ml-audio-tool-dock" id="ml-player-pitch-open" type="button" aria-label="打开 MP3 变调面板">
-            <span class="ml-audio-tool-k">MP3</span>
-            <span class="ml-audio-tool-v">变调</span>
-            <span class="ml-audio-tool-mode">OFF</span>
-          </button>
           <span class="ml-player-vol-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></span>
           <input id="ml-player-dock-vol" type="range" min="0" max="1" step="0.02" value="1">
         </div>
       </div>
     </div>
-    <div id="ml-audio-panel-backdrop" hidden></div>
-    <section id="ml-audio-panel" hidden aria-label="MP3 变调面板">
-      <div id="ml-audio-panel-head">
-        <button class="ml-audio-panel-head-btn ml-ap-icon-btn ml-ap-motion-list" id="ml-audio-panel-menu" type="button" aria-label="播放列表">${icon('listMusic',21)}</button>
-        <div class="ml-audio-panel-icons" aria-hidden="true">✧✦</div>
-        <div id="ml-audio-panel-title">
-          <span class="ml-audio-panel-brandmark"><img src="${TRANSPOSE_LOGO_SRC}" alt=""></span>
-          <span>CECP Transpose</span>
-        </div>
-        <button class="ml-audio-panel-head-btn ml-motion-close-btn" id="ml-audio-panel-close" type="button" aria-label="关闭 CECP Transpose">${icon('close',22)}</button>
-      </div>
-      <button id="ml-audio-panel-play" type="button">
-        <span>Start playback</span>
-        <span id="ml-audio-panel-play-icon">${icon('circlePlay',21)}</span>
-      </button>
-      <div class="ml-audio-panel-row" data-control="transpose">
-        <div class="ml-audio-panel-rowtop">
-          <span>Transpose</span>
-          <strong id="ml-audio-transpose-value">0</strong>
-          <button id="ml-audio-transpose-reset" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="重置半音">${icon('rotateCcw',20)}</button>
-        </div>
-        <div class="ml-audio-panel-control">
-          <button id="ml-audio-transpose-down" class="ml-ap-icon-btn ml-ap-motion-minus" type="button" aria-label="降半音">${icon('minus',22)}</button>
-          <input id="ml-audio-transpose-range" type="range" min="-12" max="12" step="1" value="0">
-          <button id="ml-audio-transpose-up" class="ml-ap-icon-btn ml-ap-motion-plus" type="button" aria-label="升半音">${icon('plus',22)}</button>
-        </div>
-      </div>
-      <div class="ml-audio-panel-row" data-control="pitch">
-        <div class="ml-audio-panel-rowtop">
-          <span>Pitch</span>
-          <strong id="ml-audio-pitch-value">0</strong>
-          <button id="ml-audio-pitch-reset" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="重置音高细调">${icon('rotateCcw',20)}</button>
-        </div>
-        <div class="ml-audio-panel-control">
-          <button id="ml-audio-pitch-down" class="ml-ap-icon-btn ml-ap-motion-minus" type="button" aria-label="音高降低">${icon('minus',22)}</button>
-          <input id="ml-audio-pitch-range" type="range" min="-100" max="100" step="1" value="0">
-          <button id="ml-audio-pitch-up" class="ml-ap-icon-btn ml-ap-motion-plus" type="button" aria-label="音高升高">${icon('plus',22)}</button>
-        </div>
-      </div>
-      <div class="ml-audio-panel-row" data-control="speed">
-        <div class="ml-audio-panel-rowtop">
-          <span>Speed <strong id="ml-audio-speed-value">100%</strong></span>
-          <span>Tempo <strong id="ml-audio-tempo-value">bpm</strong></span>
-          <button id="ml-audio-speed-reset" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="重置速度">${icon('rotateCcw',20)}</button>
-        </div>
-        <div class="ml-audio-panel-control">
-          <button id="ml-audio-speed-down" class="ml-ap-icon-btn ml-ap-motion-minus" type="button" aria-label="降低速度">${icon('minus',22)}</button>
-          <input id="ml-audio-speed-range" type="range" min="25" max="400" step="5" value="100">
-          <button id="ml-audio-speed-up" class="ml-ap-icon-btn ml-ap-motion-plus" type="button" aria-label="提高速度">${icon('plus',22)}</button>
-        </div>
-        <div class="ml-audio-speed-presets" aria-label="常用速度">
-          <button type="button" data-speed="0.5">50%</button>
-          <button type="button" data-speed="0.75">75%</button>
-          <button type="button" data-speed="1">100%</button>
-          <button type="button" data-speed="1.25">125%</button>
-          <button type="button" data-speed="1.5">150%</button>
-          <button type="button" data-speed="2">200%</button>
-        </div>
-      </div>
-      <div class="ml-audio-panel-row" data-control="loop">
-        <div class="ml-audio-panel-rowtop">
-          <span>Loop</span>
-          <div class="ml-audio-loop-actions">
-            <button id="ml-audio-loop-toggle" class="ml-audio-loop-switch" type="button" aria-label="开启 A/B 循环" aria-pressed="false">
-              <span class="ml-audio-loop-switch-text">OFF</span>
-              <span class="ml-audio-loop-switch-knob" aria-hidden="true"></span>
-            </button>
-            <button id="ml-audio-loop-use-current" class="ml-ap-icon-btn ml-ap-motion-target ml-loop-action-btn" type="button" aria-label="用当前位置补齐 A/B">
-              ${icon('crosshair',19)}<span class="ml-loop-action-label">当前</span>
-            </button>
-            <button id="ml-audio-loop-swap" class="ml-ap-icon-btn ml-ap-motion-swap ml-loop-action-btn" type="button" aria-label="交换 A/B 点">
-              ${icon('arrowLeftRight',19)}<span class="ml-loop-action-label">交换</span>
-            </button>
-            <button id="ml-audio-reset-all" class="ml-ap-icon-btn ml-ap-motion-reset ml-loop-action-btn" type="button" aria-label="恢复全部练习设置">
-              ${icon('refreshCcw',19)}<span class="ml-loop-action-label">恢复</span>
-            </button>
-          </div>
-        </div>
-        <div id="ml-audio-loop-grid">
-          <div class="ml-audio-loop-point" data-point="a">
-            <button id="ml-audio-loop-a" class="ml-audio-loop-mark ml-ap-icon-btn ml-ap-motion-mark" type="button" aria-label="设置 A 点">${icon('flag',18)}</button>
-            <input id="ml-audio-loop-a-time" class="ml-audio-loop-time" type="text" inputmode="decimal" value="00:00.0" aria-label="A 点时间">
-            <button id="ml-audio-loop-a-jump" class="ml-audio-loop-jump ml-ap-icon-btn ml-ap-motion-left" type="button" aria-label="跳到 A 点">${icon('skipBack',18)}</button>
-            <input id="ml-audio-loop-a-label" class="ml-audio-loop-label" type="text" value="marker 1" aria-label="A 点标记名称">
-          </div>
-          <div class="ml-audio-loop-point" data-point="b">
-            <button id="ml-audio-loop-b" class="ml-audio-loop-mark ml-ap-icon-btn ml-ap-motion-mark" type="button" aria-label="设置 B 点">${icon('flag',18)}</button>
-            <input id="ml-audio-loop-b-time" class="ml-audio-loop-time" type="text" inputmode="decimal" value="00:30.0" aria-label="B 点时间">
-            <button id="ml-audio-loop-b-jump" class="ml-audio-loop-jump ml-ap-icon-btn ml-ap-motion-right" type="button" aria-label="跳到 B 点">${icon('fastForward',18)}</button>
-            <input id="ml-audio-loop-b-label" class="ml-audio-loop-label" type="text" value="marker 2" aria-label="B 点标记名称">
-          </div>
-        </div>
-        <div id="ml-audio-loop-message" role="status" aria-live="polite"></div>
-      </div>
-      <div id="ml-audio-panel-foot">
-        <button id="ml-audio-panel-prev" class="ml-ap-icon-btn ml-ap-motion-left" type="button" aria-label="上一首">${icon('skipBack',21)}</button>
-        <button id="ml-audio-panel-back" class="ml-ap-icon-btn ml-ap-motion-left" type="button" aria-label="后退">${icon('rewind',21)}</button>
-        <button id="ml-audio-panel-main" class="ml-ap-icon-btn ml-ap-motion-main" type="button" aria-label="播放或暂停">${icon('play',21)}</button>
-        <button id="ml-audio-panel-forward" class="ml-ap-icon-btn ml-ap-motion-right" type="button" aria-label="前进">${icon('fastForward',21)}</button>
-        <button id="ml-audio-panel-help" class="ml-ap-icon-btn ml-ap-motion-help" type="button" aria-label="帮助">${icon('circleHelp',21)}</button>
-      </div>
-      <div id="ml-audio-panel-time">00:00 / 00:00</div>
-      <div id="ml-audio-panel-status">Start media...</div>
-    </section>
     <div id="ml-nowbar" aria-label="正在播放">
       <div id="ml-nowbar-bg" aria-hidden="true"></div>
       <div id="ml-nowbar-cover"><span>♪</span></div>
@@ -545,40 +284,9 @@
         </button>
       </div>
     </div>
-    <nav id="ml-bottom-nav" aria-label="手机底部导航">
-      <button class="ml-bottom-link active" type="button" data-nav="home">${icon('home')}<span>首页</span></button>
-      <button class="ml-bottom-link" type="button" data-nav="search">${icon('search')}<span>搜索</span></button>
-      <button class="ml-bottom-link" type="button" data-nav="playlist">${icon('queue')}<span>播放列表</span></button>
-      <button class="ml-bottom-link" type="button" data-nav="favorites">${icon('heart')}<span>收藏</span></button>
-    </nav>
-    <div id="ml-playlist-drawer" hidden>
-      <button id="ml-playlist-backdrop" type="button" aria-label="关闭播放列表"></button>
-      <section id="ml-playlist-panel" aria-label="播放列表">
-        <div id="ml-playlist-head">
-          <div>
-            <div class="ml-section-label">播放列表</div>
-            <h2>当前队列</h2>
-          </div>
-          <div id="ml-playlist-actions">
-            <button id="ml-playlist-clear" type="button">清空</button>
-            <button id="ml-playlist-close" class="ml-motion-close-btn" type="button" aria-label="关闭播放列表">${icon('close',18)}</button>
-          </div>
-        </div>
-        <div id="ml-playlist-now"></div>
-        <div id="ml-playlist-empty">当前还没有歌曲。点击歌曲卡片上的播放按钮，会加入这里并开始播放。</div>
-        <div id="ml-playlist-list"></div>
-      </section>
-    </div>
     <div id="ml-lightbox">
-      <button id="ml-lightbox-close" class="ml-motion-close-btn" type="button" aria-label="关闭图片预览">${icon('close',22)}</button>
-      <button id="ml-lightbox-prev" class="ml-lightbox-nav" type="button" aria-label="上一张">‹</button>
+      <button id="ml-lightbox-close">✕</button>
       <img id="ml-lightbox-img" src="" alt="">
-      <button id="ml-lightbox-next" class="ml-lightbox-nav" type="button" aria-label="下一张">›</button>
-      <div id="ml-lightbox-toolbar">
-        <span id="ml-lightbox-count">1 / 1</span>
-        <button id="ml-lightbox-reset" type="button">原始大小</button>
-        <a id="ml-lightbox-open" href="#" target="_blank" rel="noopener">打开原图</a>
-      </div>
     </div>
   `;
 
@@ -597,26 +305,20 @@
     listNotice.type='button';
     listNotice.setAttribute('aria-label','版权与申请新歌说明');
     listNotice.innerHTML=noticeHTML;
-    // Keep the copyright notice inside the main header area, directly
-    // below the complete search section (including optional search history).
-    // This preserves the fixed sidebar and prevents the notice from becoming
-    // a separate top-level grid row above the page content.
-    const noticeAnchor=$('ml-search-history') || $('ml-search-row');
-    if(noticeAnchor) noticeAnchor.insertAdjacentElement('afterend',listNotice);
-    else ($('ml-header') || root).appendChild(listNotice);
+    root.insertBefore(listNotice, $('ml-header'));
 
     const detailNotice=document.createElement('button');
     detailNotice.id='ml-detail-notice';
     detailNotice.type='button';
     detailNotice.setAttribute('aria-label','版权与申请新歌说明');
     detailNotice.innerHTML=noticeHTML;
-    ($('ml-detail-dialog')||detail).insertBefore(detailNotice, $('ml-detail-body'));
+    detail.insertBefore(detailNotice, $('ml-detail-body'));
 
     const modal=document.createElement('div');
     modal.id='ml-notice-modal';
     modal.innerHTML=`
       <div id="ml-notice-dialog" role="dialog" aria-modal="true" aria-labelledby="ml-notice-modal-title">
-        <button id="ml-notice-close" class="ml-motion-close-btn" type="button" aria-label="关闭">${icon('close',20)}</button>
+        <button id="ml-notice-close" type="button" aria-label="关闭">✕</button>
         <div id="ml-notice-kicker">COPYRIGHT NOTICE</div>
         <h2 id="ml-notice-modal-title">诗歌版权与申请新歌</h2>
         <div id="ml-notice-copy">本站所展示之诗歌、歌词、曲谱、音频及相关资料，其著作权及相关权利均归原权利人所有。本站内容仅用于教会内部诗歌练习、学习与敬拜辅助，不以营利为目的。若相关权利人认为本站任何内容涉及侵权，请与我们联系，我们将在核实后及时处理、修改或下架相关内容。</div>
@@ -642,87 +344,25 @@
     toast.id='ml-toast';
     root.appendChild(toast);
 
-    const refresher=document.createElement('div');
-    refresher.id='ml-pull-refresh';
-    refresher.setAttribute('aria-live','polite');
-    refresher.innerHTML='<span class="ml-pull-spinner"></span><span id="ml-pull-refresh-text">下拉刷新</span>';
-    root.appendChild(refresher);
-
     const mbLyric=$('ml-mb-lyric');
     if(mbLyric) mbLyric.textContent='';
   })();
 
-  initMusicTheme();
   syncHaloTheme();
   observeThemeChanges();
-  renderSearchHistory();
-  renderQuickFilters();
 
-  $('ml-search').addEventListener('input',e=>{
-    query=e.target.value.trim();
-    updateSearchControls();
-    scheduleRememberSearch(query);
-    render();
-  });
-  $('ml-search').addEventListener('keydown',e=>{
-    if(e.key==='Enter') rememberSearchTerm(query);
-  });
-  $('ml-search-submit')?.addEventListener('click',()=>{
-    rememberSearchTerm(query);
-    render();
-  });
-  $('ml-search-clear')?.addEventListener('click',()=>{
-    query='';
-    const input=$('ml-search');
-    if(input){ input.value=''; input.focus(); }
-    updateSearchControls();
-    render();
-  });
+  $('ml-search').addEventListener('input',e=>{query=e.target.value.trim();render();});
   $('ml-back').addEventListener('click',closeDetail);
-  $('ml-detail-overlay')?.addEventListener('click',()=>closeDetail());
-  document.addEventListener('keydown',e=>{
-    if(e.key!=='Escape') return;
-    if($('ml-lightbox')?.classList.contains('open')){
-      $('ml-lightbox').classList.remove('open');
-      return;
-    }
-    if($('ml-playlist-drawer')?.classList.contains('open')){
-      _mpSetPlaylistOpen(false);
-      return;
-    }
-    if(detail?.classList.contains('open')){
-      closeDetail();
-    }
-  });
   $('ml-nav-search')?.addEventListener('click',()=>{$('ml-search')?.focus();});
-  $('ml-nav-settings')?.addEventListener('click',cycleMusicTheme);
-  $('ml-side-profile')?.addEventListener('click',cycleMusicTheme);
-  $('ml-weather-pill')?.addEventListener('click',updateWorshipGreeting);
-  $('ml-playlist-backdrop')?.addEventListener('click',()=>_mpSetPlaylistOpen(false));
-  $('ml-playlist-close')?.addEventListener('click',()=>_mpSetPlaylistOpen(false));
-  $('ml-playlist-clear')?.addEventListener('click',_mpClearQueue);
-  root.querySelectorAll('[data-nav]').forEach(btn=>{
-    btn.addEventListener('click',e=>{
-      const nav=e.currentTarget.dataset.nav;
-      if(nav) handleNav(nav);
-    });
-  });
-  $('ml-detail-favorite')?.addEventListener('click',()=>{
-    const song=songs.find(s=>s.id===_activeDetailSongId);
-    if(song) toggleFavorite(song);
-  });
-  $('ml-detail-service')?.addEventListener('click',()=>{
-    const song=songs.find(s=>s.id===_activeDetailSongId);
-    if(song) toggleServiceUsed(song);
-  });
-  $('ml-detail-more')?.addEventListener('click',()=>{
-    const song=songs.find(s=>s.id===_activeDetailSongId);
-    if(song) shareSong(song);
-  });
   bindWorshipPicksEffects();
   updateWorshipGreeting();
   setInterval(updateWorshipGreeting,60000);
-  $('ml-nav-theme')?.addEventListener('click',cycleMusicTheme);
+  $('ml-nav-theme')?.addEventListener('click',()=>{
+    const rootEl=document.documentElement;
+    if(!rootEl) return;
+    rootEl.classList.toggle('dark');
+    syncHaloTheme();
+  });
 
   function showToast(text){
     const t=$('ml-toast');
@@ -731,84 +371,6 @@
     t.classList.add('show');
     clearTimeout(showToast._timer);
     showToast._timer=setTimeout(()=>t.classList.remove('show'),1800);
-  }
-
-  function attachPullToRefresh(){
-    const indicator=$('ml-pull-refresh');
-    const label=$('ml-pull-refresh-text');
-    if(!indicator||!label) return;
-    let startY=0,pull=0,tracking=false,ready=false;
-    const maxPull=104,threshold=72;
-    function isBlockedTarget(target){
-      if(_pullRefreshing) return true;
-      if(detail?.classList.contains('open')) return true;
-      if($('ml-notice-modal')?.classList.contains('open')) return true;
-      if($('ml-lightbox')?.classList.contains('open')) return true;
-      if($('ml-player-view')?.classList.contains('is-open')) return true;
-      if(target.closest('input,textarea,select,button,a,[contenteditable="true"],#ml-nowbar,#ml-miniplayer')) return true;
-      return false;
-    }
-    function reset(){
-      tracking=false; ready=false; pull=0;
-      indicator.classList.remove('ready','pulling');
-      indicator.style.transform='';
-      label.textContent='下拉刷新';
-    }
-    function finish(text){
-      label.textContent=text;
-      setTimeout(()=>{
-        _pullRefreshing=false;
-        indicator.classList.remove('refreshing');
-        reset();
-      },650);
-    }
-    async function refresh(){
-      _pullRefreshing=true;
-      indicator.classList.remove('ready','pulling');
-      indicator.classList.add('refreshing');
-      indicator.style.transform='translate(-50%,18px)';
-      label.textContent='正在刷新';
-      try{
-        if(navigator.serviceWorker?.getRegistration){
-          const reg=await navigator.serviceWorker.getRegistration();
-          await reg?.update?.();
-        }
-        await loadSongs({refresh:true});
-        finish('已刷新');
-      }catch(_){
-        finish('刷新失败');
-        showToast('刷新失败，请稍后重试');
-      }
-    }
-    root.addEventListener('touchstart',e=>{
-      if(isBlockedTarget(e.target)) return;
-      if(root.scrollTop>2) return;
-      const t=e.touches&&e.touches[0];
-      if(!t) return;
-      startY=t.clientY; pull=0; tracking=true; ready=false;
-    },{passive:true});
-    root.addEventListener('touchmove',e=>{
-      if(!tracking) return;
-      const t=e.touches&&e.touches[0];
-      if(!t) return;
-      const dy=t.clientY-startY;
-      if(dy<=0){ reset(); return; }
-      if(root.scrollTop>2){ reset(); return; }
-      pull=Math.min(maxPull,dy*0.46);
-      ready=pull>=threshold;
-      indicator.classList.add('pulling');
-      indicator.classList.toggle('ready',ready);
-      indicator.style.transform=`translate(-50%,${Math.max(0,pull-46)}px)`;
-      label.textContent=ready?'松开刷新':'下拉刷新';
-      if(pull>8) e.preventDefault();
-    },{passive:false});
-    const end=()=>{
-      if(!tracking) return;
-      if(ready) refresh();
-      else reset();
-    };
-    root.addEventListener('touchend',end,{passive:true});
-    root.addEventListener('touchcancel',reset,{passive:true});
   }
 
   async function copyText(text, msg){
@@ -849,40 +411,12 @@
   $('ml-notice-close')?.addEventListener('click',closeNoticeModal);
   $('ml-notice-modal')?.addEventListener('click',e=>{ if(e.target===e.currentTarget) closeNoticeModal(); });
 
-  let _lightboxImages=[],_lightboxIndex=0,_lightboxZoom=false;
   $('ml-lightbox').addEventListener('click',e=>{
     if(e.target===e.currentTarget||e.target.id==='ml-lightbox-close') $('ml-lightbox').classList.remove('open');
   });
   $('ml-lightbox-img').addEventListener('click',e=>e.stopPropagation());
-  $('ml-lightbox-img').addEventListener('dblclick',()=>{
-    _lightboxZoom=!_lightboxZoom;
-    $('ml-lightbox').classList.toggle('is-zoomed',_lightboxZoom);
-  });
-  $('ml-lightbox-prev')?.addEventListener('click',e=>{ e.stopPropagation(); showLightboxImage(_lightboxIndex-1); });
-  $('ml-lightbox-next')?.addEventListener('click',e=>{ e.stopPropagation(); showLightboxImage(_lightboxIndex+1); });
-  $('ml-lightbox-reset')?.addEventListener('click',e=>{ e.stopPropagation(); _lightboxZoom=false; $('ml-lightbox').classList.remove('is-zoomed'); });
 
-  function showLightboxImage(index){
-    if(!_lightboxImages.length) return;
-    _lightboxIndex=(index+_lightboxImages.length)%_lightboxImages.length;
-    const src=_lightboxImages[_lightboxIndex];
-    const img=$('ml-lightbox-img');
-    img.src=src;
-    img.alt='原始图片谱 '+(_lightboxIndex+1);
-    $('ml-lightbox-count').textContent=(_lightboxIndex+1)+' / '+_lightboxImages.length;
-    $('ml-lightbox-open').href=src;
-    $('ml-lightbox-prev').hidden=_lightboxImages.length<=1;
-    $('ml-lightbox-next').hidden=_lightboxImages.length<=1;
-  }
-
-  function openLightbox(src,list){
-    _lightboxImages=(Array.isArray(list)&&list.length?list:[src]).filter(Boolean);
-    _lightboxIndex=Math.max(0,_lightboxImages.indexOf(src));
-    _lightboxZoom=false;
-    $('ml-lightbox').classList.remove('is-zoomed');
-    showLightboxImage(_lightboxIndex);
-    $('ml-lightbox').classList.add('open');
-  }
+  function openLightbox(src){$('ml-lightbox-img').src=src;$('ml-lightbox').classList.add('open');}
 
   function getSongIdFromUrl(){
     try{
@@ -1530,7 +1064,6 @@
     const waitFonts=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
     return waitFonts
       .then(()=>{
-        refreshGapContent(panelInner);
         const snap=buildExportClone(panelInner,{tight:!!opt.tight});
         if(opt.hideTransposeOptions){
           const keyZone=snap.node.querySelector('.sw-ks');
@@ -1572,18 +1105,11 @@
     stopMetronome();
     _mpSetExpanded(false);
     detail.classList.remove('open');
-    root.classList.remove('ml-has-detail-open');
-    document.body.classList.remove('ml-detail-lock');
     detail.style.transform='';
     detail.classList.remove('swiping');
-    const overlay=$('ml-detail-overlay');
-    if(overlay) overlay.style.opacity='';
+    $('ml-detail-overlay').style.opacity='0';
     _detailStatePushed=false;
-    _activeDetailSongId='';
     setSongUrl('', true);
-    requestAnimationFrame(()=>{
-      root.scrollTo({top:_detailReturnScroll||0,left:0,behavior:'auto'});
-    });
   }
 
   function tryColor(el, prop){
@@ -1592,122 +1118,40 @@
     return v && v!=='transparent' && v!=='rgba(0, 0, 0, 0)' ? v : '';
   }
 
-  function getStoredTheme(){
-    try{
-      const stored=localStorage.getItem(THEME_KEY)||'system';
-      return THEME_MODES.includes(stored)?stored:'system';
-    }catch(_){
-      return 'system';
-    }
-  }
-
-  function getResolvedTheme(mode=getStoredTheme()){
-    if(mode==='light'||mode==='dark') return mode;
-    try{
-      return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';
-    }catch(_){
-      return 'light';
-    }
-  }
-
-  function applyMusicTheme(mode=getStoredTheme(),persist=false){
-    const resolved=getResolvedTheme(mode);
-    const html=document.documentElement;
-    html.setAttribute('data-theme',mode);
-    html.setAttribute('data-resolved-theme',resolved);
-    if(persist){
-      try{ localStorage.setItem(THEME_KEY,mode); }catch(_){}
-    }
-    const meta=document.querySelector('meta[name="theme-color"]:not([media])')||document.createElement('meta');
-    meta.setAttribute('name','theme-color');
-    meta.setAttribute('content',resolved==='dark'?'#070b16':'#F4EFE7');
-    if(!meta.parentNode) document.head.appendChild(meta);
-    const btn=$('ml-nav-theme');
-    if(btn){
-      const label=mode==='system'?'跟随系统':mode==='light'?'浅色':'深色';
-      btn.innerHTML=mode==='system'?icon('system'):mode==='light'?icon('sun'):icon('theme');
-      btn.setAttribute('aria-label','主题：'+label+'，点击切换');
-      btn.title='主题：'+label;
-    }
-    syncHaloTheme();
-  }
-
-  function initMusicTheme(){
-    applyMusicTheme(getStoredTheme(),false);
-  }
-
-  function cycleMusicTheme(){
-    const cur=getStoredTheme();
-    const next=THEME_MODES[(THEME_MODES.indexOf(cur)+1)%THEME_MODES.length]||'system';
-    applyMusicTheme(next,true);
-    showToast(next==='system'?'主题跟随系统':next==='light'?'已切换浅色主题':'已切换深色主题');
+  function getThemeGuess(){
+    const cs=getComputedStyle(document.body);
+    const bg=cs.backgroundColor || 'rgb(255,255,255)';
+    const m=bg.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/i);
+    if(!m)return 'light';
+    const avg=(+m[1] + +m[2] + +m[3]) / 3;
+    return avg < 120 ? 'dark' : 'light';
   }
 
   function syncHaloTheme(){
     const rb=root.style;
-    const html=document.documentElement;
-    const mode=html.getAttribute('data-resolved-theme')||getResolvedTheme();
-    const dark=mode==='dark';
+    const body=document.body, html=document.documentElement;
+    const mode=getThemeGuess();
 
-    const palette=dark ? {
-      bg:'#070b16',
-      bg2:'#0a101f',
-      bg3:'#0b1732',
-      accent:'#e8c765',
-      accentHover:'#f3d67a',
-      accentSoft:'rgba(232,199,101,.16)',
-      text:'#f7f3e8',
-      text2:'rgba(247,243,232,.72)',
-      text3:'rgba(247,243,232,.46)',
-      border:'rgba(255,255,255,0.14)',
-      borderMd:'rgba(255,255,255,0.24)',
-      shadow:'0 18px 48px rgba(0,0,0,.28),0 1px 0 rgba(255,255,255,.04) inset',
-      hero:'radial-gradient(circle at top left, rgba(232,199,101,.2), transparent 28%),linear-gradient(135deg,#070b16 0%,#0b1732 58%,#060915 100%)',
-      panel:'rgba(10,16,31,.72)',
-      chip:'rgba(16,26,48,.92)',
-      card:'linear-gradient(180deg,rgba(16,26,48,.94),rgba(10,16,31,.96))',
-      cardHover:'linear-gradient(180deg,rgba(20,33,59,.98),rgba(12,20,38,.98))',
-      detail:'radial-gradient(circle at top, rgba(232,199,101,.12), transparent 26%),linear-gradient(180deg,#0b1732 0%,#070b16 100%)'
-    } : {
-      bg:'#F4EFE7',
-      bg2:'#FFFDF9',
-      bg3:'#EEE6DB',
-      accent:'#C76524',
-      accentHover:'#A9501A',
-      accentSoft:'#F8E7D8',
-      text:'#241C17',
-      text2:'#6F655D',
-      text3:'#9A8F85',
-      border:'#E9E0D8',
-      borderMd:'rgba(87,63,45,.18)',
-      shadow:'0 1px 2px rgba(58,39,28,.05),0 18px 44px rgba(83,54,35,.08)',
-      hero:'radial-gradient(circle at top left, rgba(255,255,255,.78), transparent 34%),linear-gradient(135deg,#fffdf9 0%,#f4efe7 54%,#eee6db 100%)',
-      panel:'rgba(255,253,249,.76)',
-      chip:'rgba(255,253,249,.9)',
-      card:'linear-gradient(180deg,rgba(255,253,249,.96),rgba(248,241,232,.94))',
-      cardHover:'linear-gradient(180deg,#fffdf9,#f8f1e8)',
-      detail:'radial-gradient(circle at top, rgba(255,255,255,.78), transparent 30%),linear-gradient(180deg,#fffdf9 0%,#f4efe7 100%)'
-    };
+    const bg = tryColor(body,'--theme-bg') || tryColor(html,'--theme-bg') || tryColor(body,'background-color') || (mode==='dark'?'#0b0b0d':'#f5f5f7');
+    const bg2 = tryColor(body,'--card-bg') || tryColor(html,'--card-bg') || tryColor(body,'--halo-card-bg') || (mode==='dark'?'#17171a':'#ffffff');
+    const bg3 = tryColor(body,'--muted-bg') || tryColor(html,'--muted-bg') || (mode==='dark'?'#222227':'#ececf1');
+    const text = tryColor(body,'--theme-text') || tryColor(html,'--theme-text') || tryColor(body,'color') || (mode==='dark'?'#f5f7fb':'#1d1d1f');
+    const text2 = tryColor(body,'--theme-text-secondary') || tryColor(html,'--theme-text-secondary') || (mode==='dark'?'rgba(245,247,251,.68)':'#6e6e73');
+    const text3 = tryColor(body,'--theme-text-tertiary') || tryColor(html,'--theme-text-tertiary') || (mode==='dark'?'rgba(245,247,251,.36)':'#aeaeb2');
+    const accent = tryColor(body,'--theme-primary') || tryColor(html,'--theme-primary') || tryColor(body,'--halo-accent') || (mode==='dark'?'#7c9cff':'#007aff');
+    const border = tryColor(body,'--theme-border') || tryColor(html,'--theme-border') || (mode==='dark'?'rgba(255,255,255,.08)':'rgba(0,0,0,.08)');
+    const borderMd = tryColor(body,'--theme-border-strong') || tryColor(html,'--theme-border-strong') || (mode==='dark'?'rgba(255,255,255,.13)':'rgba(0,0,0,.13)');
 
-    rb.setProperty('--halo-bg', palette.bg);
-    rb.setProperty('--halo-bg2', palette.bg2);
-    rb.setProperty('--halo-bg3', palette.bg3);
-    rb.setProperty('--halo-text', palette.text);
-    rb.setProperty('--halo-text2', palette.text2);
-    rb.setProperty('--halo-text3', palette.text3);
-    rb.setProperty('--halo-accent', palette.accent);
-    rb.setProperty('--halo-accent-hover', palette.accentHover);
-    rb.setProperty('--halo-border', palette.border);
-    rb.setProperty('--halo-border-md', palette.borderMd);
-    rb.setProperty('--halo-accent-light', palette.accentSoft);
-    rb.setProperty('--halo-shadow', palette.shadow);
-    rb.setProperty('--hero-grad', palette.hero);
-    rb.setProperty('--hero-panel', palette.panel);
-    rb.setProperty('--hero-chip-bg', palette.chip);
-    rb.setProperty('--card-grad', palette.card);
-    rb.setProperty('--card-hover', palette.cardHover);
-    rb.setProperty('--detail-grad', palette.detail);
-    root.dataset.theme=mode;
+    rb.setProperty('--halo-bg', bg);
+    rb.setProperty('--halo-bg2', bg2);
+    rb.setProperty('--halo-bg3', bg3);
+    rb.setProperty('--halo-text', text);
+    rb.setProperty('--halo-text2', text2);
+    rb.setProperty('--halo-text3', text3);
+    rb.setProperty('--halo-accent', accent);
+    rb.setProperty('--halo-border', border);
+    rb.setProperty('--halo-border-md', borderMd);
+    rb.setProperty('--halo-accent-light', colorMix(accent, 0.16));
   }
 
   function colorMix(color, alpha){
@@ -1727,14 +1171,13 @@
   function observeThemeChanges(){
     if(_themeObserver)_themeObserver.disconnect();
     _themeObserver=new MutationObserver(()=>syncHaloTheme());
-    _themeObserver.observe(document.documentElement,{attributes:true,attributeFilter:['class','style','data-theme','data-resolved-theme']});
+    _themeObserver.observe(document.documentElement,{attributes:true,attributeFilter:['class','style','data-theme']});
     _themeObserver.observe(document.body,{attributes:true,attributeFilter:['class','style','data-theme']});
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>applyMusicTheme(getStoredTheme(),false));
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',syncHaloTheme);
   }
 
-  async function loadSongs(opts={}){
+  async function loadSongs(){
     try{
-      if(opts.refresh) showToast('正在刷新诗歌库');
       const res=await fetch(GITHUB_API+'?t='+Date.now(),{cache:'no-store'});if(!res.ok)throw 0;
       const files=await res.json();
       const jsons=files.filter(f=>f.name.endsWith('.json')&&f.name!=='test.json');
@@ -1743,15 +1186,10 @@
       $('ml-loading').style.display='none';
       $('ml-count').textContent=songs.length+' 首';
       renderWorshipPicks();
-      renderHomePanels();
-      renderQuickFilters();
       render();
-      window.dispatchEvent(new CustomEvent('cecp:musiclib-songs-loaded',{detail:{songs:songs.slice()}}));
       openSongFromUrl();
-      if(opts.refresh) showToast('诗歌库已刷新');
     }catch(e){
-      if(!opts.refresh) $('ml-loading').innerHTML='<div style="color:#ff3b30;font-size:14px">载入失败，请刷新重试</div>';
-      throw e;
+      $('ml-loading').innerHTML='<div style="color:#ff3b30;font-size:14px">载入失败，请刷新重试</div>';
     }
   }
 
@@ -1981,7 +1419,9 @@
   function playWorshipPick(song){
     if(!hasSongAudio(song)) return;
     _mpBind();
-    const idx=_mpAddToQueue(song);
+    if(!_mpSongs.length) _mpSongs=songs.filter(hasSongAudio);
+    let idx=_mpSongs.findIndex(x=>x.id===song.id);
+    if(idx<0){ _mpSongs=[song].concat(_mpSongs); idx=0; }
     _mpPlayIdx(idx,true);
   }
   function bindWorshipPicksEffects(){
@@ -2018,11 +1458,7 @@
     main.textContent=greeting;
     sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · 正在同步今日天气';
     loadWorshipWeather().then(text=>{
-      if(text){
-        sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · Padova · '+text;
-        const pill=$('ml-weather-pill');
-        if(pill) pill.textContent='Padova · '+text;
-      }
+      if(text) sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · '+text;
     }).catch(()=>{ sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · 安静敬拜日'; });
   }
   async function loadWorshipWeather(){
@@ -2081,7 +1517,6 @@
   }
   function hasInternalKey(){
     try{
-      if(window.CECP_LIBAPP===true) return true;
       return new URLSearchParams(location.search).get('key')===INTERNAL_KEY;
     }catch(_){
       return false;
@@ -2112,321 +1547,6 @@
   function hasSongAudio(song){
     return !!(song&&song.mp3);
   }
-  function getSongBpm(song){
-    const raw=String(song?.bpm??'').trim();
-    const match=raw.match(/\d+(?:\.\d+)?/);
-    return match?Number(match[0]):NaN;
-  }
-  function hasRenderableScore(song){
-    return !!(song&&Array.isArray(song.sections)&&song.sections.some(sec=>Array.isArray(sec.lines)&&sec.lines.length));
-  }
-  function normalizeScoreImages(song){
-    if(!song) return [];
-    const raw= song.scoreImg ?? song.scoreIMG ?? song.scoreIMGs ?? song.scoreImages ?? song.score;
-    const list=Array.isArray(raw)?raw:(raw?[raw]:[]);
-    const looksLikeImagePath=value=>{
-      const v=String(value||'').trim();
-      if(!v) return false;
-      if(/^(https?:|data:image\/|blob:)/i.test(v)) return true;
-      if(/\.(png|jpe?g|webp|gif|avif|svg)(\?.*)?$/i.test(v)) return true;
-      if(/^\.{0,2}\//.test(v)&&/(score|sheet|image|img|upload|resource|resouces)/i.test(v)) return true;
-      return false;
-    };
-    return list
-      .map(item=>{
-        if(typeof item==='string') return item;
-        if(item&&typeof item==='object') return item.url||item.src||item.href||item.path||'';
-        return '';
-      })
-      .map(v=>String(v||'').trim())
-      .filter(looksLikeImagePath)
-      .filter(Boolean)
-      .map(resolveMediaUrl);
-  }
-  function getSongState(songId){
-    if(!songId) return {};
-    try{
-      const all=JSON.parse(localStorage.getItem(SONG_STATE_KEY)||'{}')||{};
-      return all[songId]||{};
-    }catch(_){
-      return {};
-    }
-  }
-  function setSongState(songId,patch){
-    if(!songId) return;
-    try{
-      const all=JSON.parse(localStorage.getItem(SONG_STATE_KEY)||'{}')||{};
-      all[songId]=Object.assign({},all[songId]||{},patch,{updatedAt:Date.now()});
-      localStorage.setItem(SONG_STATE_KEY,JSON.stringify(all));
-    }catch(_){}
-  }
-  function getAllSongStates(){
-    try{
-      return JSON.parse(localStorage.getItem(SONG_STATE_KEY)||'{}')||{};
-    }catch(_){
-      return {};
-    }
-  }
-  function loadSearchHistory(){
-    try{
-      const arr=JSON.parse(localStorage.getItem(SEARCH_HISTORY_KEY)||'[]');
-      return Array.isArray(arr)?arr.filter(Boolean).slice(0,8):[];
-    }catch(_){
-      return [];
-    }
-  }
-  function saveSearchHistory(){
-    try{ localStorage.setItem(SEARCH_HISTORY_KEY,JSON.stringify(searchHistory.slice(0,8))); }catch(_){}
-  }
-  function rememberSearchTerm(term){
-    const t=cleanText(term);
-    if(!t || t.length<1) return;
-    searchHistory=[t].concat(searchHistory.filter(x=>x!==t)).slice(0,8);
-    saveSearchHistory();
-    renderSearchHistory();
-  }
-  function scheduleRememberSearch(term){
-    clearTimeout(_searchHistoryTimer);
-    if(!term) return;
-    _searchHistoryTimer=setTimeout(()=>rememberSearchTerm(term),900);
-  }
-  function renderSearchHistory(){
-    const box=$('ml-search-history');
-    if(!box) return;
-    if(!searchHistory.length){
-      box.hidden=true;
-      box.innerHTML='';
-      return;
-    }
-    box.hidden=false;
-    box.innerHTML=`
-      <span>最近搜索</span>
-      ${searchHistory.map(item=>`<button type="button" data-search="${esc(item)}">${esc(item)}</button>`).join('')}
-      <button type="button" class="is-clear" data-clear-history="1">清空</button>
-    `;
-    box.querySelectorAll('[data-search]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        query=btn.dataset.search||'';
-        const input=$('ml-search');
-        if(input) input.value=query;
-        intentFilter='全部';
-        updateSearchControls();
-        render();
-      });
-    });
-    box.querySelector('[data-clear-history]')?.addEventListener('click',()=>{
-      searchHistory=[];
-      saveSearchHistory();
-      renderSearchHistory();
-    });
-  }
-  function updateSearchControls(){
-    const clear=$('ml-search-clear');
-    if(clear) clear.hidden=!query;
-  }
-  function filterByIntent(song){
-    const item=QUICK_FILTERS.find(x=>x.id===intentFilter);
-    return item ? item.match(song) : true;
-  }
-  function quickFilterCount(id){
-    const item=QUICK_FILTERS.find(x=>x.id===id);
-    if(!item) return 0;
-    return songs.filter(s=>item.match(s)).length;
-  }
-  function setIntentFilter(next,opts={}){
-    intentFilter=next||'全部';
-    if(opts.resetSource) sourceFilter='全部';
-    if(opts.clearQuery){
-      query='';
-      const input=$('ml-search');
-      if(input) input.value='';
-      updateSearchControls();
-    }
-    render();
-    if(opts.scrollList){
-      $('ml-list-stage')?.scrollIntoView({behavior:'smooth',block:'start'});
-    }
-  }
-  function renderQuickFilters(){
-    const bar=$('ml-filter-bar');
-    if(!bar) return;
-    const sourceItems=getArtistFilterItems();
-    const base=QUICK_FILTERS.filter(item=>item.visible!==false).map(item=>{
-      const count=quickFilterCount(item.id);
-      const disabled=(item.id!=='全部'&&count===0);
-      const active=item.id===intentFilter&&sourceFilter==='全部';
-      return `<button class="ml-filter-chip${active?' active':''}" type="button" data-filter="${item.id}" ${disabled?'disabled':''}>
-        <span>${item.label}</span><strong>${count}</strong>
-      </button>`;
-    }).join('');
-    const artists=sourceItems.map(item=>`
-      <button class="ml-filter-chip ml-artist-chip${item.name===sourceFilter?' active':''}" type="button" data-source="${esc(item.name)}">
-        <span>${esc(item.name)}</span><strong>${item.count}</strong>
-      </button>
-    `).join('');
-    bar.innerHTML=base+(artists?'<span class="ml-filter-divider" aria-hidden="true"></span>'+artists:'');
-    bar.querySelectorAll('[data-filter]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        setIntentFilter(btn.dataset.filter||'全部',{resetSource:true,scrollList:false});
-      });
-    });
-    bar.querySelectorAll('[data-source]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        sourceFilter=btn.dataset.source||'全部';
-        intentFilter='全部';
-        render();
-      });
-    });
-  }
-  function getArtistFilterItems(){
-    const counts=songs.reduce((acc,s)=>{
-      const key=(s.displayArtist||s.source||s.artist||'').trim();
-      if(!key||key==='其他') return acc;
-      acc[key]=(acc[key]||0)+1;
-      return acc;
-    },{});
-    if(sourceFilter!=='全部'&&!counts[sourceFilter]) sourceFilter='全部';
-    return Object.keys(counts)
-      .sort((a,b)=>counts[b]-counts[a]||a.localeCompare(b,'zh-Hans-CN'))
-      .map(name=>({name,count:counts[name]}));
-  }
-  function formatRelativeTime(ts){
-    if(!ts) return '';
-    const diff=Math.max(0,Date.now()-Number(ts));
-    const min=Math.floor(diff/60000);
-    if(min<1) return '刚刚';
-    if(min<60) return min+' 分钟前';
-    const hr=Math.floor(min/60);
-    if(hr<24) return hr+' 小时前';
-    const day=Math.floor(hr/24);
-    if(day<8) return day+' 天前';
-    try{return new Intl.DateTimeFormat('zh-CN',{month:'2-digit',day:'2-digit'}).format(new Date(Number(ts)));}catch(_){return '';}
-  }
-  function renderHomePanels(){
-    const states=getAllSongStates();
-    const heroCount=$('ml-hero-song-count');
-    const favCount=$('ml-hero-fav-count');
-    const serviceCount=$('ml-hero-service-count');
-    if(heroCount) heroCount.textContent=String(songs.length||0);
-    if(favCount) favCount.textContent=String(Object.values(states).filter(x=>x&&x.favorite).length);
-    if(serviceCount) serviceCount.textContent=String(Object.values(states).filter(x=>x&&x.serviceUsed).length);
-
-    const recentBox=$('ml-recent-list');
-    if(recentBox){
-      const recent=songs
-        .map(song=>({song,state:states[song.id]||{},at:Math.max(Number(states[song.id]?.openedAt||0),Number(states[song.id]?.playedAt||0))}))
-        .filter(item=>item.at)
-        .sort((a,b)=>b.at-a.at)
-        .slice(0,4);
-      recentBox.innerHTML=recent.length ? recent.map(({song,state,at})=>`
-        <button type="button" class="ml-compact-row" data-id="${song.id}">
-          <span class="ml-row-title">${esc(song.title||'未命名诗歌')}</span>
-          <span class="ml-row-meta">${state.lastKey?`上次 ${esc(state.lastKey)} · `:''}${formatRelativeTime(at)}</span>
-          <strong>${esc(state.lastKey||song.origKey||'--')}</strong>
-        </button>
-      `).join('') : '<div class="ml-panel-empty">打开一首歌后，这里会显示最近使用。</div>';
-      recentBox.querySelectorAll('[data-id]').forEach(btn=>{
-        btn.addEventListener('click',()=>{
-          const song=songs.find(s=>s.id===btn.dataset.id);
-          if(song) openDetail(song);
-        });
-      });
-    }
-
-    const categoryGrid=$('ml-category-grid');
-    if(categoryGrid){
-      const categories=HOME_CATEGORIES
-        .map(item=>Object.assign({},item,{count:quickFilterCount(item.id)}))
-        .filter(item=>item.count>0 || item.id==='收藏')
-        .slice(0,6);
-      categoryGrid.innerHTML=categories.length ? categories.map(item=>`
-        <button class="ml-category-card is-${item.tone}" type="button" data-filter="${item.id}" ${item.count===0?'disabled':''}>
-          <span class="ml-category-icon">${icon(item.id==='收藏'?'heart':item.id==='快歌'?'play':item.id==='慢歌'?'theme':item.id==='圣餐'?'score':'library',18)}</span>
-          <strong>${item.label}</strong>
-          <small>${item.count} 首</small>
-        </button>
-      `).join('') : '<div class="ml-panel-empty">暂无可用分类。</div>';
-      categoryGrid.querySelectorAll('[data-filter]').forEach(btn=>{
-        btn.addEventListener('click',()=>{
-          setIntentFilter(btn.dataset.filter||'全部',{resetSource:true,scrollList:true});
-        });
-      });
-    }
-  }
-  function updateDetailStateButtons(song){
-    if(!song) return;
-    const state=getSongState(song.id);
-    const fav=$('ml-detail-favorite');
-    const svc=$('ml-detail-service');
-    if(fav){
-      fav.classList.toggle('is-active',!!state.favorite);
-      fav.innerHTML=state.favorite?icon('heartFill',16):icon('heart',16);
-      fav.setAttribute('aria-label',state.favorite?'取消收藏':'收藏诗歌');
-    }
-    if(svc){
-      svc.classList.toggle('is-active',!!state.serviceUsed);
-      svc.innerHTML=icon('check',16)+'<span>'+(state.serviceUsed?'已唱过':'本堂')+'</span>';
-      svc.setAttribute('aria-label',state.serviceUsed?'取消本堂唱过':'标记本堂唱过');
-    }
-  }
-  function toggleFavorite(song){
-    if(!song) return;
-    const state=getSongState(song.id);
-    setSongState(song.id,{favorite:!state.favorite,favoriteAt:!state.favorite?Date.now():state.favoriteAt||0});
-    showToast(!state.favorite?'已加入收藏':'已取消收藏');
-    renderHomePanels();
-    updateDetailStateButtons(song);
-    render();
-  }
-  function toggleServiceUsed(song){
-    if(!song) return;
-    const state=getSongState(song.id);
-    const next=!state.serviceUsed;
-    setSongState(song.id,{
-      serviceUsed:next,
-      serviceUsedAt:next?Date.now():state.serviceUsedAt||0,
-      serviceCount:next?(Number(state.serviceCount||0)+1):Number(state.serviceCount||0)
-    });
-    showToast(next?'已标记本堂唱过':'已取消本堂标记');
-    renderHomePanels();
-    updateDetailStateButtons(song);
-    render();
-  }
-  function syncNavActive(mode){
-    root.dataset.nav=mode||'home';
-    root.querySelectorAll('[data-nav]').forEach(btn=>{
-      btn.classList.toggle('active',btn.dataset.nav===(mode||'home'));
-    });
-  }
-  function handleNav(mode){
-    if(mode==='search'){
-      syncNavActive('search');
-      root.scrollTo({top:0,behavior:'smooth'});
-      setTimeout(()=>{$('ml-search')?.focus();},120);
-      return;
-    }
-    if(mode==='favorites'){
-      syncNavActive('favorites');
-      setIntentFilter('收藏',{resetSource:true,scrollList:true});
-      return;
-    }
-    if(mode==='service'){
-      syncNavActive('library');
-      setIntentFilter('全部',{resetSource:true,scrollList:true});
-      return;
-    }
-    if(mode==='playlist'){
-      syncNavActive('playlist');
-      _mpSetPlaylistOpen(true);
-      return;
-    }
-    if(mode==='settings'){
-      cycleMusicTheme();
-      return;
-    }
-    syncNavActive(mode==='library'?'library':'home');
-    setIntentFilter('全部',{clearQuery:mode!=='library',resetSource:mode!=='library',scrollList:mode==='library'});
-  }
   function hi(t,q){
     if(!q||!t)return t||'';
     return t.replace(new RegExp(`(${escapeRegExp(q)})`,'gi'),'<mark class="ml-highlight">$1</mark>');
@@ -2434,22 +1554,37 @@
   function renderSourceBar(){
     const bar=$('ml-source-bar');
     if(!bar) return;
-    bar.hidden=true;
-    bar.innerHTML='';
+    const counts=songs.reduce((acc,s)=>{
+      const key=s.source||'其他';
+      acc[key]=(acc[key]||0)+1;
+      return acc;
+    },{});
+    const items=[{name:'全部',count:songs.length}].concat(
+      Object.keys(counts)
+        .sort((a,b)=>counts[b]-counts[a]||a.localeCompare(b,'zh-Hans-CN'))
+        .map(name=>({name,count:counts[name]}))
+    );
+    if(sourceFilter!=='全部' && !counts[sourceFilter]) sourceFilter='全部';
+    bar.innerHTML=items.map(item=>`
+      <button class="ml-source-chip${item.name===sourceFilter?' active':''}" data-source="${item.name}" type="button">
+        <span class="ml-source-name">${item.name}</span>
+        <strong>${item.count}</strong>
+      </button>
+    `).join('');
+    bar.querySelectorAll('.ml-source-chip').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        sourceFilter=btn.dataset.source||'全部';
+        render();
+      });
+    });
   }
 
   function render(){
     const list=$('ml-list'),empty=$('ml-empty'),q=query.toLowerCase();
     renderSourceBar();
-    renderQuickFilters();
-    renderHomePanels();
-    updateSearchControls();
     const filtered=songs.filter(s=>{
-      const artistKey=(s.displayArtist||s.source||s.artist||'').trim();
-      const sourceOk=sourceFilter==='全部'||artistKey===sourceFilter;
-      const intentOk=filterByIntent(s);
+      const sourceOk=sourceFilter==='全部'||(s.source||'其他')===sourceFilter;
       if(!sourceOk) return false;
-      if(!intentOk) return false;
       if(!q) return true;
       return (s.title||'').toLowerCase().includes(q)
         || (s.artist||'').toLowerCase().includes(q)
@@ -2462,166 +1597,120 @@
       $('ml-result-count').textContent=q
         ? `找到 0 首相关诗歌`
         : sourceFilter==='全部'
-          ? `${intentFilter==='全部'?'全部':intentFilter} · 0 首`
-          : `${sourceFilter} · ${intentFilter==='全部'?'全部':intentFilter} · 0 首`;
+          ? `全部 ${songs.length} 首诗歌`
+          : `${sourceFilter} · 0 首`;
       list.innerHTML='';$('ml-query-text').textContent=query;empty.style.display='block';
       list.classList.remove('is-grouped');
       $('ml-list-stage').style.display='none';
     }else{
       empty.style.display='none';
       $('ml-list-stage').style.display='';
-      list.classList.remove('is-grouped');
       if(q){
         $('ml-result-count').textContent=`找到 ${filtered.length} 首相关诗歌`;
-      }else if(sourceFilter!=='全部'){
-        $('ml-result-count').textContent=`${sourceFilter}${intentFilter==='全部'?'':' · '+intentFilter} · ${filtered.length} 首`;
-      }else{
-        $('ml-result-count').textContent=`${intentFilter==='全部'?'全部':intentFilter} ${filtered.length} 首诗歌`;
-      }
-      const shouldGroup=!q;
-      if(shouldGroup){
-        list.classList.add('is-grouped');
-        list.dataset.groupMode=sourceFilter!=='全部'?'album':'artist';
-        list.innerHTML=renderGroupedSongList(filtered,q)+(filtered.length?'<div id="ml-list-end"></div>':'');
-      }else{
         list.classList.remove('is-grouped');
-        delete list.dataset.groupMode;
         list.innerHTML=filtered.map(s=>cardHTML(s,q)).join('')+'<div id="ml-list-end"></div>';
+      }else if(sourceFilter!=='全部'){
+        const grouped=new Map();
+        filtered.forEach(song=>{
+          const key=song.album||'未标注专辑';
+          if(!grouped.has(key)) grouped.set(key,[]);
+          grouped.get(key).push(song);
+        });
+        $('ml-result-count').textContent=`${sourceFilter} · ${grouped.size} 组专辑 · ${filtered.length} 首`;
+        list.classList.add('is-grouped');
+        list.innerHTML=Array.from(grouped.entries())
+          .sort((a,b)=>{
+            const ay=Math.max(...a[1].map(item=>+(item.albumYear||0)),0);
+            const by=Math.max(...b[1].map(item=>+(item.albumYear||0)),0);
+            const aUnknown=a[0]==='未标注专辑';
+            const bUnknown=b[0]==='未标注专辑';
+            if(aUnknown!==bUnknown) return aUnknown?1:-1;
+            if(ay!==by) return by-ay;
+            return a[0].localeCompare(b[0],'zh-Hans-CN');
+          })
+          .map(([name,items])=>`
+            <section class="ml-group">
+              <div class="ml-group-head">
+                <div>
+                  <div class="ml-group-kicker">专辑</div>
+                  <div class="ml-group-title">${name}</div>
+                </div>
+                <div class="ml-group-count">${items.length} 首</div>
+              </div>
+              <div class="ml-group-grid">
+                ${items.map(s=>cardHTML(s,q)).join('')}
+              </div>
+            </section>
+          `).join('')+'<div id="ml-list-end"></div>';
+      }else{
+        $('ml-result-count').textContent=`全部 ${songs.length} 首诗歌`;
+        list.classList.add('is-grouped');
+        const grouped=new Map();
+        filtered.forEach(song=>{
+          const key=song.source||'其他';
+          if(!grouped.has(key)) grouped.set(key,[]);
+          grouped.get(key).push(song);
+        });
+        list.innerHTML=Array.from(grouped.entries())
+          .sort((a,b)=>b[1].length-a[1].length||a[0].localeCompare(b[0],'zh-Hans-CN'))
+          .map(([name,items])=>`
+            <section class="ml-group">
+              <div class="ml-group-head">
+                <div>
+                  <div class="ml-group-kicker">歌手 / 团体</div>
+                  <div class="ml-group-title">${name}</div>
+                </div>
+                <div class="ml-group-count">${items.length} 首</div>
+              </div>
+              <div class="ml-group-grid">
+                ${items.map(s=>cardHTML(s,q)).join('')}
+              </div>
+            </section>
+          `).join('')+'<div id="ml-list-end"></div>';
       }
+      _mpSongs = songs.filter(hasSongAudio);
       _mpRenderQueue();
       list.querySelectorAll('.ml-song-card').forEach(el=>{
         el.addEventListener('click',()=>{const s=songs.find(x=>x.id===el.dataset.id);if(s)openDetail(s);});
 
-        el.querySelector('.ml-card-favorite')?.addEventListener('click',e=>{
-          e.stopPropagation();
-          const s=songs.find(x=>x.id===el.dataset.id);
-          if(s) toggleFavorite(s);
-        });
-
-        el.querySelector('.ml-card-service')?.addEventListener('click',e=>{
-          e.stopPropagation();
-          const s=songs.find(x=>x.id===el.dataset.id);
-          if(s) toggleServiceUsed(s);
-        });
-
-        el.querySelector('.ml-card-share')?.addEventListener('click',e=>{
+        const shareBtn=document.createElement('button');
+        shareBtn.className='ml-share-btn';
+        shareBtn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>`;
+        shareBtn.title='分享';
+        shareBtn.onclick=e=>{
           e.stopPropagation();
           const s=songs.find(x=>x.id===el.dataset.id);
           if(s) shareSong(s);
-        });
+        };
+        el.appendChild(shareBtn);
 
-        el.querySelector('.ml-card-play')?.addEventListener('click',e=>{
-          e.preventDefault();
+        const playBtn=document.createElement('button');
+        playBtn.className='ml-mp-play-btn';
+        playBtn.innerHTML=`<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
+        playBtn.title='播放';
+        playBtn.onclick=e=>{
           e.stopPropagation();
           const s=songs.find(x=>x.id===el.dataset.id);
           if(!hasSongAudio(s)) return;
-          playSongNow(s);
-        });
-
-        el.querySelector('.ml-card-queue')?.addEventListener('click',e=>{
-          e.preventDefault();
-          e.stopPropagation();
-          const s=songs.find(x=>x.id===el.dataset.id);
-          if(!hasSongAudio(s)) return;
-          addSongToPlaylist(s);
-        });
+          const idx=_mpSongs.findIndex(x=>x.id===s.id);
+          if(idx>=0) _mpPlayIdx(idx,true);
+        };
+        el.appendChild(playBtn);
       });
     }
     observeRevealItems();
   }
 
-  function getArtistGroupName(song){
-    return cleanText(song.displayArtist||song.source||song.artist)||'其他';
-  }
-  function getAlbumGroupName(song){
-    return cleanText(song.album)||'单曲与其他';
-  }
-  function sourceSortIndex(name){
-    const idx=SOURCE_RULES.findIndex(rule=>rule.name===name);
-    return idx<0?999:idx;
-  }
-  function sortSongsForGroup(items){
-    return items.slice().sort((a,b)=>{
-      const yearA=Number(a.albumYear||0),yearB=Number(b.albumYear||0);
-      if(yearA!==yearB) return yearB-yearA;
-      return String(a.title||'').localeCompare(String(b.title||''),'zh-Hans-CN',{numeric:true});
-    });
-  }
-  function groupSongsBy(items,keyFn){
-    const map=new Map();
-    items.forEach(song=>{
-      const key=keyFn(song);
-      if(!map.has(key)) map.set(key,[]);
-      map.get(key).push(song);
-    });
-    return Array.from(map.entries()).map(([name,groupSongs])=>({name,songs:sortSongsForGroup(groupSongs)}));
-  }
-  function groupCoverHTML(group,mode){
-    const first=group.songs.find(song=>song.cover)||group.songs[0];
-    if(mode==='album'&&first&&first.cover){
-      return `<div class="ml-group-cover"><img src="${esc(first.cover)}" alt="" loading="lazy" onerror="this.parentElement.innerHTML='♪'"></div>`;
-    }
-    const label=cleanText(group.name);
-    const initial=(label&&label!=='单曲与其他')?Array.from(label)[0]:'♪';
-    return `<div class="ml-group-cover is-letter" aria-hidden="true">${esc(initial)}</div>`;
-  }
-  function renderGroupedSongList(items,q){
-    const mode=sourceFilter!=='全部'?'album':'artist';
-    let groups=groupSongsBy(items,mode==='album'?getAlbumGroupName:getArtistGroupName);
-    if(mode==='artist'){
-      groups.sort((a,b)=>{
-        const ai=sourceSortIndex(a.name),bi=sourceSortIndex(b.name);
-        if(ai!==bi) return ai-bi;
-        if(a.songs.length!==b.songs.length) return b.songs.length-a.songs.length;
-        return a.name.localeCompare(b.name,'zh-Hans-CN');
-      });
-    }else{
-      groups.sort((a,b)=>{
-        const ay=Math.max(...a.songs.map(s=>Number(s.albumYear||0))),by=Math.max(...b.songs.map(s=>Number(s.albumYear||0)));
-        if(ay!==by) return by-ay;
-        if(a.name==='单曲与其他') return 1;
-        if(b.name==='单曲与其他') return -1;
-        return a.name.localeCompare(b.name,'zh-Hans-CN',{numeric:true});
-      });
-    }
-    return groups.map(group=>{
-      const years=Array.from(new Set(group.songs.map(s=>cleanText(s.albumYear)).filter(Boolean))).sort((a,b)=>Number(b)-Number(a));
-      const subtitle=mode==='album'
-        ? [sourceFilter,years[0]||''].filter(Boolean).join(' · ')
-        : '作者 / 团队';
-      return `<section class="ml-group ml-group--${mode}" data-group="${esc(group.name)}">
-        <div class="ml-group-head">
-          <div class="ml-group-head-main">
-            ${groupCoverHTML(group,mode)}
-            <div class="ml-group-copy">
-              <div class="ml-group-kicker">${mode==='album'?'专辑':'作者'}</div>
-              <h3 class="ml-group-title">${esc(group.name)}</h3>
-              <div class="ml-group-subtitle">${esc(subtitle)}</div>
-            </div>
-          </div>
-          <span class="ml-group-count">${group.songs.length} 首</span>
-        </div>
-        <div class="ml-group-grid">${group.songs.map(song=>cardHTML(song,q)).join('')}</div>
-      </section>`;
-    }).join('');
-  }
-
   function cardHTML(s,q){
-    const state=getSongState(s.id);
     const cover=s.cover
       ?`<img class="ml-cover" src="${s.cover}" loading="lazy" onerror="this.outerHTML='<div class=\\'ml-cover-placeholder\\'>♪</div>'">`
       :`<div class="ml-cover-placeholder">封面</div>`;
     const overline=getSongCardOverline(s);
     const meta=getSongCardMeta(s);
-    const primaryTags=[
+    const tags=[
       s.origKey?`<span class="ml-song-tag is-key">${s.origKey}</span>`:'',
       s.timeSign?`<span class="ml-song-tag">${s.timeSign}</span>`:'',
-      s.bpm?`<span class="ml-song-tag">${s.bpm}</span>`:''
-    ].filter(Boolean).join('');
-    const secondaryTags=[
-      hasSongAudio(s)?`<span class="ml-song-tag is-audio">音频</span>`:'',
-      state.serviceUsed?`<span class="ml-song-tag is-service">本堂</span>`:'',
-      state.favorite?`<span class="ml-song-tag is-fav">收藏</span>`:''
+      hasSongAudio(s)?`<span class="ml-song-tag">音频</span>`:''
     ].filter(Boolean).join('');
     return`<div class="ml-song-card ml-reveal" data-id="${s.id}">
       <div class="ml-card-art">${cover}</div>
@@ -2629,16 +1718,7 @@
         <div class="ml-song-overline">${hi(overline,q)}</div>
         <div class="ml-song-title">${hi(s.title,q)}</div>
         <div class="ml-song-meta">${hi(meta||'收录歌词、简谱与练习资料',q)}</div>
-        <div class="ml-song-tags">
-          <div class="ml-song-tags-row ml-song-tags-primary">${primaryTags}</div>
-          <div class="ml-song-tags-row ml-song-tags-secondary${secondaryTags?'':' is-empty'}">${secondaryTags}</div>
-        </div>
-      </div>
-      <div class="ml-card-actions" aria-label="诗歌快捷操作">
-        <button class="ml-card-play" type="button" ${hasSongAudio(s)?'':'disabled'} aria-label="播放">${icon('play',15)}<span>播放</span></button>
-        <button class="ml-card-queue" type="button" ${hasSongAudio(s)?'':'disabled'} aria-label="添加到播放列表">${icon('queue',15)}</button>
-        <button class="ml-card-share" type="button" aria-label="更多 / 分享">${icon('more',15)}</button>
-        <button class="ml-card-favorite${state.favorite?' is-active':''}" type="button" aria-label="${state.favorite?'取消收藏':'收藏'}">${state.favorite?icon('heartFill',14):icon('heart',14)}</button>
+        <div class="ml-song-tags">${tags}</div>
       </div>
     </div>`;
   }
@@ -3005,7 +2085,6 @@
   }
   function setChordContent(el,text){
     const raw=String(text||'');
-    el.dataset.gapRaw=raw;
     if(!IS_APPLE_DEVICE){
       el.textContent=normalizeRenderableGapText(el,raw);
       return;
@@ -3019,7 +2098,6 @@
   }
   function setLyricContent(el,text){
     const raw=String(text||'');
-    el.dataset.gapRaw=raw;
     const gapChar=pickRenderableGapChar(el);
     const gapWidth=IS_APPLE_DEVICE?measureGapWidth(el,'我'):0;
     el.textContent='';
@@ -3030,16 +2108,6 @@
         el.appendChild(document.createTextNode(ch));
       }
     }
-  }
-  function refreshGapContent(root){
-    if(!root)return;
-    GAP_CHAR_CACHE.clear();
-    GAP_WIDTH_CACHE.clear();
-    root.querySelectorAll('[data-gap-raw]').forEach(el=>{
-      const raw=el.dataset.gapRaw;
-      if(el.classList.contains('p-chord'))setChordContent(el,raw);
-      else setLyricContent(el,raw);
-    });
   }
   function trChordToken(ch,st,useFlat){
     const raw=String(ch||'');
@@ -3107,327 +2175,12 @@
     return root+parsed.suf;
   }
 
-  let _mpAudio=null,_mpSongs=[],_mpIdx=-1,_mpLoop=false,_mpShuffle=false,_mpLrc=[],_mpLrcIdx=-1,_mpLrcTimed=false,_mpCurrentSong=null,_mpCoverFallback='',_mpExpanded=false,_mpSideMode='song',_mpSideCollapsed=false,_mpLyricsOpen=true,_mpPlayRequestId=0,_mpReturnUrl='';
-  let _mpAudioCtx=null,_mpPitchGraph=null,_mpPitchGraphPromise=null,_mpPitchGraphFailed=false,_mpPitchSemi=0,_mpFinePitch=0,_mpSpeed=1,_mpPitchMode='off',_mpPitchStore=null,_mpPitchWarned=false;
-  let _mpAbLoop=false,_mpLoopA=0,_mpLoopB=30,_mpPanelOpen=false;
-  const MP_PITCH_KEY='cecp:musiclib:audio-pitch:v1';
-  const MP_PITCH_MIN=-12;
-  const MP_PITCH_MAX=12;
+  let _mpAudio=null,_mpSongs=[],_mpIdx=-1,_mpLoop=false,_mpShuffle=false,_mpLrc=[],_mpLrcIdx=-1,_mpCoverFallback='',_mpExpanded=false,_mpSideMode='song',_mpSideCollapsed=false;
 
   function _mpFmt(t){
     if(!isFinite(t)) return '0:00';
     const m=Math.floor(t/60), s=Math.floor(t%60);
     return m+':'+String(s).padStart(2,'0');
-  }
-  function _mpClampPitch(v){
-    return Math.max(MP_PITCH_MIN,Math.min(MP_PITCH_MAX,parseInt(v,10)||0));
-  }
-  function _mpClampFinePitch(v){
-    return Math.max(-100,Math.min(100,parseInt(v,10)||0));
-  }
-  function _mpClampSpeed(v){
-    return Math.max(0.25,Math.min(4,parseFloat(v)||1));
-  }
-  function _mpTotalPitch(){
-    return _mpClampPitch(_mpPitchSemi)+(_mpClampFinePitch(_mpFinePitch)/100);
-  }
-  function _mpPitchText(v){
-    v=_mpClampPitch(v);
-    return v>0?'+'+v:String(v);
-  }
-  function _mpFinePitchText(v){
-    v=_mpClampFinePitch(v);
-    return v>0?'+'+v:String(v);
-  }
-  function _mpSpeedText(v){
-    return Math.round(_mpClampSpeed(v)*100)+'%';
-  }
-  function _mpLoadPitchStore(){
-    if(_mpPitchStore) return _mpPitchStore;
-    try{
-      _mpPitchStore=JSON.parse(localStorage.getItem(MP_PITCH_KEY)||'{}')||{};
-    }catch(_){
-      _mpPitchStore={};
-    }
-    return _mpPitchStore;
-  }
-  function _mpSaveSongPitch(songId,value){
-    if(!songId) return;
-    const store=_mpLoadPitchStore();
-    const next={
-      transpose:_mpClampPitch(value),
-      pitch:_mpClampFinePitch(_mpFinePitch),
-      speed:Math.round(_mpClampSpeed(_mpSpeed)*100)
-    };
-    if(next.transpose||next.pitch||next.speed!==100) store[songId]=next;
-    else delete store[songId];
-    try{ localStorage.setItem(MP_PITCH_KEY,JSON.stringify(store)); }catch(_){}
-  }
-  function _mpSongPitchSettings(song){
-    const id=song&&song.id;
-    const raw=id?_mpLoadPitchStore()[id]:null;
-    if(typeof raw==='number') return {transpose:_mpClampPitch(raw),pitch:0,speed:100};
-    if(raw&&typeof raw==='object'){
-      return {
-        transpose:_mpClampPitch(raw.transpose),
-        pitch:_mpClampFinePitch(raw.pitch),
-        speed:Math.round(_mpClampSpeed((raw.speed||100)/100)*100)
-      };
-    }
-    return {transpose:0,pitch:0,speed:100};
-  }
-  function _mpSetPitchUi(value,mode){
-    const trans=_mpClampPitch(value);
-    const fine=_mpClampFinePitch(_mpFinePitch);
-    const speed=_mpClampSpeed(_mpSpeed);
-    const active=trans!==0||fine!==0||Math.round(speed*100)!==100;
-    const displayMode=(mode==='off'&&Math.round(speed*100)!==100)?'rate':mode;
-    document.querySelectorAll('.ml-audio-tool').forEach(el=>{
-      el.classList.toggle('is-shifted',active);
-      el.classList.toggle('is-native',mode==='limited');
-      el.classList.toggle('is-pro',mode==='pro');
-      el.classList.toggle('is-rate',false);
-      el.classList.toggle('is-loading',mode==='loading');
-      el.classList.toggle('is-limited',mode==='limited');
-      el.dataset.pitchMode=displayMode||'off';
-      el.title=mode==='pro'?'SoundTouch 独立变调':(mode==='loading'?'正在启动音频处理':'MP3 练习控制');
-      const v=el.querySelector('.ml-audio-tool-v');
-      const tag=el.querySelector('.ml-audio-tool-mode');
-      if(v) v.textContent=active ? `调性 ${_mpPitchText(trans)} · Pitch ${_mpFinePitchText(fine)} · ${_mpSpeedText(speed)}` : '练习';
-      if(tag) tag.textContent=mode==='pro'?'PRO':(mode==='loading'?'…':(mode==='limited'?'ERR':'OFF'));
-    });
-    const set=(id,val)=>{ const el=$(id); if(el) el.textContent=val; };
-    const setVal=(id,val)=>{ const el=$(id); if(el) el.value=String(val); };
-    set('ml-audio-transpose-value',_mpPitchText(trans));
-    set('ml-audio-pitch-value',_mpFinePitchText(fine));
-    set('ml-audio-speed-value',_mpSpeedText(speed));
-    setVal('ml-audio-transpose-range',trans);
-    setVal('ml-audio-pitch-range',fine);
-    setVal('ml-audio-speed-range',Math.round(speed*100));
-    const song=_mpSongs[_mpIdx]||{};
-    const bpm=parseInt(song.bpm,10);
-    set('ml-audio-tempo-value',bpm?`${Math.round(bpm*speed)} bpm`:'— bpm');
-    const transRow=document.querySelector('#ml-audio-panel .ml-audio-panel-row[data-control="transpose"]');
-    const speedRow=document.querySelector('#ml-audio-panel .ml-audio-panel-row[data-control="speed"]');
-    const pitchRow=document.querySelector('#ml-audio-panel .ml-audio-panel-row[data-control="pitch"]');
-    const loopRow=document.querySelector('#ml-audio-panel .ml-audio-panel-row[data-control="loop"]');
-    if(transRow) transRow.classList.toggle('is-active',trans!==0);
-    if(pitchRow) pitchRow.classList.toggle('is-active',fine!==0);
-    if(speedRow) speedRow.classList.toggle('is-active',Math.round(speed*100)!==100);
-    if(loopRow) loopRow.classList.toggle('is-active',!!_mpAbLoop);
-    document.querySelectorAll('.ml-audio-speed-presets button').forEach(btn=>{
-      const preset=_mpClampSpeed(btn.dataset.speed);
-      btn.classList.toggle('active',Math.round(preset*100)===Math.round(speed*100));
-    });
-    _mpSyncPanelPlaybackUi();
-  }
-  function _mpSetParam(param,value){
-    if(!param) return;
-    try{
-      const now=_mpAudioCtx?_mpAudioCtx.currentTime:0;
-      param.cancelScheduledValues(now);
-      param.setTargetAtTime(value,now,0.012);
-    }catch(_){
-      try{ param.value=value; }catch(__){}
-    }
-  }
-  async function _mpCanReadCurrentAudio(){
-    if(!_mpAudio) return false;
-    const src=_mpAudio.currentSrc||_mpAudio.src||'';
-    if(!src) return false;
-    try{
-      const url=new URL(src,location.href);
-      if(url.origin===location.origin) return true;
-      if(_mpAudio.crossOrigin!=='anonymous') return false;
-      const response=await fetch(url.href,{method:'HEAD',mode:'cors',cache:'no-store',credentials:'omit'});
-      return response.ok;
-    }catch(err){
-      try{ console.warn('[musiclib] CORS audio check failed',err); }catch(_){}
-      return false;
-    }
-  }
-  function _mpCreateSoundTouchNode(ctx){
-    return new AudioWorkletNode(ctx,'soundtouch-processor',{
-      numberOfInputs:1,
-      numberOfOutputs:1,
-      outputChannelCount:[2],
-      processorOptions:{sampleBufferType:'circular',interpolationStrategy:'lanczos'}
-    });
-  }
-  function _mpEnsurePitchGraph(){
-    if(!_mpAudio) return Promise.resolve(false);
-    if(_mpPitchGraph&&_mpPitchGraph.ready) return Promise.resolve(true);
-    if(_mpPitchGraphPromise) return _mpPitchGraphPromise;
-    if(_mpPitchGraphFailed) return Promise.resolve(false);
-    const AC=window.AudioContext||window.webkitAudioContext;
-    if(!AC||!window.AudioWorkletNode) return Promise.resolve(false);
-
-    _mpPitchGraphPromise=(async()=>{
-      const readable=await _mpCanReadCurrentAudio();
-      if(!readable) throw new Error('Audio CORS is not available');
-
-      _mpAudioCtx=_mpAudioCtx||new AC({latencyHint:'playback'});
-      await _mpAudioCtx.audioWorklet.addModule(SOUNDTOUCH_PROCESSOR_URL);
-
-      const source=_mpAudioCtx.createMediaElementSource(_mpAudio);
-      const dry=_mpAudioCtx.createGain();
-      const wet=_mpAudioCtx.createGain();
-      const limiter=_mpAudioCtx.createDynamicsCompressor();
-      const node=_mpCreateSoundTouchNode(_mpAudioCtx);
-
-      dry.gain.value=1;
-      wet.gain.value=0;
-      limiter.threshold.value=-3;
-      limiter.knee.value=6;
-      limiter.ratio.value=12;
-      limiter.attack.value=0.004;
-      limiter.release.value=0.12;
-
-      source.connect(dry);
-      dry.connect(_mpAudioCtx.destination);
-      source.connect(node);
-      node.connect(wet);
-      wet.connect(limiter);
-      limiter.connect(_mpAudioCtx.destination);
-
-      _mpPitchGraph={source,dry,wet,node,limiter,ready:true,warmed:false,lastMetrics:null};
-      node.port.onmessage=event=>{
-        const data=event&&event.data;
-        if(!data||data.type!=='metrics'||!_mpPitchGraph||_mpPitchGraph.node!==node) return;
-        _mpPitchGraph.lastMetrics=data;
-        const hasAudio=Number(data.outputPeak)>0.00005||Number(data.outputRms)>0.00002;
-        if(!_mpPitchGraph.warmed&&hasAudio&&Number(data.blockCount)>=80){
-          _mpPitchGraph.warmed=true;
-          if(Math.abs(_mpTotalPitch())>0.0001) _mpPitchMode='pro';
-          _mpApplyPitch();
-        }
-      };
-      node.onprocessorerror=()=>{
-        if(!_mpPitchGraph||_mpPitchGraph.node!==node) return;
-        _mpPitchGraph.warmed=false;
-        _mpPitchMode='limited';
-        _mpApplyPitch();
-        showToast('音频处理器发生错误，已自动恢复原声');
-      };
-      if(_mpAudioCtx.state==='suspended') await _mpAudioCtx.resume();
-      return true;
-    })().catch(err=>{
-      _mpPitchGraphFailed=true;
-      if(!_mpPitchWarned){
-        _mpPitchWarned=true;
-        try{ console.error('[musiclib] SoundTouch pitch processor unavailable',err); }catch(_){}
-      }
-      return false;
-    }).finally(()=>{
-      _mpPitchGraphPromise=null;
-    });
-    return _mpPitchGraphPromise;
-  }
-  function _mpApplyPitch(){
-    const semi=_mpClampPitch(_mpPitchSemi);
-    const total=_mpTotalPitch();
-    const speed=_mpClampSpeed(_mpSpeed);
-    const shifted=Math.abs(total)>0.0001 && _mpPitchMode==='pro' && _mpPitchGraph&&_mpPitchGraph.ready&&_mpPitchGraph.warmed;
-
-    _mpSetPitchUi(semi,_mpPitchMode);
-    if(_mpAudio){
-      try{ _mpAudio.playbackRate=speed; }catch(_){}
-      try{ _mpAudio.preservesPitch=!shifted; }catch(_){}
-      try{ _mpAudio.mozPreservesPitch=!shifted; }catch(_){}
-      try{ _mpAudio.webkitPreservesPitch=!shifted; }catch(_){}
-    }
-    if(!_mpPitchGraph||!_mpPitchGraph.ready) return;
-
-    _mpSetParam(_mpPitchGraph.node.parameters.get('pitch'),1);
-    _mpSetParam(_mpPitchGraph.node.parameters.get('pitchSemitones'),total);
-    _mpSetParam(_mpPitchGraph.node.parameters.get('playbackRate'),speed);
-
-    const now=_mpAudioCtx.currentTime;
-    const switchAt=now;
-    try{
-      _mpPitchGraph.dry.gain.cancelScheduledValues(now);
-      _mpPitchGraph.wet.gain.cancelScheduledValues(now);
-      _mpPitchGraph.dry.gain.setTargetAtTime(shifted?0:1,switchAt,0.055);
-      _mpPitchGraph.wet.gain.setTargetAtTime(shifted?1:0,switchAt,0.055);
-    }catch(_){
-      _mpPitchGraph.dry.gain.value=shifted?0:1;
-      _mpPitchGraph.wet.gain.value=shifted?1:0;
-    }
-  }
-  function _mpSetPitch(value,save=true){
-    _mpPitchSemi=_mpClampPitch(value);
-    const total=_mpTotalPitch();
-    if(save){
-      const song=_mpSongs[_mpIdx]||_mpCurrentSong;
-      _mpSaveSongPitch(song&&song.id,_mpPitchSemi);
-    }
-    if(Math.abs(total)<0.0001){
-      _mpPitchMode='off';
-      _mpApplyPitch();
-      return true;
-    }
-
-    _mpPitchMode='loading';
-    _mpApplyPitch();
-    _mpEnsurePitchGraph().then(ok=>{
-      if(Math.abs(_mpTotalPitch())<0.0001){
-        _mpPitchMode='off';
-      }else if(!ok){
-        _mpPitchMode='limited';
-      }else{
-        _mpPitchMode=(_mpPitchGraph&&_mpPitchGraph.warmed)?'pro':'loading';
-      }
-      _mpApplyPitch();
-      if(!ok&&save) showToast('变调处理未启动，请确认 soundtouch-processor.js 已上传');
-    });
-    return true;
-  }
-  function _mpNudgePitch(delta){
-    _mpSetPitch(_mpPitchSemi+delta,true);
-  }
-  function _mpSetFinePitch(value,save=true){
-    _mpFinePitch=_mpClampFinePitch(value);
-    _mpSetPitch(_mpPitchSemi,save);
-  }
-  function _mpSetSpeed(value,save=true){
-    _mpSpeed=_mpClampSpeed(value);
-    if(save){
-      const song=_mpSongs[_mpIdx];
-      _mpSaveSongPitch(song&&song.id,_mpPitchSemi);
-    }
-    _mpApplyPitch();
-  }
-  function _mpApplySongPitchSettings(song,save=false){
-    const settings=_mpSongPitchSettings(song);
-    _mpPitchSemi=settings.transpose;
-    _mpFinePitch=settings.pitch;
-    _mpSpeed=_mpClampSpeed(settings.speed/100);
-    _mpSetPitch(_mpPitchSemi,save);
-  }
-  function _mpPrepareAudioSrc(url){
-    if(!_mpAudio) return url||'';
-    const next=url||'';
-    try{
-      const mediaUrl=new URL(next,location.href);
-      const isAllowedCecpAudio=mediaUrl.hostname==='cecp.it' && mediaUrl.pathname.startsWith('/upload/');
-      const needsCors=mediaUrl.origin!==location.origin && isAllowedCecpAudio;
-      if(needsCors){
-        _mpAudio.crossOrigin='anonymous';
-        _mpAudio.setAttribute('crossorigin','anonymous');
-      }else if(mediaUrl.origin===location.origin){
-        _mpAudio.removeAttribute('crossorigin');
-        _mpAudio.crossOrigin=null;
-      }else{
-        _mpAudio.removeAttribute('crossorigin');
-        _mpAudio.crossOrigin=null;
-      }
-    }catch(_){
-      try{
-        _mpAudio.removeAttribute('crossorigin');
-        _mpAudio.crossOrigin=null;
-      }catch(__){}
-    }
-    return next;
   }
   function _mpSetCover(src){
     const el=$('ml-mp-cover');
@@ -3447,54 +2200,13 @@
       if(nb) nb.innerHTML='<span>♪</span>';
     }
   }
-  function _mpGetReturnUrl(){
-    return window.location.pathname+window.location.search+window.location.hash;
-  }
-  function _mpRememberReturnUrl(){
-    _mpReturnUrl=_mpGetReturnUrl();
-  }
-  function _mpRestoreReturnUrl(){
-    if(!_mpReturnUrl) return;
-    try{
-      if(_mpGetReturnUrl()!==_mpReturnUrl){
-        history.replaceState(history.state||null,'',_mpReturnUrl);
-      }
-    }catch(_){}
-  }
-  function _mpCloseExpandedFromHistory(){
-    const pv=$('ml-player-view');
-    _mpExpanded=false;
-    if(pv){
-      pv.classList.remove('open');
-      pv.classList.toggle('side-collapsed',!!_mpSideCollapsed);
-    }
-    document.body.style.overflow='';
-    _mpRestoreReturnUrl();
-  }
   function _mpSetExpanded(open){
     const pv=$('ml-player-view');
     if(!pv) return;
-    const wasExpanded=_mpExpanded;
-    if(!open && wasExpanded && history.state && history.state.__mlPlayerView){
-      try{ history.back(); }catch(e){}
-      return;
-    }
     _mpExpanded=!!open;
     pv.classList.toggle('open',_mpExpanded);
     pv.classList.toggle('side-collapsed',!!_mpSideCollapsed);
     document.body.style.overflow=_mpExpanded?'hidden':'';
-    if(_mpExpanded&&!wasExpanded){
-      _mpRememberReturnUrl();
-      try{
-        history.pushState(
-          Object.assign({},history.state||{},{__mlPlayerView:true,__mlSongId:getSongIdFromUrl()||(_mpCurrentSong&&_mpCurrentSong.id)||''}),
-          '',
-          _mpReturnUrl||location.href
-        );
-      }catch(e){}
-    }else if(!_mpExpanded&&wasExpanded){
-      _mpRestoreReturnUrl();
-    }
   }
   function _mpSetSideMode(mode){
     _mpSideMode=(mode==='queue')?'queue':'song';
@@ -3507,230 +2219,30 @@
     if(panelSong) panelSong.hidden=_mpSideMode!=='song';
     if(panelQueue) panelQueue.hidden=_mpSideMode!=='queue';
   }
-  function _mpHashColor(seed){
-    const palette=['#D77A38','#C76524','#B86B47','#BA8B42','#6F9A75','#669A9C','#8C7AB8','#B96D78'];
-    const text=String(seed||'CECP');
-    let h=0;
-    for(let i=0;i<text.length;i++) h=((h<<5)-h+text.charCodeAt(i))|0;
-    return palette[Math.abs(h)%palette.length];
-  }
-  function _mpNormalizeHexColor(raw){
-    const v=String(raw||'').trim();
-    if(!v) return '';
-    const hex=v.match(/^#([0-9a-f]{3}|[0-9a-f]{6})$/i);
-    if(hex){
-      let h=hex[1];
-      if(h.length===3) h=h.split('').map(ch=>ch+ch).join('');
-      return '#'+h.toUpperCase();
-    }
-    const rgb=v.match(/^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})/i);
-    if(rgb){
-      return '#'+[rgb[1],rgb[2],rgb[3]].map(n=>Math.max(0,Math.min(255,Number(n)||0)).toString(16).padStart(2,'0')).join('').toUpperCase();
-    }
-    return '';
-  }
-  function _mpHexToRgb(hex){
-    const h=_mpNormalizeHexColor(hex).slice(1);
-    if(h.length!==6) return null;
-    return {
-      r:parseInt(h.slice(0,2),16),
-      g:parseInt(h.slice(2,4),16),
-      b:parseInt(h.slice(4,6),16)
-    };
-  }
-  function _mpSongAccent(song){
-    const fields=['scoreColor','scoreBg','scoreBackground','backgroundColor','themeColor','dominantColor','coverColor','color'];
-    for(const key of fields){
-      const normalized=_mpNormalizeHexColor(song&&song[key]);
-      if(normalized) return normalized;
-    }
-    return _mpHashColor((song&&song.cover)||(song&&song.scoreIMG)||(song&&song.title)||(song&&song.id));
-  }
-  function _mpApplyPlayerAccent(song){
-    const color=_mpSongAccent(song);
-    const rgb=_mpHexToRgb(color)||{r:215,g:122,b:56};
-    const soft=`rgba(${rgb.r},${rgb.g},${rgb.b},0.20)`;
-    const tint=`rgba(${rgb.r},${rgb.g},${rgb.b},0.14)`;
-    ['music-library','ml-miniplayer','ml-player-view','ml-nowbar','ml-playlist-panel'].forEach(id=>{
-      const el=$(id);
-      if(!el) return;
-      el.style.setProperty('--player-accent',color);
-      el.style.setProperty('--player-accent-soft',soft);
-      el.style.setProperty('--player-surface-tint',tint);
-    });
-  }
-  function _mpSetLyricsMode(open){
-    _mpLyricsOpen=!!open;
-    const pv=$('ml-player-view');
-    if(pv){
-      pv.classList.toggle('lyrics-open',_mpLyricsOpen);
-      pv.setAttribute('data-player-view',_mpLyricsOpen?'lyrics':'cover');
-    }
-    const btn=$('ml-player-view-menu');
-    if(btn){
-      btn.classList.toggle('is-active',_mpLyricsOpen);
-      btn.setAttribute('aria-pressed',String(_mpLyricsOpen));
-      btn.setAttribute('aria-label',_mpLyricsOpen?'关闭歌词':'打开歌词');
-      btn.title=_mpLyricsOpen?'关闭歌词':'打开歌词';
-    }
-    const railBtns=document.querySelectorAll('#ml-player-rail .ml-player-rail-btn');
-    if(railBtns[0]) railBtns[0].classList.toggle('active',_mpLyricsOpen);
-    if(_mpLyricsOpen){
-      if(!_mpLrc.length && _mpCurrentSong) _mpUseFallbackLyrics(_mpCurrentSong);
-      else _mpRenderLrc();
-      if(_mpAudio) _mpSyncLrc(_mpAudio.currentTime||0);
-      requestAnimationFrame(()=>{
-        const panel=$('ml-player-lyrics');
-        const active=panel&&panel.querySelector('.ml-player-lrc-line.active');
-        if(active) active.scrollIntoView({block:'center',behavior:'auto'});
-        else if(panel) panel.scrollTop=0;
-      });
-    }
-  }
-  function _mpAddToQueue(song,silent=false){
-    if(!song||!hasSongAudio(song)) return -1;
-    _mpBind();
-    let idx=_mpSongs.findIndex(x=>x.id===song.id);
-    if(idx<0){
-      _mpSongs.push(song);
-      idx=_mpSongs.length-1;
-      if(!silent) showToast('已加入播放列表');
-    }else if(!silent){
-      showToast('已在播放列表');
-    }
-    _mpRenderQueue();
-    return idx;
-  }
-  // "播放"：立即播放该歌曲，绝不修改播放列表 / 播放队列。
-  // 如果该歌曲已在队列中，直接定位播放；否则仅作为"当前播放"，不插入队列。
-  function playSongNow(song){
-    if(!song||!hasSongAudio(song)) return;
-    _mpBind();
-    const idx=_mpSongs.findIndex(x=>x.id===song.id);
-    if(idx>=0){
-      _mpPlayIdx(idx,true);
-    }else{
-      _mpIdx=-1;
-      _mpLoadAndPlaySong(song,true);
-    }
-  }
-  // "添加到播放列表"：只入队，不播放、不打断当前播放。
-  function addSongToPlaylist(song){
-    return _mpAddToQueue(song,false);
-  }
-  function _mpRemoveQueueIndex(idx){
-    if(idx<0||idx>=_mpSongs.length) return;
-    const removingCurrent=idx===_mpIdx;
-    _mpSongs.splice(idx,1);
-    if(!_mpSongs.length){
-      _mpIdx=-1;
-      if(_mpAudio){_mpPlayRequestId++;_mpAudio.pause();_mpAudio.removeAttribute('src');_mpAudio.load();}
-      _mpLrc=[];_mpLrcIdx=-1;_mpRenderLrc();
-      _mpSetPlayUI(false);
-    }else{
-      if(idx<_mpIdx) _mpIdx-=1;
-      if(removingCurrent) _mpPlayIdx(Math.min(idx,_mpSongs.length-1),false);
-    }
-    _mpRenderQueue();
-  }
-  function _mpMoveQueueIndex(idx,dir){
-    const next=idx+dir;
-    if(idx<0||next<0||idx>=_mpSongs.length||next>=_mpSongs.length) return;
-    const item=_mpSongs[idx];
-    _mpSongs[idx]=_mpSongs[next];
-    _mpSongs[next]=item;
-    if(_mpIdx===idx) _mpIdx=next;
-    else if(_mpIdx===next) _mpIdx=idx;
-    _mpRenderQueue();
-  }
-  function _mpClearQueue(){
-    _mpSongs=[];
-    _mpIdx=-1;
-    if(_mpAudio){_mpPlayRequestId++;_mpAudio.pause();_mpAudio.removeAttribute('src');_mpAudio.load();}
-    _mpLrc=[];_mpLrcIdx=-1;_mpRenderLrc();
-    _mpSetPlayUI(false);
-    _mpRenderQueue();
-    showToast('播放列表已清空');
-  }
-  function _mpSetPlaylistOpen(open){
-    const drawer=$('ml-playlist-drawer');
-    if(!drawer) return;
-    drawer.hidden=!open;
-    drawer.classList.toggle('open',!!open);
-    root.classList.toggle('ml-playlist-open',!!open);
-    _mpRenderPlaylist();
-  }
-  function _mpRenderPlaylist(){
-    const list=$('ml-playlist-list');
-    const empty=$('ml-playlist-empty');
-    const now=$('ml-playlist-now');
-    const clear=$('ml-playlist-clear');
-    if(!list) return;
-    list.innerHTML='';
-    if(clear) clear.disabled=!_mpSongs.length;
-    if(now){
-      const cur=_mpSongs[_mpIdx];
-      now.innerHTML=cur?`<span>正在播放</span><strong>${esc(cur.title||'未命名歌曲')}</strong><small>${esc(cur.artist||cur.source||'诗歌')}</small>`:'';
-      now.hidden=!cur;
-    }
-    if(!_mpSongs.length){
-      if(empty) empty.hidden=false;
-      return;
-    }
-    if(empty) empty.hidden=true;
-    _mpSongs.forEach((song,i)=>{
-      const row=document.createElement('div');
-      row.className='ml-playlist-item'+(i===_mpIdx?' is-active':'');
-      row.innerHTML=`
-        <button class="ml-playlist-main" type="button" data-action="play">
-          <span class="ml-playlist-index">${i+1}</span>
-          <span class="ml-playlist-meta">
-            <strong>${esc(song.title||'未命名歌曲')}</strong>
-            <small>${esc(song.artist||song.source||'诗歌')}</small>
-          </span>
-        </button>
-        <div class="ml-playlist-row-actions">
-          <button type="button" data-action="up" ${i===0?'disabled':''}>上移</button>
-          <button type="button" data-action="down" ${i===_mpSongs.length-1?'disabled':''}>下移</button>
-          <button type="button" data-action="remove">移除</button>
-        </div>
-      `;
-      row.querySelector('[data-action="play"]')?.addEventListener('click',()=>_mpPlayIdx(i,true));
-      row.querySelector('[data-action="up"]')?.addEventListener('click',()=>_mpMoveQueueIndex(i,-1));
-      row.querySelector('[data-action="down"]')?.addEventListener('click',()=>_mpMoveQueueIndex(i,1));
-      row.querySelector('[data-action="remove"]')?.addEventListener('click',()=>_mpRemoveQueueIndex(i));
-      list.appendChild(row);
-    });
-  }
   function _mpRenderQueue(){
     const box=$('ml-player-queue-list');
     const empty=$('ml-player-queue-empty');
-    if(box) box.innerHTML='';
+    if(!box) return;
+    box.innerHTML='';
     if(!_mpSongs.length){
       if(empty) empty.hidden=false;
-      _mpRenderPlaylist();
       return;
     }
     if(empty) empty.hidden=true;
     _mpSongs.forEach((song,i)=>{
-      if(!box) return;
-      const row=document.createElement('div');
+      const row=document.createElement('button');
+      row.type='button';
       row.className='ml-player-queue-item'+(i===_mpIdx?' is-active':'');
       row.innerHTML=`
-        <button class="ml-player-queue-main" type="button">
-          <span class="ml-player-queue-index">${i+1}</span>
-          <span>
-            <span class="ml-player-queue-title">${esc(song.title||'未命名歌曲')}</span>
-            <span class="ml-player-queue-artist">${esc(song.artist||song.source||'诗歌')}</span>
-          </span>
-        </button>
-        <button class="ml-player-queue-remove" type="button" aria-label="从播放列表移除">移除</button>
+        <span class="ml-player-queue-index">${i+1}</span>
+        <span class="ml-player-queue-main">
+          <span class="ml-player-queue-title">${song.title||'未命名歌曲'}</span>
+          <span class="ml-player-queue-artist">${song.artist||song.source||'诗歌'}</span>
+        </span>
       `;
-      row.querySelector('.ml-player-queue-main')?.addEventListener('click',()=>_mpPlayIdx(i,true));
-      row.querySelector('.ml-player-queue-remove')?.addEventListener('click',()=>_mpRemoveQueueIndex(i));
+      row.addEventListener('click',()=>_mpPlayIdx(i,true));
       box.appendChild(row);
     });
-    _mpRenderPlaylist();
   }
   function _mpSyncModeUI(){
     const r1=$('ml-mp-repeat');
@@ -3789,46 +2301,6 @@
     });
     return arr.sort((a,b)=>a.t-b.t);
   }
-  function _mpExtractPlainLyrics(song){
-    const lines=[];
-    const push=value=>{
-      const tx=String(value||'').replace(/<[^>]*>/g,'').replace(/\u00a0/g,' ').trim();
-      if(tx && !lines.includes(tx)) lines.push(tx);
-    };
-    for(const sec of (song&&song.sections)||[]){
-      if(sec&&sec.title) push(sec.title);
-      for(const row of (sec&&sec.lines)||[]){
-        const segs=Array.isArray(row)?row:((row&&row.line)||[]);
-        const primary=[];
-        const secondary=[];
-        for(const seg of segs){
-          if(!seg) continue;
-          const a=String(seg.lyric||'').trim();
-          const b=String(seg.lyric2||'').trim();
-          const c=String(seg.lyric3||'').trim();
-          const d=String(seg.lyric4||'').trim();
-          if(a) primary.push(a);
-          if(b) secondary.push(b);
-          if(c) secondary.push(c);
-          if(d) secondary.push(d);
-        }
-        push(primary.join(''));
-        for(const tx of secondary) push(tx);
-      }
-    }
-    if(!lines.length && song){
-      push(song.lyrics);
-      push(song.lyric);
-      push(song.sub);
-    }
-    return lines.map(tx=>({t:null,tx}));
-  }
-  function _mpUseFallbackLyrics(song){
-    _mpLrc=_mpExtractPlainLyrics(song);
-    _mpLrcTimed=false;
-    _mpLrcIdx=-1;
-    _mpRenderLrc();
-  }
   function _mpRenderLrc(){
     function paint(innerId,panelId,lineClass){
       const inner=$(innerId);
@@ -3841,10 +2313,9 @@
         if(nbLyric) nbLyric.textContent='暂无歌词';
         return;
       }
-      inner.classList.toggle('is-static',!_mpLrcTimed);
       _mpLrc.forEach((it,i)=>{
         const d=document.createElement('div');
-        d.className=lineClass+(i===0?' active':'')+(!_mpLrcTimed?' is-static':'');
+        d.className=lineClass+(i===0?' active':'');
         d.textContent=it.tx || '…';
         d.addEventListener('click',()=>{
           if(_mpAudio && isFinite(_mpLrc[i].t)) _mpAudio.currentTime=_mpLrc[i].t;
@@ -3859,26 +2330,13 @@
     const nbLyric=$('ml-nowbar-lyric');
     if(nbLyric) nbLyric.textContent=_mpLrc[0]?.tx || '歌词将在播放时显示';
   }
-  function _mpSyncLrc(cur,force=false){
+  function _mpSyncLrc(cur){
     if(!_mpLrc.length) return;
     let idx=0;
-    if(_mpLrcTimed){
-      for(let i=0;i<_mpLrc.length;i++){
-        if(cur>=_mpLrc[i].t) idx=i; else break;
-      }
-    }else{
-      // No timestamped LRC: keep the lyrics moving with playback using
-      // an even, duration-based estimate rather than leaving the page static.
-      const dur=Number(_mpAudio&&_mpAudio.duration);
-      if(Number.isFinite(dur)&&dur>0){
-        const progress=Math.max(0,Math.min(0.999999,(Number(cur)||0)/dur));
-        idx=Math.min(_mpLrc.length-1,Math.floor(progress*_mpLrc.length));
-      }else{
-        idx=Math.max(0,Math.min(_mpLrc.length-1,_mpLrcIdx<0?0:_mpLrcIdx));
-      }
+    for(let i=0;i<_mpLrc.length;i++){
+      if(cur>=_mpLrc[i].t) idx=i; else break;
     }
-    const needsPaint=force||idx!==_mpLrcIdx||!document.querySelector('#ml-player-lyrics-inner .active');
-    if(!needsPaint) return;
+    if(idx===_mpLrcIdx) return;
     _mpLrcIdx=idx;
     function sync(innerId,panelId){
       const inner=$(innerId), panel=$(panelId);
@@ -3887,8 +2345,7 @@
       const active=inner.children[idx];
       if(active){
         const y=active.offsetTop - panel.clientHeight/2 + active.clientHeight/2;
-        const reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        panel.scrollTo({ top: Math.max(0,y), behavior:reduceMotion?'auto':'smooth' });
+        panel.scrollTo({ top: Math.max(0,y), behavior:'smooth' });
       }
     }
     sync('ml-mp-lrc-inner','ml-mp-lrc-panel');
@@ -3896,282 +2353,16 @@
     const nbLyric=$('ml-nowbar-lyric');
     if(nbLyric) nbLyric.textContent=_mpLrc[idx]?.tx || '…';
   }
-  function _mpFmtMs(t){
-    if(t==null||!isFinite(t)) return '--:--.-';
-    const m=Math.floor(t/60);
-    const s=(t%60).toFixed(1).padStart(4,'0');
-    return `${String(m).padStart(2,'0')}:${s}`;
-  }
-  function _mpParseLoopTime(value){
-    const raw=String(value||'').trim();
-    if(!raw) return NaN;
-    if(/^\d+(?:\.\d+)?$/.test(raw)) return Math.max(0,parseFloat(raw));
-    const parts=raw.split(':').map(part=>part.trim());
-    if(parts.length===2 && parts.every(Boolean)){
-      const m=parseInt(parts[0],10);
-      const s=parseFloat(parts[1]);
-      if(Number.isFinite(m)&&Number.isFinite(s)&&s>=0) return Math.max(0,m*60+s);
-    }
-    if(parts.length===3 && parts.every(Boolean)){
-      const h=parseInt(parts[0],10);
-      const m=parseInt(parts[1],10);
-      const s=parseFloat(parts[2]);
-      if(Number.isFinite(h)&&Number.isFinite(m)&&Number.isFinite(s)&&m>=0&&s>=0) return Math.max(0,h*3600+m*60+s);
-    }
-    return NaN;
-  }
-  function _mpSetLoopInput(which,value){
-    const input=$(which==='a'?'ml-audio-loop-a-time':'ml-audio-loop-b-time');
-    if(input) input.value=_mpFmtMs(value);
-  }
-  function _mpSyncPanelTime(){
-    const time=$('ml-audio-panel-time');
-    if(!time) return;
-    const cur=_mpAudio?(_mpAudio.currentTime||0):0;
-    const dur=_mpAudio?(_mpAudio.duration||0):0;
-    time.textContent=`${_mpFmt(cur)} / ${_mpFmt(dur)}`;
-  }
-  function _mpLoopIsValid(){
-    return Number.isFinite(_mpLoopA)&&Number.isFinite(_mpLoopB)&&_mpLoopB>_mpLoopA;
-  }
-  function _mpSetLoopMessage(text,isError=false){
-    const msg=$('ml-audio-loop-message');
-    if(!msg) return;
-    msg.textContent=text||'';
-    msg.classList.toggle('is-error',!!isError);
-  }
-  function _mpSyncPanelPlaybackUi(){
-    const play=$('ml-audio-panel-play');
-    const main=$('ml-audio-panel-main');
-    const status=$('ml-audio-panel-status');
-    const has=!!(_mpAudio&&_mpAudio.src);
-    const playing=has&&!_mpAudio.paused;
-    if(play){
-      const label=play.querySelector('span');
-      const stateIcon=$('ml-audio-panel-play-icon');
-      if(label) label.textContent=playing?'Pause playback':'Start playback';
-      if(stateIcon) stateIcon.innerHTML=playing?icon('pause',21):icon('circlePlay',21);
-      play.classList.toggle('is-playing',playing);
-    }
-    if(main){
-      main.innerHTML=playing?icon('pause',21):icon('play',21);
-      main.classList.toggle('is-playing',playing);
-    }
-    if(status){
-      const mode=_mpPitchMode==='pro'?'SoundTouch active':(_mpPitchMode==='loading'?'Starting processor...':(_mpPitchMode==='limited'?'Processor unavailable':'Start media...'));
-      status.textContent=has ? mode : 'Start media...';
-    }
-    const loopBtn=$('ml-audio-loop-toggle');
-    if(loopBtn){
-      const enabled=!!_mpAbLoop;
-      loopBtn.classList.toggle('active',enabled);
-      loopBtn.setAttribute('aria-pressed',String(enabled));
-      loopBtn.setAttribute('aria-label',enabled?'关闭 A/B 循环':'开启 A/B 循环');
-      loopBtn.title=enabled?'Loop ON · 点击关闭':'Loop OFF · 点击开启';
-      const switchText=loopBtn.querySelector('.ml-audio-loop-switch-text');
-      if(switchText) switchText.textContent=enabled?'ON':'OFF';
-    }
-    _mpSetLoopInput('a',_mpLoopA);
-    _mpSetLoopInput('b',_mpLoopB);
-    _mpSyncPanelTime();
-    const loopRow=document.querySelector('#ml-audio-panel .ml-audio-panel-row[data-control="loop"]');
-    if(loopRow) loopRow.classList.toggle('is-active',!!_mpAbLoop);
-  }
-  function _mpSetPanelOpen(open){
-    _mpPanelOpen=!!open;
-    const panel=$('ml-audio-panel');
-    const backdrop=$('ml-audio-panel-backdrop');
-    if(!panel||!backdrop) return;
-    panel.hidden=!_mpPanelOpen;
-    backdrop.hidden=!_mpPanelOpen;
-    panel.classList.toggle('open',_mpPanelOpen);
-    backdrop.classList.toggle('open',_mpPanelOpen);
-    if(_mpPanelOpen) _mpSetPitchUi(_mpPitchSemi,_mpPitchMode);
-  }
-  function _mpSetLoopPoint(which){
-    if(!_mpAudio||!_mpAudio.src){
-      _mpSetLoopMessage('请先打开一首可播放的 MP3。',true);
-      showToast('请先打开一首可播放的 MP3');
-      return;
-    }
-    const cur=Math.max(0,_mpAudio.currentTime||0);
-    if(which==='a'){
-      _mpLoopA=cur;
-      _mpSetLoopMessage('已设置 A 点');
-    }else{
-      _mpLoopB=cur;
-      _mpSetLoopMessage('已设置 B 点');
-    }
-    if(Number.isFinite(_mpLoopA)&&Number.isFinite(_mpLoopB)&&_mpLoopB<=_mpLoopA){
-      _mpAbLoop=false;
-      _mpSetLoopMessage('B 点必须晚于 A 点，请重新设置。',true);
-      showToast('B 点必须晚于 A 点');
-    }
-    _mpSyncPanelPlaybackUi();
-  }
-  function _mpCommitLoopInput(which){
-    const input=$(which==='a'?'ml-audio-loop-a-time':'ml-audio-loop-b-time');
-    if(!input) return;
-    const next=_mpParseLoopTime(input.value);
-    if(!Number.isFinite(next)){
-      _mpSetLoopMessage('时间格式无效，请输入 00:30.0 或秒数。',true);
-      showToast('Loop 时间格式无效');
-      _mpSyncPanelPlaybackUi();
-      return;
-    }
-    if(which==='a') _mpLoopA=next;
-    else _mpLoopB=next;
-    if(Number.isFinite(_mpLoopA)&&Number.isFinite(_mpLoopB)&&_mpLoopB<=_mpLoopA){
-      _mpAbLoop=false;
-      _mpSetLoopMessage('B 点必须晚于 A 点，请重新设置。',true);
-      showToast('B 点必须晚于 A 点');
-    }else{
-      _mpSetLoopMessage(`${which==='a'?'A':'B'} 点已更新`);
-    }
-    _mpSyncPanelPlaybackUi();
-  }
-  function _mpJumpLoopPoint(which){
-    if(!_mpAudio||!_mpAudio.src) return;
-    const t=which==='a'?_mpLoopA:_mpLoopB;
-    if(!Number.isFinite(t)){
-      _mpSetLoopMessage(`请先设置 ${which==='a'?'A':'B'} 点。`,true);
-      return;
-    }
-    _mpAudio.currentTime=Math.max(0,Math.min(_mpAudio.duration||1e9,t));
-  }
-  function _mpToggleAbLoop(){
-    if(_mpAbLoop){
-      _mpAbLoop=false;
-      _mpSetLoopMessage('循环已关闭');
-      _mpSyncPanelPlaybackUi();
-      return;
-    }
-    if(!_mpLoopIsValid()){
-      _mpAbLoop=false;
-      _mpSetLoopMessage('请先设置有效的 A/B 区间，且 B 必须晚于 A。',true);
-      showToast('请先设置有效的 A/B 循环');
-      _mpSyncPanelPlaybackUi();
-      return;
-    }
-    _mpAbLoop=true;
-    _mpSetLoopMessage('循环已开启');
-    _mpSyncPanelPlaybackUi();
-  }
-  function _mpClearAbLoop(){
-    _mpAbLoop=false;
-    _mpLoopA=0;
-    _mpLoopB=30;
-    _mpSetLoopMessage('循环已清除');
-    _mpSyncPanelPlaybackUi();
-  }
-  function _mpUseCurrentForLoop(){
-    if(!_mpAudio||!_mpAudio.src){
-      _mpSetLoopMessage('请先打开一首可播放的 MP3。',true);
-      showToast('请先打开一首可播放的 MP3');
-      return;
-    }
-    const cur=Math.max(0,_mpAudio.currentTime||0);
-    if(!Number.isFinite(_mpLoopA)){
-      _mpLoopA=cur;
-      _mpSetLoopMessage('已用当前位置设置 A 点');
-    }else{
-      _mpLoopB=cur;
-      _mpSetLoopMessage('已用当前位置设置 B 点');
-    }
-    if(Number.isFinite(_mpLoopA)&&Number.isFinite(_mpLoopB)&&_mpLoopB<=_mpLoopA){
-      _mpAbLoop=false;
-      _mpSetLoopMessage('B 点必须晚于 A 点，请重新设置。',true);
-      showToast('B 点必须晚于 A 点');
-    }
-    _mpSyncPanelPlaybackUi();
-  }
-  function _mpSwapLoopPoints(){
-    const oldA=_mpLoopA;
-    _mpLoopA=_mpLoopB;
-    _mpLoopB=oldA;
-    if(Number.isFinite(_mpLoopA)&&Number.isFinite(_mpLoopB)&&_mpLoopB<=_mpLoopA){
-      _mpAbLoop=false;
-      _mpSetLoopMessage('交换后 B 点不晚于 A 点，循环已关闭。',true);
-    }else{
-      _mpSetLoopMessage('A/B 点已交换');
-    }
-    _mpSyncPanelPlaybackUi();
-  }
-  function _mpResetAudioPractice(){
-    _mpPitchSemi=0;
-    _mpFinePitch=0;
-    _mpSpeed=1;
-    _mpPitchMode='off';
-    _mpClearAbLoop();
-    const song=_mpSongs[_mpIdx];
-    _mpSaveSongPitch(song&&song.id,0);
-    _mpApplyPitch();
-    showToast('练习设置已全部重置');
-  }
-  function _mpHandlePlayError(err,context){
-    if(err&&err.name==='AbortError') return;
-    try{ console.warn('[musiclib] audio play failed',context||'',err); }catch(_){}
-    const name=err&&err.name;
-    if(name==='NotAllowedError'){
-      showToast('播放被浏览器拦截，请再点一次播放');
-    }else if(name==='NotSupportedError'){
-      showToast('音频格式暂时无法播放');
-    }else{
-      showToast('音频还没准备好，请再点一次');
-    }
-    _mpSetPlayUI(false);
-    _mpSyncPanelPlaybackUi();
-  }
-  function _mpRequestPlay(context){
-    if(!_mpAudio||!_mpAudio.src) return Promise.resolve(false);
-    const req=++_mpPlayRequestId;
-    if(_mpAudio.readyState===0){
-      try{ _mpAudio.load(); }catch(_){}
-    }
-    if(_mpAudioCtx&&_mpAudioCtx.state==='suspended'){
-      try{ _mpAudioCtx.resume().catch(()=>{}); }catch(_){}
-    }
-    try{
-      const p=_mpAudio.play();
-      if(p&&typeof p.then==='function'){
-        return p.then(()=>true).catch(err=>{
-          if(req===_mpPlayRequestId) _mpHandlePlayError(err,context);
-          return false;
-        });
-      }
-      return Promise.resolve(true);
-    }catch(err){
-      _mpHandlePlayError(err,context);
-      return Promise.resolve(false);
-    }
-  }
-  function _mpTogglePlayback(context){
-    if(!_mpAudio||!_mpAudio.src) return;
-    if(_mpAudio.paused) void _mpRequestPlay(context||'toggle');
-    else{
-      _mpPlayRequestId++;
-      _mpAudio.pause();
-    }
-  }
-  function _mpHandleAbLoop(){
-    if(!_mpAbLoop||!_mpLoopIsValid()||!_mpAudio||!_mpAudio.src) return;
-    if((_mpAudio.currentTime||0)>=_mpLoopB){
-      _mpAudio.currentTime=Math.max(0,_mpLoopA||0);
-      if(_mpAudio.paused) void _mpRequestPlay('ab-loop');
-    }
-  }
   function _mpBind(){
     if(_mpAudio) return;
     _mpAudio=$('ml-mp-audio');
     if(!_mpAudio) return;
-    _mpAudio.preload='auto';
     const mv=$('ml-mp-vol'); if(mv) mv.value=String(_mpAudio.volume||1);
     const dv=$('ml-player-dock-vol'); if(dv) dv.value=String(_mpAudio.volume||1);
 
     _mpAudio.addEventListener('loadedmetadata',()=>{
       $('ml-mp-dur').textContent=_mpFmt(_mpAudio.duration);
       const xd=$('ml-player-dur'); if(xd) xd.textContent=_mpFmt(_mpAudio.duration);
-      _mpSyncPanelTime();
     });
     _mpAudio.addEventListener('timeupdate',()=>{
       $('ml-mp-cur').textContent=_mpFmt(_mpAudio.currentTime);
@@ -4181,27 +2372,33 @@
       const xf=$('ml-player-fill'); if(xf) xf.style.width=dur?((_mpAudio.currentTime/dur)*100)+'%':'0%';
       const nf=$('ml-nowbar-fill'); if(nf) nf.style.width=dur?((_mpAudio.currentTime/dur)*100)+'%':'0%';
       _mpSyncLrc(_mpAudio.currentTime);
-      _mpHandleAbLoop();
-      _mpSyncPanelTime();
     });
-    _mpAudio.addEventListener('play',()=>{
-      if(_mpAudioCtx&&_mpAudioCtx.state==='suspended') _mpAudioCtx.resume().catch(()=>{});
-      _mpSetPlayUI(true);
-      _mpSyncPanelPlaybackUi();
-    });
-    _mpAudio.addEventListener('pause',()=>{_mpSetPlayUI(false);_mpSyncPanelPlaybackUi();});
+    _mpAudio.addEventListener('play',()=>_mpSetPlayUI(true));
+    _mpAudio.addEventListener('pause',()=>_mpSetPlayUI(false));
     _mpAudio.addEventListener('ended',()=>{
       if(_mpLoop){
         _mpAudio.currentTime=0;
-        void _mpRequestPlay('repeat');
+        _mpAudio.play().catch(()=>{});
       }else{
         _mpPlayIdx(_mpNextIdxFrom(_mpIdx),true);
       }
     });
 
-    $('ml-mp-playpause')?.addEventListener('click',()=>_mpTogglePlayback('mini'));
-    $('ml-player-playpause')?.addEventListener('click',()=>_mpTogglePlayback('player'));
-    $('ml-nowbar-playpause')?.addEventListener('click',()=>_mpTogglePlayback('nowbar'));
+    $('ml-mp-playpause')?.addEventListener('click',()=>{
+      if(!_mpAudio.src) return;
+      if(_mpAudio.paused) _mpAudio.play().catch(()=>{});
+      else _mpAudio.pause();
+    });
+    $('ml-player-playpause')?.addEventListener('click',()=>{
+      if(!_mpAudio.src) return;
+      if(_mpAudio.paused) _mpAudio.play().catch(()=>{});
+      else _mpAudio.pause();
+    });
+    $('ml-nowbar-playpause')?.addEventListener('click',()=>{
+      if(!_mpAudio.src) return;
+      if(_mpAudio.paused) _mpAudio.play().catch(()=>{});
+      else _mpAudio.pause();
+    });
     $('ml-mp-prev')?.addEventListener('click',()=>_mpPlayIdx(_mpIdx-1,true));
     $('ml-mp-next')?.addEventListener('click',()=>_mpPlayIdx(_mpNextIdxFrom(_mpIdx),true));
     $('ml-player-prev')?.addEventListener('click',()=>_mpPlayIdx(_mpIdx-1,true));
@@ -4228,44 +2425,6 @@
       _mpShuffle=!_mpShuffle;
       _mpSyncModeUI();
     });
-    $('ml-mp-pitch-open')?.addEventListener('click',e=>{e.stopPropagation();_mpSetPanelOpen(true);});
-    $('ml-player-pitch-open')?.addEventListener('click',e=>{e.stopPropagation();_mpSetPanelOpen(true);});
-    $('ml-audio-panel-backdrop')?.addEventListener('click',()=>_mpSetPanelOpen(false));
-    $('ml-audio-panel-close')?.addEventListener('click',()=>_mpSetPanelOpen(false));
-    $('ml-audio-panel-play')?.addEventListener('click',()=>_mpTogglePlayback('audio-panel'));
-    $('ml-audio-panel-main')?.addEventListener('click',()=>_mpTogglePlayback('audio-panel-main'));
-    $('ml-audio-panel-prev')?.addEventListener('click',()=>_mpPlayIdx(_mpIdx-1,true));
-    $('ml-audio-panel-back')?.addEventListener('click',()=>{ if(_mpAudio?.src) _mpAudio.currentTime=Math.max(0,(_mpAudio.currentTime||0)-5); });
-    $('ml-audio-panel-forward')?.addEventListener('click',()=>{ if(_mpAudio?.src) _mpAudio.currentTime=Math.min(_mpAudio.duration||1e9,(_mpAudio.currentTime||0)+5); });
-    $('ml-audio-panel-help')?.addEventListener('click',()=>showToast('调性、速度和 A/B 循环都会保留当前播放位置'));
-    $('ml-audio-transpose-down')?.addEventListener('click',()=>_mpNudgePitch(-1));
-    $('ml-audio-transpose-up')?.addEventListener('click',()=>_mpNudgePitch(1));
-    $('ml-audio-transpose-reset')?.addEventListener('click',()=>_mpSetPitch(0,true));
-    $('ml-audio-transpose-range')?.addEventListener('input',e=>_mpSetPitch(e.target.value,true));
-    $('ml-audio-pitch-down')?.addEventListener('click',()=>_mpSetFinePitch(_mpFinePitch-1,true));
-    $('ml-audio-pitch-up')?.addEventListener('click',()=>_mpSetFinePitch(_mpFinePitch+1,true));
-    $('ml-audio-pitch-reset')?.addEventListener('click',()=>_mpSetFinePitch(0,true));
-    $('ml-audio-pitch-range')?.addEventListener('input',e=>_mpSetFinePitch(e.target.value,true));
-    $('ml-audio-speed-down')?.addEventListener('click',()=>_mpSetSpeed(_mpSpeed-0.05,true));
-    $('ml-audio-speed-up')?.addEventListener('click',()=>_mpSetSpeed(_mpSpeed+0.05,true));
-    $('ml-audio-speed-reset')?.addEventListener('click',()=>_mpSetSpeed(1,true));
-    $('ml-audio-speed-range')?.addEventListener('input',e=>_mpSetSpeed((parseInt(e.target.value,10)||100)/100,true));
-    document.querySelectorAll('.ml-audio-speed-presets button').forEach(btn=>{
-      btn.addEventListener('click',()=>_mpSetSpeed(btn.dataset.speed,true));
-    });
-    $('ml-audio-loop-toggle')?.addEventListener('click',_mpToggleAbLoop);
-    $('ml-audio-loop-reset')?.addEventListener('click',_mpClearAbLoop);
-    $('ml-audio-loop-a')?.addEventListener('click',()=>_mpSetLoopPoint('a'));
-    $('ml-audio-loop-b')?.addEventListener('click',()=>_mpSetLoopPoint('b'));
-    $('ml-audio-loop-a-time')?.addEventListener('change',()=>_mpCommitLoopInput('a'));
-    $('ml-audio-loop-b-time')?.addEventListener('change',()=>_mpCommitLoopInput('b'));
-    $('ml-audio-loop-a-time')?.addEventListener('keydown',e=>{ if(e.key==='Enter') _mpCommitLoopInput('a'); });
-    $('ml-audio-loop-b-time')?.addEventListener('keydown',e=>{ if(e.key==='Enter') _mpCommitLoopInput('b'); });
-    $('ml-audio-loop-a-jump')?.addEventListener('click',()=>_mpJumpLoopPoint('a'));
-    $('ml-audio-loop-b-jump')?.addEventListener('click',()=>_mpJumpLoopPoint('b'));
-    $('ml-audio-loop-use-current')?.addEventListener('click',_mpUseCurrentForLoop);
-    $('ml-audio-loop-swap')?.addEventListener('click',_mpSwapLoopPoints);
-    $('ml-audio-reset-all')?.addEventListener('click',_mpResetAudioPractice);
     $('ml-mp-vol')?.addEventListener('input',e=>{
       const v=parseFloat(e.target.value||'1');
       _mpAudio.volume=v;
@@ -4294,53 +2453,31 @@
       const p=Math.max(0, Math.min(1, (e.clientX-r.left)/r.width));
       _mpAudio.currentTime=_mpAudio.duration*p;
     });
-    $('ml-nowbar-expand')?.addEventListener('click',()=>{
-      _mpSetExpanded(true);
-      _mpSetLyricsMode(true);
-    });
+    $('ml-nowbar-expand')?.addEventListener('click',()=>_mpSetExpanded(true));
     $('ml-miniplayer')?.addEventListener('click',e=>{
-      if(e.target.closest('.pl-btn, .pl-progress-wrap, .pl-vol-wrap, #ml-mp-expand, .pl-vol, .ml-audio-tool')) return;
+      if(e.target.closest('.pl-btn, .pl-progress-wrap, .pl-vol-wrap, #ml-mp-expand, .pl-vol')) return;
       _mpSetExpanded(true);
     });
-    $('ml-mp-expand')?.addEventListener('click',(e)=>{
-      e.preventDefault();
-      e.stopPropagation();
-      _mpSideCollapsed=true;
-      _mpSetLyricsMode(true);
-      _mpSetExpanded(true);
-      requestAnimationFrame(()=>{
-        const pv=$('ml-player-view');
-        if(pv){
-          pv.classList.add('open','lyrics-open','side-collapsed');
-          pv.setAttribute('data-player-view','lyrics');
-        }
-        _mpSyncLrc(_mpAudio?.currentTime||0,true);
-      });
-    });
+    $('ml-mp-expand')?.addEventListener('click',()=>_mpSetExpanded(true));
     $('ml-player-view-close')?.addEventListener('click',()=>_mpSetExpanded(false));
     $('ml-player-view')?.addEventListener('click',e=>{ if(e.target.id==='ml-player-view') _mpSetExpanded(false); });
-    $('ml-player-tab-song')?.addEventListener('click',()=>{_mpSideCollapsed=false;_mpSetLyricsMode(false);_mpSetSideMode('song');_mpSetExpanded(true);});
-    $('ml-player-tab-queue')?.addEventListener('click',()=>{_mpSideCollapsed=false;_mpSetLyricsMode(false);_mpSetSideMode('queue');_mpSetExpanded(true);});
+    $('ml-player-tab-song')?.addEventListener('click',()=>{_mpSideCollapsed=false;_mpSetSideMode('song');_mpSetExpanded(true);});
+    $('ml-player-tab-queue')?.addEventListener('click',()=>{_mpSideCollapsed=false;_mpSetSideMode('queue');_mpSetExpanded(true);});
     $('ml-player-view-menu')?.addEventListener('click',()=>{
+      _mpSideCollapsed=!_mpSideCollapsed;
       _mpSetExpanded(true);
-      const next=!_mpLyricsOpen;
-      if(!next){
-        _mpSideCollapsed=false;
-        _mpSetSideMode('song');
-      }
-      _mpSetLyricsMode(next);
     });
     const railBtns=document.querySelectorAll('#ml-player-rail .ml-player-rail-btn');
     if(railBtns[0]){
       railBtns[0].addEventListener('click',()=>{
+        _mpSideCollapsed=false;
+        _mpSetSideMode('song');
         _mpSetExpanded(true);
-        _mpSetLyricsMode(true);
       });
     }
     if(railBtns[1]){
       railBtns[1].addEventListener('click',()=>{
         _mpSideCollapsed=false;
-        _mpSetLyricsMode(false);
         _mpSetSideMode('queue');
         _mpSetExpanded(true);
       });
@@ -4348,10 +2485,6 @@
     document.addEventListener('keydown',e=>{
       const t=e.target;
       const typing=t&&((t.tagName==='INPUT')||(t.tagName==='TEXTAREA')||t.isContentEditable);
-      if(e.key==='Escape'&&_mpPanelOpen){
-        _mpSetPanelOpen(false);
-        return;
-      }
       if(e.key==='Escape'&&_mpExpanded){
         _mpSetExpanded(false);
         return;
@@ -4359,7 +2492,9 @@
       if(typing || !_mpAudio) return;
       if(e.code==='Space'){
         e.preventDefault();
-        _mpTogglePlayback('keyboard');
+        if(!_mpAudio.src) return;
+        if(_mpAudio.paused) _mpAudio.play().catch(()=>{});
+        else _mpAudio.pause();
       }else if(e.key==='ArrowRight'){
         if(!_mpAudio.src) return;
         _mpAudio.currentTime=Math.min(_mpAudio.duration||1e9, (_mpAudio.currentTime||0)+5);
@@ -4374,27 +2509,17 @@
         const dv=$('ml-player-dock-vol'); if(dv) dv.value=String(v);
       }else if((e.key==='q'||e.key==='Q') && _mpExpanded){
         _mpSideCollapsed=false;
-        _mpSetLyricsMode(false);
         _mpSetSideMode('queue');
         _mpSetExpanded(true);
       }else if((e.key==='s'||e.key==='S') && _mpExpanded){
         _mpSideCollapsed=false;
-        _mpSetLyricsMode(false);
         _mpSetSideMode('song');
         _mpSetExpanded(true);
       }
     });
     _mpSetSideMode(_mpSideMode);
-    _mpSetLyricsMode(_mpLyricsOpen);
-    const handleFullscreenChange=()=>{
-      const fs=document.fullscreenElement||document.webkitFullscreenElement;
-      if(!fs&&_mpExpanded) _mpRestoreReturnUrl();
-    };
-    document.addEventListener('fullscreenchange',handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange',handleFullscreenChange);
     _mpRenderQueue();
     _mpSyncModeUI();
-    _mpSetPitchUi(_mpPitchSemi);
   }
 
   function _mpPlayIdx(idx,autoplay){
@@ -4405,15 +2530,6 @@
     _mpIdx=idx;
     const s=_mpSongs[idx];
     if(!s) return;
-    _mpLoadAndPlaySong(s,autoplay);
-  }
-
-  // 加载并播放指定歌曲到播放器。不修改 _mpSongs / _mpIdx（由调用方决定）。
-  function _mpLoadAndPlaySong(s,autoplay){
-    if(!s) return;
-    _mpCurrentSong=s;
-    setSongState(s.id,{playedAt:Date.now(),lastKey:getSongState(s.id).lastKey||s.origKey||'C'});
-    renderHomePanels();
     const mini=$('ml-miniplayer');
     if(mini) mini.classList.add('has-mp3');
     const nowbar=$('ml-nowbar');
@@ -4431,16 +2547,7 @@
     const xnt=$('ml-player-now-title'); if(xnt) xnt.textContent=s.title||'正在播放';
     const xns=$('ml-player-now-sub'); if(xns) xns.textContent=s.artist||s.source||'诗歌';
     _mpSetCover(s.cover||'');
-    _mpApplyPlayerAccent(s);
-    _mpPlayRequestId++;
-    if(!_mpPitchGraph){
-      _mpPitchGraphFailed=false;
-      _mpPitchGraphPromise=null;
-    }
-    const nextAudioSrc=_mpPrepareAudioSrc(resolveMediaUrl(s.mp3));
-    _mpAudio.src=nextAudioSrc;
-    _mpAudio.load();
-    _mpApplySongPitchSettings(s,false);
+    _mpAudio.src=resolveMediaUrl(s.mp3)||'';
     $('ml-mp-cur').textContent='0:00';
     $('ml-mp-dur').textContent='0:00';
     $('ml-mp-fill').style.width='0%';
@@ -4448,29 +2555,14 @@
     const xdur=$('ml-player-dur'); if(xdur) xdur.textContent='0:00';
     const xfill=$('ml-player-fill'); if(xfill) xfill.style.width='0%';
     const nfill=$('ml-nowbar-fill'); if(nfill) nfill.style.width='0%';
-    _mpLrc=[]; _mpLrcIdx=-1; _mpLrcTimed=false;
-    _mpUseFallbackLyrics(s);
+    _mpLrc=[]; _mpLrcIdx=-1; _mpRenderLrc();
     _mpRenderQueue();
     if(s.lrc){
-      fetch(resolveMediaUrl(s.lrc)).then(r=>{
-        if(!r.ok) throw new Error('LRC '+r.status);
-        return r.text();
-      }).then(text=>{
-        const parsed=_mpParseLrc(text);
-        if(parsed.length){
-          _mpLrc=parsed;
-          _mpLrcTimed=true;
-          _mpLrcIdx=-1;
-          _mpRenderLrc();
-          if(_mpAudio) _mpSyncLrc(_mpAudio.currentTime||0);
-        }else{
-          _mpUseFallbackLyrics(s);
-        }
-      }).catch(()=>_mpUseFallbackLyrics(s));
+      fetch(s.lrc).then(r=>r.text()).then(text=>{
+        _mpLrc=_mpParseLrc(text); _mpRenderLrc();
+      }).catch(()=>{});
     }
-    if(autoplay){
-      void _mpRequestPlay('load-song');
-    }
+    if(autoplay) _mpAudio.play().catch(()=>{});
   }
 
   function destroyAP(){}
@@ -4561,8 +2653,6 @@
       if(!body) return false;
       const scroller=t.closest('#ml-detail-body');
       if(scroller && scroller.scrollTop>0) return false;
-      const dialog=t.closest('#ml-detail-dialog');
-      if(dialog && dialog.scrollTop>0) return false;
       return (window.innerWidth<=900);
     }
     panel.addEventListener('touchstart',e=>{
@@ -4583,21 +2673,19 @@
       dx=Math.max(0,mx);
       panel.classList.add('swiping');
       panel.style.transform=`translateX(${dx}px)`;
-      if(overlay) overlay.style.opacity=String(Math.max(0,1-dx/(window.innerWidth*0.9)));
+      overlay.style.opacity=String(Math.max(0,1-dx/(window.innerWidth*0.9)));
       e.preventDefault();
     },{passive:false});
     function end(){
       if(!started) return;
       started=false;
       if(!dragging){
-        panel.style.transform='';
-        if(overlay) overlay.style.opacity='';
-        return;
+        panel.style.transform=''; overlay.style.opacity=''; return;
       }
       if(dx>Math.min(140,window.innerWidth*0.28)){
         panel.style.transition='transform .22s ease, opacity .22s ease';
         panel.style.transform=`translateX(${window.innerWidth}px)`;
-        if(overlay) overlay.style.opacity='0';
+        overlay.style.opacity='0';
         setTimeout(()=>{
           panel.style.transition='';
           closeDetail();
@@ -4605,7 +2693,7 @@
       }else{
         panel.style.transition='transform .22s ease, opacity .22s ease';
         panel.style.transform='';
-        if(overlay) overlay.style.opacity='';
+        overlay.style.opacity='';
         setTimeout(()=>{panel.style.transition='';panel.classList.remove('swiping');},220);
       }
       dragging=false; dx=0;
@@ -4614,13 +2702,7 @@
     panel.addEventListener('touchcancel',end,{passive:true});
 
     window.addEventListener('popstate',()=>{
-      if(_mpExpanded) return;
       if(panel.classList.contains('open')) closeDetail(true);
-    });
-    window.addEventListener('popstate',()=>{
-      if(_mpExpanded&&(!history.state||!history.state.__mlPlayerView)){
-        _mpCloseExpandedFromHistory();
-      }
     });
   }
 
@@ -4628,52 +2710,17 @@
     destroyAP();
     stopMetronome();
     syncHaloTheme();
-    if(!detail.classList.contains('open')){
-      _detailReturnScroll=root.scrollTop||window.scrollY||0;
-    }
-    _activeDetailSongId=s.id||'';
-    setSongState(s.id,{openedAt:Date.now()});
-    updateDetailStateButtons(s);
-    renderHomePanels();
 
     _mpBind();
     if(hasSongAudio(s)){
-      let idx=_mpSongs.findIndex(x=>x.id===s.id);
-      if(idx<0) idx=_mpAddToQueue(s,true);
+      const idx=_mpSongs.findIndex(x=>x.id===s.id);
       const isSameSong = (idx>=0 && idx===_mpIdx);
       if(!isSameSong){
-        _mpIdx=idx;
+        if(idx>=0) _mpIdx=idx; else { _mpSongs=[s]; _mpIdx=0; }
         _mpRenderQueue();
         _mpLrc=[]; _mpLrcIdx=-1;
-        _mpPlayRequestId++;
-        _mpAudio.src=_mpPrepareAudioSrc(resolveMediaUrl(s.mp3));
-        _mpApplySongPitchSettings(s,false);
-        if(s.lrc){
-          fetch(resolveMediaUrl(s.lrc)).then(r=>{
-            if(!r.ok) throw new Error('LRC '+r.status);
-            return r.text();
-          }).then(text=>{
-            const parsed=_mpParseLrc(text);
-            if(parsed.length){
-              _mpLrc=parsed;
-              _mpLrcTimed=true;
-              _mpLrcIdx=-1;
-              _mpRenderLrc();
-              _mpSyncLrc(_mpAudio.currentTime||0,true);
-            }else{
-              _mpUseFallbackLyrics(s);
-              _mpSyncLrc(_mpAudio.currentTime||0,true);
-            }
-          }).catch(()=>{
-            _mpUseFallbackLyrics(s);
-            _mpSyncLrc(_mpAudio.currentTime||0,true);
-          });
-        }else{
-          _mpUseFallbackLyrics(s);
-          _mpSyncLrc(_mpAudio.currentTime||0,true);
-        }
-      }else{
-        _mpSetPitchUi(_mpPitchSemi);
+        _mpAudio.src=resolveMediaUrl(s.mp3)||'';
+        if(s.lrc) fetch(s.lrc).then(r=>r.text()).then(text=>{_mpLrc=_mpParseLrc(text);_mpRenderLrc();}).catch(()=>{});
       }
       const titleEl=document.getElementById('ml-mp-title');
       const artistEl=document.getElementById('ml-mp-artist');
@@ -4692,7 +2739,6 @@
       if(xnt) xnt.textContent=s.title||'正在播放';
       if(xns) xns.textContent=s.artist||s.source||'诗歌';
       _mpSetCover(s.cover||null);
-      _mpApplyPlayerAccent(s);
       const stage=document.getElementById('ml-mp-stage');
       if(stage) stage.classList.toggle('playing', !_mpAudio.paused);
       if(isSameSong && _mpLrc.length && !document.getElementById('ml-mp-lrc-inner')?.children.length){
@@ -4718,11 +2764,7 @@
     const body=$('ml-detail-body');
     body.innerHTML='';
 
-    const songState=getSongState(s.id);
-    const hasRenderedScore=hasRenderableScore(s);
-    const scoreImages=normalizeScoreImages(s);
-    const hasImageScore=scoreImages.length>0;
-    let curKey=songState.lastKey||s.origKey||'C';
+    let curKey=s.origKey||'C';
     let preferFlat=FLAT_KEYS.has(parseKeyName(curKey).root);
 
     const wrap=document.createElement('div');wrap.className='sw-wrap';
@@ -4768,19 +2810,7 @@
     const panelInner=document.createElement('div');panelInner.className='sw-panel-inner';
     panelInner.appendChild(ksDiv);panelInner.appendChild(capoEl);panelInner.appendChild(lbDiv);
     const panel=document.createElement('div');panel.className='sw-panel';panel.appendChild(panelInner);wrap.appendChild(panel);
-
-    const scoreModeShell=document.createElement('section');
-    scoreModeShell.className='ml-score-stack';
-    const imagePanel=document.createElement('div');
-    imagePanel.className='ml-score-image-panel';
-    const emptyPanel=document.createElement('div');
-    emptyPanel.className='ml-score-empty';
-    emptyPanel.textContent='这首歌暂时没有可显示的歌谱。';
-    wrap.hidden=!hasRenderedScore;
-    scoreModeShell.appendChild(wrap);
-    if(hasImageScore) scoreModeShell.appendChild(imagePanel);
-    if(!hasRenderedScore&&!hasImageScore) scoreModeShell.appendChild(emptyPanel);
-    body.appendChild(scoreModeShell);
+    body.appendChild(wrap);
 
     let fitRaf=0;
     const getViewportBox=()=>{
@@ -4859,8 +2889,6 @@
     function setCurrentKey(nextKey,flatMode){
       if(flatMode!==undefined)preferFlat=flatMode;
       curKey=nextKey;
-      setSongState(s.id,{lastKey:curKey});
-      renderHomePanels();
       renderKeyButtons();
       renderScore();
     }
@@ -4955,68 +2983,27 @@
       lrc.style.cssText='font-size:12px;padding:5px 12px;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;';
       lrc.textContent='📝 LRC';toolsRow.appendChild(lrc);
     }
-    if(hasRenderedScore&&toolsRow.children.length){tools.appendChild(toolsRow);scoreModeShell.appendChild(tools);}
+    if(toolsRow.children.length){tools.appendChild(toolsRow);body.appendChild(tools);}
 
-    if(hasRenderedScore) scoreModeShell.appendChild(createMetronome(s.bpm || 72));
+    body.appendChild(createMetronome(s.bpm || 72));
 
-    function renderImageScore(){
-      imagePanel.innerHTML='';
-      if(!hasImageScore) return;
-      const scoreDiv=document.createElement('div');
-      scoreDiv.className='sw-score ml-score-image-score';
-      const scoreTop=document.createElement('div');
-      scoreTop.className='sw-score-top';
-      const lbl=document.createElement('span');
-      lbl.className='sw-score-lbl';
-      lbl.textContent='原图谱';
-      const keyBadge=document.createElement('span');
-      keyBadge.className='sw-score-key';
-      keyBadge.textContent='原调 '+(s.origKey||'—');
-      scoreTop.appendChild(lbl);
-      scoreTop.appendChild(keyBadge);
-      scoreDiv.appendChild(scoreTop);
-      const hint=document.createElement('div');
-      hint.className='ml-score-image-hint';
-      hint.textContent='图片谱保持原始内容，不会随当前调移调。';
-      scoreDiv.appendChild(hint);
-      scoreImages.forEach((src,index)=>{
-        const page=document.createElement('figure');
-        page.className='ml-score-image-page';
-        const cap=document.createElement('figcaption');
-        cap.textContent=scoreImages.length>1?`第 ${index+1} / ${scoreImages.length} 页`:'原始图片谱';
-        const img=document.createElement('img');
-        img.src=src;
-        img.loading='lazy';
-        img.alt=(s.title||'诗歌')+' 原图谱 '+(index+1);
-        img.addEventListener('load',()=>page.classList.add('is-loaded'));
-        img.addEventListener('error',()=>{
-          page.classList.add('is-error');
-          const err=document.createElement('div');
-          err.className='ml-score-image-error';
-          err.textContent='这张图片谱加载失败，可以尝试打开原图。';
-          page.appendChild(err);
-        },{once:true});
-        img.addEventListener('click',()=>openLightbox(src,scoreImages));
-        const actions=document.createElement('div');
-        actions.className='ml-score-image-actions';
-        const open=document.createElement('a');
-        open.href=src;
-        open.target='_blank';
-        open.rel='noopener';
-        open.textContent='打开原图';
-        actions.appendChild(open);
-        page.appendChild(cap);
-        page.appendChild(img);
-        page.appendChild(actions);
-        scoreDiv.appendChild(page);
-      });
-      imagePanel.appendChild(scoreDiv);
+    let scoreKeyBadge=null;
+    if(s.scoreImg){
+      const scoreDiv=document.createElement('div');scoreDiv.className='sw-score';
+      const scoreTop=document.createElement('div');scoreTop.className='sw-score-top';
+      scoreKeyBadge=document.createElement('span');scoreKeyBadge.className='sw-score-key';scoreKeyBadge.textContent='1 = '+curKey;
+      const lbl=document.createElement('span');lbl.className='sw-score-lbl';lbl.textContent='简谱原稿';
+      scoreTop.appendChild(lbl);scoreTop.appendChild(scoreKeyBadge);
+      const img=document.createElement('img');img.src=s.scoreImg;img.loading='lazy';img.alt='简谱';
+      img.addEventListener('click',()=>openLightbox(s.scoreImg));
+      scoreDiv.appendChild(scoreTop);scoreDiv.appendChild(img);
+      body.appendChild(scoreDiv);
     }
-    renderImageScore();
 
     function renderScore(){
       const info=calcCapo(curKey,s.origKey||'C'),st=info.st,useFlat=preferFlat;
       kPill.textContent='1 = '+curKey;
+      if(scoreKeyBadge)scoreKeyBadge.textContent='1 = '+curKey;
       if(curKey===(s.origKey||'C')){
         capoEl.className='sw-capo plain';
         capoEl.querySelector('.sw-capo-t').textContent='原调演奏';
@@ -5101,10 +3088,8 @@
       lbDiv.style.width=natural.width+'px';
       lbDiv.style.marginBottom=(natural.height*(scaleY-1)+18)+'px';
     }
-    if(hasRenderedScore){
-      renderScore();
-      scheduleFitRows();
-    }
+    renderScore();
+    scheduleFitRows();
     if(window._mlFitCleanup)window._mlFitCleanup();
     const onViewportChange=()=>scheduleFitRows();
     const onPanelTransitionEnd=e=>{
@@ -5122,10 +3107,7 @@
     }
     if(document.fonts&&document.fonts.ready){
       document.fonts.ready.then(()=>{
-        if(lbDiv.isConnected){
-          refreshGapContent(lbDiv);
-          scheduleFitRows();
-        }
+        if(lbDiv.isConnected)scheduleFitRows();
       }).catch(()=>{});
     }
     window._mlFitObs=fitObs;
@@ -5142,62 +3124,9 @@
     };
 
     detail.classList.add('open');
-    root.classList.add('ml-has-detail-open');
-    document.body.classList.add('ml-detail-lock');
     detail.scrollTop=0;
-    $('ml-detail-dialog')?.scrollTo?.({top:0,left:0});
   }
 
   attachSwipeBack();
-  attachPullToRefresh();
-  window.__CECP_MUSICLIB_ENGINE__={
-    version:ML_VER,
-    getSongs:()=>songs.slice(),
-    getQuery:()=>query,
-    setQuery(value){
-      query=String(value||'').trim();
-      const input=$('ml-search');
-      if(input) input.value=query;
-      render();
-    },
-    getSourceFilter:()=>sourceFilter,
-    setSourceFilter(value){
-      sourceFilter=String(value||'全部')||'全部';
-      render();
-    },
-    render,
-    renderWorshipPicks,
-    openDetail(songOrId,opts={}){
-      const song=typeof songOrId==='string' ? songs.find(s=>s.id===songOrId) : songOrId;
-      if(song) openDetail(song,opts);
-    },
-    closeDetail,
-    shareSong(songOrId){
-      const song=typeof songOrId==='string' ? songs.find(s=>s.id===songOrId) : songOrId;
-      if(song) shareSong(song);
-    },
-    playSong(songOrId,autoplay=true){
-      const song=typeof songOrId==='string' ? songs.find(s=>s.id===songOrId) : songOrId;
-      if(!song||!hasSongAudio(song)) return;
-      if(autoplay) playSongNow(song);
-      else{
-        const idx=_mpSongs.findIndex(s=>s.id===song.id);
-        if(idx>=0) _mpPlayIdx(idx,false);
-        else { _mpIdx=-1; _mpLoadAndPlaySong(song,false); }
-      }
-    },
-    playSongNow(songOrId){
-      const song=typeof songOrId==='string' ? songs.find(s=>s.id===songOrId) : songOrId;
-      if(song) playSongNow(song);
-    },
-    addSongToPlaylist(songOrId){
-      const song=typeof songOrId==='string' ? songs.find(s=>s.id===songOrId) : songOrId;
-      if(song) return addSongToPlaylist(song);
-    },
-    hasSongAudio,
-    cardHTML,
-    enrichSong
-  };
-  window.dispatchEvent(new CustomEvent('cecp:musiclib-engine-ready',{detail:window.__CECP_MUSICLIB_ENGINE__}));
   loadSongs();
 })();
