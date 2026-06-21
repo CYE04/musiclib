@@ -3016,7 +3016,6 @@
     }
   }
   function setLyricContent(el,text){
-    // 与 musictool 保持一致：交给浏览器原生渲染普通空格与 U+3164（ㅤ）
     el.textContent=String(text||'');
   }
   function trChordToken(ch,st,useFlat){
