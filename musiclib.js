@@ -3002,17 +3002,31 @@
   function normalizeRenderableGapText(el,text){
     return String(text||'').replace(/\u3164/g,pickRenderableGapChar(el));
   }
-  function stableRenderableChordText(text){
-    return String(text||'').replace(/\u3164/g,'\u00A0');
-  }
-  function stableRenderableLyricText(text){
-    return String(text||'').replace(/\u3164/g,'\u3000');
-  }
   function setChordContent(el,text){
-    el.textContent=stableRenderableChordText(text);
+    const raw=String(text||'');
+    if(!IS_APPLE_DEVICE){
+      el.textContent=normalizeRenderableGapText(el,raw);
+      return;
+    }
+    const gapWidth=measureGapWidth(el,'0');
+    el.textContent='';
+    for(const ch of raw){
+      if(ch==='\u3164') appendGapNode(el,'chord-gap',gapWidth,ch);
+      else el.appendChild(document.createTextNode(ch));
+    }
   }
   function setLyricContent(el,text){
-    el.textContent=stableRenderableLyricText(text);
+    const raw=String(text||'');
+    const gapChar=pickRenderableGapChar(el);
+    const gapWidth=IS_APPLE_DEVICE?measureGapWidth(el,'我'):0;
+    el.textContent='';
+    for(const ch of raw){
+      if(ch==='\u3164'){
+        appendGapNode(el,'lyric-gap',gapWidth,gapChar);
+      }else{
+        el.appendChild(document.createTextNode(ch));
+      }
+    }
   }
   function trChordToken(ch,st,useFlat){
     const raw=String(ch||'');
@@ -5052,30 +5066,27 @@
       const natural=measureNaturalScore();
       if(!natural)return;
 
-      const viewport=getViewportBox();
-      const touchMode=shouldUseScreenHeightFit();
-      let availableWidth=parent.clientWidth||natural.width;
-      if(touchMode&&viewport&&viewport.width){
-        const sideGutter=viewport.width<=768?24:(viewport.width<=1180?32:40);
-        availableWidth=Math.min(availableWidth,Math.max(0,viewport.width-sideGutter));
-      }
+      const availableWidth=parent.clientWidth||natural.width;
       if(!availableWidth)return;
 
-      let fitScale=Math.min(availableWidth/natural.width,1);
-      if(touchMode){
+      let scaleX=availableWidth/natural.width;
+      if(!isFinite(scaleX)||scaleX<=0)scaleX=1;
+      let scaleY=scaleX;
+      if(shouldUseScreenHeightFit()){
         const availableHeight=getAvailableScoreHeight();
         if(availableHeight>0){
-          fitScale=Math.min(fitScale,availableHeight/natural.height,1);
+          const fittedHeight=natural.height*scaleX;
+          if(fittedHeight>availableHeight){
+            scaleY=scaleX*(availableHeight/fittedHeight);
+          }
         }
       }
-      if(!isFinite(fitScale)||fitScale<=0)fitScale=1;
+      if(!isFinite(scaleY)||scaleY<=0)scaleY=scaleX;
 
-      lbDiv.style.transform='scale('+fitScale+')';
-      lbDiv.style.transformOrigin='top center';
+      lbDiv.style.transform='scale('+scaleX+','+scaleY+')';
+      lbDiv.style.transformOrigin='left top';
       lbDiv.style.width=natural.width+'px';
-      lbDiv.style.marginLeft='auto';
-      lbDiv.style.marginRight='auto';
-      lbDiv.style.marginBottom=(natural.height*(fitScale-1)+18)+'px';
+      lbDiv.style.marginBottom=(natural.height*(scaleY-1)+18)+'px';
     }
     if(hasRenderedScore){
       renderScore();
