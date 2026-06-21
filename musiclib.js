@@ -3043,7 +3043,7 @@
     });
   }
   function resizeChordGap(gap,len){
-    const chars=[...String(gap||'')].map(ch=>ch==='\u3164'?'\u3000':ch);
+    const chars=[...String(gap||'')];
     if(!chars.length||len<=0)return '';
     let out='';
     for(let i=0;i<len;i++)out+=chars[i%chars.length];
