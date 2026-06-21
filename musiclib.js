@@ -3003,10 +3003,10 @@
     return String(text||'').replace(/\u3164/g,pickRenderableGapChar(el));
   }
   function setChordContent(el,text){
-    el.textContent=String(text||'');
+    el.textContent=normalizeRenderableGapText(el,text);
   }
   function setLyricContent(el,text){
-    el.textContent=String(text||'');
+    el.textContent=normalizeRenderableGapText(el,text);
   }
   function trChordToken(ch,st,useFlat){
     const raw=String(ch||'');

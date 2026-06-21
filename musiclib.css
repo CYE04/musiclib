@@ -2105,7 +2105,7 @@ html,body,#music-library{
 #music-library .prev-seg{display:inline-flex;flex-direction:column;align-items:flex-start;margin-right:4px;flex-shrink:0;}
 #music-library .p-chord{font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:var(--accent);margin-bottom:2px;min-height:13px;white-space:nowrap;}
 #music-library .p-chord.empty{visibility:hidden;}
-#music-library .p-n{font-family:'Space Mono',monospace;color:var(--text);margin-bottom:1px;line-height:1.2;display:flex;align-items:flex-end;min-height:var(--row-note-height);}
+#music-library .p-n{font-family:'Space Mono',monospace;color:var(--text);margin-bottom:1px;line-height:1.2;display:flex;align-items:flex-end;min-height:var(--row-note-height);white-space:pre;}
 #music-library .p-lyric{font-family:'Noto Serif SC',serif;font-size:18px;color:var(--text2);white-space:pre;}
 #music-library .p-lyric.bold{font-weight:700;color:var(--text);}
 #music-library .p-lyric2,#music-library .p-lyric3,#music-library .p-lyric4{opacity:0.65;margin-top:1px;}
