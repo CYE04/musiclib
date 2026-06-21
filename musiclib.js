@@ -2706,8 +2706,8 @@
     el.style.left='-0.32em';
     el.style.top='-0.08em';
     el.style.transform='none';
-    el.style.fontSize='13px';
-    el.style.fontWeight='800';
+    el.style.fontSize='12px';
+    el.style.fontWeight='700';
     el.style.lineHeight='1';
     el.style.pointerEvents='none';
   }
@@ -2717,7 +2717,7 @@
     el.style.left='0.22em';
     el.style.right='0.22em';
     el.style.top='50%';
-    el.style.height='1.8px';
+    el.style.height='1.5px';
     el.style.transform='translateY(-50%)';
     el.style.background='currentColor';
     el.style.borderRadius='2px';
@@ -2728,10 +2728,10 @@
     ln.className=level===2?'jp-u2-line':'jp-u1-line';
     ln.style.display='block';
     ln.style.position='absolute';
-    ln.style.left='0';
-    ln.style.right='0';
-    ln.style.bottom=level===2?'0':'3px';
-    ln.style.height='1.8px';
+  ln.style.left='0';
+  ln.style.right='0';
+  ln.style.bottom=level===2?'0':'3px';
+  ln.style.height='1.5px';
     ln.style.background='currentColor';
     ln.style.marginTop='0';
     ln.style.alignSelf='auto';

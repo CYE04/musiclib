@@ -9223,3 +9223,407 @@ body.ml-detail-lock{overflow:hidden !important;}
     min-height:42px !important;
   }
 }
+
+/* Score rendering parity with musictool preview. */
+#music-library .sw-lsec{
+  margin-bottom:20px !important;
+}
+#music-library .sw-lsec:last-child{
+  margin-bottom:0 !important;
+}
+#music-library .sw-lsec-name{
+  font-family:'Space Mono',monospace !important;
+  font-size:10px !important;
+  font-weight:400 !important;
+  letter-spacing:2px !important;
+  text-transform:uppercase !important;
+  color:var(--text3) !important;
+  margin-bottom:8px !important;
+  display:flex !important;
+  align-items:center !important;
+  gap:8px !important;
+}
+#music-library .sw-lsec-name::after{
+  content:'' !important;
+  flex:1 !important;
+  height:1px !important;
+  background:var(--border) !important;
+}
+#music-library .sw-lline{
+  margin-bottom:0 !important;
+}
+#music-library .prev-row{
+  --volta-rail:0px;
+  --volta-top:2px;
+  --row-note-height:0px;
+  display:flex !important;
+  flex-wrap:nowrap !important;
+  align-items:flex-end !important;
+  margin-bottom:10px !important;
+  overflow:visible !important;
+  padding-top:var(--volta-rail) !important;
+  padding-bottom:2px !important;
+}
+#music-library .prev-row.has-volta{
+  --volta-rail:18px;
+}
+#music-library .prev-seg{
+  display:inline-flex !important;
+  flex-direction:column !important;
+  align-items:flex-start !important;
+  margin-right:4px !important;
+  flex-shrink:0 !important;
+}
+#music-library .p-chord{
+  font-family:'Space Mono',monospace !important;
+  font-size:12px !important;
+  font-weight:700 !important;
+  line-height:normal !important;
+  color:var(--accent) !important;
+  margin-bottom:2px !important;
+  min-height:13px !important;
+  white-space:nowrap !important;
+}
+#music-library .p-chord.empty{
+  visibility:hidden !important;
+}
+#music-library .p-n{
+  font-family:'Space Mono',monospace !important;
+  font-weight:400 !important;
+  color:var(--text) !important;
+  margin-bottom:1px !important;
+  line-height:1.2 !important;
+  display:flex !important;
+  align-items:flex-end !important;
+  min-height:var(--row-note-height) !important;
+}
+#music-library .p-lyric{
+  font-family:'Noto Serif SC',serif !important;
+  font-size:18px !important;
+  font-weight:400 !important;
+  line-height:normal !important;
+  color:var(--text2) !important;
+  white-space:normal !important;
+}
+#music-library .p-lyric.bold{
+  font-weight:700 !important;
+  color:var(--text) !important;
+}
+#music-library .p-lyric2,
+#music-library .p-lyric3,
+#music-library .p-lyric4{
+  opacity:0.65 !important;
+  margin-top:1px !important;
+}
+#music-library .prev-volta{
+  display:inline-flex !important;
+  align-items:flex-end !important;
+  position:relative !important;
+}
+#music-library .prev-volta::before{
+  content:'' !important;
+  position:absolute !important;
+  top:calc(var(--volta-top,2px) - var(--volta-rail,0px)) !important;
+  left:0 !important;
+  right:0 !important;
+  height:13px !important;
+  border-top:1.5px solid var(--accent) !important;
+  border-left:1.5px solid var(--accent) !important;
+  pointer-events:none !important;
+  box-sizing:border-box !important;
+  opacity:1 !important;
+}
+#music-library .prev-volta.closed::before{
+  border-right:1.5px solid var(--accent) !important;
+}
+#music-library .prev-volta::after{
+  content:attr(data-v) !important;
+  position:absolute !important;
+  top:calc(var(--volta-top,2px) + 1px - var(--volta-rail,0px)) !important;
+  left:3px !important;
+  font-size:8px !important;
+  line-height:normal !important;
+  color:var(--accent) !important;
+  opacity:1 !important;
+  pointer-events:none !important;
+  font-family:'Space Mono',monospace !important;
+}
+#music-library .jp-wrap{
+  display:inline-flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  vertical-align:bottom !important;
+  min-width:1em !important;
+}
+#music-library .jp-plain{
+  display:inline-flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  vertical-align:bottom !important;
+  min-width:1em !important;
+}
+#music-library .jp-plain-top{
+  height:12px !important;
+}
+#music-library .jp-plain-sym{
+  font-size:15px !important;
+  font-weight:400 !important;
+  line-height:1 !important;
+  text-align:center !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  width:1em !important;
+  height:1em !important;
+}
+#music-library .jp-plain-sym.is-dash{
+  position:relative !important;
+  top:-0.12em !important;
+}
+#music-library .jp-plain-bot{
+  height:16px !important;
+}
+#music-library .jp-dot-top,
+#music-library .jp-dot-bot{
+  width:1em !important;
+  font-size:8px !important;
+  font-weight:400 !important;
+  line-height:.6 !important;
+  color:var(--text) !important;
+  text-align:center !important;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+}
+#music-library .jp-dot-top{
+  height:10px !important;
+  justify-content:flex-end !important;
+}
+#music-library .jp-dot-bot{
+  height:10px !important;
+  justify-content:flex-start !important;
+}
+#music-library .jp-lines-wrap{
+  width:1em !important;
+  display:inline-flex !important;
+  flex-direction:column !important;
+  align-items:stretch !important;
+  padding-bottom:4px !important;
+  position:relative !important;
+}
+#music-library .jp-num-row{
+  width:1em !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  position:relative !important;
+  padding-bottom:3px !important;
+}
+#music-library .jp-num{
+  font-size:19px !important;
+  font-weight:400 !important;
+  line-height:1 !important;
+  display:inline-flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  text-align:center !important;
+  width:1em !important;
+  height:1em !important;
+  position:relative !important;
+  top:-0.12em !important;
+}
+#music-library .jp-aug{
+  position:absolute !important;
+  right:-0.46em !important;
+  top:50% !important;
+  transform:translateY(-50%) !important;
+  font-size:10px !important;
+  font-weight:400 !important;
+  line-height:1 !important;
+  pointer-events:none !important;
+}
+#music-library .jp-acc{
+  font-size:12px !important;
+  font-weight:700 !important;
+}
+#music-library .jp-u1-line{
+  display:block !important;
+  position:absolute !important;
+  left:0 !important;
+  right:0 !important;
+  bottom:3px !important;
+  height:1.5px !important;
+  background:var(--text) !important;
+  pointer-events:none !important;
+  z-index:1 !important;
+}
+#music-library .jp-u2-line{
+  display:block !important;
+  position:absolute !important;
+  left:0 !important;
+  right:0 !important;
+  bottom:0 !important;
+  height:1.5px !important;
+  background:var(--text) !important;
+  pointer-events:none !important;
+  z-index:1 !important;
+}
+#music-library .jp-dash-line{
+  height:1.5px !important;
+}
+#music-library .jp-slur,
+#music-library .jp-slur-open,
+#music-library .jp-slur-close,
+#music-library .jp-tuplet{
+  display:inline-flex !important;
+  align-items:flex-end !important;
+  position:relative !important;
+  padding-top:18px !important;
+}
+#music-library .jp-slur::before{
+  content:'' !important;
+  position:absolute !important;
+  top:2px !important;
+  left:15% !important;
+  right:15% !important;
+  height:8px !important;
+  border-top:1.5px solid var(--text) !important;
+  border-left:1.5px solid var(--text) !important;
+  border-right:1.5px solid var(--text) !important;
+  border-radius:50% 50% 0 0/100% 100% 0 0 !important;
+}
+#music-library .jp-slur-open::before{
+  content:'' !important;
+  position:absolute !important;
+  top:2px !important;
+  left:15% !important;
+  right:-4px !important;
+  height:8px !important;
+  border-top:1.5px solid var(--text) !important;
+  border-left:1.5px solid var(--text) !important;
+  border-radius:50% 0 0 0/100% 0 0 0 !important;
+}
+#music-library .jp-slur-close::before{
+  content:'' !important;
+  position:absolute !important;
+  top:2px !important;
+  left:-4px !important;
+  right:15% !important;
+  height:8px !important;
+  border-top:1.5px solid var(--text) !important;
+  border-right:1.5px solid var(--text) !important;
+  border-radius:0 50% 0 0/0 100% 0 0 !important;
+}
+#music-library .jp-tuplet{
+  margin-right:1px !important;
+}
+#music-library .jp-tuplet-br{
+  position:absolute !important;
+  top:2px !important;
+  left:2px !important;
+  right:2px !important;
+  height:8px !important;
+  border-top:1.5px solid var(--text) !important;
+  border-left:1.5px solid var(--text) !important;
+  border-right:1.5px solid var(--text) !important;
+  border-radius:3px 3px 0 0 !important;
+  pointer-events:none !important;
+}
+#music-library .jp-tuplet-num{
+  position:absolute !important;
+  top:-1px !important;
+  left:50% !important;
+  transform:translateX(-50%) !important;
+  font-size:8px !important;
+  font-weight:400 !important;
+  line-height:1 !important;
+  padding:0 3px !important;
+  background:var(--bg) !important;
+  color:var(--text) !important;
+  pointer-events:none !important;
+}
+#music-library .jp-timesig{
+  display:inline-flex !important;
+  flex-direction:column !important;
+  align-items:center !important;
+  justify-content:flex-end !important;
+  vertical-align:bottom !important;
+  flex-shrink:0 !important;
+  min-width:1.42em !important;
+  margin:0 5px 0 2px !important;
+  position:relative !important;
+  top:-1px !important;
+  line-height:1 !important;
+}
+#music-library .jp-timesig-pad{
+  display:block !important;
+  width:100% !important;
+  flex-shrink:0 !important;
+}
+#music-library .jp-timesig-pad-top{
+  height:2px !important;
+}
+#music-library .jp-timesig-pad-bot{
+  height:3px !important;
+}
+#music-library .jp-timesig-stack{
+  display:inline-flex !important;
+  flex-direction:column !important;
+  align-items:stretch !important;
+  justify-content:center !important;
+  min-width:1.42em !important;
+  line-height:1 !important;
+}
+#music-library .jp-timesig-top,
+#music-library .jp-timesig-bot{
+  display:flex !important;
+  align-items:center !important;
+  justify-content:center !important;
+  min-width:1.42em !important;
+  text-align:center !important;
+  font-size:18px !important;
+  font-weight:700 !important;
+  line-height:1 !important;
+}
+#music-library .jp-timesig-top{
+  padding:0 1px 2px !important;
+  border-bottom:1.6px solid currentColor !important;
+  margin-bottom:1px !important;
+}
+#music-library .jp-timesig-bot{
+  padding-top:0 !important;
+}
+#music-library .jp-volta{
+  display:inline-flex !important;
+  align-items:flex-end !important;
+  position:relative !important;
+  padding-top:20px !important;
+}
+#music-library .jp-volta::before{
+  content:'' !important;
+  position:absolute !important;
+  top:3px !important;
+  left:0 !important;
+  right:0 !important;
+  height:13px !important;
+  border-top:1.5px solid var(--accent) !important;
+  border-left:1.5px solid var(--accent) !important;
+  pointer-events:none !important;
+  box-sizing:border-box !important;
+  opacity:1 !important;
+}
+#music-library .jp-volta.v-close::before{
+  border-right:1.5px solid var(--accent) !important;
+}
+#music-library .jp-volta::after{
+  content:attr(data-v) !important;
+  position:absolute !important;
+  top:4px !important;
+  left:3px !important;
+  font-size:10px !important;
+  line-height:1 !important;
+  color:var(--accent) !important;
+  opacity:1 !important;
+  pointer-events:none !important;
+  font-family:'Space Mono',monospace !important;
+}
