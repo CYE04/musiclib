@@ -5058,11 +5058,10 @@
       const rawScale=avail/maxW;
       const scale=Math.max(0.72,Math.min(maxScale,rawScale));
 
-      lbDiv.style.transform='scale('+scale+')';
+      lbDiv.style.transform='scaleX('+scale+')';
       lbDiv.style.transformOrigin='left top';
       lbDiv.style.width=maxW+'px';
-      const h=lbDiv.offsetHeight;
-      lbDiv.style.marginBottom=(h*(scale-1))+'px';
+      lbDiv.style.marginBottom='0px';
     }
     if(hasRenderedScore){
       renderScore();
