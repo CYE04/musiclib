@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.21.2-github-403-fallback';
+  const ML_VER='2026.06.21.3-tool-preview-parity';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -4815,6 +4815,7 @@
       lbDiv.style.transformOrigin='';
       lbDiv.style.width='';
       lbDiv.style.marginBottom='';
+      lbDiv.style.marginLeft='';
       lbDiv.style.padding='8px 18px 16px 8px';
       lbDiv.style.boxSizing='border-box';
       if(lbDiv.parentElement)lbDiv.parentElement.style.overflow='hidden';
@@ -5078,30 +5079,30 @@
       const parent=lbDiv.parentElement;
       if(!parent||!lbDiv.isConnected)return;
 
-      const natural=measureNaturalScore();
-      if(!natural)return;
+      /* musictool preview uses a fixed 694px score canvas. Never stretch a
+         short row to fill desktop width: that changes every visual gap.
+         On narrow phones/iPads we only shrink the whole canvas uniformly. */
+      const TOOL_PREVIEW_WIDTH=694;
+      lbDiv.style.width=TOOL_PREVIEW_WIDTH+'px';
+      const naturalHeight=lbDiv.scrollHeight;
+      if(!naturalHeight)return;
 
-      const availableWidth=parent.clientWidth||natural.width;
-      if(!availableWidth)return;
+      const availableWidth=parent.clientWidth||TOOL_PREVIEW_WIDTH;
+      let scale=Math.min(1,availableWidth/TOOL_PREVIEW_WIDTH);
+      if(!isFinite(scale)||scale<=0)scale=1;
 
-      let scaleX=availableWidth/natural.width;
-      if(!isFinite(scaleX)||scaleX<=0)scaleX=1;
-      let scaleY=scaleX;
       if(shouldUseScreenHeightFit()){
         const availableHeight=getAvailableScoreHeight();
-        if(availableHeight>0){
-          const fittedHeight=natural.height*scaleX;
-          if(fittedHeight>availableHeight){
-            scaleY=scaleX*(availableHeight/fittedHeight);
-          }
+        if(availableHeight>0&&naturalHeight*scale>availableHeight){
+          scale=Math.min(scale,availableHeight/naturalHeight);
         }
       }
-      if(!isFinite(scaleY)||scaleY<=0)scaleY=scaleX;
+      if(!isFinite(scale)||scale<=0)scale=1;
 
-      lbDiv.style.transform='scale('+scaleX+','+scaleY+')';
+      lbDiv.style.transform='scale('+scale+')';
       lbDiv.style.transformOrigin='left top';
-      lbDiv.style.width=natural.width+'px';
-      lbDiv.style.marginBottom=(natural.height*(scaleY-1)+18)+'px';
+      lbDiv.style.width=TOOL_PREVIEW_WIDTH+'px';
+      lbDiv.style.marginBottom=(naturalHeight*(scale-1)+18)+'px';
     }
     if(hasRenderedScore){
       renderScore();
