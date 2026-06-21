@@ -5052,14 +5052,17 @@
       const avail=parent.clientWidth||maxW;
       if(!avail)return;
 
-      if(maxW>avail){
-        const scale=avail/maxW;
-        lbDiv.style.transform='scale('+scale+')';
-        lbDiv.style.transformOrigin='left top';
-        lbDiv.style.width=maxW+'px';
-        const h=lbDiv.offsetHeight;
-        lbDiv.style.marginBottom=(h*(scale-1))+'px';
-      }
+      const vw=Math.max(window.innerWidth||0, document.documentElement.clientWidth||0);
+      const touchLike=matchMedia('(pointer:coarse)').matches||vw<=1024;
+      const maxScale=touchLike?1.22:1.34;
+      const rawScale=avail/maxW;
+      const scale=Math.max(0.72,Math.min(maxScale,rawScale));
+
+      lbDiv.style.transform='scale('+scale+')';
+      lbDiv.style.transformOrigin='left top';
+      lbDiv.style.width=maxW+'px';
+      const h=lbDiv.offsetHeight;
+      lbDiv.style.marginBottom=(h*(scale-1))+'px';
     }
     if(hasRenderedScore){
       renderScore();
