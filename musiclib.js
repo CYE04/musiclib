@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.15.26-loop-time-visible';
+  const ML_VER='2026.06.23.1-weather-gps-city';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -2014,35 +2014,56 @@
     const now=new Date();
     const h=now.getHours();
     const greeting=h<5?'夜深平安':h<11?'早安，今日推荐已更新':h<17?'午后平安':h<21?'晚上好，今日推荐已更新':'夜晚平安';
+    const timeText=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
     main.textContent=greeting;
-    sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · 正在同步今日天气';
-    loadWorshipWeather().then(text=>{
-      if(text){
-        sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · Padova · '+text;
+    sub.textContent=timeText+' · 正在同步当前位置天气';
+    loadWorshipWeather().then(info=>{
+      if(info&&info.text){
+        const city=info.city||'当前位置';
+        sub.textContent=timeText+' · '+city+' · '+info.text;
         const pill=$('ml-weather-pill');
-        if(pill) pill.textContent='Padova · '+text;
+        if(pill) pill.textContent=city+' · '+info.text;
       }
-    }).catch(()=>{ sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · 安静敬拜日'; });
+    }).catch(()=>{ sub.textContent=timeText+' · 安静敬拜日'; });
   }
-  async function loadWorshipWeather(){
+  async function loadWorshipWeather(forceFresh){
     const now=Date.now();
-    if(_weatherCache&&now-_weatherCache.at<30*60*1000) return _weatherCache.text;
-    const pos=await new Promise(resolve=>{
-      if(!navigator.geolocation) return resolve({lat:45.4064,lon:11.8768});
-      navigator.geolocation.getCurrentPosition(
-        p=>resolve({lat:p.coords.latitude,lon:p.coords.longitude}),
-        ()=>resolve({lat:45.4064,lon:11.8768}),
-        {maximumAge:60*60*1000,timeout:1800}
-      );
-    });
+    if(!forceFresh&&_weatherCache&&now-_weatherCache.at<30*60*1000) return _weatherCache;
+    const fallback={lat:45.4064,lon:11.8768,city:'Padova',fallback:true};
+    const pos=await getWorshipWeatherPosition(fallback);
     const url=`https://api.open-meteo.com/v1/forecast?latitude=${pos.lat.toFixed(3)}&longitude=${pos.lon.toFixed(3)}&current=temperature_2m,weather_code&timezone=auto`;
     const data=await fetch(url,{cache:'no-store'}).then(r=>r.ok?r.json():null);
     const cur=data&&data.current;
-    if(!cur) return '';
+    if(!cur) return null;
     const label=weatherCodeLabel(cur.weather_code);
     const text=`${label} ${Math.round(cur.temperature_2m)}°C`;
-    _weatherCache={at:now,text};
-    return text;
+    const city=pos.city||await reverseWorshipWeatherCity(pos.lat,pos.lon)||(pos.fallback?'Padova':'当前位置');
+    _weatherCache={at:now,text,city,lat:pos.lat,lon:pos.lon,fallback:!!pos.fallback};
+    return _weatherCache;
+  }
+  function getWorshipWeatherPosition(fallback){
+    return new Promise(resolve=>{
+      if(!navigator.geolocation) return resolve(fallback);
+      navigator.geolocation.getCurrentPosition(
+        p=>resolve({
+          lat:p.coords.latitude,
+          lon:p.coords.longitude,
+          city:'',
+          fallback:false
+        }),
+        ()=>resolve(fallback),
+        {maximumAge:10*60*1000,timeout:8000,enableHighAccuracy:true}
+      );
+    });
+  }
+  async function reverseWorshipWeatherCity(lat,lon){
+    try{
+      const url=`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat.toFixed(5)}&longitude=${lon.toFixed(5)}&localityLanguage=it`;
+      const data=await fetch(url,{cache:'no-store'}).then(r=>r.ok?r.json():null);
+      return (data&&(data.city||data.locality||data.principalSubdivision))||'';
+    }catch(_){
+      return '';
+    }
   }
   function weatherCodeLabel(code){
     code=Number(code);
