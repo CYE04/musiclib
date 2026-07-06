@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.23.1-weather-gps-city';
+  const ML_VER='2026.06.15.26-loop-time-visible';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -2014,56 +2014,35 @@
     const now=new Date();
     const h=now.getHours();
     const greeting=h<5?'夜深平安':h<11?'早安，今日推荐已更新':h<17?'午后平安':h<21?'晚上好，今日推荐已更新':'夜晚平安';
-    const timeText=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
     main.textContent=greeting;
-    sub.textContent=timeText+' · 正在同步当前位置天气';
-    loadWorshipWeather().then(info=>{
-      if(info&&info.text){
-        const city=info.city||'当前位置';
-        sub.textContent=timeText+' · '+city+' · '+info.text;
+    sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · 正在同步今日天气';
+    loadWorshipWeather().then(text=>{
+      if(text){
+        sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · Padova · '+text;
         const pill=$('ml-weather-pill');
-        if(pill) pill.textContent=city+' · '+info.text;
+        if(pill) pill.textContent='Padova · '+text;
       }
-    }).catch(()=>{ sub.textContent=timeText+' · 安静敬拜日'; });
+    }).catch(()=>{ sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · 安静敬拜日'; });
   }
-  async function loadWorshipWeather(forceFresh){
+  async function loadWorshipWeather(){
     const now=Date.now();
-    if(!forceFresh&&_weatherCache&&now-_weatherCache.at<30*60*1000) return _weatherCache;
-    const fallback={lat:45.4064,lon:11.8768,city:'Padova',fallback:true};
-    const pos=await getWorshipWeatherPosition(fallback);
+    if(_weatherCache&&now-_weatherCache.at<30*60*1000) return _weatherCache.text;
+    const pos=await new Promise(resolve=>{
+      if(!navigator.geolocation) return resolve({lat:45.4064,lon:11.8768});
+      navigator.geolocation.getCurrentPosition(
+        p=>resolve({lat:p.coords.latitude,lon:p.coords.longitude}),
+        ()=>resolve({lat:45.4064,lon:11.8768}),
+        {maximumAge:60*60*1000,timeout:1800}
+      );
+    });
     const url=`https://api.open-meteo.com/v1/forecast?latitude=${pos.lat.toFixed(3)}&longitude=${pos.lon.toFixed(3)}&current=temperature_2m,weather_code&timezone=auto`;
     const data=await fetch(url,{cache:'no-store'}).then(r=>r.ok?r.json():null);
     const cur=data&&data.current;
-    if(!cur) return null;
+    if(!cur) return '';
     const label=weatherCodeLabel(cur.weather_code);
     const text=`${label} ${Math.round(cur.temperature_2m)}°C`;
-    const city=pos.city||await reverseWorshipWeatherCity(pos.lat,pos.lon)||(pos.fallback?'Padova':'当前位置');
-    _weatherCache={at:now,text,city,lat:pos.lat,lon:pos.lon,fallback:!!pos.fallback};
-    return _weatherCache;
-  }
-  function getWorshipWeatherPosition(fallback){
-    return new Promise(resolve=>{
-      if(!navigator.geolocation) return resolve(fallback);
-      navigator.geolocation.getCurrentPosition(
-        p=>resolve({
-          lat:p.coords.latitude,
-          lon:p.coords.longitude,
-          city:'',
-          fallback:false
-        }),
-        ()=>resolve(fallback),
-        {maximumAge:10*60*1000,timeout:8000,enableHighAccuracy:true}
-      );
-    });
-  }
-  async function reverseWorshipWeatherCity(lat,lon){
-    try{
-      const url=`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat.toFixed(5)}&longitude=${lon.toFixed(5)}&localityLanguage=it`;
-      const data=await fetch(url,{cache:'no-store'}).then(r=>r.ok?r.json():null);
-      return (data&&(data.city||data.locality||data.principalSubdivision))||'';
-    }catch(_){
-      return '';
-    }
+    _weatherCache={at:now,text};
+    return text;
   }
   function weatherCodeLabel(code){
     code=Number(code);
@@ -3049,6 +3028,138 @@
       }
     }
   }
+/* ═══════════ CECP-SONG-EXT v1 BEGIN ═══════════
+   共享模块：{sp} 专属空格渲染 + 移调占位补偿。
+   本块在以下三个文件中逐字节相同（权威版本 = shared/song-ext.js）：
+     musiclib/musiclib.js / youth-engine.js / musictool/musictool.js
+   修改流程：先改 shared/song-ext.js，再同步三处，diff 校验一致。
+   注意：本块内禁止出现反斜杠字符
+   （musictool.js 经 CMS 部署会丢失一层反斜杠），
+   转义字符一律用 String.fromCharCode 构造。 */
+var SP_TOKEN='{sp}';
+var SP_TAB=String.fromCharCode(9);
+var SP_HANGUL_FILLER=String.fromCharCode(0x3164);
+var SP_IDEO_SPACE=String.fromCharCode(0x3000);
+var SP_WIDTH_CACHE={};
+function spHasToken(text){
+  return String(text||'').indexOf(SP_TOKEN)>=0;
+}
+function spStripTokens(text){
+  return String(text||'').split(SP_TOKEN).join('');
+}
+function spMeasureWidth(el,sample){
+  if(!el||!document.body)return 0;
+  var cs=getComputedStyle(el);
+  var key=sample+'|'+cs.font+'|'+cs.letterSpacing+'|'+cs.wordSpacing+'|'+cs.lineHeight;
+  if(Object.prototype.hasOwnProperty.call(SP_WIDTH_CACHE,key))return SP_WIDTH_CACHE[key];
+  var probe=document.createElement('span');
+  probe.style.cssText='position:absolute;left:-9999px;top:-9999px;visibility:hidden;white-space:pre;pointer-events:none;';
+  probe.style.font=cs.font;
+  probe.style.letterSpacing=cs.letterSpacing;
+  probe.style.wordSpacing=cs.wordSpacing;
+  probe.style.lineHeight=cs.lineHeight;
+  probe.textContent=sample;
+  document.body.appendChild(probe);
+  var w=probe.getBoundingClientRect().width;
+  probe.remove();
+  SP_WIDTH_CACHE[key]=w;
+  return w;
+}
+function spAppendGap(el,cls,width){
+  var gap=document.createElement('span');
+  gap.className=cls;
+  gap.setAttribute('aria-hidden','true');
+  gap.style.display='inline-block';
+  gap.style.width=width+'px';
+  gap.textContent=' ';
+  el.appendChild(gap);
+}
+function spSetContent(el,text,kind,fallback){
+  var raw=String(text||'');
+  if(raw.indexOf(SP_TOKEN)<0){fallback(el,raw);return;}
+  var sample=kind==='chord'?'0':'我';
+  var cls=kind==='chord'?'chord-gap sp-gap':'lyric-gap sp-gap';
+  var width=spMeasureWidth(el,sample);
+  el.textContent='';
+  var parts=raw.split(SP_TOKEN);
+  for(var i=0;i<parts.length;i++){
+    if(i>0)spAppendGap(el,cls,width);
+    if(parts[i]){
+      var sub=document.createElement('span');
+      el.appendChild(sub);
+      fallback(sub,parts[i]);
+    }
+  }
+}
+function setChordContentEx(el,text,fallback){
+  spSetContent(el,text,'chord',fallback);
+}
+function setLyricContentEx(el,text,fallback){
+  spSetContent(el,text,'lyric',fallback);
+}
+function spIsGapChar(ch){
+  return ch===' '||ch===SP_TAB||ch===SP_HANGUL_FILLER;
+}
+function spTokenizeChord(text){
+  var raw=String(text||''),out=[],i=0,cur='';
+  function flushText(){
+    if(cur){out.push({gap:false,text:cur});cur='';}
+  }
+  while(i<raw.length){
+    var isSp=raw.substr(i,SP_TOKEN.length)===SP_TOKEN;
+    var ch=raw.charAt(i);
+    if(isSp||spIsGapChar(ch)){
+      flushText();
+      var units=[];
+      while(i<raw.length){
+        if(raw.substr(i,SP_TOKEN.length)===SP_TOKEN){
+          units.push(SP_TOKEN);i+=SP_TOKEN.length;continue;
+        }
+        var gc=raw.charAt(i);
+        if(spIsGapChar(gc)){units.push(gc);i++;continue;}
+        break;
+      }
+      out.push({gap:true,units:units});
+      continue;
+    }
+    cur+=ch;i++;
+  }
+  flushText();
+  return out;
+}
+function spResizeGapRun(units,len){
+  var mapped=[];
+  for(var i=0;i<units.length;i++){
+    var u=units[i];
+    mapped.push(u===SP_HANGUL_FILLER?SP_IDEO_SPACE:u);
+  }
+  if(!mapped.length||len<=0)return '';
+  var out='';
+  for(var j=0;j<len;j++)out+=mapped[j%mapped.length];
+  return out;
+}
+function trChordEx(text,st,useFlat,trChordFn){
+  var raw=String(text||'');
+  if(raw.indexOf(SP_TOKEN)<0)return trChordFn(raw,st,useFlat);
+  var parts=spTokenizeChord(raw),out='',i=0;
+  while(i<parts.length){
+    var part=parts[i];
+    if(part.gap){out+=part.units.join('');i++;continue;}
+    var tr=trChordFn(part.text,st,useFlat);
+    out+=tr;
+    if(i+1<parts.length&&parts[i+1].gap){
+      var units=parts[i+1].units;
+      var nextLen=units.length+(Array.from(part.text).length-Array.from(tr).length);
+      if(nextLen<0)nextLen=0;
+      if(nextLen===0&&i+2<parts.length&&!parts[i+2].gap)nextLen=1;
+      out+=spResizeGapRun(units,nextLen);
+      i+=2;continue;
+    }
+    i++;
+  }
+  return out;
+}
+/* ═══════════ CECP-SONG-EXT v1 END ═══════════ */
   function trChordToken(ch,st,useFlat){
     const raw=String(ch||'');
     const m=raw.match(/^([A-G](?:#|b)?)([^A-G]*)(.*)$/);
@@ -3800,7 +3911,7 @@
   function _mpExtractPlainLyrics(song){
     const lines=[];
     const push=value=>{
-      const tx=String(value||'').replace(/<[^>]*>/g,'').replace(/\u00a0/g,' ').trim();
+      const tx=spStripTokens(value).replace(/<[^>]*>/g,'').replace(/\u00a0/g,' ').trim();
       if(tx && !lines.includes(tx)) lines.push(tx);
     };
     for(const sec of (song&&song.sections)||[]){
@@ -5053,14 +5164,14 @@
             const segEl=_div('prev-seg');
             const chord=document.createElement('div');
             chord.className='p-chord'+(seg.chord?'':' empty');
-            setChordContent(chord,seg.chord?trChord(seg.chord,st,useFlat):'\u00a0');
+            setChordContentEx(chord,seg.chord?trChordEx(seg.chord,st,useFlat,trChord):'\u00a0',setChordContent);
             segEl.appendChild(chord);
             segEl.appendChild(renderNStr(seg.n||'',{inlineTimeSign:getSegInlineTimeSign(seg)}));
-            const lyric=document.createElement('div');lyric.className='p-lyric'+((!Array.isArray(line)&&line.b)?' bold':'');setLyricContent(lyric,normLyricText(seg.lyric));
+            const lyric=document.createElement('div');lyric.className='p-lyric'+((!Array.isArray(line)&&line.b)?' bold':'');setLyricContentEx(lyric,normLyricText(seg.lyric),setLyricContent);
             segEl.appendChild(lyric);
-            if(seg.lyric2){const ly2=document.createElement('div');ly2.className='p-lyric p-lyric2'+((!Array.isArray(line)&&line.b)?' bold':'');setLyricContent(ly2,normLyricText(seg.lyric2));segEl.appendChild(ly2);}
-            if(seg.lyric3){const ly3=document.createElement('div');ly3.className='p-lyric p-lyric3'+((!Array.isArray(line)&&line.b)?' bold':'');setLyricContent(ly3,normLyricText(seg.lyric3));segEl.appendChild(ly3);}
-            if(seg.lyric4){const ly4=document.createElement('div');ly4.className='p-lyric p-lyric4'+((!Array.isArray(line)&&line.b)?' bold':'');setLyricContent(ly4,normLyricText(seg.lyric4));segEl.appendChild(ly4);}
+            if(seg.lyric2){const ly2=document.createElement('div');ly2.className='p-lyric p-lyric2'+((!Array.isArray(line)&&line.b)?' bold':'');setLyricContentEx(ly2,normLyricText(seg.lyric2),setLyricContent);segEl.appendChild(ly2);}
+            if(seg.lyric3){const ly3=document.createElement('div');ly3.className='p-lyric p-lyric3'+((!Array.isArray(line)&&line.b)?' bold':'');setLyricContentEx(ly3,normLyricText(seg.lyric3),setLyricContent);segEl.appendChild(ly3);}
+            if(seg.lyric4){const ly4=document.createElement('div');ly4.className='p-lyric p-lyric4'+((!Array.isArray(line)&&line.b)?' bold':'');setLyricContentEx(ly4,normLyricText(seg.lyric4),setLyricContent);segEl.appendChild(ly4);}
             const _vn=getVoltaStartLabel(seg.n);
             if(_vn){
               row.classList.add('has-volta');
