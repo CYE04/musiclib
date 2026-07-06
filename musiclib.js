@@ -3188,8 +3188,8 @@ function secLabelColor(text){
   for(var k=0;k<t.length;k++)h=(h*31+t.charCodeAt(k))%997;
   return SEC_LABEL_FALLBACK[h%SEC_LABEL_FALLBACK.length];
 }
+var SEC_LABEL_TOP_GAP_PX=3;
 function segRenderLabelBlock(seg,row){
-  if(row&&row.style)row.style.paddingTop='calc(var(--volta-rail,0px) + 1.05em)';
   var holder=document.createElement('span');
   holder.className='sec-label-holder';
   holder.style.cssText='display:inline-block;width:0;overflow:visible;vertical-align:top;position:relative;align-self:stretch;';
@@ -3198,7 +3198,7 @@ function segRenderLabelBlock(seg,row){
   var jump=seg.style==='jump';
   tag.className='sec-label'+(jump?' sec-label-jump':'');
   var color=secLabelColor(seg.label);
-  var base='display:inline-block;position:absolute;left:0;bottom:100%;margin-bottom:2px;white-space:nowrap;line-height:1.4;font-size:0.58em;padding:0 7px;border-radius:999px;box-sizing:border-box;letter-spacing:0.4px;';
+  var base='display:inline-block;position:absolute;left:0;top:16px;white-space:nowrap;line-height:1.4;font-size:0.58em;padding:0 7px;border-radius:999px;box-sizing:border-box;letter-spacing:0.4px;z-index:2;';
   if(jump){
     tag.style.cssText=base+'font-style:italic;font-weight:600;color:'+color+';border:1px solid '+color+';background:transparent;opacity:0.92;';
   }else{
@@ -3206,6 +3206,33 @@ function segRenderLabelBlock(seg,row){
   }
   tag.textContent=String(seg.label||'');
   holder.appendChild(tag);
+  if(typeof requestAnimationFrame==='function'){
+    requestAnimationFrame(function(){
+      if(!holder.isConnected)return;
+      var scope=holder.closest?holder.closest('.prev-row'):null;
+      if(!scope)return;
+      var pillH=tag.offsetHeight||13;
+      var band=pillH+SEC_LABEL_TOP_GAP_PX*2;
+      var chords=scope.querySelectorAll('.p-chord');
+      for(var i=0;i<chords.length;i++){
+        chords[i].style.marginBottom=(2+band)+'px';
+      }
+      var ref=holder.nextElementSibling;
+      while(ref&&!(ref.querySelector&&ref.querySelector('.p-chord')))ref=ref.nextElementSibling;
+      if(!ref){
+        ref=holder.previousElementSibling;
+        while(ref&&!(ref.querySelector&&ref.querySelector('.p-chord')))ref=ref.previousElementSibling;
+      }
+      var ch=ref?ref.querySelector('.p-chord'):scope.querySelector('.p-chord');
+      if(ch){
+        var hr=holder.getBoundingClientRect();
+        var cr=ch.getBoundingClientRect();
+        var scale=(holder.offsetHeight&&hr.height)?(hr.height/holder.offsetHeight):1;
+        if(!scale)scale=1;
+        tag.style.top=((cr.bottom-hr.top)/scale+SEC_LABEL_TOP_GAP_PX)+'px';
+      }
+    });
+  }
   return holder;
 }
 /* ═══════════ CECP-SONG-EXT v1 END ═══════════ */
