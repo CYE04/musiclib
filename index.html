@@ -48,6 +48,10 @@
     <style>
       /* 平板/移动端:禁双击放大(不影响滚动、点击、文本选择) */
       html, body { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+      /* 页面级禁止横向滚动/左右摇摆(跑马灯等超宽内容只裁切,不产生横向滚动;
+         内部自带横向滚动的区域不受影响) */
+      html, body { overflow-x: hidden; overscroll-behavior-x: none; width: 100%; }
+      #music-library { overflow-x: clip; }
     </style>
     <script>
       // iOS Safari 专有手势事件:禁双指缩放(standalone PWA 下 iOS 本身已禁,这里兜浏览器模式)
