@@ -3167,8 +3167,29 @@ function segIsRenderableBlock(seg){
   if(segIsLabelBlock(seg))return true;
   return typeof seg.chord!=='undefined'||typeof seg.n!=='undefined'||typeof seg.lyric!=='undefined'||typeof seg.lyric2!=='undefined'||typeof seg.lyric3!=='undefined'||typeof seg.lyric4!=='undefined';
 }
+var SEC_LABEL_COLORS=[
+  ['pre-chorus','prechorus','pre chorus','前副歌','导歌','#0d9488'],
+  ['chorus','副歌','#e8590c'],
+  ['verse','主歌','#2f6fdb'],
+  ['bridge','桥段','桥','#7c3aed'],
+  ['intro','前奏','#6b7280'],
+  ['outro','ending','尾奏','尾声','#b45309']
+];
+var SEC_LABEL_FALLBACK=['#db2777','#0891b2','#4f46e5','#65a30d','#9333ea','#0284c7'];
+function secLabelColor(text){
+  var t=String(text||'').toLowerCase();
+  for(var i=0;i<SEC_LABEL_COLORS.length;i++){
+    var grp=SEC_LABEL_COLORS[i];
+    for(var j=0;j<grp.length-1;j++){
+      if(grp[j]&&t.indexOf(grp[j])>=0)return grp[grp.length-1];
+    }
+  }
+  var h=0;
+  for(var k=0;k<t.length;k++)h=(h*31+t.charCodeAt(k))%997;
+  return SEC_LABEL_FALLBACK[h%SEC_LABEL_FALLBACK.length];
+}
 function segRenderLabelBlock(seg,row){
-  if(row&&row.style)row.style.paddingTop='calc(var(--volta-rail,0px) + 1.15em)';
+  if(row&&row.style)row.style.paddingTop='calc(var(--volta-rail,0px) + 1.05em)';
   var holder=document.createElement('span');
   holder.className='sec-label-holder';
   holder.style.cssText='display:inline-block;width:0;overflow:visible;vertical-align:top;position:relative;align-self:stretch;';
@@ -3176,14 +3197,14 @@ function segRenderLabelBlock(seg,row){
   var tag=document.createElement('span');
   var jump=seg.style==='jump';
   tag.className='sec-label'+(jump?' sec-label-jump':'');
-  var base='display:block;position:absolute;left:0;bottom:100%;white-space:nowrap;line-height:1.2;';
+  var color=secLabelColor(seg.label);
+  var base='display:inline-block;position:absolute;left:0;bottom:100%;margin-bottom:2px;white-space:nowrap;line-height:1.4;font-size:0.58em;padding:0 7px;border-radius:999px;box-sizing:border-box;letter-spacing:0.4px;';
   if(jump){
-    tag.style.cssText=base+'font-style:italic;font-size:0.78em;opacity:0.85;';
-    tag.textContent=String(seg.label||'');
+    tag.style.cssText=base+'font-style:italic;font-weight:600;color:'+color+';border:1px solid '+color+';background:transparent;opacity:0.92;';
   }else{
-    tag.style.cssText=base+'font-weight:700;font-size:0.78em;';
-    tag.textContent='【'+String(seg.label||'')+'】';
+    tag.style.cssText=base+'font-weight:700;color:#ffffff;border:1px solid '+color+';background:'+color+';';
   }
+  tag.textContent=String(seg.label||'');
   holder.appendChild(tag);
   return holder;
 }
