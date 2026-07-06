@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta
       name="viewport"
-      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     >
     <meta name="description" content="CECP 诗歌库，供教会敬拜练习使用，包含诗歌搜索、歌词、简谱、移调、音频与每日推荐。">
     <meta name="theme-color" content="#F4EFE7" media="(prefers-color-scheme: light)">
@@ -45,17 +45,28 @@
       }
     </script>
 
-    <link id="ml-style" rel="stylesheet" href="./musiclib.css?v=20260614-card-size-lock-v1">
+    <style>
+      /* 平板/移动端:禁双击放大(不影响滚动、点击、文本选择) */
+      html, body { touch-action: manipulation; -webkit-text-size-adjust: 100%; }
+    </style>
+    <script>
+      // iOS Safari 专有手势事件:禁双指缩放(standalone PWA 下 iOS 本身已禁,这里兜浏览器模式)
+      ["gesturestart", "gesturechange", "gestureend"].forEach(function (t) {
+        document.addEventListener(t, function (e) { e.preventDefault(); }, { passive: false });
+      });
+    </script>
+
+    <link id="ml-style" rel="stylesheet" href="./musiclib.css?v=20260706-pwa-offline-v1">
   </head>
 
   <body>
     <div id="music-library"></div>
 
-    <script src="./musiclib.js?v=20260614-card-size-lock-v1"></script>
+    <script src="./musiclib.js?v=20260706-pwa-offline-v1"></script>
     <script>
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
-          navigator.serviceWorker.register("./sw.js?v=20260614-card-size-lock-v1").catch(() => {});
+          navigator.serviceWorker.register("./sw.js?v=20260706-pwa-offline-v1").catch(() => {});
         });
       }
     </script>
