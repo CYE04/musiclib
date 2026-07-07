@@ -5414,7 +5414,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
 #music-library #ml-nowbar{
   position:fixed;
   left:50%;
-  bottom:max(18px,env(safe-area-inset-bottom));
+  bottom:calc(18px + env(safe-area-inset-bottom,0px));
   z-index:850;
   width:min(900px,calc(100vw - 36px));
   min-height:86px;
@@ -5726,7 +5726,7 @@ body,
   }
 
   #music-library #ml-nowbar{
-    bottom:18px !important;
+    bottom:calc(18px + env(safe-area-inset-bottom,0px)) !important;
   }
 }
 
@@ -9219,3 +9219,20 @@ body.ml-detail-lock{overflow:hidden !important;}
 #music-library #ml-player-dock .ml-audio-tool-dock .ml-audio-tool-k{font-size:10px;}
 #music-library #ml-player-dock .ml-audio-tool-dock .ml-audio-tool-v{font-size:11px;}
 #music-library #ml-player-dock .ml-audio-tool-dock .ml-audio-tool-mode{font-size:9px;}
+
+/* ---- Nowbar 底部播放条：侧栏布局下按内容列居中，修复被侧栏遮切 ----
+   桌面/平板布局左侧有固定侧栏（>1180px 为 240px，861~1180px 为 210px），
+   而 nowbar 是 position:fixed 按视口居中，左端会滑到侧栏下面被盖住。
+   这里把中心点右移侧栏宽度的一半，并把最大宽度限制在内容列内。 */
+@media (min-width:1181px){
+  #music-library #ml-nowbar{
+    left:calc(50vw + 120px) !important;
+    width:min(900px,calc(100vw - 240px - 36px)) !important;
+  }
+}
+@media (min-width:861px) and (max-width:1180px){
+  #music-library #ml-nowbar{
+    left:calc(50vw + 105px) !important;
+    width:min(900px,calc(100vw - 210px - 36px)) !important;
+  }
+}
