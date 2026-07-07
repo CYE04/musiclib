@@ -199,7 +199,7 @@
       <div id="ml-search-row">
         <div id="ml-search-wrap">
           <span id="ml-search-icon">${icon('search')}</span>
-          <input id="ml-search" type="search" placeholder="搜索歌名、歌手、歌词、调性、主题..." autocomplete="off" autocorrect="off"/>
+          <input id="ml-search" type="search" placeholder="搜索歌名、拼音、歌手、歌词、主题..." autocomplete="off" autocorrect="off"/>
           <button id="ml-search-clear" type="button" aria-label="清空搜索" hidden>${icon('close',16)}</button>
         </div>
         <button id="ml-search-submit" type="button" aria-label="搜索">${icon('search',20)}</button>
@@ -2054,6 +2054,67 @@
     if(code>=95) return '雷雨';
     return '今日天气';
   }
+  /* ── 拼音搜索(增强,字典加载失败自动降级为原有搜索) ── */
+  function buildPinyinIndex(song){
+    try{
+      if(typeof window.cecpPinyinOf!=='function')return {};
+      const text=[song.title,song.artist,song.sub].filter(Boolean).join(' ');
+      const syl=[];
+      for(const ch of text){
+        const py=window.cecpPinyinOf(ch);
+        if(py)syl.push(py);
+        else if(/[a-z0-9]/i.test(ch))syl.push(ch.toLowerCase());
+      }
+      if(!syl.length)return {};
+      return {
+        _pySyl:syl,
+        _pyFull:syl.join(''),
+        _pyInit:syl.map(s2=>s2.charAt(0)).join('')
+      };
+    }catch(_){return {};}
+  }
+  function pyPrefixMatch(syl,qn){
+    const n=syl.length;
+    function go(i,pos){
+      if(pos>=qn.length)return true;
+      if(i>=n)return false;
+      const p=syl[i];
+      const max=Math.min(p.length,qn.length-pos);
+      for(let k=max;k>=1;k--){
+        if(p.slice(0,k)===qn.slice(pos,pos+k)&&go(i+1,pos+k))return true;
+      }
+      return false;
+    }
+    for(let s2=0;s2<n;s2++){if(go(s2,0))return true;}
+    return false;
+  }
+  function pyNearSubstring(hay,needle){
+    // needle 与 hay 的某个子串编辑距离 ≤1(容忍打错/漏打/多打一个字母)
+    const n=hay.length,m=needle.length;
+    for(let st=0;st<n;st++){
+      let i=st,j=0,err=0;
+      while(j<m){
+        if(i<n&&hay.charAt(i)===needle.charAt(j)){i++;j++;continue;}
+        if(err)break;
+        err=1;
+        if(i<n&&i+1<=n&&hay.charAt(i+1)===needle.charAt(j)){i+=2;j++;continue;} // hay 多一个字符
+        if(j+1<=m&&i<n&&hay.charAt(i)===needle.charAt(j+1)){i++;j+=2;continue;} // needle 多一个字符
+        i++;j++; // 替换
+      }
+      if(j>=m)return true;
+    }
+    return false;
+  }
+  function pinyinQueryMatch(s,q){
+    try{
+      const qn=String(q||'').replace(/[^a-z0-9]/g,'');
+      if(qn.length<2||!s._pyFull)return false;
+      if(s._pyFull.includes(qn)||s._pyInit.includes(qn))return true;
+      if(pyPrefixMatch(s._pySyl,qn))return true;
+      if(qn.length>=4&&pyNearSubstring(s._pyFull,qn))return true;
+      return false;
+    }catch(_){return false;}
+  }
   function enrichSong(song){
     const source=detectSongSource(song);
     const {album,albumYear}=parseAlbumInfo(Object.assign({},song,{source}));
@@ -2062,7 +2123,7 @@
       album,
       albumYear,
       displayArtist:(song.artist||source||'未知来源').trim()
-    });
+    },buildPinyinIndex(song));
   }
   function ensureNoIndexMeta(){
     [
@@ -2455,7 +2516,8 @@
         || (s.source||'').toLowerCase().includes(q)
         || (s.album||'').toLowerCase().includes(q)
         || (s.sub||'').toLowerCase().includes(q)
-        || hasLyricMatch(s,q);
+        || hasLyricMatch(s,q)
+        || pinyinQueryMatch(s,q);
     });
     if(!filtered.length){
       $('ml-result-count').textContent=q
@@ -4972,10 +5034,89 @@ function segRenderLabelBlock(seg,row){
     emptyPanel.className='ml-score-empty';
     emptyPanel.textContent='这首歌暂时没有可显示的歌谱。';
     wrap.hidden=!hasRenderedScore;
-    scoreModeShell.appendChild(wrap);
+
+    /* ── 显示模式:简谱 / 歌词 / 并排(纯附加,默认 = 现状) ── */
+    const VIEW_MODE_KEY='cecp:musiclib:view-mode:v1';
+    const lyricsPanel=document.createElement('div');
+    lyricsPanel.className='ml-lyrics-panel';
+    let lyricsLineCount=0;
+    const splitLyricLines=text=>{
+      const rough=[];
+      let buf='';
+      for(const ch of text){
+        buf+=ch;
+        if('。；;！!？?'.indexOf(ch)>=0){rough.push(buf.trim());buf='';}
+      }
+      if(buf.trim())rough.push(buf.trim());
+      const out=[];
+      rough.forEach(line=>{
+        if([...line].length<=20){out.push(line);return;}
+        const parts=line.split(/([，,、])/);
+        let cur='';
+        for(let i=0;i<parts.length;i+=2){
+          const seg2=parts[i]+(parts[i+1]||'');
+          if(cur&&[...cur+seg2].length>18){out.push(cur.trim());cur=seg2;}
+          else cur+=seg2;
+        }
+        if(cur.trim())out.push(cur.trim());
+      });
+      return out.filter(Boolean);
+    };
+    (s.sections||[]).forEach(sec=>{
+      const secEl=document.createElement('div');secEl.className='ml-lyrics-sec';
+      if(sec&&sec.name){
+        const nm=document.createElement('div');nm.className='ml-lyrics-sec-name';nm.textContent=sec.name;secEl.appendChild(nm);
+      }
+      const rowTexts=[];
+      for(const row of (sec&&sec.lines)||[]){
+        const segs=Array.isArray(row)?row:((row&&row.line)||[]);
+        const tx=segs.map(seg=>{
+          if(!seg||typeof seg!=='object'||typeof seg.label==='string')return '';
+          return spStripTokens(seg.lyric||'');
+        }).join('').replace(/[ㅤ　]+/g,'').replace(/ {2,}/g,' ').trim();
+        if(tx)rowTexts.push(tx);
+      }
+      if(!rowTexts.length)return;
+      splitLyricLines(rowTexts.join('')).forEach(lineText=>{
+        const le=document.createElement('div');le.className='ml-lyrics-line';le.textContent=lineText;secEl.appendChild(le);
+        lyricsLineCount++;
+      });
+      lyricsPanel.appendChild(secEl);
+    });
+    const scoreMain=document.createElement('div');
+    scoreMain.className='ml-score-main';
+    scoreMain.appendChild(wrap);
+    scoreMain.appendChild(lyricsPanel);
+    const canSwitchView=hasRenderedScore&&lyricsLineCount>0;
+    const modeBar=document.createElement('div');
+    modeBar.className='ml-view-mode';
+    const modeBtns={};
+    function applyViewMode(mode,persist){
+      const m=(mode==='lyrics'||mode==='side')?mode:'score';
+      scoreModeShell.classList.toggle('mode-lyrics',m==='lyrics');
+      scoreModeShell.classList.toggle('mode-side',m==='side');
+      Object.keys(modeBtns).forEach(k=>modeBtns[k].classList.toggle('on',k===m));
+      if(persist){try{localStorage.setItem(VIEW_MODE_KEY,m);}catch(_){}}
+      try{scheduleFitRows();}catch(_){}
+    }
+    if(canSwitchView){
+      [['score','简谱'],['lyrics','歌词'],['side','并排']].forEach(([m,label])=>{
+        const b=document.createElement('button');
+        b.type='button';b.textContent=label;
+        b.addEventListener('click',()=>applyViewMode(m,true));
+        modeBtns[m]=b;modeBar.appendChild(b);
+      });
+      scoreModeShell.appendChild(modeBar);
+    }
+    scoreModeShell.appendChild(scoreMain);
     if(hasImageScore) scoreModeShell.appendChild(imagePanel);
     if(!hasRenderedScore&&!hasImageScore) scoreModeShell.appendChild(emptyPanel);
     body.appendChild(scoreModeShell);
+    if(canSwitchView){
+      let storedMode='score';
+      try{storedMode=localStorage.getItem(VIEW_MODE_KEY)||'score';}catch(_){}
+      requestAnimationFrame(()=>applyViewMode(storedMode,false));
+    }
 
     let fitRaf=0;
     const getViewportBox=()=>{

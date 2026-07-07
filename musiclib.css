@@ -9179,3 +9179,24 @@ body.ml-detail-lock{overflow:hidden !important;}
     min-height:42px !important;
   }
 }
+
+/* ===== 显示模式:简谱 / 歌词 / 并排(纯附加) ===== */
+#music-library .ml-view-mode{display:flex;gap:8px;margin:0 0 14px;flex-wrap:wrap;}
+#music-library .ml-view-mode button{padding:7px 18px;border-radius:999px;border:1px solid var(--divider);background:var(--surface);color:var(--text-muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s ease;}
+#music-library .ml-view-mode button.on{background:var(--text-primary);color:var(--bg);border-color:var(--text-primary);}
+#music-library .ml-lyrics-panel{display:none;padding:40px 36px;border:1px solid var(--divider);border-radius:16px;background:var(--surface);}
+#music-library .ml-lyrics-sec{margin:0 0 44px;}
+#music-library .ml-lyrics-sec:last-child{margin-bottom:8px;}
+#music-library .ml-lyrics-sec-name{font-size:12px;letter-spacing:3px;color:var(--text-muted);margin:0 0 18px;font-weight:600;text-transform:uppercase;}
+#music-library .ml-lyrics-line{font-size:27px;line-height:1.5;color:var(--text-primary);font-weight:500;letter-spacing:0.5px;margin:0 0 18px;}
+#music-library .ml-lyrics-line:last-child{margin-bottom:0;}
+#music-library .ml-score-stack.mode-lyrics .ml-score-main .sw-wrap{display:none !important;}
+#music-library .ml-score-stack.mode-lyrics .ml-score-image-panel{display:none !important;}
+#music-library .ml-score-stack.mode-lyrics .ml-lyrics-panel{display:block;}
+#music-library .ml-score-stack.mode-side .ml-lyrics-panel{display:block;}
+@media (min-width:900px){
+  #music-library .ml-score-stack.mode-side .ml-score-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(260px,380px);gap:16px;align-items:start;}
+  #music-library .ml-score-stack.mode-side .ml-lyrics-panel{padding:24px 22px;}
+  #music-library .ml-score-stack.mode-side .ml-lyrics-panel .ml-lyrics-line{font-size:19px;margin-bottom:12px;}
+  #music-library .ml-score-stack.mode-side .ml-lyrics-sec{margin-bottom:28px;}
+}
