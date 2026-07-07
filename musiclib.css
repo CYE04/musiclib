@@ -108,6 +108,9 @@ html[data-resolved-theme="dark"] body{
   --warning:#B7791F;
   --danger:#B84D3D;
   --sage:#456B74;
+  /* 和弦浏览器语义色：根音复用 --accent；三音 / 五音-延伸音各一色 */
+  --chord-third:#3E6E9E;
+  --chord-tension:#5E8A55;
   --shadow-sm:0 1px 2px rgba(58,39,28,.05);
   --shadow-md:0 12px 32px rgba(83,54,35,.08);
   --shadow-lg:0 20px 60px rgba(42,30,22,.14);
@@ -178,6 +181,9 @@ html[data-resolved-theme="dark"] #music-library{
   --warning:#D6A94D;
   --danger:#E08172;
   --sage:#8CB5AE;
+  /* 和弦浏览器语义色（深色模式提亮） */
+  --chord-third:#82AFD6;
+  --chord-tension:#96BE8C;
   --shadow-sm:0 1px 0 rgba(255,255,255,.04);
   --shadow-md:0 18px 48px rgba(0,0,0,.24);
   --shadow-lg:0 24px 70px rgba(0,0,0,.38);
