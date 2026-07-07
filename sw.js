@@ -1,10 +1,10 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v19-offline-data-v1";
+const CACHE_NAME = "cecp-musiclib-pwa-v20-noswipe-v2";
 const DATA_CACHE = "cecp-musiclib-data-v1";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
-  "./musiclib.css?v=20260706-pwa-offline-v1",
-  "./musiclib.js?v=20260706-pwa-offline-v1",
+  "./musiclib.css?v=20260707-noswipe-v2",
+  "./musiclib.js?v=20260707-noswipe-v2",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
   "./icons/favicon.ico",

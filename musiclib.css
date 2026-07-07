@@ -4328,7 +4328,9 @@ html,body,#music-library{
   grid-area:lyrics;
   min-width:0;
   min-height:0;
-  overflow:auto;
+  overflow-y:auto;
+  overflow-x:hidden;
+  overscroll-behavior-x:none;
 }
 #music-library #ml-player-side{
   grid-area:side;
@@ -6645,7 +6647,9 @@ body.ml-detail-lock{overflow:hidden !important;}
   z-index:1900 !important;
   display:none !important;
   padding:0 !important;
-  overflow:auto !important;
+  overflow-y:auto !important;
+  overflow-x:hidden !important;
+  overscroll-behavior-x:none !important;
   -webkit-overflow-scrolling:touch !important;
   background:var(--bg) !important;
   color:var(--text-primary) !important;
