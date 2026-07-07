@@ -3395,7 +3395,7 @@ html,body,#music-library{
 @keyframes ml-notice-marquee{ from{ transform:translateX(0); } to{ transform:translateX(-50%); } }
 
 #ml-notice-modal{
-  position:fixed; inset:0; z-index:1200; display:none;
+  position:fixed; inset:0; z-index:100003; display:none;
   align-items:center; justify-content:center;
   padding:16px; background:rgba(0,0,0,.5);
   backdrop-filter:blur(16px) saturate(140%);
