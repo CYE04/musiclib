@@ -658,11 +658,17 @@
   renderSearchHistory();
   renderQuickFilters();
 
+  let _searchDebounce=0,_lastRenderedQuery=null;
   $('ml-search').addEventListener('input',e=>{
     query=e.target.value.trim();
     updateSearchControls();
     scheduleRememberSearch(query);
-    render();
+    clearTimeout(_searchDebounce);
+    _searchDebounce=setTimeout(()=>{
+      if(query===_lastRenderedQuery) return;
+      _lastRenderedQuery=query;
+      render();
+    },120);
   });
   $('ml-search').addEventListener('keydown',e=>{
     if(e.key==='Enter') rememberSearchTerm(query);
@@ -851,7 +857,7 @@
 
   let _lightboxImages=[],_lightboxIndex=0,_lightboxZoom=false;
   $('ml-lightbox').addEventListener('click',e=>{
-    if(e.target===e.currentTarget||e.target.id==='ml-lightbox-close') $('ml-lightbox').classList.remove('open');
+    if(e.target===e.currentTarget||(e.target.closest&&e.target.closest('#ml-lightbox-close'))) $('ml-lightbox').classList.remove('open');
   });
   $('ml-lightbox-img').addEventListener('click',e=>e.stopPropagation());
   $('ml-lightbox-img').addEventListener('dblclick',()=>{
@@ -4145,7 +4151,11 @@ function segRenderLabelBlock(seg,row){
       if(active){
         const y=active.offsetTop - panel.clientHeight/2 + active.clientHeight/2;
         const reduceMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-        panel.scrollTo({ top: Math.max(0,y), behavior:reduceMotion?'auto':'smooth' });
+        if(!reduceMotion&&window.gsap){
+          window.gsap.to(panel,{scrollTop:Math.max(0,y),duration:.55,ease:'power3.out',overwrite:'auto'});
+        }else{
+          panel.scrollTo({ top: Math.max(0,y), behavior:reduceMotion?'auto':'smooth' });
+        }
       }
     }
     sync('ml-mp-lrc-inner','ml-mp-lrc-panel');
@@ -4881,6 +4891,44 @@ function segRenderLabelBlock(seg,row){
     });
   }
 
+  /* ── GSAP 动效(增强;gsap 未加载或系统偏好"减少动态效果"时零影响) ── */
+  function fxReady(){
+    try{
+      return !!window.gsap && !(window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    }catch(_){return false;}
+  }
+  function fxDetailEnter(){
+    if(!fxReady())return;
+    try{
+      const dlg=$('ml-detail-dialog');
+      if(!dlg)return;
+      const targets=[...dlg.children].filter(el=>el&&el.offsetHeight>0).slice(0,8);
+      if(!targets.length)return;
+      window.gsap.fromTo(targets,
+        {opacity:0,y:16},
+        {opacity:1,y:0,duration:.5,ease:'power3.out',stagger:.07,clearProps:'opacity,transform',overwrite:'auto'});
+    }catch(_){}
+  }
+  function fxAttachPressFeedback(){
+    if(!window.gsap)return;
+    const SELECTOR='.ml-song-card,.ml-wp-card,.ml-compact-row,.sw-kb,.ml-view-mode button,.sw-tog,.ml-filter-chip,.ml-card-play';
+    root.addEventListener('pointerdown',e=>{
+      if(!fxReady())return;
+      const t=e.target.closest?e.target.closest(SELECTOR):null;
+      if(!t)return;
+      const prevTransition=t.style.transition;
+      t.style.transition='none';
+      window.gsap.to(t,{scale:.965,duration:.13,ease:'power2.out',overwrite:'auto'});
+      const release=()=>{
+        window.gsap.to(t,{scale:1,duration:.35,ease:'back.out(2.2)',overwrite:'auto',clearProps:'scale',
+          onComplete:()=>{t.style.transition=prevTransition;}});
+      };
+      t.addEventListener('pointerup',release,{once:true});
+      t.addEventListener('pointercancel',release,{once:true});
+      t.addEventListener('pointerleave',release,{once:true});
+    },{passive:true});
+  }
+
   function openDetail(s,opts={}){
     destroyAP();
     stopMetronome();
@@ -5199,6 +5247,9 @@ function segRenderLabelBlock(seg,row){
       renderHomePanels();
       renderKeyButtons();
       renderScore();
+      if(fxReady()){
+        try{window.gsap.fromTo(lbDiv,{opacity:.32},{opacity:1,duration:.28,ease:'power2.out',clearProps:'opacity',overwrite:'auto'});}catch(_){}
+      }
     }
     function addQuickKey(label,handler){
       const b=document.createElement('button');
@@ -5481,10 +5532,12 @@ function segRenderLabelBlock(seg,row){
     document.body.classList.add('ml-detail-lock');
     detail.scrollTop=0;
     $('ml-detail-dialog')?.scrollTo?.({top:0,left:0});
+    fxDetailEnter();
   }
 
   attachSwipeBack();
   attachPullToRefresh();
+  fxAttachPressFeedback();
   window.__CECP_MUSICLIB_ENGINE__={
     version:ML_VER,
     getSongs:()=>songs.slice(),
