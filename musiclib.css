@@ -1993,7 +1993,7 @@ html,body,#music-library{
 
 
 /* slur / tuplet */
-#music-library .jp-slur,#music-library .jp-slur-open,#music-library .jp-slur-close,#music-library .jp-tuplet{display:inline-flex;align-items:flex-end;position:relative;padding-top:18px;}
+#music-library .jp-slur,#music-library .jp-slur-open,#music-library .jp-slur-close,#music-library .jp-tuplet{display:inline-flex;align-items:flex-end;position:relative;padding-top:12px;}
 #music-library .jp-slur::before{content:'';position:absolute;top:2px;left:15%;right:15%;height:8px;border-top:1.5px solid var(--text);border-left:1.5px solid var(--text);border-right:1.5px solid var(--text);border-radius:50% 50% 0 0/100% 100% 0 0;}
 #music-library .jp-slur-open::before{content:'';position:absolute;top:2px;left:15%;right:-4px;height:8px;border-top:1.5px solid var(--text);border-left:1.5px solid var(--text);border-radius:50% 0 0 0/100% 0 0 0;}
 #music-library .jp-slur-close::before{content:'';position:absolute;top:2px;left:-4px;right:15%;height:8px;border-top:1.5px solid var(--text);border-right:1.5px solid var(--text);border-radius:0 50% 0 0/0 100% 0 0;}
@@ -2111,8 +2111,8 @@ html,body,#music-library{
 #music-library .jp-plain-sym.is-dash{position:relative;top:-0.12em;}
 #music-library .jp-plain-bot{height:16px;}
 #music-library .jp-dot-top,#music-library .jp-dot-bot{width:1em;font-size:8px;line-height:.6;color:var(--text);text-align:center;display:flex;flex-direction:column;align-items:center;}
-#music-library .jp-dot-top{height:10px;justify-content:flex-end;}
-#music-library .jp-dot-bot{height:10px;justify-content:flex-start;}
+#music-library .jp-dot-top{height:8px;justify-content:flex-end;}
+#music-library .jp-dot-bot{height:8px;justify-content:flex-start;}
 #music-library .jp-lines-wrap{width:1em;display:inline-flex;flex-direction:column;align-items:stretch;padding-bottom:4px;position:relative;}
 #music-library .jp-num-row{width:1em;display:inline-flex;align-items:center;justify-content:center;position:relative;padding-bottom:3px;}
 #music-library .jp-num{font-size:19px;line-height:1;display:inline-flex;align-items:center;justify-content:center;text-align:center;width:1em;height:1em;position:relative;top:-0.12em;}
@@ -2125,8 +2125,8 @@ html,body,#music-library{
 #music-library .jp-dual{display:inline-flex;flex-direction:column;align-items:center;justify-content:flex-end;vertical-align:bottom;line-height:1;margin:0 .04em;}
 #music-library .jp-dual-top,#music-library .jp-dual-bot{display:inline-flex;align-items:flex-end;}
 #music-library .jp-dual-top{margin-bottom:-2px;}
-#music-library .jp-dual-top .jp-dot-bot{height:9px;}
-#music-library .jp-dual-bot .jp-dot-top{height:9px;}
+#music-library .jp-dual-top .jp-dot-bot{height:7px;}
+#music-library .jp-dual-bot .jp-dot-top{height:7px;}
 
 /* metronome */
 #music-library .ml-met{margin:0 0 16px;border:1px solid var(--border);background:rgba(255,253,249,.7);border-radius:26px;box-shadow:var(--shadow);overflow:hidden;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}

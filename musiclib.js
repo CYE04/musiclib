@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.06.15.26-loop-time-visible';
+  const ML_VER='2026.07.08.01-chord-chip-jp-tighten';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -1554,6 +1554,199 @@
         const filename=base+(key?('_'+key):'')+'.png';
         saveBlobAs(blob,filename);
       });
+  }
+
+  /* ══════════ 分页导出：按 A4 分页的多页 PDF ══════════
+     长歌不再整体缩小塞进一页，而是按「行/段」边界拆成多张 A4 页：
+     - 只在 .sw-lrow / .sw-lsec 顶部切页，绝不切断行内的和弦/简谱/歌词；
+     - 一个 .sw-lsec 若能整段放进一页，就整段挪到下一页，不跨页拆开
+       （除非该段本身比一整页还高）；
+     - 短歌一页能放下时仍走原有单张 A4 PNG（composeA4SongImage）；
+     - 渲染完整复用 nodeToPngBlobRobust 的 fallback 链与
+       normalizeExportNotation 的简谱下划线修正，分页只是对渲染结果
+       做像素切分；若命中纯文本兜底渲染（画布纵横比与 DOM 不符），
+       切分坐标不可信，自动退回单页 PNG，不会崩溃；
+     - jsPDF 按需从 CDN 动态加载（与 loadHtml2Canvas 同款写法），
+       加载失败退化为逐页 PNG 下载。 */
+  let _jsPdfPromise=null;
+  function loadJsPdf(){
+    if(window.jspdf&&window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
+    if(_jsPdfPromise) return _jsPdfPromise;
+    _jsPdfPromise=new Promise((resolve,reject)=>{
+      function inject(src,next){
+        const s=document.createElement('script');
+        s.src=src;
+        s.async=true;
+        s.onload=()=>{
+          if(window.jspdf&&window.jspdf.jsPDF) resolve(window.jspdf.jsPDF);
+          else if(next) inject(next,null);
+          else reject(new Error('jsPDF unavailable'));
+        };
+        s.onerror=()=>{
+          s.remove();
+          if(next) inject(next,null);
+          else reject(new Error('jsPDF load failed'));
+        };
+        document.head.appendChild(s);
+      }
+      inject(
+        'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
+        'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'
+      );
+    });
+    return _jsPdfPromise;
+  }
+
+  /* A4 页面几何（与 composeA4SongImage 的 2000x2828 基准一致，比例 1:1.414）。
+     首页顶部留标题区，后续页只留小页边距；底部留页脚。 */
+  const EXPORT_PAGE={W:2000,H:2828,first:{x:150,y:250,w:1700,h:2410},rest:{x:150,y:150,w:1700,h:2510},footerY:2758};
+
+  /* 在克隆节点上按 CSS 像素计算每页内容范围。
+     切点候选 = 每个 .sw-lrow / .sw-lsec 的顶边；整段放得下就不拆段。 */
+  function computeExportPageRanges(node,firstCapCss,restCapCss){
+    const base=node.getBoundingClientRect();
+    const totalH=base.height;
+    if(!(totalH>0)) return [{top:0,bottom:1}];
+    const cutSet=new Set();
+    node.querySelectorAll('.sw-lrow,.sw-lsec').forEach(el=>{
+      const y=el.getBoundingClientRect().top-base.top;
+      if(y>1&&y<totalH-1) cutSet.add(Math.round(y*10)/10);
+    });
+    const cuts=[...cutSet].sort((a,b)=>a-b);
+    const secs=[...node.querySelectorAll('.sw-lsec')].map(el=>{
+      const r=el.getBoundingClientRect();
+      return {top:r.top-base.top,bottom:r.bottom-base.top};
+    });
+    const ranges=[];
+    let start=0,guard=0;
+    while(guard++<300){
+      const cap=ranges.length===0?firstCapCss:restCapCss;
+      if(totalH-start<=cap+0.5) break;
+      const limit=start+cap;
+      let cut=-1;
+      for(const c of cuts){
+        if(c>start+1&&c<=limit) cut=c;
+        else if(c>limit) break;
+      }
+      if(cut<0){
+        // 单行比一页还高：只能硬切（极端兜底，避免死循环）
+        ranges.push({top:start,bottom:limit});
+        start=limit;
+        continue;
+      }
+      const sec=secs.find(sc=>sc.top<cut-1&&cut<sc.bottom-1);
+      if(sec&&(sec.bottom-sec.top)<=restCapCss+0.5&&sec.top>start+1) cut=sec.top;
+      ranges.push({top:start,bottom:cut});
+      start=cut;
+    }
+    ranges.push({top:start,bottom:totalH});
+    return ranges;
+  }
+
+  /* 把整幅渲染图的一个纵向切片画成一张 A4 页画布。
+     所有页共用同一个横向缩放（area.w / 图宽），字号跨页一致、不压缩。 */
+  function composeA4PageCanvas(scoreImg,logoImg,range,kPxPerCss,opt,pageIndex,pageCount){
+    const W=EXPORT_PAGE.W,H=EXPORT_PAGE.H;
+    const canvas=document.createElement('canvas');
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    if(!ctx) throw new Error('canvas unavailable');
+    ctx.fillStyle='#fff';
+    ctx.fillRect(0,0,W,H);
+    const first=pageIndex===0;
+    const song=opt.song||{};
+    if(first){
+      const title=song.title||opt.title||'';
+      const subtitle=[song.artist,song.sub].filter(Boolean).join('  ');
+      const leftLines=[song.bpm?'♪ = '+song.bpm:'','1= '+(opt.key||song.origKey||'C')+'  '+(song.timeSign||'4/4')].filter(Boolean);
+      ctx.fillStyle='#111';
+      ctx.textBaseline='top';
+      ctx.font='600 24px "DM Mono","Space Mono",monospace';
+      leftLines.forEach((line,i)=>ctx.fillText(line,260,130+i*34));
+      ctx.textAlign='center';
+      ctx.font='900 38px "Noto Serif SC","Songti SC","PingFang SC",serif';
+      ctx.fillText(title,W/2,128);
+      if(subtitle){
+        ctx.font='500 22px "Noto Serif SC","Songti SC","PingFang SC",serif';
+        ctx.fillText(subtitle,W/2,182);
+      }
+      ctx.textAlign='left';
+    }
+    const area=first?EXPORT_PAGE.first:EXPORT_PAGE.rest;
+    const sy=Math.max(0,Math.round(range.top*kPxPerCss));
+    const sh=Math.max(1,Math.min(scoreImg.height-sy,Math.round((range.bottom-range.top)*kPxPerCss)));
+    const s=area.w/scoreImg.width;
+    ctx.drawImage(scoreImg,0,sy,scoreImg.width,sh,area.x,area.y,area.w,sh*s);
+    if(logoImg){
+      const logoW=1180;
+      const logoH=logoW*(logoImg.naturalHeight||logoImg.height)/(logoImg.naturalWidth||logoImg.width);
+      ctx.save();
+      ctx.globalAlpha=0.07;
+      ctx.drawImage(logoImg,(W-logoW)/2,(H-logoH)/2,logoW,logoH);
+      ctx.restore();
+    }
+    if(pageCount>1){
+      ctx.fillStyle='#9a938a';
+      ctx.textAlign='center';
+      ctx.textBaseline='top';
+      ctx.font='500 24px "DM Mono","Space Mono",monospace';
+      ctx.fillText((song.title||opt.title||'')+' · '+(pageIndex+1)+' / '+pageCount,W/2,EXPORT_PAGE.footerY);
+      ctx.textAlign='left';
+    }
+    return canvas;
+  }
+
+  function exportSongAsPaginatedPdf(panelInner,opt={}){
+    if(!panelInner) return Promise.reject(new Error('panel missing'));
+    const bg=resolveExportBackground(panelInner,opt.bgColor);
+    const waitFonts=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
+    const stem=safeFileName(opt.title||'transpose')+(safeFileName(opt.key||'')?('_'+safeFileName(opt.key||'')):'');
+    return waitFonts.then(()=>{
+      const snap=buildExportClone(panelInner,{tight:!!opt.tight});
+      if(opt.hideTransposeOptions){
+        const keyZone=snap.node.querySelector('.sw-ks');
+        if(keyZone) keyZone.remove();
+      }
+      normalizeExportNotation(snap.node);
+      makeExportTextBlack(snap.node);
+      return waitPaint2()
+        .then(()=>{
+          const rect=snap.node.getBoundingClientRect();
+          const cloneW=Math.max(1,rect.width);
+          const cloneH=Math.max(1,rect.height);
+          const f=EXPORT_PAGE.first.w/cloneW;
+          const ranges=computeExportPageRanges(snap.node,EXPORT_PAGE.first.h/f,EXPORT_PAGE.rest.h/f);
+          return nodeToPngBlobRobust(snap.node,bg).then(blob=>({blob,cloneW,cloneH,ranges}));
+        })
+        .finally(()=>snap.cleanup());
+    }).then(({blob,cloneW,cloneH,ranges})=>{
+      if(ranges.length<=1){
+        return composeA4SongImage(blob,opt).then(png=>saveBlobAs(png,stem+'.png'));
+      }
+      return Promise.all([blobToImage(blob),loadImageForExport(LOGO_SRC)]).then(([scoreImg,logoImg])=>{
+        const aspectDom=cloneW/cloneH;
+        const aspectImg=scoreImg.width/scoreImg.height;
+        if(!(aspectImg>0)||Math.abs(aspectDom-aspectImg)/aspectDom>0.05){
+          return composeA4SongImage(blob,opt).then(png=>saveBlobAs(png,stem+'.png'));
+        }
+        const k=scoreImg.height/cloneH;
+        const pages=ranges.map((range,i)=>composeA4PageCanvas(scoreImg,logoImg,range,k,opt,i,ranges.length));
+        return loadJsPdf().then(jsPDF=>{
+          const pdf=new jsPDF({orientation:'portrait',unit:'pt',format:'a4',compress:true});
+          pages.forEach((cv,i)=>{
+            if(i>0) pdf.addPage('a4','portrait');
+            pdf.addImage(cv.toDataURL('image/png'),'PNG',0,0,595.28,841.89,undefined,'SLOW');
+          });
+          saveBlobAs(pdf.output('blob'),stem+'.pdf');
+        }).catch(err=>{
+          try{ console.warn('[musiclib] jsPDF unavailable, fallback to per-page PNGs',err); }catch(_){}
+          return pages.reduce(
+            (p,cv,i)=>p.then(()=>canvasToPngBlob(cv)).then(png=>saveBlobAs(png,stem+'_p'+(i+1)+'.png')),
+            Promise.resolve()
+          );
+        });
+      });
+    });
   }
 
   function openSongFromUrl(){
@@ -3319,7 +3512,9 @@ function segRenderLabelBlock(seg,row){
    配色规则：同根音共用一色（G/G7/Gsus4/Gm 同色），12 音名 12 色，
    色相按半音序直接展开（pc*30°）：常见进行（I-IV-V、关系小调）
    的根音相距纯四/五度或小三度，映射后色差足够大，
-   同一首歌里的常用和弦颜色能明显区分；低饱和低对比不刺眼；
+   同一首歌里的常用和弦颜色能明显区分；
+   填充色醒目但文字对比度优先：浅色主题浅底深字、深色主题深底浅字
+   （同色相配对，保证和弦文字一眼可辨）；
    深浅主题分别取色：优先 html[data-resolved-theme]，
    无该属性的宿主回退 prefers-color-scheme。 */
 var CHORD_STYLE_PC={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
@@ -3362,8 +3557,8 @@ function chordStyleEnsureCss(){
   var light='',dark='',i,h;
   for(i=0;i<12;i++){
     h=chordStyleHue(i);
-    light+='.chord-chip.chord-pc'+i+'{background:hsla('+h+',52%,46%,0.12);outline-color:hsla('+h+',42%,42%,0.4);}';
-    dark+='.chord-chip.chord-pc'+i+'{background:hsla('+h+',48%,64%,0.16);outline-color:hsla('+h+',40%,68%,0.38);}';
+    light+='.chord-chip.chord-pc'+i+'{background:hsl('+h+',65%,86%);outline-color:hsl('+h+',48%,60%);color:hsl('+h+',90%,20%);}';
+    dark+='.chord-chip.chord-pc'+i+'{background:hsl('+h+',42%,26%);outline-color:hsl('+h+',45%,48%);color:hsl('+h+',72%,84%);}';
   }
   var darkAttr=dark.split('.chord-chip.').join('html[data-resolved-theme="dark"] .chord-chip.');
   var darkAuto=dark.split('.chord-chip.').join('html:not([data-resolved-theme="light"]) .chord-chip.');
@@ -6705,7 +6900,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       exportBtn.disabled=true;
       exportBtn.style.opacity='.65';
       exportBtn.textContent='生成中...';
-      exportTransposePanel(lbDiv,{
+      const exportOpts={
         title:s.title||'transpose',
         key:curKey,
         song:s,
@@ -6713,6 +6908,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         bgColor:'#ffffff',
         tight:true,
         width:Math.max(560,Math.ceil(wrap.getBoundingClientRect().width||0)||900)
+      };
+      exportSongAsPaginatedPdf(lbDiv,exportOpts).catch(err=>{
+        try{ console.warn('[musiclib] paginated export failed, fallback to legacy single image',err); }catch(_){}
+        return exportTransposePanel(lbDiv,exportOpts);
       }).then(()=>{
         showToast('图片已下载');
         exportBtn.textContent='已下载';
