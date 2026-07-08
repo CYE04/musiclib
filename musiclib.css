@@ -2124,9 +2124,9 @@ html,body,#music-library{
 #music-library .jp-fermata::after{content:'';position:absolute;top:13px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:currentColor;pointer-events:none;}
 #music-library .jp-dual{display:inline-flex;flex-direction:column;align-items:center;justify-content:flex-end;vertical-align:bottom;line-height:1;margin:0 .04em;}
 #music-library .jp-dual-top,#music-library .jp-dual-bot{display:inline-flex;align-items:flex-end;}
-#music-library .jp-dual-top{margin-bottom:-2px;}
-#music-library .jp-dual-top .jp-dot-bot{height:7px;}
-#music-library .jp-dual-bot .jp-dot-top{height:7px;}
+#music-library .jp-dual-top{margin-bottom:-5px;}
+#music-library .jp-dual-top .jp-dot-bot{height:2px;}
+#music-library .jp-dual-bot .jp-dot-top{height:2px;}
 
 /* metronome */
 #music-library .ml-met{margin:0 0 16px;border:1px solid var(--border);background:rgba(255,253,249,.7);border-radius:26px;box-shadow:var(--shadow);overflow:hidden;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
@@ -9236,3 +9236,40 @@ body.ml-detail-lock{overflow:hidden !important;}
     width:min(900px,calc(100vw - 210px - 36px)) !important;
   }
 }
+
+/* ---- 歌谱工具行：移至歌谱上方 + 卡片化（对齐 youth 的工具条气质） ---- */
+#music-library .sw-tools{display:flex;justify-content:center;margin:4px 0 14px;}
+#music-library .sw-tools-row{
+  display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;
+  padding:7px 9px;border-radius:16px;
+  background:color-mix(in srgb,var(--surface) 92%, transparent);
+  border:1px solid var(--divider);
+  box-shadow:0 10px 30px rgba(42,30,22,.08);
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+}
+#music-library .sw-tools .sw-pill{
+  min-height:36px;height:auto;
+  display:inline-flex;align-items:center;gap:6px;
+  padding:0 14px !important;
+  border-radius:11px;border:1px solid var(--divider);
+  font-size:12px;font-weight:700;letter-spacing:.02em;line-height:1;
+  color:var(--text-primary);background:var(--surface);
+  cursor:pointer;text-decoration:none;
+  box-shadow:0 1px 3px rgba(42,30,22,.06);
+  transition:transform .15s,box-shadow .15s,background .15s;
+}
+#music-library .sw-tools .sw-pill:hover{
+  transform:translateY(-1px);
+  box-shadow:0 6px 18px rgba(42,30,22,.14);
+  background:var(--surface-hover,var(--surface));
+}
+#music-library .sw-tools .yt-btn{width:36px;height:36px;border-radius:11px;}
+#music-library .sw-tools .lyric-hl-ctrl{padding:0 2px;}
+
+/* ---- 节拍器音量行 ---- */
+#music-library .ml-met-volrow{grid-column:1/-1;display:flex;align-items:center;gap:10px;}
+#music-library .ml-met-vol-icon{font-size:14px;line-height:1;flex:0 0 auto;}
+#music-library .ml-met-vol-range{appearance:none;flex:1;height:5px;border-radius:999px;background:var(--bg3);outline:none;}
+#music-library .ml-met-vol-range::-webkit-slider-thumb{appearance:none;width:15px;height:15px;border-radius:50%;background:var(--accent);border:none;box-shadow:0 2px 8px rgba(0,0,0,.16);}
+#music-library .ml-met-vol-range::-moz-range-thumb{width:15px;height:15px;border-radius:50%;background:var(--accent);border:none;box-shadow:0 2px 8px rgba(0,0,0,.16);}
+#music-library .ml-met-vol-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--text2);min-width:38px;text-align:right;flex:0 0 auto;}

@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.07.08.01-chord-chip-jp-tighten';
+  const ML_VER='2026.07.08.04-metro-volume';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -1018,13 +1018,14 @@
     return '#ffffff';
   }
 
-  function nodeToPngBlobByHtml2Canvas(node,bgColor){
+  function nodeToPngBlobByHtml2Canvas(node,bgColor,opts){
     return loadHtml2Canvas()
       .then(html2canvas=>{
         const dpr=Math.max(1,window.devicePixelRatio||1);
+        const scale=(opts&&isFinite(opts.scale)&&opts.scale>0)?opts.scale:Math.min(2,dpr);
         return html2canvas(node,{
           backgroundColor:bgColor||'#ffffff',
-          scale:Math.min(2,dpr),
+          scale,
           foreignObjectRendering:false,
           useCORS:true,
           logging:false
@@ -1209,8 +1210,8 @@
     });
   }
 
-  function nodeToPngBlobRobust(node,bgColor){
-    return nodeToPngBlobByHtml2Canvas(node,bgColor).catch(primaryErr=>{
+  function nodeToPngBlobRobust(node,bgColor,opts){
+    return nodeToPngBlobByHtml2Canvas(node,bgColor,opts).catch(primaryErr=>{
       try{ console.warn('[musiclib] html2canvas export failed, fallback to svg',primaryErr); }catch(_){}
       return nodeToPngBlob(node,bgColor).catch(secondErr=>{
         try{ console.warn('[musiclib] svg export failed, fallback to text canvas',secondErr); }catch(_){}
@@ -1543,6 +1544,8 @@
         }
         normalizeExportNotation(snap.node);
         if(opt.a4) makeExportTextBlack(snap.node);
+        lyricHlPrepareExport(snap.node);
+        if(opt.a4) snap.node.style.setProperty('background','#ffffff','important');
         return waitPaint2()
           .then(()=>nodeToPngBlobRobust(snap.node,bg))
           .then(blob=>opt.a4?composeA4SongImage(blob,opt):blob)
@@ -1556,106 +1559,54 @@
       });
   }
 
-  /* ══════════ 分页导出：按 A4 分页的多页 PDF ══════════
-     长歌不再整体缩小塞进一页，而是按「行/段」边界拆成多张 A4 页：
-     - 只在 .sw-lrow / .sw-lsec 顶部切页，绝不切断行内的和弦/简谱/歌词；
-     - 一个 .sw-lsec 若能整段放进一页，就整段挪到下一页，不跨页拆开
-       （除非该段本身比一整页还高）；
-     - 短歌一页能放下时仍走原有单张 A4 PNG（composeA4SongImage）；
-     - 渲染完整复用 nodeToPngBlobRobust 的 fallback 链与
-       normalizeExportNotation 的简谱下划线修正，分页只是对渲染结果
-       做像素切分；若命中纯文本兜底渲染（画布纵横比与 DOM 不符），
-       切分坐标不可信，自动退回单页 PNG，不会崩溃；
-     - jsPDF 按需从 CDN 动态加载（与 loadHtml2Canvas 同款写法），
-       加载失败退化为逐页 PNG 下载。 */
-  let _jsPdfPromise=null;
-  function loadJsPdf(){
-    if(window.jspdf&&window.jspdf.jsPDF) return Promise.resolve(window.jspdf.jsPDF);
-    if(_jsPdfPromise) return _jsPdfPromise;
-    _jsPdfPromise=new Promise((resolve,reject)=>{
-      function inject(src,next){
-        const s=document.createElement('script');
-        s.src=src;
-        s.async=true;
-        s.onload=()=>{
-          if(window.jspdf&&window.jspdf.jsPDF) resolve(window.jspdf.jsPDF);
-          else if(next) inject(next,null);
-          else reject(new Error('jsPDF unavailable'));
-        };
-        s.onerror=()=>{
-          s.remove();
-          if(next) inject(next,null);
-          else reject(new Error('jsPDF load failed'));
-        };
-        document.head.appendChild(s);
-      }
-      inject(
-        'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js',
-        'https://unpkg.com/jspdf@2.5.1/dist/jspdf.umd.min.js'
-      );
-    });
-    return _jsPdfPromise;
+
+  /* ══════════ 单图导出：整首缩放进一张固定尺寸 PNG（纯白底） ══════════
+     取代此前的「A4 分页多页 PDF」方案，核心规则：
+     - 只输出一张 PNG，默认 A4 竖版基准（2000x2828，1:1.414）；
+     - 不做「先截原尺寸长图再缩小贴上」（位图降采样会发虚），而是把
+       目标缩放比例直接交给 html2canvas 的 scale 渲染参数，文字按
+       最终尺寸矢量光栅化，缩小后依然清晰；
+     - 最小可读字号下限：歌词在成图里的字高不低于 minLyricPx
+       （24px，约合 A4 打印 9pt）。竖版压到下限仍放不下时，不再继续
+       压小，而改用 A4 横版（2828x2000）+ 歌词区双栏排版，用宽度换
+       高度；双栏断点由 CSS break-inside 控制，只落在整行之间；
+       宽度上限即横版双栏，不再进一步拉宽；
+     - 背景永远纯白 #ffffff，不跟随深浅主题；导出前把荧光笔标记
+       内联为白底可辨的实色（lyricHlPrepareExport）。
+     resolveExportBackground 不再参与本路径，仅保留给旧版
+     exportTransposePanel 兜底（该路径调用方也固定传白底）。 */
+  const EXPORT_FIT={
+    portrait:{W:2000,H:2828},
+    landscape:{W:2828,H:2000},
+    headerH:250,bottomH:118,sideM:150,
+    minLyricPx:24,maxScale:2.6
+  };
+  function exportMeasureLyricFont(scope){
+    const el=scope.querySelector('.p-lyric');
+    if(!el)return 19;
+    const fs=parseFloat(getComputedStyle(el).fontSize);
+    return isFinite(fs)&&fs>0?fs:19;
   }
-
-  /* A4 页面几何（与 composeA4SongImage 的 2000x2828 基准一致，比例 1:1.414）。
-     首页顶部留标题区，后续页只留小页边距；底部留页脚。 */
-  const EXPORT_PAGE={W:2000,H:2828,first:{x:150,y:250,w:1700,h:2410},rest:{x:150,y:150,w:1700,h:2510},footerY:2758};
-
-  /* 在克隆节点上按 CSS 像素计算每页内容范围。
-     切点候选 = 每个 .sw-lrow / .sw-lsec 的顶边；整段放得下就不拆段。 */
-  function computeExportPageRanges(node,firstCapCss,restCapCss){
-    const base=node.getBoundingClientRect();
-    const totalH=base.height;
-    if(!(totalH>0)) return [{top:0,bottom:1}];
-    const cutSet=new Set();
-    node.querySelectorAll('.sw-lrow,.sw-lsec').forEach(el=>{
-      const y=el.getBoundingClientRect().top-base.top;
-      if(y>1&&y<totalH-1) cutSet.add(Math.round(y*10)/10);
-    });
-    const cuts=[...cutSet].sort((a,b)=>a-b);
-    const secs=[...node.querySelectorAll('.sw-lsec')].map(el=>{
-      const r=el.getBoundingClientRect();
-      return {top:r.top-base.top,bottom:r.bottom-base.top};
-    });
-    const ranges=[];
-    let start=0,guard=0;
-    while(guard++<300){
-      const cap=ranges.length===0?firstCapCss:restCapCss;
-      if(totalH-start<=cap+0.5) break;
-      const limit=start+cap;
-      let cut=-1;
-      for(const c of cuts){
-        if(c>start+1&&c<=limit) cut=c;
-        else if(c>limit) break;
-      }
-      if(cut<0){
-        // 单行比一页还高：只能硬切（极端兜底，避免死循环）
-        ranges.push({top:start,bottom:limit});
-        start=limit;
-        continue;
-      }
-      const sec=secs.find(sc=>sc.top<cut-1&&cut<sc.bottom-1);
-      if(sec&&(sec.bottom-sec.top)<=restCapCss+0.5&&sec.top>start+1) cut=sec.top;
-      ranges.push({top:start,bottom:cut});
-      start=cut;
-    }
-    ranges.push({top:start,bottom:totalH});
-    return ranges;
+  function exportApplyTwoColumns(clone,baseW){
+    const st=document.createElement('style');
+    st.setAttribute('data-export-columns','1');
+    st.textContent='.sw-lline{break-inside:avoid;-webkit-column-break-inside:avoid;page-break-inside:avoid;}.sw-lsec{break-inside:auto;}';
+    clone.insertBefore(st,clone.firstChild);
+    clone.style.columnCount='2';
+    clone.style.columnGap='64px';
+    clone.style.columnFill='balance';
+    clone.style.width=Math.ceil(baseW*2+64)+'px';
   }
-
-  /* 把整幅渲染图的一个纵向切片画成一张 A4 页画布。
-     所有页共用同一个横向缩放（area.w / 图宽），字号跨页一致、不压缩。 */
-  function composeA4PageCanvas(scoreImg,logoImg,range,kPxPerCss,opt,pageIndex,pageCount){
-    const W=EXPORT_PAGE.W,H=EXPORT_PAGE.H;
-    const canvas=document.createElement('canvas');
-    canvas.width=W; canvas.height=H;
-    const ctx=canvas.getContext('2d');
-    if(!ctx) throw new Error('canvas unavailable');
-    ctx.fillStyle='#fff';
-    ctx.fillRect(0,0,W,H);
-    const first=pageIndex===0;
-    const song=opt.song||{};
-    if(first){
+  function composeFittedSongImage(scoreBlob,opt,page){
+    return Promise.all([blobToImage(scoreBlob),loadImageForExport(LOGO_SRC)]).then(([scoreImg,logoImg])=>{
+      const W=page.W,H=page.H;
+      const canvas=document.createElement('canvas');
+      canvas.width=W;canvas.height=H;
+      const ctx=canvas.getContext('2d');
+      if(!ctx)throw new Error('canvas unavailable');
+      ctx.fillStyle='#ffffff';
+      ctx.fillRect(0,0,W,H);
+      const song=opt.song||{};
       const title=song.title||opt.title||'';
       const subtitle=[song.artist,song.sub].filter(Boolean).join('  ');
       const leftLines=[song.bpm?'♪ = '+song.bpm:'','1= '+(opt.key||song.origKey||'C')+'  '+(song.timeSign||'4/4')].filter(Boolean);
@@ -1671,36 +1622,28 @@
         ctx.fillText(subtitle,W/2,182);
       }
       ctx.textAlign='left';
-    }
-    const area=first?EXPORT_PAGE.first:EXPORT_PAGE.rest;
-    const sy=Math.max(0,Math.round(range.top*kPxPerCss));
-    const sh=Math.max(1,Math.min(scoreImg.height-sy,Math.round((range.bottom-range.top)*kPxPerCss)));
-    const s=area.w/scoreImg.width;
-    ctx.drawImage(scoreImg,0,sy,scoreImg.width,sh,area.x,area.y,area.w,sh*s);
-    if(logoImg){
-      const logoW=1180;
-      const logoH=logoW*(logoImg.naturalHeight||logoImg.height)/(logoImg.naturalWidth||logoImg.width);
-      ctx.save();
-      ctx.globalAlpha=0.07;
-      ctx.drawImage(logoImg,(W-logoW)/2,(H-logoH)/2,logoW,logoH);
-      ctx.restore();
-    }
-    if(pageCount>1){
-      ctx.fillStyle='#9a938a';
-      ctx.textAlign='center';
-      ctx.textBaseline='top';
-      ctx.font='500 24px "DM Mono","Space Mono",monospace';
-      ctx.fillText((song.title||opt.title||'')+' · '+(pageIndex+1)+' / '+pageCount,W/2,EXPORT_PAGE.footerY);
-      ctx.textAlign='left';
-    }
-    return canvas;
+      const area={x:EXPORT_FIT.sideM,y:EXPORT_FIT.headerH,w:W-EXPORT_FIT.sideM*2,h:H-EXPORT_FIT.headerH-EXPORT_FIT.bottomH};
+      // 正常路径下截图已按目标比例渲染，s≈1（无重采样）；
+      // 命中 SVG/文本兜底渲染时尺寸不同，此处兜底缩放到适配。
+      const s=Math.min(area.w/scoreImg.width,area.h/scoreImg.height,1.001);
+      const drawW=scoreImg.width*s,drawH=scoreImg.height*s;
+      ctx.drawImage(scoreImg,area.x+(area.w-drawW)/2,area.y,drawW,drawH);
+      if(logoImg){
+        const logoW=1180;
+        const logoH=logoW*(logoImg.naturalHeight||logoImg.height)/(logoImg.naturalWidth||logoImg.width);
+        ctx.save();
+        ctx.globalAlpha=0.07;
+        ctx.drawImage(logoImg,(W-logoW)/2,(H-logoH)/2,logoW,logoH);
+        ctx.restore();
+      }
+      return canvasToPngBlob(canvas);
+    });
   }
-
-  function exportSongAsPaginatedPdf(panelInner,opt={}){
-    if(!panelInner) return Promise.reject(new Error('panel missing'));
-    const bg=resolveExportBackground(panelInner,opt.bgColor);
+  function exportSongAsFittedPng(panelInner,opt={}){
+    if(!panelInner)return Promise.reject(new Error('panel missing'));
     const waitFonts=(document.fonts&&document.fonts.ready)?document.fonts.ready:Promise.resolve();
-    const stem=safeFileName(opt.title||'transpose')+(safeFileName(opt.key||'')?('_'+safeFileName(opt.key||'')):'');
+    const keyPart=safeFileName(opt.key||'');
+    const stem=safeFileName(opt.title||'transpose')+(keyPart?('_'+keyPart):'');
     return waitFonts.then(()=>{
       const snap=buildExportClone(panelInner,{tight:!!opt.tight});
       if(opt.hideTransposeOptions){
@@ -1709,44 +1652,38 @@
       }
       normalizeExportNotation(snap.node);
       makeExportTextBlack(snap.node);
+      lyricHlPrepareExport(snap.node);
+      snap.node.style.setProperty('background','#ffffff','important');
       return waitPaint2()
         .then(()=>{
-          const rect=snap.node.getBoundingClientRect();
-          const cloneW=Math.max(1,rect.width);
-          const cloneH=Math.max(1,rect.height);
-          const f=EXPORT_PAGE.first.w/cloneW;
-          const ranges=computeExportPageRanges(snap.node,EXPORT_PAGE.first.h/f,EXPORT_PAGE.rest.h/f);
-          return nodeToPngBlobRobust(snap.node,bg).then(blob=>({blob,cloneW,cloneH,ranges}));
+          const r1=snap.node.getBoundingClientRect();
+          const cw=Math.max(1,r1.width),ch=Math.max(1,r1.height);
+          const lyricPx=exportMeasureLyricFont(snap.node);
+          const P=EXPORT_FIT.portrait;
+          const sPort=Math.min(
+            (P.W-EXPORT_FIT.sideM*2)/cw,
+            (P.H-EXPORT_FIT.headerH-EXPORT_FIT.bottomH)/ch,
+            EXPORT_FIT.maxScale
+          );
+          if(sPort*lyricPx>=EXPORT_FIT.minLyricPx){
+            return nodeToPngBlobRobust(snap.node,'#ffffff',{scale:sPort}).then(blob=>({blob,page:P}));
+          }
+          exportApplyTwoColumns(snap.node,cw);
+          return waitPaint2().then(()=>{
+            const r2=snap.node.getBoundingClientRect();
+            const cw2=Math.max(1,r2.width),ch2=Math.max(1,r2.height);
+            const L=EXPORT_FIT.landscape;
+            const sLand=Math.min(
+              (L.W-EXPORT_FIT.sideM*2)/cw2,
+              (L.H-EXPORT_FIT.headerH-EXPORT_FIT.bottomH)/ch2,
+              EXPORT_FIT.maxScale
+            );
+            return nodeToPngBlobRobust(snap.node,'#ffffff',{scale:sLand}).then(blob=>({blob,page:L}));
+          });
         })
         .finally(()=>snap.cleanup());
-    }).then(({blob,cloneW,cloneH,ranges})=>{
-      if(ranges.length<=1){
-        return composeA4SongImage(blob,opt).then(png=>saveBlobAs(png,stem+'.png'));
-      }
-      return Promise.all([blobToImage(blob),loadImageForExport(LOGO_SRC)]).then(([scoreImg,logoImg])=>{
-        const aspectDom=cloneW/cloneH;
-        const aspectImg=scoreImg.width/scoreImg.height;
-        if(!(aspectImg>0)||Math.abs(aspectDom-aspectImg)/aspectDom>0.05){
-          return composeA4SongImage(blob,opt).then(png=>saveBlobAs(png,stem+'.png'));
-        }
-        const k=scoreImg.height/cloneH;
-        const pages=ranges.map((range,i)=>composeA4PageCanvas(scoreImg,logoImg,range,k,opt,i,ranges.length));
-        return loadJsPdf().then(jsPDF=>{
-          const pdf=new jsPDF({orientation:'portrait',unit:'pt',format:'a4',compress:true});
-          pages.forEach((cv,i)=>{
-            if(i>0) pdf.addPage('a4','portrait');
-            pdf.addImage(cv.toDataURL('image/png'),'PNG',0,0,595.28,841.89,undefined,'SLOW');
-          });
-          saveBlobAs(pdf.output('blob'),stem+'.pdf');
-        }).catch(err=>{
-          try{ console.warn('[musiclib] jsPDF unavailable, fallback to per-page PNGs',err); }catch(_){}
-          return pages.reduce(
-            (p,cv,i)=>p.then(()=>canvasToPngBlob(cv)).then(png=>saveBlobAs(png,stem+'_p'+(i+1)+'.png')),
-            Promise.resolve()
-          );
-        });
-      });
-    });
+    }).then(({blob,page})=>composeFittedSongImage(blob,opt,page))
+      .then(png=>saveBlobAs(png,stem+'.png'));
   }
 
   function openSongFromUrl(){
@@ -3639,6 +3576,247 @@ function chordChipDecorate(root){
 }
 /* ═══════════ CECP-CHORD-STYLE v1 END ═══════════ */
 
+/* ═══════════ CECP-LYRIC-HL v1 BEGIN ═══════════
+   共享模块：歌词荧光笔标记（本地持久化，仅歌词行可标记）。
+   本块在以下两个文件中逐字节相同（权威版本 = shared/lyric-hl.js）：
+     musiclib/musiclib.js / youth-engine.js
+   （本期不含 musictool.js，但仍遵守共享块「禁止反斜杠」约定，
+   转义一律用 String.fromCharCode，便于未来同步。）
+   修改流程：先改 shared/lyric-hl.js，再同步两处，diff 校验一致。
+   设计要点：
+   - 只有 .p-lyric（含 lyric2/3/4，均带 .p-lyric 类）可被标记；
+     .p-chord / .p-n 不参与。最小单位 = 一个 .prev-seg 里的一个歌词元素。
+   - 标记直接写在元素上（data-hl 属性 + 注入 CSS 背景色），是真实
+     DOM 样式，html2canvas 导出自动带上；导出前另有
+     lyricHlPrepareExport 把颜色内联成白底可辨的实色。
+   - 存储用 localStorage，键 cecp-lyric-hl:<songId>，值为内容坐标
+     [[行号,分段号,歌词行号,颜色号],...]，与 DOM 实例无关；每次
+     renderScore 重建 DOM 后由宿主调用 lyricHlApply 重放，坐标越界
+     的标记静默忽略。
+   - 手势冲突：默认关闭标记模式，歌词区滚动不受影响；开启后在根节点
+     上 pointer capture + touch-action:none，滑动只画不滚。 */
+var LYRIC_HL_COLORS=[
+  {name:'yellow',solid:'#FFE45E',dark:'rgba(255,228,94,0.34)'},
+  {name:'green',solid:'#A9E886',dark:'rgba(169,232,134,0.32)'},
+  {name:'pink',solid:'#FFAFC9',dark:'rgba(255,175,201,0.34)'},
+  {name:'blue',solid:'#9FD3FF',dark:'rgba(159,211,255,0.34)'},
+  {name:'orange',solid:'#FFC98A',dark:'rgba(255,201,138,0.34)'}
+];
+var LYRIC_HL_PREFIX='cecp-lyric-hl:';
+var LYRIC_HL_PEN_KEY='cecp-lyric-hl-pen';
+function lyricHlLoad(songId){
+  try{
+    var raw=localStorage.getItem(LYRIC_HL_PREFIX+String(songId||''));
+    if(!raw)return [];
+    var data=JSON.parse(raw);
+    return (data&&Object.prototype.toString.call(data.marks)==='[object Array]')?data.marks:[];
+  }catch(_){return [];}
+}
+function lyricHlSave(songId,marks){
+  try{
+    var key=LYRIC_HL_PREFIX+String(songId||'');
+    if(marks&&marks.length)localStorage.setItem(key,JSON.stringify({v:1,marks:marks}));
+    else localStorage.removeItem(key);
+  }catch(_){}
+}
+function lyricHlEnsureCss(){
+  if(typeof document==='undefined'||!document.head)return;
+  if(document.getElementById('cecp-lyric-hl-style'))return;
+  var st=document.createElement('style');
+  st.id='cecp-lyric-hl-style';
+  var base='.p-lyric[data-hl]{border-radius:3px;box-decoration-break:clone;}',i;
+  var light='',dark='';
+  for(i=0;i<LYRIC_HL_COLORS.length;i++){
+    light+='.p-lyric[data-hl="'+i+'"]{background-color:'+LYRIC_HL_COLORS[i].solid+';}';
+    dark+='.p-lyric[data-hl="'+i+'"]{background-color:'+LYRIC_HL_COLORS[i].dark+';}';
+  }
+  var darkAttr=dark.split('.p-lyric[').join('html[data-resolved-theme="dark"] .p-lyric[');
+  var darkAuto=dark.split('.p-lyric[').join('html:not([data-resolved-theme="light"]) .p-lyric[');
+  st.textContent=
+    base+light+darkAttr+
+    '@media (prefers-color-scheme: dark){'+darkAuto+'}'+
+    '.lyric-hl-marking{touch-action:none;-webkit-user-select:none;user-select:none;}'+
+    '.lyric-hl-marking .p-lyric{cursor:crosshair;}';
+  document.head.appendChild(st);
+}
+/* 元素 -> 内容坐标 {row,seg,line}；不属于歌词区时返回 null */
+function lyricHlCoordOf(root,el){
+  if(!el||!el.closest)return null;
+  var lyric=el.closest('.p-lyric');
+  if(!lyric||!root.contains(lyric))return null;
+  var row=lyric.closest('.sw-lrow');
+  var seg=lyric.closest('.prev-seg');
+  if(!row||!seg)return null;
+  var r=Array.prototype.indexOf.call(root.querySelectorAll('.sw-lrow'),row);
+  var sIdx=Array.prototype.indexOf.call(row.querySelectorAll('.prev-seg'),seg);
+  var lIdx=Array.prototype.indexOf.call(seg.querySelectorAll('.p-lyric'),lyric);
+  if(r<0||sIdx<0||lIdx<0)return null;
+  return {row:r,seg:sIdx,line:lIdx,el:lyric};
+}
+/* 内容坐标 -> 当前 DOM 节点；越界返回 null（内容被编辑过的兜底） */
+function lyricHlNodeAt(root,row,seg,line){
+  var rows=root.querySelectorAll('.sw-lrow');
+  if(row<0||row>=rows.length)return null;
+  var segs=rows[row].querySelectorAll('.prev-seg');
+  if(seg<0||seg>=segs.length)return null;
+  var lyrics=segs[seg].querySelectorAll('.p-lyric');
+  if(line<0||line>=lyrics.length)return null;
+  return lyrics[line];
+}
+/* 渲染完成后重放：清掉旧标记属性，再按存储坐标重新打上 */
+function lyricHlApply(root,songId){
+  if(!root||!root.querySelectorAll)return;
+  lyricHlEnsureCss();
+  Array.prototype.forEach.call(root.querySelectorAll('.p-lyric[data-hl]'),function(el){
+    el.removeAttribute('data-hl');
+  });
+  var marks=lyricHlLoad(songId);
+  for(var i=0;i<marks.length;i++){
+    var m=marks[i];
+    if(!m||m.length<4)continue;
+    var c=m[3];
+    if(!(c>=0&&c<LYRIC_HL_COLORS.length))continue;
+    var el=lyricHlNodeAt(root,m[0],m[1],m[2]);
+    if(el)el.setAttribute('data-hl',String(c));
+  }
+}
+/* 更新一处标记：colorIdx 为 null 时表示擦除 */
+function lyricHlSet(root,songId,coord,colorIdx){
+  var marks=lyricHlLoad(songId),out=[],found=false,i;
+  for(i=0;i<marks.length;i++){
+    var m=marks[i];
+    if(m&&m[0]===coord.row&&m[1]===coord.seg&&m[2]===coord.line){
+      found=true;
+      if(colorIdx!=null)out.push([coord.row,coord.seg,coord.line,colorIdx]);
+    }else out.push(m);
+  }
+  if(!found&&colorIdx!=null)out.push([coord.row,coord.seg,coord.line,colorIdx]);
+  lyricHlSave(songId,out);
+  if(coord.el){
+    if(colorIdx!=null)coord.el.setAttribute('data-hl',String(colorIdx));
+    else coord.el.removeAttribute('data-hl');
+  }
+}
+/* 导出前调用：把标记颜色内联成白底实色（live 深色模式的半透明变体
+   在纯白导出底上会太淡），并保证优先级高于导出置黑逻辑 */
+function lyricHlPrepareExport(scope){
+  if(!scope||!scope.querySelectorAll)return;
+  Array.prototype.forEach.call(scope.querySelectorAll('.p-lyric[data-hl]'),function(el){
+    var idx=parseInt(el.getAttribute('data-hl'),10);
+    if(idx>=0&&idx<LYRIC_HL_COLORS.length){
+      el.style.setProperty('background-color',LYRIC_HL_COLORS[idx].solid,'important');
+      el.style.setProperty('border-radius','3px');
+    }
+  });
+}
+/* 荧光笔控制条：笔开关 + 5 色 + 清空。宿主把返回的元素插进工具行，
+   并在每次 renderScore 末尾调用 lyricHlApply。root = 歌词区根节点
+   （innerHTML 会被重建但节点本身持久），getSongId 惰性取歌曲 id。 */
+function lyricHlCreateController(root,getSongId){
+  lyricHlEnsureCss();
+  var active=false;
+  var colorIdx=0;
+  try{
+    var savedPen=parseInt(localStorage.getItem(LYRIC_HL_PEN_KEY),10);
+    if(savedPen>=0&&savedPen<LYRIC_HL_COLORS.length)colorIdx=savedPen;
+  }catch(_){}
+  var wrap=document.createElement('span');
+  wrap.className='lyric-hl-ctrl';
+  wrap.style.cssText='display:inline-flex;align-items:center;gap:6px;vertical-align:middle;';
+  var pen=document.createElement('button');
+  pen.type='button';
+  pen.setAttribute('aria-label','歌词荧光笔');
+  pen.textContent=String.fromCharCode(0xD83D,0xDD8D);
+  pen.style.cssText='cursor:pointer;font-size:15px;line-height:1;min-height:36px;padding:0 12px;border-radius:11px;border:1px solid rgba(128,128,128,0.35);background:transparent;display:inline-flex;align-items:center;transition:background .15s,border-color .15s;';
+  var palette=document.createElement('span');
+  palette.style.cssText='display:none;align-items:center;gap:5px;';
+  var dots=[];
+  function refreshDots(){
+    for(var i=0;i<dots.length;i++){
+      dots[i].style.boxShadow=(i===colorIdx)?'0 0 0 2px rgba(128,128,128,0.9)':'none';
+      dots[i].style.transform=(i===colorIdx)?'scale(1.15)':'none';
+    }
+  }
+  LYRIC_HL_COLORS.forEach(function(c,i){
+    var d=document.createElement('button');
+    d.type='button';
+    d.setAttribute('aria-label','荧光笔颜色 '+c.name);
+    d.style.cssText='cursor:pointer;width:16px;height:16px;border-radius:50%;border:1px solid rgba(0,0,0,0.18);padding:0;background:'+c.solid+';transition:transform .12s ease;';
+    d.addEventListener('click',function(ev){
+      ev.stopPropagation();
+      colorIdx=i;
+      try{localStorage.setItem(LYRIC_HL_PEN_KEY,String(i));}catch(_){}
+      refreshDots();
+    });
+    dots.push(d);
+    palette.appendChild(d);
+  });
+  var clearBtn=document.createElement('button');
+  clearBtn.type='button';
+  clearBtn.textContent='清空';
+  clearBtn.setAttribute('aria-label','清空本歌全部标记');
+  clearBtn.style.cssText='cursor:pointer;font-size:11px;font-weight:700;line-height:1;min-height:30px;padding:0 10px;border-radius:9px;border:1px solid rgba(128,128,128,0.35);background:transparent;color:inherit;display:inline-flex;align-items:center;';
+  clearBtn.addEventListener('click',function(ev){
+    ev.stopPropagation();
+    lyricHlSave(getSongId(),[]);
+    lyricHlApply(root,getSongId());
+  });
+  palette.appendChild(clearBtn);
+  wrap.appendChild(pen);
+  wrap.appendChild(palette);
+  function setActive(on){
+    active=!!on;
+    pen.style.background=active?'rgba(128,128,128,0.22)':'transparent';
+    pen.style.borderColor=active?'rgba(128,128,128,0.7)':'rgba(128,128,128,0.35)';
+    palette.style.display=active?'inline-flex':'none';
+    if(root&&root.classList){
+      if(active)root.classList.add('lyric-hl-marking');
+      else root.classList.remove('lyric-hl-marking');
+    }
+    refreshDots();
+  }
+  pen.addEventListener('click',function(ev){
+    ev.stopPropagation();
+    setActive(!active);
+  });
+  /* 笔迹手势：开启时 pointer capture，滑过的歌词逐段上色；
+     起笔落在「已是当前色」的分段 => 本次笔画为擦除模式（toggle） */
+  var stroke=null;
+  function strokeApply(target){
+    var coord=lyricHlCoordOf(root,target);
+    if(!coord)return;
+    var k=coord.row+'_'+coord.seg+'_'+coord.line;
+    if(stroke.seen[k])return;
+    stroke.seen[k]=true;
+    lyricHlSet(root,getSongId(),coord,stroke.erase?null:colorIdx);
+  }
+  root.addEventListener('pointerdown',function(e){
+    if(!active)return;
+    var coord=lyricHlCoordOf(root,e.target);
+    if(!coord)return;
+    e.preventDefault();
+    try{root.setPointerCapture(e.pointerId);}catch(_){}
+    stroke={erase:coord.el.getAttribute('data-hl')===String(colorIdx),seen:{}};
+    strokeApply(e.target);
+  });
+  root.addEventListener('pointermove',function(e){
+    if(!active||!stroke)return;
+    e.preventDefault();
+    var t=document.elementFromPoint(e.clientX,e.clientY);
+    if(t)strokeApply(t);
+  });
+  function endStroke(e){
+    if(!stroke)return;
+    stroke=null;
+    try{root.releasePointerCapture(e.pointerId);}catch(_){}
+  }
+  root.addEventListener('pointerup',endStroke);
+  root.addEventListener('pointercancel',endStroke);
+  refreshDots();
+  return wrap;
+}
+/* ═══════════ CECP-LYRIC-HL v1 END ═══════════ */
+
 /* ═══════════ CECP-CHORD-ENGINE v1 BEGIN ═══════════
    共享模块：和弦浏览器引擎（Chord Explorer）。
    点击歌词区 .p-chord 弹出底部面板：组成音 / 钢琴键盘 / 吉他把位 / 试听。
@@ -4898,8 +5076,26 @@ var ChordEngine=(function(){
 })();
 if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
 /* ═══════════ CECP-CHORD-ENGINE v1 END ═══════════ */
+  /* 合法和弦 token 判定（同 CECP-CHORD-STYLE chordStylePitchClass 的思路）：
+     根音 A-G 须在 token 开头（允许前置括号），可跟 #/b，
+     其后若为小写字母则首字母限 m/s/a/d ——
+     排除写在 chord 字段里的 "Fine"/"To Chorus" 等段落标记。 */
+  function isChordLikeToken(token){
+    const s=String(token||'').trim();
+    let i=0;
+    while(i<s.length&&s.charAt(i)==='(')i++;
+    const ch=s.charAt(i);
+    if(ch<'A'||ch>'G')return false;
+    let j=i+1;
+    const nx=s.charAt(j);
+    if(nx==='#'||nx==='b')j++;
+    const after=s.charAt(j);
+    if(after>='a'&&after<='z'&&'msad'.indexOf(after)<0)return false;
+    return true;
+  }
   function trChordToken(ch,st,useFlat){
     const raw=String(ch||'');
+    if(!isChordLikeToken(raw))return raw;
     const m=raw.match(/^([A-G](?:#|b)?)([^A-G]*)(.*)$/);
     if(m && m[1] && !m[3]){
       let rest=m[2]||'';
@@ -6353,13 +6549,13 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         const AC=window.AudioContext||window.webkitAudioContext;
         if(AC) _audioCtx=new AC();
       }
-      if(_audioCtx){
+      if(_audioCtx&&_metroVolPct()>0){
         const o=_audioCtx.createOscillator(),g=_audioCtx.createGain();
         o.type='sine'; o.frequency.value=beat%4===0?1200:900;
         g.gain.value=0.0001;
         o.connect(g); g.connect(_audioCtx.destination);
         const now=_audioCtx.currentTime;
-        g.gain.exponentialRampToValueAtTime(0.15, now+0.005);
+        g.gain.exponentialRampToValueAtTime(Math.max(0.001,0.30*(_metroVolPct()/100)), now+0.005);
         g.gain.exponentialRampToValueAtTime(0.0001, now+0.08);
         o.start(now); o.stop(now+0.09);
       }
@@ -6373,6 +6569,17 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(btn){btn.textContent='停止';btn.classList.remove('off');}
   }
 
+  const METRO_VOL_KEY='cecp-metro-vol';
+  function _metroVolPct(){
+    try{
+      const v=parseInt(localStorage.getItem(METRO_VOL_KEY),10);
+      if(isFinite(v)&&v>=0&&v<=200) return v;
+    }catch(_){}
+    return 100;
+  }
+  function _metroSetVolPct(v){
+    try{localStorage.setItem(METRO_VOL_KEY,String(Math.max(0,Math.min(200,Math.round(v)))));}catch(_){}
+  }
   function createMetronome(defaultBpm){
     const wrap=document.createElement('div');wrap.className='ml-met';
     const top=document.createElement('div');top.className='ml-met-top';
@@ -6398,7 +6605,22 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     const hint=document.createElement('div');hint.className='ml-met-hint';
     hint.textContent='点开始即可打拍。滑杆可细调，± 可快速调节。';
     body.appendChild(bpmEl);body.appendChild(minusBtn);body.appendChild(plusBtn);body.appendChild(resetBtn);
-    body.appendChild(range);body.appendChild(hint);
+    body.appendChild(range);
+    const volRow=document.createElement('div');volRow.className='ml-met-volrow';
+    const volIcon=document.createElement('span');volIcon.className='ml-met-vol-icon';volIcon.textContent='\u{1F50A}';
+    const volRange=document.createElement('input');
+    volRange.className='ml-met-vol-range';volRange.type='range';
+    volRange.min='0';volRange.max='200';volRange.step='5';volRange.value=String(_metroVolPct());
+    volRange.setAttribute('aria-label','节拍器音量');
+    const volVal=document.createElement('span');volVal.className='ml-met-vol-val';volVal.textContent=_metroVolPct()+'%';
+    volRange.oninput=()=>{
+      _metroSetVolPct(parseInt(volRange.value,10)||0);
+      volVal.textContent=_metroVolPct()+'%';
+      volIcon.textContent=_metroVolPct()===0?'\u{1F507}':'\u{1F50A}';
+    };
+    volRow.appendChild(volIcon);volRow.appendChild(volRange);volRow.appendChild(volVal);
+    body.appendChild(volRow);
+    body.appendChild(hint);
     wrap.appendChild(top);wrap.appendChild(body);
     const getBpm=()=>Math.max(30,Math.min(240,parseInt(range.value,10)||72));
     const updateDisplay=()=>{bpmNum.textContent=String(getBpm());range.value=String(getBpm());};
@@ -6880,11 +7102,11 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
 
     const tools=document.createElement('div');tools.className='sw-tools';
     const toolsRow=document.createElement('div');toolsRow.className='sw-tools-row';
+    toolsRow.appendChild(lyricHlCreateController(lbDiv,()=>s.id));
 
     const shareBtn=document.createElement('button');
     shareBtn.className='sw-pill';
     shareBtn.type='button';
-    shareBtn.style.cssText='font-size:12px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;';
     shareBtn.textContent='🔗 分享';
     shareBtn.addEventListener('click',()=>shareSong(s));
     toolsRow.appendChild(shareBtn);
@@ -6892,7 +7114,6 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     const exportBtn=document.createElement('button');
     exportBtn.className='sw-pill';
     exportBtn.type='button';
-    exportBtn.style.cssText='font-size:12px;padding:5px 12px;cursor:pointer;display:inline-flex;align-items:center;gap:4px;';
     exportBtn.textContent='🖼 下载图片';
     exportBtn.addEventListener('click',()=>{
       if(exportBtn.disabled) return;
@@ -6909,8 +7130,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         tight:true,
         width:Math.max(560,Math.ceil(wrap.getBoundingClientRect().width||0)||900)
       };
-      exportSongAsPaginatedPdf(lbDiv,exportOpts).catch(err=>{
-        try{ console.warn('[musiclib] paginated export failed, fallback to legacy single image',err); }catch(_){}
+      exportSongAsFittedPng(lbDiv,exportOpts).catch(err=>{
+        try{ console.warn('[musiclib] fitted export failed, fallback to legacy single image',err); }catch(_){}
         return exportTransposePanel(lbDiv,exportOpts);
       }).then(()=>{
         showToast('图片已下载');
@@ -6937,12 +7158,11 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(s.lrc){
       const lrc=document.createElement('a');lrc.className='sw-pill';
       lrc.href=s.lrc;lrc.target='_blank';
-      lrc.style.cssText='font-size:12px;padding:5px 12px;text-decoration:none;cursor:pointer;display:inline-flex;align-items:center;gap:4px;';
       lrc.textContent='📝 LRC';toolsRow.appendChild(lrc);
     }
-    if(hasRenderedScore&&toolsRow.children.length){tools.appendChild(toolsRow);scoreModeShell.appendChild(tools);}
+    if(hasRenderedScore&&toolsRow.children.length){tools.appendChild(toolsRow);scoreModeShell.insertBefore(tools,scoreMain);}
 
-    if(hasRenderedScore) scoreModeShell.appendChild(createMetronome(s.bpm || 72));
+    if(hasRenderedScore) scoreModeShell.insertBefore(createMetronome(s.bpm || 72),scoreMain);
 
     function renderImageScore(){
       imagePanel.innerHTML='';
@@ -7056,6 +7276,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         }
         lbDiv.appendChild(se);
       }
+      lyricHlApply(lbDiv,s.id);
       scheduleFitRows();
     }
     function fitRows(){
