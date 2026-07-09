@@ -168,7 +168,8 @@ function segRenderLabelBlock(seg,row){
   var jump=seg.style==='jump';
   tag.className='sec-label'+(jump?' sec-label-jump':'');
   var color=secLabelColor(seg.label);
-  var base='display:inline-block;position:absolute;left:0;top:16px;white-space:nowrap;line-height:1.4;font-size:0.58em;padding:0 7px;border-radius:999px;box-sizing:border-box;letter-spacing:0.4px;z-index:2;';
+  var dx=Number(seg.dx)||0;
+  var base='display:inline-block;position:absolute;left:'+dx+'px;top:16px;white-space:nowrap;line-height:1.4;font-size:0.58em;padding:0 7px;border-radius:999px;box-sizing:border-box;letter-spacing:0.4px;z-index:2;';
   if(jump){
     tag.style.cssText=base+'font-style:italic;font-weight:600;color:'+color+';border:1px solid '+color+';background:transparent;opacity:0.92;';
   }else{

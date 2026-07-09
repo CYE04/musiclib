@@ -12,7 +12,9 @@
    配色规则：同根音共用一色（G/G7/Gsus4/Gm 同色），12 音名 12 色，
    色相按半音序直接展开（pc*30°）：常见进行（I-IV-V、关系小调）
    的根音相距纯四/五度或小三度，映射后色差足够大，
-   同一首歌里的常用和弦颜色能明显区分；低饱和低对比不刺眼；
+   同一首歌里的常用和弦颜色能明显区分；
+   填充色醒目但文字对比度优先：浅色主题浅底深字、深色主题深底浅字
+   （同色相配对，保证和弦文字一眼可辨）；
    深浅主题分别取色：优先 html[data-resolved-theme]，
    无该属性的宿主回退 prefers-color-scheme。 */
 var CHORD_STYLE_PC={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
@@ -55,8 +57,8 @@ function chordStyleEnsureCss(){
   var light='',dark='',i,h;
   for(i=0;i<12;i++){
     h=chordStyleHue(i);
-    light+='.chord-chip.chord-pc'+i+'{background:hsla('+h+',52%,46%,0.12);outline-color:hsla('+h+',42%,42%,0.4);}';
-    dark+='.chord-chip.chord-pc'+i+'{background:hsla('+h+',48%,64%,0.16);outline-color:hsla('+h+',40%,68%,0.38);}';
+    light+='.chord-chip.chord-pc'+i+'{background:hsl('+h+',65%,86%);outline-color:hsl('+h+',48%,60%);color:hsl('+h+',90%,20%);}';
+    dark+='.chord-chip.chord-pc'+i+'{background:hsl('+h+',42%,26%);outline-color:hsl('+h+',45%,48%);color:hsl('+h+',72%,84%);}';
   }
   var darkAttr=dark.split('.chord-chip.').join('html[data-resolved-theme="dark"] .chord-chip.');
   var darkAuto=dark.split('.chord-chip.').join('html:not([data-resolved-theme="light"]) .chord-chip.');
