@@ -5123,7 +5123,11 @@ var ChordEngine=(function(){
         /* 用户正在选择文本时不打断 */
         var sel=window.getSelection&&window.getSelection();
         if(sel&&String(sel).length)return;
-        var text=cleanChordText(el.textContent);
+        /* 一格内可能塞了多个和弦（CECP-CHORD-STYLE 把它们各自包成一个
+           .chord-chip 彩色徽章）：点在具体某个 chip 上就只取该 chip 自己的
+           文本，否则永远读到整个 .p-chord 拼接文本，只能解析出第一个和弦。 */
+        var chip=target.closest('.chord-chip');
+        var text=cleanChordText((chip&&el.contains(chip))?chip.textContent:el.textContent);
         if(!text)return;
         var entry=getChord(text);
         if(!entry)return; /* 非和弦文本静默忽略 */
