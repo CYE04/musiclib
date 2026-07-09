@@ -1384,6 +1384,7 @@
         '.jp-slur::before{top:3px!important;left:12%!important;right:12%!important;height:11px!important;border-top:2.4px solid #111!important;border-left:2.4px solid #111!important;border-right:2.4px solid #111!important;background:transparent!important;z-index:2!important;}',
         '.jp-slur-open::before{top:3px!important;left:12%!important;right:-4px!important;height:11px!important;border-top:2.4px solid #111!important;border-left:2.4px solid #111!important;background:transparent!important;z-index:2!important;}',
         '.jp-slur-close::before{top:3px!important;left:-4px!important;right:12%!important;height:11px!important;border-top:2.4px solid #111!important;border-right:2.4px solid #111!important;background:transparent!important;z-index:2!important;}',
+        '.jp-tie::before{height:11px!important;border-top:2.4px solid #111!important;border-left:2.4px solid #111!important;border-right:2.4px solid #111!important;background:transparent!important;z-index:2!important;}',
         '.jp-tuplet-br{top:3px!important;left:2px!important;right:2px!important;height:11px!important;border-top:2.4px solid #111!important;border-left:2.4px solid #111!important;border-right:2.4px solid #111!important;background:transparent!important;z-index:1!important;}',
         '.jp-tuplet-num{top:-4px!important;font-size:10px!important;line-height:1!important;padding:0 5px!important;background:#fff!important;color:#111!important;-webkit-text-fill-color:#111!important;z-index:4!important;}'
       ].join('\n');
@@ -3010,6 +3011,7 @@
     if(tok==='sp'||tok==='sp_'||tok==='sp__'){
       const fake=tok==='sp__'?'0__':tok==='sp_'?'0_':'0';
       const e2=parseJpToken(fake);
+      e2.className+=' jp-sp';
       const ns=e2.querySelector('.jp-num')||e2.querySelector('.jp-plain-sym');
       if(ns)ns.style.visibility='hidden';
       return e2;
@@ -3061,6 +3063,64 @@
     var nm=document.createElement('span');nm.className='jp-tuplet-num';nm.textContent=String(n);w.appendChild(nm);
     return w;
   }
+  /* 双连音线锚点：零宽零高，渲染后用 rAF 实测定位。
+     计数规则：只数"看得见的音"（音符/休止/延音线/双行音），自动跳过 sp 占位、小节线、拍号、其他 tie，
+     并深入 ( ) 连音组与三连音内部逐音计数。
+     span=1 连接前一个音→后一个音；span=2 连接前第 2 个音→后一个音（跨过中间音，弧线抬高避让）。
+     弧线两端对齐两音水平中心、画在覆盖范围内最高元素（含高音点/时值线/连音组弧线）上方。 */
+  function makeJpTie(span){
+    span=span>0?span:1;
+    var tie=document.createElement('span');
+    tie.className='jp-tie';
+    if(typeof requestAnimationFrame==='function'){
+      requestAnimationFrame(function(){
+        if(!tie.isConnected)return;
+        var root=(tie.closest&&tie.closest('.p-n'))||tie.parentElement;
+        if(!root){tie.style.display='none';return;}
+        var flat=[],tiePos=-1;
+        (function walk(node){
+          for(var c=node.firstElementChild;c;c=c.nextElementSibling){
+            if(c===tie){tiePos=flat.length;continue;}
+            var cn=String(c.className||'');
+            if(cn.indexOf('jp-tie')>=0||cn.indexOf('jp-bar')>=0||cn.indexOf('jp-timesig')>=0||cn.indexOf('jp-sp')>=0)continue;
+            if(cn.indexOf('jp-slur')>=0||cn.indexOf('jp-tuplet')>=0){walk(c);continue;}
+            if(cn.indexOf('jp-wrap')>=0||cn.indexOf('jp-plain')>=0||cn.indexOf('jp-dual')>=0)flat.push(c);
+          }
+        })(root);
+        var prev=(tiePos>=span)?flat[tiePos-span]:null;
+        var next=(tiePos>=0&&tiePos<flat.length)?flat[tiePos]:null;
+        if(!prev||!next){tie.style.display='none';return;}
+        var minTop=Infinity;
+        for(var k=tiePos-span;k<=tiePos;k++){
+          var el2=flat[k];
+          while(el2&&el2!==root){
+            var r2=el2.getBoundingClientRect();
+            if(r2.top<minTop)minTop=r2.top;
+            el2=el2.parentElement;
+          }
+        }
+        var pr=prev.getBoundingClientRect(),nr=next.getBoundingClientRect(),tr=tie.getBoundingClientRect();
+        var scale=prev.offsetWidth?(pr.width/prev.offsetWidth):1;
+        if(!scale)scale=1;
+        var x1=(pr.left+pr.width/2-tr.left)/scale;
+        var x2=(nr.left+nr.width/2-tr.left)/scale;
+        var topY=(minTop-tr.top)/scale-9-(span-1)*5;
+        tie.style.setProperty('--tie-l',x1.toFixed(1)+'px');
+        tie.style.setProperty('--tie-w',Math.max(8,x2-x1).toFixed(1)+'px');
+        tie.style.setProperty('--tie-t',topY.toFixed(1)+'px');
+      });
+    }
+    return tie;
+  }
+  /* ~ token 解析：~ =1；~~ / ~2 =2；~~~ / ~3 =3 … 返回 0 表示不是 tie token */
+  function jpTieSpan(t){
+    if(!t||t.charAt(0)!=='~')return 0;
+    var rest=t.slice(1);
+    if(!rest)return 1;
+    if(/^~+$/.test(rest))return rest.length+1;
+    if(/^[0-9]+$/.test(rest)){var n=parseInt(rest,10);return n>0?n:0;}
+    return 0;
+  }
   function renderNStr(nStr,opts){
     opts=opts||{};
     var d=document.createElement('div');d.className='p-n';
@@ -3068,11 +3128,13 @@
     if(headTimeSign)d.appendChild(makeTimeSignature(headTimeSign));
     if(!nStr||!nStr.trim())return d;
     function appendRenderedTok(parent,tk){
+      var ts2=jpTieSpan(tk);
+      if(ts2){parent.appendChild(makeJpTie(ts2));return;}
       var inlineTs=extractInlineTimeSignToken(tk);
       parent.appendChild(inlineTs?makeTimeSignature(inlineTs):parseJpToken(tk));
     }
     function isDualAtom(tk){
-      if(!tk||tk==='/'||tk==='／')return false;
+      if(!tk||tk==='/'||tk==='／'||tk.charAt(0)==='~')return false;
       if(tk==='('||tk===')'||tk==='(['||tk==='])'||tk==='}'||tk==='[v1'||tk==='[v2'||tk===']v')return false;
       if(tk==='|'||tk==='||'||tk==='||/'||tk==='|]'||tk==='|:'||tk===':|'||tk==='|:|')return false;
       if(/^\{(3|5)$/.test(tk))return false;
@@ -3095,6 +3157,8 @@
       var t=toks[i];
       var inlineTs=extractInlineTimeSignToken(t);
       if(inlineTs){d.appendChild(makeTimeSignature(inlineTs));i++;continue;}
+      var tieSpan=jpTieSpan(t);
+      if(tieSpan){d.appendChild(makeJpTie(tieSpan));i++;continue;}
       if(t==='('){var sl=document.createElement('span');sl.className='jp-slur';i++;while(i<toks.length&&toks[i]!==')')appendRenderedTok(sl,toks[i++]);d.appendChild(sl);i++;continue;}
       if(t==='(['){var so=document.createElement('span');so.className='jp-slur-open';i++;while(i<toks.length&&toks[i]!=='])')appendRenderedTok(so,toks[i++]);if(i<toks.length)i++;d.appendChild(so);continue;}
       if(t==='])'){var sc=document.createElement('span');sc.className='jp-slur-close';i++;if(i<toks.length)appendRenderedTok(sc,toks[i++]);d.appendChild(sc);continue;}
