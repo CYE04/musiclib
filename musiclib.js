@@ -2170,6 +2170,21 @@
       if(pill) pill.textContent='未获取定位';
     });
   }
+  /**
+   * 反向地理编码：坐标 -> 城市名。用 BigDataCloud 的免费客户端接口
+   * （无需 API key，专为浏览器直连设计），查不到/超时/出错一律返回
+   * 空字符串，调用方据此静默省略地名，不冒充一个不准确的地点。
+   */
+  async function reverseGeocodeCity(lat,lon){
+    try{
+      const ctrl=new AbortController();
+      const timer=setTimeout(()=>ctrl.abort(),4000);
+      const url=`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lon}&localityLanguage=zh`;
+      const data=await fetch(url,{cache:'no-store',signal:ctrl.signal}).then(r=>r.ok?r.json():null);
+      clearTimeout(timer);
+      return (data&&(data.city||data.locality||data.principalSubdivision))||'';
+    }catch(_){ return ''; }
+  }
   async function loadWorshipWeather(){
     const now=Date.now();
     if(_weatherCache&&now-_weatherCache.at<30*60*1000) return _weatherCache.text;
@@ -2182,12 +2197,15 @@
       );
     });
     if(!pos) return ''; /* 定位不可用/被拒绝/超时：不用写死坐标冒充天气 */
-    const url=`https://api.open-meteo.com/v1/forecast?latitude=${pos.lat.toFixed(3)}&longitude=${pos.lon.toFixed(3)}&current=temperature_2m,weather_code&timezone=auto`;
-    const data=await fetch(url,{cache:'no-store'}).then(r=>r.ok?r.json():null);
+    const weatherUrl=`https://api.open-meteo.com/v1/forecast?latitude=${pos.lat.toFixed(3)}&longitude=${pos.lon.toFixed(3)}&current=temperature_2m,weather_code&timezone=auto`;
+    const [data,city]=await Promise.all([
+      fetch(weatherUrl,{cache:'no-store'}).then(r=>r.ok?r.json():null),
+      reverseGeocodeCity(pos.lat,pos.lon)
+    ]);
     const cur=data&&data.current;
     if(!cur) return '';
     const label=weatherCodeLabel(cur.weather_code);
-    const text=`${label} ${Math.round(cur.temperature_2m)}°C`;
+    const text=(city?city+' · ':'')+`${label} ${Math.round(cur.temperature_2m)}°C`;
     _weatherCache={at:now,text};
     return text;
   }
