@@ -179,7 +179,7 @@
           </span>
         </div>
         <div id="ml-nav-actions">
-          <button class="ml-weather-pill" id="ml-weather-pill" type="button" aria-label="今日天气">Padova · --°C</button>
+          <button class="ml-weather-pill" id="ml-weather-pill" type="button" aria-label="今日天气">--°C</button>
           <button class="ml-nav-icon-btn" id="ml-nav-search" type="button" aria-label="聚焦搜索">${icon('search')}</button>
           <button class="ml-nav-icon-btn" id="ml-nav-theme" type="button" aria-label="切换深浅主题">${icon('system')}</button>
         </div>
@@ -2152,26 +2152,36 @@
     const h=now.getHours();
     const greeting=h<5?'夜深平安':h<11?'早安，今日推荐已更新':h<17?'午后平安':h<21?'晚上好，今日推荐已更新':'夜晚平安';
     main.textContent=greeting;
-    sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · 正在同步今日天气';
+    const timeStr=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
+    sub.textContent=timeStr+' · 正在同步今日天气';
+    const pill=$('ml-weather-pill');
     loadWorshipWeather().then(text=>{
+      /* 定位失败/被拒绝时 text 为空：不冒充显示某个固定地区的天气，
+         只保留问候语，天气 pill 明确提示未获取到定位。 */
       if(text){
-        sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · Padova · '+text;
-        const pill=$('ml-weather-pill');
-        if(pill) pill.textContent='Padova · '+text;
+        sub.textContent=timeStr+' · '+text;
+        if(pill) pill.textContent=text;
+      }else{
+        sub.textContent=timeStr;
+        if(pill) pill.textContent='未获取定位';
       }
-    }).catch(()=>{ sub.textContent=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'})+' · 安静敬拜日'; });
+    }).catch(()=>{
+      sub.textContent=timeStr;
+      if(pill) pill.textContent='未获取定位';
+    });
   }
   async function loadWorshipWeather(){
     const now=Date.now();
     if(_weatherCache&&now-_weatherCache.at<30*60*1000) return _weatherCache.text;
     const pos=await new Promise(resolve=>{
-      if(!navigator.geolocation) return resolve({lat:45.4064,lon:11.8768});
+      if(!navigator.geolocation) return resolve(null);
       navigator.geolocation.getCurrentPosition(
         p=>resolve({lat:p.coords.latitude,lon:p.coords.longitude}),
-        ()=>resolve({lat:45.4064,lon:11.8768}),
-        {maximumAge:60*60*1000,timeout:1800}
+        ()=>resolve(null),
+        {maximumAge:60*60*1000,timeout:6000}
       );
     });
+    if(!pos) return ''; /* 定位不可用/被拒绝/超时：不用写死坐标冒充天气 */
     const url=`https://api.open-meteo.com/v1/forecast?latitude=${pos.lat.toFixed(3)}&longitude=${pos.lon.toFixed(3)}&current=temperature_2m,weather_code&timezone=auto`;
     const data=await fetch(url,{cache:'no-store'}).then(r=>r.ok?r.json():null);
     const cur=data&&data.current;
