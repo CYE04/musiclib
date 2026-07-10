@@ -1,12 +1,12 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v27-weather-v3";
+const CACHE_NAME = "cecp-musiclib-pwa-v28-layout-v4";
 const DATA_CACHE = "cecp-musiclib-data-v1";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
-  "./musiclib.css?v=20260709-weather-v3",
-  "./gsap.min.js?v=20260709-weather-v3",
-  "./pinyin-dict.js?v=20260709-weather-v3",
-  "./musiclib.js?v=20260709-weather-v3",
+  "./musiclib.css?v=20260710-layout-v4",
+  "./gsap.min.js?v=20260710-layout-v4",
+  "./pinyin-dict.js?v=20260710-layout-v4",
+  "./musiclib.js?v=20260710-layout-v4",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
   "./icons/favicon.ico",

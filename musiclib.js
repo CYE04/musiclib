@@ -196,19 +196,6 @@
           <div class="ml-hero-chip"><span class="ml-hero-chip-label">本堂</span><strong id="ml-hero-service-count">0</strong></div>
         </div>
       </div>
-      <div id="ml-search-row">
-        <div id="ml-search-wrap">
-          <span id="ml-search-icon">${icon('search')}</span>
-          <input id="ml-search" type="search" placeholder="搜索歌名、拼音、歌手、歌词、主题..." autocomplete="off" autocorrect="off"/>
-          <button id="ml-search-clear" type="button" aria-label="清空搜索" hidden>${icon('close',16)}</button>
-        </div>
-        <button id="ml-search-submit" type="button" aria-label="搜索">${icon('search',20)}</button>
-        <div id="ml-count-wrap">
-          <span class="ml-count-label">总数</span>
-          <strong id="ml-count"></strong>
-        </div>
-      </div>
-      <div id="ml-search-history" hidden></div>
       <section id="ml-worship-picks" class="ml-reveal" aria-label="每日推荐">
         <div id="ml-wp-glow" aria-hidden="true"></div>
         <div id="ml-wp-bg" aria-hidden="true"></div>
@@ -261,6 +248,19 @@
           <div id="ml-category-grid"></div>
         </section>
       </div>
+      <div id="ml-search-row">
+        <div id="ml-search-wrap">
+          <span id="ml-search-icon">${icon('search')}</span>
+          <input id="ml-search" type="search" placeholder="搜索歌名、拼音、歌手、歌词、主题..." autocomplete="off" autocorrect="off"/>
+          <button id="ml-search-clear" type="button" aria-label="清空搜索" hidden>${icon('close',16)}</button>
+        </div>
+        <button id="ml-search-submit" type="button" aria-label="搜索">${icon('search',20)}</button>
+        <div id="ml-count-wrap">
+          <span class="ml-count-label">总数</span>
+          <strong id="ml-count"></strong>
+        </div>
+      </div>
+      <div id="ml-search-history" hidden></div>
       <div id="ml-filter-section">
         <div id="ml-filter-section-head">
           <div class="ml-section-label">筛选诗歌</div>
