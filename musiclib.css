@@ -1993,7 +1993,7 @@ html,body,#music-library{
 
 
 /* slur / tuplet */
-#music-library .jp-slur,#music-library .jp-slur-open,#music-library .jp-slur-close,#music-library .jp-tuplet{display:inline-flex;align-items:flex-end;position:relative;padding-top:12px;}
+#music-library .jp-slur,#music-library .jp-slur-open,#music-library .jp-slur-close,#music-library .jp-tuplet{display:inline-flex;align-items:flex-end;position:relative;padding-top:var(--slur-pad,12px);}
 #music-library .jp-slur::before{content:'';position:absolute;top:2px;left:15%;right:15%;height:8px;border-top:1.5px solid var(--text);border-left:1.5px solid var(--text);border-right:1.5px solid var(--text);border-radius:50% 50% 0 0/100% 100% 0 0;}
 #music-library .jp-slur-open::before{content:'';position:absolute;top:2px;left:15%;right:-4px;height:8px;border-top:1.5px solid var(--text);border-left:1.5px solid var(--text);border-radius:50% 0 0 0/100% 0 0 0;}
 #music-library .jp-slur-close::before{content:'';position:absolute;top:2px;left:-4px;right:15%;height:8px;border-top:1.5px solid var(--text);border-right:1.5px solid var(--text);border-radius:0 50% 0 0/0 100% 0 0;}

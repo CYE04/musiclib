@@ -1,7 +1,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.07.08.04-metro-volume';
+  const ML_VER='2026.07.11.01-jp-tie-arcs';
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -1380,7 +1380,7 @@
       const style=document.createElement('style');
       style.setAttribute('data-export-symbol-fix','1');
       style.textContent=[
-        '.jp-slur,.jp-slur-open,.jp-slur-close,.jp-tuplet{padding-top:22px!important;overflow:visible!important;}',
+        '.jp-slur,.jp-slur-open,.jp-slur-close,.jp-tuplet{padding-top:calc(var(--slur-pad,12px) + 10px)!important;overflow:visible!important;}',
         '.jp-slur::before{top:3px!important;left:12%!important;right:12%!important;height:11px!important;border-top:2.4px solid #111!important;border-left:2.4px solid #111!important;border-right:2.4px solid #111!important;background:transparent!important;z-index:2!important;}',
         '.jp-slur-open::before{top:3px!important;left:12%!important;right:-4px!important;height:11px!important;border-top:2.4px solid #111!important;border-left:2.4px solid #111!important;background:transparent!important;z-index:2!important;}',
         '.jp-slur-close::before{top:3px!important;left:-4px!important;right:12%!important;height:11px!important;border-top:2.4px solid #111!important;border-right:2.4px solid #111!important;background:transparent!important;z-index:2!important;}',
@@ -3091,54 +3091,87 @@
     var nm=document.createElement('span');nm.className='jp-tuplet-num';nm.textContent=String(n);w.appendChild(nm);
     return w;
   }
-  /* 双连音线锚点：零宽零高，渲染后用 rAF 实测定位。
-     计数规则：只数"看得见的音"（音符/休止/延音线/双行音），自动跳过 sp 占位、小节线、拍号、其他 tie，
-     并深入 ( ) 连音组与三连音内部逐音计数。
-     span=1 连接前一个音→后一个音；span=2 连接前第 2 个音→后一个音（跨过中间音，弧线抬高避让）。
-     弧线两端对齐两音水平中心、画在覆盖范围内最高元素（含高音点/时值线/连音组弧线）上方。 */
+  /* ── 连音线（~ token）与弧线分层 ─────────────────
+     ~N 语义（数字计数）：
+       ~   = 连接左侧第 1 个可见音 → 右侧第 1 个可见音
+       ~2  = 连接左侧第 2 个可见音 → 右侧第 1 个可见音（跨过 1 个音）；~3 以此类推
+       计数时 sp 占位、小节线、拍号一律跳过且不可作端点；
+       ( ) 组与三连音边界透明（计数穿过，可跨组、可写在组内）；
+       左侧不足 N 个音或右侧无音时该弧不画。
+     分层（几何嵌套 + 类型权重）：
+       范围重叠（不含只共享端点）的 ~ 之间：窄的贴音符在下、宽的抬高在上；
+       ( ) 组/三连音弧线永远比与其相接或重叠的 ~ 至少高一层（含共享端点）；
+       每升一层抬高 JP_ARC_LAYER_STEP px；无 ~ 的行完全不处理（逐像素回归）。 */
+  var JP_ARC_LAYER_STEP=6;
   function makeJpTie(span){
-    span=span>0?span:1;
     var tie=document.createElement('span');
     tie.className='jp-tie';
-    if(typeof requestAnimationFrame==='function'){
-      requestAnimationFrame(function(){
-        if(!tie.isConnected)return;
-        var root=(tie.closest&&tie.closest('.p-n'))||tie.parentElement;
-        if(!root){tie.style.display='none';return;}
-        var flat=[],tiePos=-1;
-        (function walk(node){
-          for(var c=node.firstElementChild;c;c=c.nextElementSibling){
-            if(c===tie){tiePos=flat.length;continue;}
-            var cn=String(c.className||'');
-            if(cn.indexOf('jp-tie')>=0||cn.indexOf('jp-bar')>=0||cn.indexOf('jp-timesig')>=0||cn.indexOf('jp-sp')>=0)continue;
-            if(cn.indexOf('jp-slur')>=0||cn.indexOf('jp-tuplet')>=0){walk(c);continue;}
-            if(cn.indexOf('jp-wrap')>=0||cn.indexOf('jp-plain')>=0||cn.indexOf('jp-dual')>=0)flat.push(c);
-          }
-        })(root);
-        var prev=(tiePos>=span)?flat[tiePos-span]:null;
-        var next=(tiePos>=0&&tiePos<flat.length)?flat[tiePos]:null;
-        if(!prev||!next){tie.style.display='none';return;}
-        var minTop=Infinity;
-        for(var k=tiePos-span;k<=tiePos;k++){
-          var el2=flat[k];
-          while(el2&&el2!==root){
-            var r2=el2.getBoundingClientRect();
-            if(r2.top<minTop)minTop=r2.top;
-            el2=el2.parentElement;
-          }
-        }
-        var pr=prev.getBoundingClientRect(),nr=next.getBoundingClientRect(),tr=tie.getBoundingClientRect();
-        var scale=prev.offsetWidth?(pr.width/prev.offsetWidth):1;
-        if(!scale)scale=1;
-        var x1=(pr.left+pr.width/2-tr.left)/scale;
-        var x2=(nr.left+nr.width/2-tr.left)/scale;
-        var topY=(minTop-tr.top)/scale-9-(span-1)*5;
-        tie.style.setProperty('--tie-l',x1.toFixed(1)+'px');
-        tie.style.setProperty('--tie-w',Math.max(8,x2-x1).toFixed(1)+'px');
-        tie.style.setProperty('--tie-t',topY.toFixed(1)+'px');
-      });
-    }
+    tie.setAttribute('data-tie-span',span>0?span:1);
     return tie;
+  }
+  function layoutJpArcs(lane){
+    if(!lane||!lane.isConnected)return;
+    var atoms=[],ties=[],groups=[];
+    (function walk(node){
+      for(var c=node.firstElementChild;c;c=c.nextElementSibling){
+        var cn=String(c.className||'');
+        if(cn.indexOf('jp-tie')>=0){ties.push({el:c,pos:atoms.length,span:parseInt(c.getAttribute('data-tie-span'),10)||1});continue;}
+        if(cn.indexOf('jp-bar')>=0||cn.indexOf('jp-timesig')>=0||cn.indexOf('jp-sp')>=0)continue;
+        if(cn.indexOf('jp-slur')>=0||cn.indexOf('jp-tuplet')>=0){
+          var s0=atoms.length;
+          walk(c);
+          if(atoms.length>s0)groups.push({el:c,start:s0,end:atoms.length-1});
+          continue;
+        }
+        if(cn.indexOf('jp-wrap')>=0||cn.indexOf('jp-plain')>=0||cn.indexOf('jp-dual')>=0)atoms.push(c);
+      }
+    })(lane);
+    if(!ties.length)return;
+    var arcs=[];
+    ties.forEach(function(t){
+      var s=t.pos-t.span,e=t.pos;
+      if(s<0||e>=atoms.length){t.el.style.display='none';return;}
+      t.el.style.display='';
+      arcs.push({kind:'tie',el:t.el,start:s,end:e,layer:0});
+    });
+    groups.forEach(function(g){arcs.push({kind:'group',el:g.el,start:g.start,end:g.end,layer:0});});
+    function overlaps(a,b){
+      if(a.kind==='tie'&&b.kind==='tie')return a.start<b.end&&b.start<a.end;
+      return a.start<=b.end&&b.start<=a.end;
+    }
+    var order=arcs.slice().sort(function(a,b){
+      if(a.kind!==b.kind)return a.kind==='tie'?-1:1;
+      var wa=a.end-a.start,wb=b.end-b.start;
+      return wa!==wb?wa-wb:a.start-b.start;
+    });
+    var placed=[];
+    order.forEach(function(a){
+      var m=0;
+      placed.forEach(function(p){if(overlaps(a,p)&&p.layer>m)m=p.layer;});
+      a.layer=m+1;
+      placed.push(a);
+    });
+    arcs.forEach(function(a){
+      if(a.kind==='group'){
+        if(a.layer>1)a.el.style.setProperty('--slur-pad',(12+(a.layer-1)*JP_ARC_LAYER_STEP)+'px');
+        return;
+      }
+      var p=atoms[a.start],n=atoms[a.end],tr=a.el.getBoundingClientRect();
+      var pr=p.getBoundingClientRect(),nr=n.getBoundingClientRect();
+      var scale=p.offsetWidth?(pr.width/p.offsetWidth):1;
+      if(!scale)scale=1;
+      var minTop=Infinity;
+      for(var k=a.start;k<=a.end;k++){
+        var r2=atoms[k].getBoundingClientRect();
+        if(r2.top<minTop)minTop=r2.top;
+      }
+      var x1=(pr.left+pr.width/2-tr.left)/scale;
+      var x2=(nr.left+nr.width/2-tr.left)/scale;
+      var topY=(minTop-tr.top)/scale-9-(a.layer-1)*JP_ARC_LAYER_STEP;
+      a.el.style.setProperty('--tie-l',x1.toFixed(1)+'px');
+      a.el.style.setProperty('--tie-w',Math.max(8,x2-x1).toFixed(1)+'px');
+      a.el.style.setProperty('--tie-t',topY.toFixed(1)+'px');
+    });
   }
   /* ~ token 解析：~ =1；~~ / ~2 =2；~~~ / ~3 =3 … 返回 0 表示不是 tie token */
   function jpTieSpan(t){
@@ -3155,9 +3188,10 @@
     var headTimeSign=normalizeTimeSignValue(opts.inlineTimeSign||'');
     if(headTimeSign)d.appendChild(makeTimeSignature(headTimeSign));
     if(!nStr||!nStr.trim())return d;
+    var hasTie=false;
     function appendRenderedTok(parent,tk){
       var ts2=jpTieSpan(tk);
-      if(ts2){parent.appendChild(makeJpTie(ts2));return;}
+      if(ts2){parent.appendChild(makeJpTie(ts2));hasTie=true;return;}
       var inlineTs=extractInlineTimeSignToken(tk);
       parent.appendChild(inlineTs?makeTimeSignature(inlineTs):parseJpToken(tk));
     }
@@ -3186,7 +3220,7 @@
       var inlineTs=extractInlineTimeSignToken(t);
       if(inlineTs){d.appendChild(makeTimeSignature(inlineTs));i++;continue;}
       var tieSpan=jpTieSpan(t);
-      if(tieSpan){d.appendChild(makeJpTie(tieSpan));i++;continue;}
+      if(tieSpan){d.appendChild(makeJpTie(tieSpan));hasTie=true;i++;continue;}
       if(t==='('){var sl=document.createElement('span');sl.className='jp-slur';i++;while(i<toks.length&&toks[i]!==')')appendRenderedTok(sl,toks[i++]);d.appendChild(sl);i++;continue;}
       if(t==='(['){var so=document.createElement('span');so.className='jp-slur-open';i++;while(i<toks.length&&toks[i]!=='])')appendRenderedTok(so,toks[i++]);if(i<toks.length)i++;d.appendChild(so);continue;}
       if(t==='])'){var sc=document.createElement('span');sc.className='jp-slur-close';i++;if(i<toks.length)appendRenderedTok(sc,toks[i++]);d.appendChild(sc);continue;}
@@ -3194,6 +3228,9 @@
       var tm2=t.match(/^\{(3|5)$/);if(tm2){var tn=parseInt(tm2[1],10);var tp=makeTuplet(tn);i++;while(i<toks.length&&toks[i]!=='}')appendRenderedTok(tp,toks[i++]);d.appendChild(tp);i++;continue;}
       if(t==='}'){i++;continue;}
       appendRenderedTok(d,t);i++;
+    }
+    if(hasTie&&typeof requestAnimationFrame==='function'){
+      requestAnimationFrame(function(){layoutJpArcs(d);});
     }
     return d;
   }
@@ -3742,8 +3779,8 @@ function justifyScoreRows(rowList,opts){
   return plans.length;
 }
 /* ═══════════ CECP-JUSTIFY-ROWS v1 END ═══════════ */
-/* justifyRows 开关：musiclib 暂默认关闭，保证既有歌曲渲染逐像素不变 */
-const ML_JUSTIFY_ROWS=false;
+/* justifyRows 开关：行内两端对齐，右端与最宽行对齐（短行除外） */
+const ML_JUSTIFY_ROWS=true;
 
 /* ═══════════ CECP-LYRIC-HL v2 BEGIN ═══════════
    共享模块：歌词荧光笔标记（本地持久化，仅歌词行可标记）。
