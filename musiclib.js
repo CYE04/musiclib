@@ -1094,7 +1094,9 @@
   }
   function projRequestFullscreen(){
     if(!(projState.projWin&&!projState.projWin.closed)){ showToast('请先进入投影'); return; }
-    projBusSend({t:'fullscreen'}); // 投影页尝试全屏(需激活, best-effort)
+    projBusSend({t:'fullscreen'}); // best-effort: 浏览器多半会拦截"消息式"全屏(非用户手势)
+    try{ projState.projWin.focus(); }catch(_){}
+    showToast('若没全屏, 在投影窗口里点一下画面即可进入全屏');
   }
   /* 背景以「整首歌/每个歌单项」为单位: item.bg 覆盖, 没有则用 projState.bg 默认 */
   function projCurrentItem(){
@@ -1171,17 +1173,23 @@
     if(projState.projWin&&!projState.projWin.closed){ try{projState.projWin.focus();}catch(_){} return; }
     const url='./projection.html';
     // Window Management API: 有副屏则把投影窗口定位到副屏并铺满; 单屏/不支持 -> 普通新窗口(页内全屏兜底)
-    let feat='', onExternal=false;
+    // popup 特性 = 无标签栏/无工具栏的独立窗口(而非新标签页, 避免顶部一直显示地址栏 projection.html)
+    const chrome='popup=yes,menubar=no,toolbar=no,location=no,status=no,scrollbars=no';
+    let feat=chrome, onExternal=false;
     try{
       if(window.getScreenDetails){
         const sd=await window.getScreenDetails();
         const screensArr=sd&&sd.screens||[];
         if(screensArr.length>1){
           const ext=screensArr.find(s=>!s.isPrimary)||sd.currentScreen;
-          if(ext){ feat=`left=${ext.availLeft},top=${ext.availTop},width=${ext.availWidth},height=${ext.availHeight}`; onExternal=true; }
+          if(ext){ feat=`${chrome},left=${ext.availLeft},top=${ext.availTop},width=${ext.availWidth},height=${ext.availHeight}`; onExternal=true; }
         }
       }
     }catch(_){ /* 权限被拒/不支持: 降级普通窗口 */ }
+    if(!onExternal){ // 单屏兜底也开成无边 popup 铺满主屏(不是新标签页)
+      const sw=(window.screen&&screen.availWidth)||window.innerWidth, sh=(window.screen&&screen.availHeight)||window.innerHeight;
+      feat=`${chrome},left=0,top=0,width=${sw},height=${sh}`;
+    }
     let win=null;
     try{ win=window.open(url,'cecpProjection',feat); }catch(_){}
     if(!win){ showToast('无法打开投影窗口（可能被浏览器拦截）'); return; }
