@@ -143,7 +143,8 @@
       pause:`<svg ${filled}><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`,
       fastForward:`<svg ${common}><path d="m13 5 9 7-9 7V5Z"/><path d="m2 5 9 7-9 7V5Z"/></svg>`,
       circleHelp:`<svg ${common}><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.3 2.3 0 1 1 3.7 1.8c-.9.6-1.5 1.1-1.5 2.2"/><path d="M12 17h.01"/></svg>`,
-      circlePlay:`<svg ${common}><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4V8Z"/></svg>`
+      circlePlay:`<svg ${common}><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4V8Z"/></svg>`,
+      projection:`<svg ${common}><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10"/><path d="M12 16v4"/><path d="M8 10h5"/></svg>`
     };
     return map[name]||map.more;
   }
@@ -163,6 +164,7 @@
         <button class="ml-side-link" type="button" data-nav="library">${icon('library')}<span>诗歌库</span></button>
         <button class="ml-side-link" type="button" data-nav="playlist">${icon('queue')}<span>播放列表</span></button>
         <button class="ml-side-link" type="button" data-nav="favorites">${icon('heart')}<span>收藏</span></button>
+        <button class="ml-side-link ml-side-link-proj" id="ml-side-projection" type="button">${icon('projection')}<span>投影模式</span></button>
       </nav>
       <button id="ml-side-profile" type="button" aria-label="切换主题">
         <span class="ml-profile-avatar">${icon('theme',17)}</span>
@@ -189,6 +191,7 @@
           <div id="ml-header-kicker">CECP MUSIC LIBRARY</div>
           <h1 id="ml-title">今天想唱什么?</h1>
           <div id="ml-subtitle">搜索歌名、歌手、歌词、调性与主题，快速找到敬拜练习需要的诗歌。</div>
+          <button id="ml-hero-projection" class="ml-hero-proj-btn" type="button">${icon('projection',18)}<span>进入投影模式</span></button>
         </div>
         <div id="ml-hero-meta">
           <div class="ml-hero-chip"><span class="ml-hero-chip-label">歌曲</span><strong id="ml-hero-song-count">--</strong></div>
@@ -292,6 +295,7 @@
         <div id="ml-detail-title"></div>
         <div id="ml-detail-actions">
           <button id="ml-detail-service" class="ml-detail-action" type="button" aria-label="标记本堂唱过">${icon('check',16)}<span>本堂</span></button>
+          <button id="ml-detail-projection" class="ml-detail-action" type="button" aria-label="投影模式">${icon('projection',16)}<span>投影</span></button>
           <button id="ml-detail-favorite" class="ml-detail-action" type="button" aria-label="收藏诗歌">${icon('heart',16)}</button>
           <button id="ml-detail-more" class="ml-detail-action" type="button" aria-label="更多操作">${icon('more',16)}</button>
         </div>
@@ -688,6 +692,10 @@
   $('ml-detail-overlay')?.addEventListener('click',()=>closeDetail());
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape') return;
+    if(projState.panel?.classList.contains('open')){
+      projClosePanel();
+      return;
+    }
     if($('ml-lightbox')?.classList.contains('open')){
       $('ml-lightbox').classList.remove('open');
       return;
@@ -725,6 +733,12 @@
     const song=songs.find(s=>s.id===_activeDetailSongId);
     if(song) shareSong(song);
   });
+  $('ml-detail-projection')?.addEventListener('click',()=>projOpenPanel());
+  $('ml-side-projection')?.addEventListener('click',()=>projOpenStudio());
+  $('ml-hero-projection')?.addEventListener('click',()=>projOpenStudio());
+  document.addEventListener('visibilitychange',()=>{
+    if(!document.hidden&&projState.projWin&&projState.projWin.closed) projMarkProjectorGone();
+  });
   bindWorshipPicksEffects();
   updateWorshipGreeting();
   setInterval(updateWorshipGreeting,60000);
@@ -738,6 +752,855 @@
     clearTimeout(showToast._timer);
     showToast._timer=setTimeout(()=>t.classList.remove('show'),1800);
   }
+
+  /* ═══════════ CECP-PROJECTION v1 BEGIN (投影模式「控制台」侧) ═══════════
+     投影输出 = 独立 pptlib 式全屏页 projection.html(不加载 musiclib.js)。
+     通信: BroadcastChannel 优先, storage 事件兜底; 消息带递增 v。
+     渲染复用: 控制台用 renderScore 同款原语(projBuildRow)把整首渲成逐行 HTML,
+     经 bus 推给投影页注入(投影页 <link musiclib.css> + #music-library 包裹命中作用域样式);
+     分页在投影页按屏幕高度算, 翻页/开关回报控制台。移调/开关变化 -> 控制台重推 content。 */
+  const PROJ_CH_NAME='cecp:musiclib:projection:v1';
+  const PROJ_SETTINGS_KEY='cecp:musiclib:projection:settings:v1';
+  const PROJ_BUS_KEY='cecp:musiclib:projection:bus:v1';
+  const PROJ_TOGGLE_DEFS=[['chord','和弦'],['jianpu','简谱'],['lyric','歌词'],['pinyin','拼音']];
+  const PROJ_BG_PRESETS={
+    warm:{label:'暖阳',css:'linear-gradient(135deg,#8a4b2f 0%,#a86a44 28%,#7a6a72 60%,#3f4a5e 100%)'},
+    night:{label:'深蓝',css:'linear-gradient(160deg,#0b1830 0%,#122844 55%,#0a1220 100%)'},
+    black:{label:'纯黑',css:'#000'}
+  };
+  const projState={
+    toggles:{chord:true,jianpu:true,lyric:true,pinyin:true},
+    aspect:'16:9',fontScale:1.5, // 默认放大: 每页少放几行, 歌词更大更好读
+    bg:{mode:'warm',css:PROJ_BG_PRESETS.warm.css,image:null}, // 默认背景(新歌/无当前项时)
+    textColor:'#ffffff', // 全局字体色(默认白+阴影)
+    bgImages:{}, // imgKey -> dataURL 内存缓存(真身在 IndexedDB)
+    setlist:[],studio:null,
+    pages:[],pageIdx:0,blank:false,songId:'',songTitle:'',
+    ver:0,projWin:null,watchTimer:0,panel:null,bus:null,statusEl:null,pageEl:null,enterBtn:null
+  };
+  /* 背景图存 IndexedDB(localStorage 放不下大图) */
+  function projIdb(){
+    return new Promise((res,rej)=>{
+      let r; try{ r=indexedDB.open('cecp-musiclib-projection',1); }catch(e){ rej(e); return; }
+      r.onupgradeneeded=()=>{ try{ r.result.createObjectStore('kv'); }catch(_){} };
+      r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error);
+    });
+  }
+  function projIdbPut(k,v){ return projIdb().then(db=>new Promise((res,rej)=>{ const tx=db.transaction('kv','readwrite'); tx.objectStore('kv').put(v,k); tx.oncomplete=()=>res(); tx.onerror=()=>rej(tx.error); })).catch(()=>{}); }
+  function projIdbGet(k){ return projIdb().then(db=>new Promise(res=>{ const tx=db.transaction('kv','readonly'); const rq=tx.objectStore('kv').get(k); rq.onsuccess=()=>res(rq.result||null); rq.onerror=()=>res(null); })).catch(()=>null); }
+  function projLoadSettings(){
+    try{
+      const s=JSON.parse(localStorage.getItem(PROJ_SETTINGS_KEY)||'{}')||{};
+      if(s.toggles&&typeof s.toggles==='object'){
+        PROJ_TOGGLE_DEFS.forEach(([k])=>{ if(typeof s.toggles[k]==='boolean')projState.toggles[k]=s.toggles[k]; });
+      }
+      if(s.aspect==='4:3'||s.aspect==='16:9') projState.aspect=s.aspect;
+      if(typeof s.fontScale==='number'&&s.fontScale>0) projState.fontScale=s.fontScale;
+      if(s.bgMode&&(PROJ_BG_PRESETS[s.bgMode]||s.bgMode==='image')){
+        projState.bg.mode=s.bgMode;
+        if(PROJ_BG_PRESETS[s.bgMode]) projState.bg.css=PROJ_BG_PRESETS[s.bgMode].css;
+      }
+      if(typeof s.textColor==='string'&&/^#[0-9a-f]{3,8}$/i.test(s.textColor)) projState.textColor=s.textColor;
+    }catch(_){}
+  }
+  function projSaveSettings(){
+    try{
+      const prev=JSON.parse(localStorage.getItem(PROJ_SETTINGS_KEY)||'{}')||{};
+      prev.toggles=Object.assign({},prev.toggles,projState.toggles);
+      prev.aspect=projState.aspect; prev.fontScale=projState.fontScale;
+      prev.bgMode=projState.bg.mode; // 图片本身存 IndexedDB, 这里只存模式
+      prev.textColor=projState.textColor;
+      localStorage.setItem(PROJ_SETTINGS_KEY,JSON.stringify(prev));
+    }catch(_){}
+  }
+  function projMakeBus(){
+    let bc=null;
+    try{ if(typeof BroadcastChannel!=='undefined') bc=new BroadcastChannel(PROJ_CH_NAME); }catch(_){}
+    const listeners=new Set();
+    function handle(msg){ if(msg&&msg.__cecpProj) listeners.forEach(fn=>{try{fn(msg);}catch(_){}}); }
+    if(bc) bc.onmessage=e=>handle(e.data);
+    const onStorage=e=>{ if(e.key!==PROJ_BUS_KEY||!e.newValue)return; try{handle(JSON.parse(e.newValue));}catch(_){} };
+    window.addEventListener('storage',onStorage);
+    return {
+      send(msg){
+        msg.__cecpProj=true;
+        if(bc){ try{bc.postMessage(msg);return;}catch(_){} }
+        try{ localStorage.setItem(PROJ_BUS_KEY,JSON.stringify(Object.assign({_ts:Date.now()},msg))); }catch(_){}
+      },
+      on(fn){ listeners.add(fn); return ()=>listeners.delete(fn); },
+      close(){ try{bc&&bc.close();}catch(_){} window.removeEventListener('storage',onStorage); listeners.clear(); }
+    };
+  }
+  function projEnsureBus(){
+    if(projState.bus) return projState.bus;
+    const bus=projMakeBus();
+    bus.on(msg=>{
+      if(msg.role==='console') return;               // 忽略自己(storage 兜底会回读)
+      if(msg.t==='hello'){ projPushPage(); return; } // 投影页就绪 -> 推当前页(含该页背景)
+      if(msg.t==='bye'){ projMarkProjectorGone(); return; }
+    });
+    projState.bus=bus;
+    return bus;
+  }
+  function projBusSend(msg){ msg.role='console'; msg.v=++projState.ver; projEnsureBus().send(msg); }
+  /* 当前调 = 跟随详情页(存 song-state.lastKey), 不依赖 openDetail 闭包 */
+  function projCurKey(song){ const s=getSongState(song.id)||{}; return s.lastKey||song.origKey||'C'; }
+  /* 逐字拼音: 占位/空格 -> 空串; 非中文字母数字原样; 其余用 cecpPinyinOf */
+  function projPinyinSyllables(text){
+    const out=[]; const has=typeof window.cecpPinyinOf==='function';
+    for(const ch of spStripTokens(String(text||''))){  // 先去掉 {sp} 排版补位符, 免得注出 "s p"
+      if(ch==='ㅤ'||ch==='　'||ch===' '||ch===' '){ out.push(''); continue; }
+      let py=has?window.cecpPinyinOf(ch):'';
+      if(!py&&/[a-z0-9]/i.test(ch)) py=ch;
+      out.push(py||'');
+    }
+    return out;
+  }
+  /* 复用 renderScore 的逐段渲染原语, 按四开关裁层 + 每段各配拼音层。产出一整行 DOM。 */
+  function projBuildRow(line,st,useFlat,tg){
+    const isArr=Array.isArray(line);
+    const row=_div('sw-lrow prev-row'+((!isArr&&line.b)?' bold':''));
+    const segs=isArr?line:(line.line||[]);
+    let voltaWrap=null;
+    for(const seg of segs){
+      if(!segIsRenderableBlock(seg))continue;
+      if(segIsLabelBlock(seg)){ continue; } // 投影不显示 chorus/bridge/pre-chorus/to chorus 等段落标记
+      const segEl=_div('prev-seg');
+      if(tg.chord){
+        const chord=document.createElement('div');
+        chord.className='p-chord'+(seg.chord?'':' empty');
+        setChordContentEx(chord,seg.chord?trChordEx(seg.chord,st,useFlat,trChord):' ',setChordContent);
+        chordChipDecorate(chord);
+        segEl.appendChild(chord);
+      }
+      if(tg.jianpu){
+        segEl.appendChild(renderNStr(seg.n||'',{inlineTimeSign:getSegInlineTimeSign(seg)}));
+      }
+      [['lyric','',1],['lyric2','2',2],['lyric3','3',3],['lyric4','4',4]].forEach(([k,suf,idx])=>{
+        const hasV = idx===1 ? true : (seg[k]!=null&&seg[k]!=='');
+        if(!hasV) return;
+        const text=String(seg[k]||'');
+        if(tg.pinyin){
+          const py=_div('p-pinyin'+(suf?' p-pinyin'+suf:''));
+          py.textContent=projPinyinSyllables(text).filter(Boolean).join(' ');
+          segEl.appendChild(py);
+        }
+        if(tg.lyric){
+          const ly=document.createElement('div');
+          ly.className='p-lyric'+(suf?' p-lyric'+suf:'')+((!isArr&&line.b)?' bold':'');
+          setLyricContentEx(ly,normLyricText(text),setLyricContent);
+          segEl.appendChild(ly);
+        }
+      });
+      const _vn=getVoltaStartLabel(seg.n);
+      if(_vn){ row.classList.add('has-volta'); voltaWrap=document.createElement('span'); voltaWrap.className='prev-volta'; voltaWrap.setAttribute('data-v',_vn+'.'); }
+      (voltaWrap||row).appendChild(segEl);
+      if(voltaWrap&&hasVoltaEnd(seg.n)){ voltaWrap.classList.add('closed'); row.appendChild(voltaWrap); voltaWrap=null; }
+    }
+    if(voltaWrap)row.appendChild(voltaWrap);
+    return row;
+  }
+  function projChordCss(){ const el=document.getElementById('cecp-chord-style'); return el?el.textContent:''; }
+  /* 分页在控制端做(投影页纯显示): 整首渲成逐行, 离屏测量自然尺寸后按虚拟画布(aspect+字号)贪心装箱。
+     离屏挂 #music-library 内让作用域样式生效; setTimeout(非rAF)等连音弧/段标布局(后台标签 rAF 会被暂停)。 */
+  let _projSeq=0;
+  function projSetlist(){
+    if(projState.setlist&&projState.setlist.length) return projState.setlist;
+    return projState.songId?[{t:'song',id:projState.songId}]:[];
+  }
+  const PROJ_SETLIST_KEY='cecp:musiclib:projection:setlist:v1';
+  function projSaveSetlist(){ try{ localStorage.setItem(PROJ_SETLIST_KEY,JSON.stringify(projState.setlist||[])); }catch(_){} }
+  function projLoadSetlist(){ try{ const a=JSON.parse(localStorage.getItem(PROJ_SETLIST_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
+  /* setlist 项 = {t:'song',id} 或 {t:'scripture',title,ref,primary,verses:[{verse,primary,secondary}]} */
+  function projBuildPages(){
+    return new Promise(resolve=>{
+      const list=projSetlist();
+      if(!list.length){ projState.pages=[]; resolve(); return; }
+      const tg=projState.toggles;
+      // 诗歌与经文分两个离屏容器: 经文行很宽会撑宽容器, 若与诗歌同容器会把诗歌行也撑宽 -> 诗歌被算得更小。分开测量互不影响。
+      // flex column + align flex-start: 与投影页 #proj-page 布局一致(margin 不折叠、行按内容宽不被撑满) -> 测高测宽都准
+      const measCss='position:fixed;left:-99999px;top:0;width:auto;visibility:hidden;display:flex;flex-direction:column;align-items:flex-start;';
+      const songStage=_div('sw-lb'); songStage.style.cssText=measCss;
+      const scriptStage=_div('sw-lb'); scriptStage.style.cssText=measCss;
+      const groups=[];
+      for(let itemIdx=0;itemIdx<list.length;itemIdx++){
+        const item=list[itemIdx];
+        const blocks=[];
+        if(item.t==='scripture'){
+          const titleEl=_div('proj-title');
+          titleEl.innerHTML='<span class="proj-title-name">'+esc(item.title||'经文')+'</span>';
+          scriptStage.appendChild(titleEl); blocks.push(titleEl);
+          (item.verses||[]).forEach(v=>{
+            const ve=_div('proj-verse');
+            ve.innerHTML='<span class="proj-vnum">'+esc(v.verse||'')+'</span>'+esc(v.primary||'')+(v.secondary?('<span class="proj-vsec">'+esc(v.secondary)+'</span>'):'');
+            scriptStage.appendChild(ve); blocks.push(ve);
+          });
+          groups.push({blocks,meta:{title:item.title||'经文',scripture:true,itemIdx}});
+        }else{
+          const song=songs.find(s=>s.id===item.id); if(!song)continue;
+          const curKey=projCurKey(song);
+          const info=calcCapo(curKey,song.origKey||'C'), st=info.st;
+          const useFlat=FLAT_KEYS.has(parseKeyName(curKey).root);
+          const titleEl=_div('proj-title');   // 每首第一页顶部: 调+拍号 + 歌名(参考图第一张那种)
+          titleEl.innerHTML='<span class="proj-title-key">'+esc(curKey)+'调'+(song.timeSign?(' '+esc(song.timeSign)):'')+'</span><span class="proj-title-name">'+esc(song.title||'')+'</span>';
+          songStage.appendChild(titleEl); blocks.push(titleEl);
+          for(const sec of song.sections||[]){          // 段名(主歌/副歌等)不显示 -> 纯净画面
+            for(const line of sec.lines||[]){ const r=projBuildRow(line,st,useFlat,tg); songStage.appendChild(r); blocks.push(r); }
+          }
+          groups.push({blocks,meta:{songId:song.id,title:song.title||'',itemIdx}});
+        }
+      }
+      root.appendChild(songStage); root.appendChild(scriptStage);
+      setTimeout(()=>{
+        const ar=projState.aspect==='4:3'?{w:4,h:3}:{w:16,h:9};
+        // 测高; 诗歌统一用最宽那首的行宽(songMaxW)避免窄歌被切成一行一页; 经文各自算宽
+        let songMaxW=1;
+        groups.forEach(g=>g.blocks.forEach(el=>{
+          const cs=getComputedStyle(el);
+          el._h=(el.offsetHeight||0)+(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0); // 含行间 margin, 免得低估页高把末行裁掉
+          if(!g.meta.scripture&&!el.classList.contains('proj-title')){ const w=el.scrollWidth||0; if(w>songMaxW)songMaxW=w; }
+        }));
+        // 各组按高度预算贪心装箱; 记录每页自然高度(用于统一缩放的参考高)
+        const raw=[];
+        groups.forEach(g=>{
+          let maxW=songMaxW;
+          if(g.meta.scripture){ maxW=1; g.blocks.forEach(el=>{ if(!el.classList.contains('proj-title')){ const w=el.scrollWidth||0; if(w>maxW)maxW=w; } }); }
+          const budget=(ar.h/ar.w)*maxW/(projState.fontScale||1);
+          const gp=[]; let cur=[],hsum=0;
+          g.blocks.forEach(el=>{ if(cur.length&&hsum+el._h>budget){ gp.push({b:cur,h:hsum}); cur=[]; hsum=0; } cur.push(el); hsum+=el._h; });
+          if(cur.length)gp.push({b:cur,h:hsum});
+          let gMaxH=1; gp.forEach(p=>{ if(p.h>gMaxH)gMaxH=p.h; });
+          gp.forEach(p=>raw.push({b:p.b,meta:g.meta,refW:maxW,gMaxH,scripture:!!g.meta.scripture}));
+        });
+        // 诗歌页统一参考高 = 所有诗歌页里最高那页 -> 每首诗歌所有页同一倍率(字号一致); 经文各自
+        let songMaxH=1; raw.forEach(p=>{ if(!p.scripture&&p.gMaxH>songMaxH)songMaxH=p.gMaxH; });
+        projState.pages=raw.map(p=>Object.assign({
+          html:p.b.map(x=>x.outerHTML).join(''), refW:p.refW, refH:p.scripture?p.gMaxH:songMaxH
+        },p.meta));
+        songStage.remove(); scriptStage.remove();
+        if(projState.pageIdx>=projState.pages.length) projState.pageIdx=Math.max(0,projState.pages.length-1);
+        resolve();
+      },40);
+    });
+  }
+  function projPushPage(){
+    const pg=projState.pages[projState.pageIdx];
+    const rb=projResolveBg(projItemBg(projCurrentItem())); // 当前这首歌自己的背景
+    projBusSend({t:'page',chordCss:projChordCss(),payload:{
+      html:pg?pg.html:'', refW:pg?(pg.refW||0):0, refH:pg?(pg.refH||0):0, aspect:projState.aspect, blank:projState.blank,
+      idx:projState.pageIdx, total:projState.pages.length, title:pg?pg.title:'', songId:pg?pg.songId:'',
+      bgCss:rb.css, bgImage:rb.image, bgVideo:rb.video||null, textColor:projTextColorValue()
+    }});
+  }
+  function projRebuild(){
+    const seq=++_projSeq;
+    projBuildPages().then(()=>{ if(seq!==_projSeq) return; projRenderPager(); projRenderPreview(); projPushPage(); });
+  }
+  function projNav(delta){
+    const total=projState.pages.length; if(!total) return;
+    const n=Math.max(0,Math.min(total-1,projState.pageIdx+delta));
+    if(n===projState.pageIdx) return;
+    projState.pageIdx=n; projSyncControlButtons(); projRenderPager(); projRenderPreview(); projPushPage();
+  }
+  function projSetButtonAvailable(ok){
+    const btn=$('ml-detail-projection');
+    if(!btn) return;
+    btn.disabled=!ok;
+    btn.classList.toggle('is-disabled',!ok);
+    btn.setAttribute('aria-disabled',ok?'false':'true');
+    btn.title=ok?'投影模式':'该曲目暂不支持投影';
+  }
+  function projSetPager(scope,pnSel,prevSel,nextSel){
+    if(!scope)return;
+    const total=projState.pages.length, cur=total?projState.pageIdx+1:0;
+    const pn=scope.querySelector(pnSel); if(pn)pn.textContent='第 '+cur+' 页 / 共 '+(total||'—')+' 页';
+    const p=scope.querySelector(prevSel), n=scope.querySelector(nextSel);
+    if(p)p.disabled=projState.pageIdx<=0;
+    if(n)n.disabled=projState.pageIdx>=total-1;
+  }
+  function projRenderPager(){
+    projSetPager(projState.panel,'#ml-proj-pageno','#ml-proj-prev','#ml-proj-next');
+    projSetPager(projState.studio,'#ml-ps-pageno','#ml-ps-prev','#ml-ps-next');
+    projRenderThumbs();
+    projHighlightCurrentItem();
+  }
+  function projJumpToItem(i){ // 点本堂歌单 -> 跳到这项(歌/经文)的第一页
+    const idx=projState.pages.findIndex(p=>p.itemIdx===i);
+    if(idx<0) return;
+    projState.pageIdx=idx; projSyncControlButtons(); projRenderPager(); projRenderPreview(); projPushPage();
+  }
+  function projHighlightCurrentItem(){ // 高亮"当前正在放"的那首/那段
+    const st=projState.studio; if(!st) return;
+    const pg=projState.pages[projState.pageIdx]; const cur=pg?pg.itemIdx:-1;
+    st.querySelectorAll('.ml-ps-set-item').forEach((r,i)=>r.classList.toggle('cur',i===cur));
+    st.querySelectorAll('.ml-ps-sec-head').forEach(h=>h.classList.toggle('cur',Number(h.dataset.item)===cur));
+  }
+  /* 把一页 HTML 注入某个盒子并缩放(预览/缩略图)。refW=统一参考宽度: 传了就按它缩放+顶左对齐,
+     跟投影一致(内容少的页不会被放大); 没传则回退等比填满盒子。 */
+  function projFitPageInto(box,html,refW,refH){
+    if(!box)return;
+    let wrap=box.querySelector('.ml-proj-preview-scale'); // 只管这层, 不 wipe 整个 box(保留背景 video 元素)
+    if(!wrap){ wrap=document.createElement('div'); wrap.className='ml-proj-preview-scale'; box.appendChild(wrap); }
+    wrap.innerHTML=html?('<div class="sw-lb">'+html+'</div>'):'';
+    const content=wrap.firstElementChild; if(!content)return; // .sw-lb, 不收缩(flex:0 0 auto), 自然尺寸
+    content.style.transform='scale(1)';
+    let tries=0;
+    const fit=()=>{
+      const bw=box.clientWidth||0,bh=box.clientHeight||0;
+      if((bw<4||bh<4)&&tries++<10){ requestAnimationFrame(fit); return; } // 框还没布局好(切比例/字号时会有一帧), 重试, 免得"时好时坏"
+      const w=content.scrollWidth||1,h=content.scrollHeight||1;
+      let k=(refW&&refW>0)?Math.min((bw-8)/refW,(bh-8)/(refH>0?refH:h)):Math.min((bw-8)/w,(bh-8)/h);
+      if(!(k>0&&isFinite(k)))k=1;
+      // 缩放内容, wrap 铺满框(inset:0)并居中 -> 顶对齐水平居中, 不溢出被裁, 不盖邻居
+      content.style.transformOrigin='top center';
+      content.style.transform='scale('+k+')';
+    };
+    requestAnimationFrame(fit);
+  }
+  function projRenderPreview(){
+    const pg=projState.pages[projState.pageIdx];
+    const curBg=projItemBg(projCurrentItem());
+    const rb=projResolveBg(curBg), bgCss=projBgCssValue(curBg);
+    [[projState.panel,'#ml-proj-preview'],[projState.studio,'#ml-ps-preview']].forEach(([scope,sel])=>{
+      if(!scope)return; const box=scope.querySelector(sel); if(!box)return;
+      let vid=box.querySelector('.ml-proj-bg-vid');   // 动态视频背景
+      if(rb.video){ if(!vid){ vid=document.createElement('video'); vid.className='ml-proj-bg-vid'; vid.muted=true; vid.loop=true; vid.autoplay=true; vid.setAttribute('playsinline',''); box.insertBefore(vid,box.firstChild); } if(vid.getAttribute('src')!==rb.video){ vid.src=rb.video; if(vid.play)vid.play().catch(()=>{}); } box.style.background='#000'; }
+      else { if(vid)vid.remove(); box.style.background=bgCss; }
+      box.style.setProperty('--proj-text',projTextColorValue());
+      projFitPageInto(box,pg?pg.html:'',pg?pg.refW:0,pg?pg.refH:0);
+    });
+  }
+  function projToggleBlank(){
+    projState.blank=!projState.blank;
+    const b=projState.panel&&projState.panel.querySelector('#ml-proj-black');
+    if(b){ b.textContent=projState.blank?'恢复画面':'黑屏'; b.classList.toggle('on',projState.blank); }
+    projPushPage();
+  }
+  function projRequestFullscreen(){
+    if(!(projState.projWin&&!projState.projWin.closed)){ showToast('请先进入投影'); return; }
+    projBusSend({t:'fullscreen'}); // 投影页尝试全屏(需激活, best-effort)
+  }
+  /* 背景以「整首歌/每个歌单项」为单位: item.bg 覆盖, 没有则用 projState.bg 默认 */
+  function projCurrentItem(){
+    const pg=projState.pages[projState.pageIdx];
+    if(pg&&typeof pg.itemIdx==='number') return projState.setlist[pg.itemIdx]||null;
+    return null;
+  }
+  function projItemBg(item){ return (item&&item.bg)?item.bg:projState.bg; }
+  function projResolveBg(bg){
+    bg=bg||projState.bg;
+    const dataOf=()=>bg.imgKey?(projState.bgImages[bg.imgKey]||null):(bg.image||null);
+    if(bg.mode==='video'){ return {css:'#000', image:null, video:dataOf()}; }
+    if(bg.mode==='image'){ return {css:'#000', image:dataOf(), video:null}; }
+    return {css:(PROJ_BG_PRESETS[bg.mode]&&PROJ_BG_PRESETS[bg.mode].css)||bg.css||'#000', image:null, video:null};
+  }
+  function projBgCssValue(bg){ const r=projResolveBg(bg); return r.image?('#000 url('+r.image+') center/cover'):r.css; }
+  /* 面板 + 演示台 共用: 同步控制按钮亮灭 */
+  function projSyncControlButtons(){
+    const curBgMode=projItemBg(projCurrentItem()).mode; // 背景按钮反映"当前这首歌"的背景
+    [projState.panel,projState.studio].forEach(scope=>{
+      if(!scope)return;
+      scope.querySelectorAll('.ml-proj-tog').forEach(b=>{ const on=!!projState.toggles[b.dataset.k]; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false'); });
+      scope.querySelectorAll('.ml-proj-asp').forEach(b=>b.classList.toggle('on',b.dataset.ar===projState.aspect));
+      scope.querySelectorAll('.ml-proj-bg').forEach(b=>b.classList.toggle('on',b.dataset.bg===curBgMode||(b.dataset.bg==='image'&&curBgMode==='video')));
+    });
+  }
+  function projSetToggle(k){ if(!(k in projState.toggles))return; projState.toggles[k]=!projState.toggles[k]; projSyncControlButtons(); projSaveSettings(); projRebuild(); }
+  function projSetAspect(ar){ projState.aspect=ar; projSyncControlButtons(); projSaveSettings(); projRebuild(); }
+  function projSetFontScale(v){
+    v=Math.max(0.6,Math.min(2.6,Number(v)||1));
+    projState.fontScale=v;
+    [projState.panel,projState.studio].forEach(scope=>{ if(!scope)return; const s=scope.querySelector('.ml-proj-font'); if(s&&s.value!=String(v))s.value=String(v); });
+    projSaveSettings(); projRebuild();
+  }
+  function projSetBg(mode,media){ // media = 图片或视频的 dataURL(mode 'image'/'video' 时)
+    let bg;
+    if((mode==='image'||mode==='video')&&media){ const imgKey='bg'+Date.now(); projState.bgImages[imgKey]=media; projIdbPut(imgKey,media); bg={mode,imgKey}; }
+    else bg={mode};
+    const item=projCurrentItem();
+    if(item){ item.bg=bg; projSaveSetlist(); }         // 改的是"当前这首歌"的背景; 第二首各自设
+    else { projState.bg={mode,css:(PROJ_BG_PRESETS[mode]&&PROJ_BG_PRESETS[mode].css)||'#000',image:media||null}; projSaveSettings(); }
+    projSyncControlButtons(); projRenderPreview(); projRenderThumbs(); projPushPage();
+  }
+  function projUpdateStatus(){
+    const running=!!(projState.projWin&&!projState.projWin.closed);
+    if(projState.statusEl) projState.statusEl.textContent='投影窗口：'+(running?'运行中':'未开启');
+    if(projState.enterBtn) projState.enterBtn.textContent=running?'重新聚焦投影':'进入投影';
+    const cw=projState.panel&&projState.panel.querySelector('#ml-proj-closewin');
+    if(cw) cw.hidden=!running;
+    if(projState.studio){
+      const st=projState.studio.querySelector('#ml-ps-status'); if(st) st.textContent='投影窗口：'+(running?'运行中':'未开启');
+      const en=projState.studio.querySelector('#ml-ps-enter'); if(en) en.textContent=running?'重新聚焦投影':'进入投影';
+      const scw=projState.studio.querySelector('#ml-ps-closewin'); if(scw) scw.hidden=!running;
+    }
+  }
+  function projWatchWindow(){
+    clearInterval(projState.watchTimer);
+    projState.watchTimer=setInterval(()=>{
+      if(projState.projWin&&projState.projWin.closed) projMarkProjectorGone();
+    },1500);
+  }
+  function projMarkProjectorGone(){
+    clearInterval(projState.watchTimer); projState.watchTimer=0;
+    projState.projWin=null;
+    projUpdateStatus();
+  }
+  async function projEnterProjection(){
+    if(projState.projWin&&!projState.projWin.closed){ try{projState.projWin.focus();}catch(_){} return; }
+    const url='./projection.html';
+    // Window Management API: 有副屏则把投影窗口定位到副屏并铺满; 单屏/不支持 -> 普通新窗口(页内全屏兜底)
+    let feat='', onExternal=false;
+    try{
+      if(window.getScreenDetails){
+        const sd=await window.getScreenDetails();
+        const screensArr=sd&&sd.screens||[];
+        if(screensArr.length>1){
+          const ext=screensArr.find(s=>!s.isPrimary)||sd.currentScreen;
+          if(ext){ feat=`left=${ext.availLeft},top=${ext.availTop},width=${ext.availWidth},height=${ext.availHeight}`; onExternal=true; }
+        }
+      }
+    }catch(_){ /* 权限被拒/不支持: 降级普通窗口 */ }
+    let win=null;
+    try{ win=window.open(url,'cecpProjection',feat); }catch(_){}
+    if(!win){ showToast('无法打开投影窗口（可能被浏览器拦截）'); return; }
+    projState.projWin=win;
+    projEnsureBus(); projUpdateStatus(); projWatchWindow();
+    if(!onExternal) showToast('未检测到副屏，投影已在新窗口内全屏');
+    // 定位到副屏后请投影页全屏(best-effort, 需激活)
+    setTimeout(()=>{ if(projState.projWin&&!projState.projWin.closed) projBusSend({t:'fullscreen'}); },800);
+    // 兜底握手: 短时间多推几次当前页, 防投影页 hello 时机错过
+    let tries=0;
+    const kick=setInterval(()=>{
+      if(++tries>8||!projState.projWin||projState.projWin.closed){clearInterval(kick);return;}
+      projPushPage();
+    },400);
+  }
+  function projCloseProjector(){
+    try{ projState.bus&&projState.bus.send({t:'bye',v:++projState.ver,role:'console'}); }catch(_){}
+    try{ projState.projWin&&projState.projWin.close(); }catch(_){}
+    projMarkProjectorGone();
+  }
+  function projKeydown(e){
+    if(!(projState.panel&&projState.panel.classList.contains('open')))return;
+    if(e.key==='ArrowLeft'){ e.preventDefault(); projNav(-1); }
+    else if(e.key==='ArrowRight'){ e.preventDefault(); projNav(1); }
+  }
+  function projBuildPanel(){
+    if(projState.panel){
+      if(projState.panel.isConnected) return projState.panel;
+      projState.panel=null; projState.statusEl=null; projState.pageEl=null; projState.enterBtn=null; // 被重渲染摘除则重建
+    }
+    const ov=document.createElement('div');
+    ov.className='ml-proj-overlay';
+    ov.innerHTML=`
+      <div class="ml-proj-card" role="dialog" aria-label="投影控制台" aria-modal="true">
+        <div class="ml-proj-head">
+          <strong class="ml-proj-title">投影模式</strong>
+          <button class="ml-proj-x" type="button" aria-label="关闭控制台">${icon('close',18)}</button>
+        </div>
+        <div class="ml-proj-song" id="ml-proj-song"></div>
+        <div class="ml-proj-preview" id="ml-proj-preview"><div class="ml-proj-preview-scale"></div></div>
+        <div class="ml-proj-sec-label">显示内容</div>
+        <div class="ml-proj-toggles" id="ml-proj-toggles"></div>
+        <div class="ml-proj-sec-label">背景</div>
+        <div class="ml-proj-bgs" id="ml-proj-bgs">
+          <button class="ml-proj-bg" data-bg="warm" type="button">暖阳</button>
+          <button class="ml-proj-bg" data-bg="night" type="button">深蓝</button>
+          <button class="ml-proj-bg" data-bg="black" type="button">纯黑</button>
+          <button class="ml-proj-bg" data-bg="image" type="button">上传图/视频</button>
+        </div>
+        <input type="file" id="ml-proj-bgfile" accept="image/*,video/mp4" hidden>
+        <div class="ml-proj-row2">
+          <div class="ml-proj-aspect" id="ml-proj-aspect">
+            <button class="ml-proj-asp" data-ar="16:9" type="button">16:9</button>
+            <button class="ml-proj-asp" data-ar="4:3" type="button">4:3</button>
+          </div>
+          <div class="ml-proj-pager">
+            <button class="ml-proj-pg" id="ml-proj-prev" type="button" aria-label="上一页">${icon('chevronLeft',22)}</button>
+            <div class="ml-proj-pageno" id="ml-proj-pageno">第 0 页 / 共 — 页</div>
+            <button class="ml-proj-pg ml-proj-pg-next" id="ml-proj-next" type="button" aria-label="下一页">${icon('chevronLeft',22)}</button>
+          </div>
+        </div>
+        <div class="ml-proj-screen2">
+          <button class="ml-proj-s2" id="ml-proj-black" type="button">黑屏</button>
+          <button class="ml-proj-s2" id="ml-proj-fs" type="button">投影全屏</button>
+        </div>
+        <div class="ml-proj-status" id="ml-proj-status">投影窗口：未开启</div>
+        <div class="ml-proj-actions">
+          <button class="ml-proj-enter" id="ml-proj-enter" type="button">进入投影</button>
+          <button class="ml-proj-closewin" id="ml-proj-closewin" type="button" hidden>关闭投影窗口</button>
+        </div>
+        <div class="ml-proj-hint">点「进入投影」会自动把投影画面全屏到副屏（外接显示器/投影仪）；只有一块屏时在新窗口内全屏。开关、翻页、移调都会实时同步。</div>
+      </div>`;
+    root.appendChild(ov); // 挂在 #music-library 内, 继承其作用域内的主题变量
+    const tg=ov.querySelector('#ml-proj-toggles');
+    PROJ_TOGGLE_DEFS.forEach(([k,label])=>{
+      const b=document.createElement('button');
+      b.className='ml-proj-tog'+(projState.toggles[k]?' on':'');
+      b.type='button'; b.dataset.k=k; b.textContent=label;
+      b.setAttribute('aria-pressed',projState.toggles[k]?'true':'false');
+      b.addEventListener('click',()=>projSetToggle(k));
+      tg.appendChild(b);
+    });
+    ov.querySelectorAll('.ml-proj-asp').forEach(b=>{
+      b.classList.toggle('on',b.dataset.ar===projState.aspect);
+      b.addEventListener('click',()=>projSetAspect(b.dataset.ar));
+    });
+    ov.querySelectorAll('.ml-proj-bg').forEach(b=>{
+      b.classList.toggle('on',b.dataset.bg===projState.bg.mode);
+      b.addEventListener('click',()=>{
+        if(b.dataset.bg==='image'){ ov.querySelector('#ml-proj-bgfile').click(); return; }
+        projSetBg(b.dataset.bg);
+      });
+    });
+    ov.querySelector('#ml-proj-bgfile').addEventListener('change',e=>{
+      const f=e.target.files&&e.target.files[0]; if(!f){ return; }
+      const isVid=/^video\//.test(f.type||'');
+      if(f.size>(isVid?60:8)*1024*1024){ showToast(isVid?'视频太大，请选 60MB 以内':'图片太大，请选 8MB 以内'); e.target.value=''; return; }
+      const rd=new FileReader();
+      rd.onload=()=>projSetBg(isVid?'video':'image',String(rd.result||''));
+      rd.readAsDataURL(f); e.target.value='';
+    });
+    ov.querySelector('.ml-proj-x').addEventListener('click',()=>projClosePanel());
+    ov.addEventListener('click',e=>{ if(e.target===ov)projClosePanel(); });
+    ov.querySelector('#ml-proj-prev').addEventListener('click',()=>projNav(-1));
+    ov.querySelector('#ml-proj-next').addEventListener('click',()=>projNav(1));
+    ov.querySelector('#ml-proj-black').addEventListener('click',()=>projToggleBlank());
+    ov.querySelector('#ml-proj-fs').addEventListener('click',()=>projRequestFullscreen());
+    ov.querySelector('#ml-proj-enter').addEventListener('click',()=>projEnterProjection());
+    ov.querySelector('#ml-proj-closewin').addEventListener('click',()=>projCloseProjector());
+    projState.panel=ov;
+    projState.statusEl=ov.querySelector('#ml-proj-status');
+    projState.pageEl=ov.querySelector('#ml-proj-pageno');
+    projState.enterBtn=ov.querySelector('#ml-proj-enter');
+    return ov;
+  }
+  function projOpenPanel(){
+    const song=songs.find(s=>s.id===_activeDetailSongId);
+    if(!song) return;
+    if(!hasRenderableScore(song)){ showToast('该曲目暂不支持投影'); return; }
+    projLoadSettings();
+    const changed=projState.songId!==song.id;
+    projState.songId=song.id;
+    projState.songTitle=song.title||'';
+    projState.setlist=[{t:'song',id:song.id}]; // 单曲入口 = 只含这首的临时歌单(复用同一演示引擎)
+    if(changed) projState.pageIdx=0;
+    const ov=projBuildPanel();
+    ov.querySelectorAll('.ml-proj-tog').forEach(b=>{
+      const on=!!projState.toggles[b.dataset.k];
+      b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false');
+    });
+    ov.querySelectorAll('.ml-proj-asp').forEach(b=>b.classList.toggle('on',b.dataset.ar===projState.aspect));
+    ov.querySelectorAll('.ml-proj-bg').forEach(b=>b.classList.toggle('on',b.dataset.bg===projState.bg.mode));
+    const songEl=ov.querySelector('#ml-proj-song');
+    if(songEl) songEl.textContent=song.title||'';
+    projUpdateStatus();
+    projPreloadSetlistBgImages();     // 预载各歌单项的背景图
+    projRebuild(); // 构建分页 + 刷新预览/页码 + (若在投影)推当前页
+    requestAnimationFrame(()=>ov.classList.add('open'));
+    document.addEventListener('keydown',projKeydown);
+  }
+  function projPreloadSetlistBgImages(){
+    (projState.setlist||[]).forEach(it=>{
+      const key=it&&it.bg&&it.bg.mode==='image'&&it.bg.imgKey;
+      if(key&&!projState.bgImages[key]){
+        projIdbGet(key).then(d=>{ if(d){ projState.bgImages[key]=d; projRenderPreview(); projRenderThumbs(); if(projState.projWin&&!projState.projWin.closed)projPushPage(); } });
+      }
+    });
+  }
+  function projClosePanel(){
+    if(projState.panel) projState.panel.classList.remove('open');
+    document.removeEventListener('keydown',projKeydown);
+  }
+  /* ─── App 级投影演示台(Setlist, 参考 pptlib) ─── */
+  function projItemName(item){
+    if(!item) return '';
+    return item.t==='scripture' ? ('📖 '+(item.title||'经文')) : (()=>{const s=songs.find(x=>x.id===item.id);return s?s.title:item.id;})();
+  }
+  function projRenderThumbs(){
+    const box=projState.studio&&projState.studio.querySelector('#ml-ps-thumbs');
+    if(!box) return;
+    box.innerHTML='';
+    projState._collapsed=projState._collapsed||{};
+    let lastItem=-1;
+    projState.pages.forEach((pg,i)=>{
+      if(pg.itemIdx!==lastItem){                       // 新的一节(每首歌/每段经文 = 一个节点, 像 PowerPoint 分节)
+        lastItem=pg.itemIdx;
+        const collapsed=!!projState._collapsed[pg.itemIdx];
+        const head=document.createElement('div');
+        head.className='ml-ps-sec-head'+(collapsed?' collapsed':''); head.dataset.item=pg.itemIdx;
+        head.innerHTML='<span class="ml-ps-sec-arrow">▾</span><span class="ml-ps-sec-name">'+esc(projItemName(projState.setlist[pg.itemIdx]))+'</span>';
+        head.addEventListener('click',()=>{ projState._collapsed[pg.itemIdx]=!projState._collapsed[pg.itemIdx]; projRenderThumbs(); });
+        box.appendChild(head);
+      }
+      if(projState._collapsed[pg.itemIdx]) return;     // 折叠 -> 不渲染这节的幻灯片
+      const card=document.createElement('button');
+      card.type='button';
+      card.className='ml-ps-thumb'+(i===projState.pageIdx?' on':'');
+      card.innerHTML='<div class="ml-ps-thumb-box" id="ml-ps-th-'+i+'"></div><div class="ml-ps-thumb-no">'+(i+1)+'</div>';
+      card.addEventListener('click',()=>{ projState.pageIdx=i; projSyncControlButtons(); projRenderPager(); projRenderPreview(); projPushPage(); });
+      box.appendChild(card);
+      const th=card.querySelector('#ml-ps-th-'+i);
+      th.style.background=projBgCssValue(projItemBg(projState.setlist[pg.itemIdx])); // 每张缩略图各自的歌背景
+      th.style.setProperty('--proj-text',projTextColorValue());
+      projFitPageInto(th,pg.html,pg.refW,pg.refH);
+    });
+  }
+  function projRenderSetlist(){
+    const box=projState.studio&&projState.studio.querySelector('#ml-ps-set-list');
+    if(!box) return;
+    const list=projState.setlist||[];
+    if(!list.length){ box.innerHTML='<div class="ml-ps-empty">从左侧诗歌库点「＋」加入歌曲</div>'; return; }
+    box.innerHTML='';
+    list.forEach((item,i)=>{
+      const label = item.t==='scripture' ? ('📖 '+(item.title||'经文')) : (()=>{const s=songs.find(x=>x.id===item.id);return s?s.title:item.id;})();
+      const row=document.createElement('div'); row.className='ml-ps-set-item'+(item.t==='scripture'?' is-scripture':'');
+      row.innerHTML='<span class="ml-ps-set-n">'+(i+1)+'</span><span class="ml-ps-set-t">'+esc(label)+'</span>'+
+        '<span class="ml-ps-set-btns"><button data-a="up" '+(i===0?'disabled':'')+'>↑</button>'+
+        '<button data-a="down" '+(i===list.length-1?'disabled':'')+'>↓</button>'+
+        '<button data-a="del">✕</button></span>';
+      row.querySelector('[data-a="up"]').addEventListener('click',()=>projMoveSetlist(i,-1));
+      row.querySelector('[data-a="down"]').addEventListener('click',()=>projMoveSetlist(i,1));
+      row.querySelector('[data-a="del"]').addEventListener('click',()=>projRemoveFromSetlist(i));
+      // 单击整条 -> 跳到这项第一页(按名字快速定位); 经文双击 -> 弹出修改
+      row.addEventListener('click',e=>{ if(e.target.closest('.ml-ps-set-btns'))return; projJumpToItem(i); });
+      if(item.t==='scripture'){ row.title='双击修改经文'; row.addEventListener('dblclick',()=>projEditScripture(i)); }
+      // 拖动改上下顺序
+      row.draggable=true;
+      row.addEventListener('dragstart',e=>{ projState._dragIdx=i; row.classList.add('dragging'); try{ e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain',String(i)); }catch(_){} });
+      row.addEventListener('dragend',()=>{ row.classList.remove('dragging'); box.querySelectorAll('.ml-ps-set-item').forEach(r=>r.classList.remove('drag-over')); });
+      row.addEventListener('dragover',e=>{ e.preventDefault(); try{e.dataTransfer.dropEffect='move';}catch(_){} row.classList.add('drag-over'); });
+      row.addEventListener('dragleave',()=>row.classList.remove('drag-over'));
+      row.addEventListener('drop',e=>{ e.preventDefault(); row.classList.remove('drag-over'); const from=projState._dragIdx; if(typeof from==='number') projMoveSetlistTo(from,i); });
+      box.appendChild(row);
+    });
+    projHighlightCurrentItem();
+  }
+  function projEditScripture(i){
+    const item=projState.setlist[i]; if(!item||item.t!=='scripture')return;
+    const ov=projState.studio; if(!ov)return;
+    ov.querySelectorAll('.ml-ps-pop').forEach(p=>p.hidden=true);          // 打开经文浮层
+    ov.querySelectorAll('.ml-ps-tb').forEach(x=>x.classList.remove('on'));
+    const pop=ov.querySelector('#ml-ps-pop-bible'); if(pop)pop.hidden=false;
+    const tb=ov.querySelector('.ml-ps-tb[data-pop="bible"]'); if(tb)tb.classList.add('on');
+    const input=ov.querySelector('#ml-ps-bible-ref');
+    input.value=item.ref||item.title||'';
+    projState.editScriptureIdx=i;
+    const btn=ov.querySelector('#ml-ps-bible-add'); if(btn)btn.textContent='更新经文';
+    input.focus(); try{input.select();}catch(_){}
+  }
+  function projRenderLib(q){
+    const box=projState.studio&&projState.studio.querySelector('#ml-ps-lib-list');
+    if(!box) return;
+    const query=String(q||'').trim().toLowerCase();
+    const list=songs.filter(s=>hasRenderableScore(s)&&(!query||(s.title||'').toLowerCase().includes(query)||(s.displayArtist||s.artist||'').toLowerCase().includes(query)));
+    box.innerHTML='';
+    list.slice(0,200).forEach(s=>{
+      const row=document.createElement('div'); row.className='ml-ps-lib-item';
+      row.innerHTML='<span class="ml-ps-lib-t">'+esc(s.title||'')+'<small>'+esc(s.displayArtist||s.artist||'')+'</small></span><button type="button">＋</button>';
+      row.querySelector('button').addEventListener('click',()=>projAddToSetlist(s.id));
+      box.appendChild(row);
+    });
+  }
+  function projNewItemBg(){ return {mode:(projState.bg&&projState.bg.mode&&projState.bg.mode!=='image')?projState.bg.mode:'warm'}; }
+  function projAddToSetlist(id){
+    projState.setlist=projState.setlist||[];
+    projState.setlist.push({t:"song",id,bg:projNewItemBg()});
+    if(!projState.songId) projState.songId=id;
+    projSaveSetlist(); projRenderSetlist(); projRebuild();
+  }
+  function projAddScripture(p){
+    projState.setlist=projState.setlist||[];
+    projState.setlist.push({t:'scripture',title:p.title||p.reference||'经文',ref:p.reference||'',primary:p.primary||'CUNPSS',verses:p.verses||[],bg:projNewItemBg()});
+    projSaveSetlist(); projRenderSetlist(); projRebuild();
+  }
+  function projRemoveFromSetlist(i){
+    projState.setlist.splice(i,1);
+    if(projState.pageIdx>0) projState.pageIdx=0;
+    projSaveSetlist(); projRenderSetlist(); projRebuild();
+  }
+  function projMoveSetlist(i,dir){
+    const j=i+dir; if(j<0||j>=projState.setlist.length)return;
+    const a=projState.setlist; const t=a[i]; a[i]=a[j]; a[j]=t;
+    projSaveSetlist(); projRenderSetlist(); projRebuild();
+  }
+  function projMoveSetlistTo(from,to){
+    const a=projState.setlist; if(from<0||from>=a.length||to<0||to>=a.length||from===to)return;
+    const it=a.splice(from,1)[0]; a.splice(to,0,it);
+    projSaveSetlist(); projRenderSetlist(); projRebuild();
+  }
+  function projBgButtonsHTML(){
+    return Object.keys(PROJ_BG_PRESETS).map(k=>'<button class="ml-proj-bg" data-bg="'+k+'" type="button">'+PROJ_BG_PRESETS[k].label+'</button>').join('')+
+      '<button class="ml-proj-bg" data-bg="image" type="button">上传图/视频</button>';
+  }
+  function projBuildStudio(){
+    if(projState.studio&&projState.studio.isConnected) return projState.studio;
+    const ov=document.createElement('div'); ov.className='ml-ps-overlay';
+    ov.innerHTML=`
+      <div class="ml-ps">
+        <div class="ml-ps-head">
+          <strong class="ml-ps-title2">演示台</strong>
+          <div class="ml-ps-toolbar">
+            <button class="ml-ps-tb" data-pop="song" type="button">＋ 诗歌</button>
+            <button class="ml-ps-tb" data-pop="bible" type="button">＋ 圣经</button>
+            <button class="ml-ps-tb" data-pop="bg" type="button">背景</button>
+            <button class="ml-ps-tb" data-pop="color" type="button">字体色</button>
+          </div>
+          <div class="ml-ps-head-actions">
+            <span class="ml-ps-status" id="ml-ps-status">投影窗口：未开启</span>
+            <button class="ml-ps-enter" id="ml-ps-enter" type="button">进入投影</button>
+            <button class="ml-ps-closewin" id="ml-ps-closewin" type="button" hidden>关闭投影窗口</button>
+            <button class="ml-ps-x" id="ml-ps-x" type="button" aria-label="关闭">${icon('close',20)}</button>
+          </div>
+        </div>
+        <div class="ml-ps-pop" id="ml-ps-pop-song" hidden>
+          <input id="ml-ps-search" class="ml-ps-search" placeholder="搜索歌名 / 歌手，点歌加入歌单">
+          <div class="ml-ps-lib-list" id="ml-ps-lib-list"></div>
+        </div>
+        <div class="ml-ps-pop" id="ml-ps-pop-bible" hidden>
+          <div class="ml-ps-bible">
+            <input id="ml-ps-bible-ref" class="ml-ps-search" placeholder="经文 如 诗篇 23:1-6">
+            <button id="ml-ps-bible-add" class="ml-ps-bible-btn" type="button">加经文</button>
+          </div>
+          <div class="ml-ps-pop-hint">支持中文经卷名/缩写；歌单里点经文标题可再修改</div>
+        </div>
+        <div class="ml-ps-pop" id="ml-ps-pop-bg" hidden>
+          <div class="ml-proj-bgs" id="ml-ps-bgs">${projBgButtonsHTML()}</div>
+          <input type="file" id="ml-ps-bgfile" accept="image/*,video/mp4" hidden>
+          <div class="ml-ps-pop-hint">背景以「整首歌/每段经文」为单位——翻到某首再改就改那一首</div>
+        </div>
+        <div class="ml-ps-pop" id="ml-ps-pop-color" hidden>
+          <div class="ml-proj-colors" id="ml-ps-colors">${projColorButtonsHTML()}<label class="ml-proj-color ml-proj-color-custom" title="自定义颜色">自定义<input type="color" id="ml-ps-colorpick"></label></div>
+          <div class="ml-ps-pop-hint">默认白色+阴影（万能，任何背景都清晰）；也可自选颜色</div>
+        </div>
+        <div class="ml-ps-body3">
+          <div class="ml-ps-left">
+            <div class="ml-ps-col-title">本堂歌单</div>
+            <div class="ml-ps-set-list" id="ml-ps-set-list"></div>
+          </div>
+          <div class="ml-ps-mid">
+            <div class="ml-ps-col-title">幻灯片（点击跳页）</div>
+            <div class="ml-ps-thumbs" id="ml-ps-thumbs"></div>
+          </div>
+          <div class="ml-ps-right">
+            <div class="ml-ps-col-title">当前输出</div>
+            <div class="ml-proj-preview" id="ml-ps-preview"></div>
+            <div class="ml-ps-pager">
+              <button class="ml-proj-pg" id="ml-ps-prev" type="button">${icon('chevronLeft',22)}</button>
+              <div class="ml-proj-pageno" id="ml-ps-pageno">第 0 页 / 共 — 页</div>
+              <button class="ml-proj-pg ml-proj-pg-next" id="ml-ps-next" type="button">${icon('chevronLeft',22)}</button>
+            </div>
+            <div class="ml-ps-controls">
+              <span class="ml-ps-sec">显示</span>
+              <div class="ml-proj-toggles" id="ml-ps-toggles"></div>
+              <div class="ml-proj-aspect" id="ml-ps-aspect">
+                <button class="ml-proj-asp" data-ar="16:9" type="button">16:9</button>
+                <button class="ml-proj-asp" data-ar="4:3" type="button">4:3</button>
+              </div>
+              <button class="ml-proj-s2" id="ml-ps-black" type="button">黑屏</button>
+              <button class="ml-proj-s2" id="ml-ps-fs" type="button">投影全屏</button>
+              <span class="ml-ps-fontrow"><span class="ml-ps-fontlbl">字号</span><input type="range" class="ml-proj-font" id="ml-ps-font" min="0.6" max="2.6" step="0.1"></span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    root.appendChild(ov);
+    // 顶部工具栏 popover 开合
+    ov.querySelectorAll('.ml-ps-tb').forEach(b=>b.addEventListener('click',e=>{
+      e.stopPropagation();
+      const pop=ov.querySelector('#ml-ps-pop-'+b.dataset.pop); const wasOpen=pop&&!pop.hidden;
+      ov.querySelectorAll('.ml-ps-pop').forEach(p=>p.hidden=true);
+      ov.querySelectorAll('.ml-ps-tb').forEach(x=>x.classList.remove('on'));
+      if(pop&&!wasOpen){ pop.hidden=false; b.classList.add('on'); const inp=pop.querySelector('input:not([type=color]):not([type=file])'); if(inp)setTimeout(()=>inp.focus(),0); }
+    }));
+    ov.addEventListener('click',e=>{ if(!e.target.closest('.ml-ps-pop')&&!e.target.closest('.ml-ps-tb')){ ov.querySelectorAll('.ml-ps-pop').forEach(p=>p.hidden=true); ov.querySelectorAll('.ml-ps-tb').forEach(x=>x.classList.remove('on')); } });
+    // toggles
+    const tg=ov.querySelector('#ml-ps-toggles');
+    PROJ_TOGGLE_DEFS.forEach(([k,label])=>{ const b=document.createElement('button'); b.className='ml-proj-tog'; b.type='button'; b.dataset.k=k; b.textContent=label; b.addEventListener('click',()=>projSetToggle(k)); tg.appendChild(b); });
+    ov.querySelectorAll('.ml-proj-asp').forEach(b=>b.addEventListener('click',()=>projSetAspect(b.dataset.ar)));
+    ov.querySelectorAll('.ml-proj-bg').forEach(b=>b.addEventListener('click',()=>{ if(b.dataset.bg==='image'){ ov.querySelector('#ml-ps-bgfile').click(); return; } projSetBg(b.dataset.bg); }));
+    ov.querySelector('#ml-ps-bgfile').addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const isVid=/^video\//.test(f.type||''); if(f.size>(isVid?60:8)*1024*1024){ showToast(isVid?'视频太大，请选 60MB 以内':'图片太大，请选 8MB 以内'); e.target.value=''; return; } const rd=new FileReader(); rd.onload=()=>projSetBg(isVid?'video':'image',String(rd.result||'')); rd.readAsDataURL(f); e.target.value=''; });
+    ov.querySelectorAll('.ml-proj-color[data-color]').forEach(b=>b.addEventListener('click',()=>projSetTextColor(b.dataset.color)));
+    ov.querySelector('#ml-ps-colorpick').addEventListener('input',e=>projSetTextColor(e.target.value));
+    ov.querySelector('#ml-ps-prev').addEventListener('click',()=>projNav(-1));
+    ov.querySelector('#ml-ps-next').addEventListener('click',()=>projNav(1));
+    ov.querySelector('#ml-ps-black').addEventListener('click',()=>projToggleBlank());
+    ov.querySelector('#ml-ps-fs').addEventListener('click',()=>projRequestFullscreen());
+    ov.querySelector('#ml-ps-font').addEventListener('input',e=>projSetFontScale(e.target.value));
+    ov.querySelector('#ml-ps-enter').addEventListener('click',()=>projEnterProjection());
+    ov.querySelector('#ml-ps-closewin').addEventListener('click',()=>projCloseProjector());
+    ov.querySelector('#ml-ps-x').addEventListener('click',()=>projCloseStudio());
+    const search=ov.querySelector('#ml-ps-search'); search.addEventListener('input',()=>projRenderLib(search.value));
+    const bref=ov.querySelector('#ml-ps-bible-ref');
+    ov.querySelector('#ml-ps-bible-add').addEventListener('click',()=>projAddScriptureFromInput(bref));
+    bref.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); projAddScriptureFromInput(bref); } });
+    projState.studio=ov;
+    return ov;
+  }
+  const PROJ_COLOR_PRESETS=[['#ffffff','白'],['#ffe08a','金'],['#ffd0d0','粉'],['#cfe8ff','蓝'],['#1a1a1a','黑']];
+  function projColorButtonsHTML(){
+    return PROJ_COLOR_PRESETS.map(c=>'<button class="ml-proj-color" data-color="'+c[0]+'" style="--sw:'+c[0]+'" title="'+c[1]+'" type="button"></button>').join('');
+  }
+  function projTextColorValue(){ return projState.textColor||'#ffffff'; }
+  function projSetTextColor(color){
+    color=String(color||'#ffffff');
+    projState.textColor=color;
+    if(projState.studio) projState.studio.querySelectorAll('.ml-proj-color[data-color]').forEach(b=>b.classList.toggle('on',b.dataset.color.toLowerCase()===color.toLowerCase()));
+    projSaveSettings(); projRenderPreview(); projRenderThumbs(); projPushPage();
+  }
+  function projAddScriptureFromInput(input){
+    const ref=(input.value||'').trim(); if(!ref)return;
+    if(!window.CECPBibleService){ showToast('经文服务未加载'); return; }
+    const btn=projState.studio&&projState.studio.querySelector('#ml-ps-bible-add');
+    const editIdx=projState.editScriptureIdx;
+    if(btn){ btn.disabled=true; btn.textContent='查询中…'; }
+    window.CECPBibleService.fetchPassage(ref,'CUNPSS')
+      .then(p=>{
+        const it=(typeof editIdx==='number')&&projState.setlist[editIdx];
+        if(it&&it.t==='scripture'){                    // 更新现有经文项(保留其背景等)
+          it.title=p.title||p.reference||'经文'; it.ref=p.reference||ref; it.primary=p.primary||'CUNPSS'; it.verses=p.verses||[];
+          projState.editScriptureIdx=null;
+          projSaveSetlist(); projRenderSetlist(); projRebuild();
+        }else{ projAddScripture(p); }
+        input.value='';
+      })
+      .catch(err=>{ showToast(String((err&&err.message)||err||'经文查询失败')); })
+      .then(()=>{ if(btn){ btn.disabled=false; btn.textContent=(typeof projState.editScriptureIdx==='number')?'更新经文':'加经文'; } });
+  }
+  function projOpenStudio(){
+    projLoadSettings();
+    projState.setlist=projLoadSetlist(); // 恢复上次的本堂歌单(覆盖单曲入口的临时歌单)
+    projState.pageIdx=0;
+    const ov=projBuildStudio();
+    projPreloadSetlistBgImages();      // 预载各歌单项的背景图
+    projSyncControlButtons();
+    const fs=ov.querySelector('#ml-ps-font'); if(fs) fs.value=String(projState.fontScale);
+    const tc=projTextColorValue();
+    ov.querySelectorAll('.ml-proj-color[data-color]').forEach(b=>b.classList.toggle('on',b.dataset.color.toLowerCase()===tc.toLowerCase()));
+    const cp=ov.querySelector('#ml-ps-colorpick'); if(cp)cp.value=/^#[0-9a-f]{6}$/i.test(tc)?tc:'#ffffff';
+    projRenderLib('');
+    projRenderSetlist();
+    projUpdateStatus();
+    projRebuild();
+    document.body.classList.add('ml-proj-studio-lock'); // 背景页锁死, 只滚演示台内部
+    requestAnimationFrame(()=>ov.classList.add('open'));
+    document.addEventListener('keydown',projStudioKeydown);
+  }
+  function projCloseStudio(){
+    if(projState.studio) projState.studio.classList.remove('open');
+    document.body.classList.remove('ml-proj-studio-lock');
+    document.removeEventListener('keydown',projStudioKeydown);
+  }
+  function projStudioKeydown(e){
+    if(!(projState.studio&&projState.studio.classList.contains('open')))return;
+    const tag=(e.target&&e.target.tagName)||'';
+    if(tag==='INPUT'||tag==='TEXTAREA')return;
+    if(e.key==='ArrowLeft'){ e.preventDefault(); projNav(-1); }
+    else if(e.key==='ArrowRight'||e.key===' '){ e.preventDefault(); projNav(1); }
+    else if(e.key==='Escape'){ projCloseStudio(); }
+    else if(e.key.toLowerCase&&e.key.toLowerCase()==='b'){ projToggleBlank(); }
+  }
+  /* ═══════════ CECP-PROJECTION v1 END ═══════════ */
 
   function attachPullToRefresh(){
     const indicator=$('ml-pull-refresh');
@@ -1695,6 +2558,7 @@
   }
 
   function closeDetail(fromPop){
+    projClosePanel(); // 关详情页顺手收起投影控制台面板(投影窗口不强制关, 见 projCloseProjector)
     if(!fromPop && _detailStatePushed){
       history.back();
       return;
@@ -7186,6 +8050,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
 
     const songState=getSongState(s.id);
     const hasRenderedScore=hasRenderableScore(s);
+    projSetButtonAvailable(hasRenderedScore); // 投影按钮: 只有结构化谱可投影
     const scoreImages=normalizeScoreImages(s);
     const hasImageScore=scoreImages.length>0;
     let curKey=songState.lastKey||s.origKey||'C';
@@ -7409,6 +8274,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       renderHomePanels();
       renderKeyButtons();
       renderScore();
+      // 投影联动: 若面板开着这首歌, 移调后重算分页并推当前页
+      if(projState.songId===s.id&&projState.panel&&projState.panel.classList.contains('open')) projRebuild();
       if(fxReady()){
         try{window.gsap.fromTo(lbDiv,{opacity:.32},{opacity:1,duration:.28,ease:'power2.out',clearProps:'opacity',overwrite:'auto'});}catch(_){}
       }

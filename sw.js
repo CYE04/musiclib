@@ -1,11 +1,13 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v30-justify-rows";
+const CACHE_NAME = "cecp-musiclib-pwa-v51-projection-sections-video";
 const DATA_CACHE = "cecp-musiclib-data-v1";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
+  "./projection.html",
   "./musiclib.css?v=20260711-justify-rows",
   "./gsap.min.js?v=20260711-justify-rows",
   "./pinyin-dict.js?v=20260711-justify-rows",
+  "./bible-service.js?v=20260711-justify-rows",
   "./musiclib.js?v=20260711-justify-rows",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
