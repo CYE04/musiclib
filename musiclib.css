@@ -9448,9 +9448,9 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 #music-library .proj-title{display:flex;align-items:baseline;gap:16px;width:100%;justify-content:center;margin-bottom:10px;flex-wrap:wrap;}
 #music-library .proj-title-key{font-family:'Space Mono',monospace;font-size:20px;font-weight:700;color:var(--text2);white-space:nowrap;}
 #music-library .proj-title-name{font-family:'Noto Serif SC',serif;font-size:40px;font-weight:700;color:var(--text);letter-spacing:1px;line-height:1.1;}
-/* 预览/缩略图里也白字 */
+/* 预览/缩略图里标题也跟随字体色(--proj-text) */
 #music-library .ml-proj-preview .proj-title-key,#music-library .ml-proj-preview .proj-title-name,
-#music-library .ml-ps-thumb .proj-title-key,#music-library .ml-ps-thumb .proj-title-name{color:#fff !important;text-shadow:0 1px 4px rgba(0,0,0,.8);}
+#music-library .ml-ps-thumb .proj-title-key,#music-library .ml-ps-thumb .proj-title-name{color:var(--proj-text,#fff) !important;text-shadow:0 1px 4px rgba(0,0,0,.8);}
 
 /* ── 投影经文(Bible) ── */
 #music-library .proj-verse{max-width:1100px;font-family:'Noto Serif SC',serif;font-size:38px;line-height:1.55;color:var(--text);margin:8px 0;text-align:left;}
@@ -9460,9 +9460,10 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 #music-library .ml-ps-bible .ml-ps-search{margin-bottom:0;}
 #music-library .ml-ps-bible-btn{flex:0 0 auto;padding:0 14px;border:none;border-radius:10px;background:var(--accent-soft);color:var(--accent);font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
 #music-library .ml-ps-set-item.is-scripture{background:var(--accent-soft);}
-/* 经文在预览/缩略图里也白字 */
-#music-library .ml-proj-preview .proj-verse,#music-library .ml-proj-preview .proj-verse *,
-#music-library .ml-ps-thumb .proj-verse,#music-library .ml-ps-thumb .proj-verse *{color:#fff !important;text-shadow:0 1px 4px rgba(0,0,0,.8);}
+/* 经文在预览/缩略图里跟随字体色(--proj-text), 节号保持金色 —— 之前写死 #fff !important 导致"圣经字体颜色改不了" */
+#music-library .ml-proj-preview .proj-verse,#music-library .ml-proj-preview .proj-verse .proj-vsec,
+#music-library .ml-ps-thumb .proj-verse,#music-library .ml-ps-thumb .proj-verse .proj-vsec{color:var(--proj-text,#fff) !important;text-shadow:0 1px 4px rgba(0,0,0,.8);}
+#music-library .ml-proj-preview .proj-verse .proj-vnum,#music-library .ml-ps-thumb .proj-verse .proj-vnum{color:#ffe08a !important;}
 
 /* 投影字号滑块 */
 #music-library .ml-ps-fontrow{display:flex;align-items:center;gap:12px;margin-top:10px;}
@@ -9488,3 +9489,7 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 /* 动态视频背景层(预览/投影框内, 内容之下) */
 #music-library .ml-proj-bg-vid{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;pointer-events:none;}
 #music-library .ml-proj-preview-scale{z-index:1;}
+
+/* 带声调拼音字体(方正楷体拼音字库子集): 拼音开时歌词用它, 每字上方自带声调拼音, 对齐完美 */
+@font-face{font-family:'FZKTPY';src:url('./pinyin-kai.woff2') format('woff2');font-display:swap;}
+#music-library .p-lyric.p-lyric-py{font-family:'FZKTPY','Noto Serif SC',serif;line-height:2.05;}

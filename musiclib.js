@@ -837,6 +837,7 @@
     bus.on(msg=>{
       if(msg.role==='console') return;               // 忽略自己(storage 兜底会回读)
       if(msg.t==='hello'){ projPushPage(); return; } // 投影页就绪 -> 推当前页(含该页背景)
+      if(msg.t==='nav'){ projNav(msg.action==='prev'?-1:1); return; } // 投影屏自己翻页 -> 同步过来
       if(msg.t==='bye'){ projMarkProjectorGone(); return; }
     });
     projState.bus=bus;
@@ -880,14 +881,10 @@
         const hasV = idx===1 ? true : (seg[k]!=null&&seg[k]!=='');
         if(!hasV) return;
         const text=String(seg[k]||'');
-        if(tg.pinyin){
-          const py=_div('p-pinyin'+(suf?' p-pinyin'+suf:''));
-          py.textContent=projPinyinSyllables(text).filter(Boolean).join(' ');
-          segEl.appendChild(py);
-        }
-        if(tg.lyric){
+        // 拼音开: 歌词用带声调拼音字体(每字上方自带拼音), 不再另起一行; 拼音关: 普通字体
+        if(tg.lyric||tg.pinyin){
           const ly=document.createElement('div');
-          ly.className='p-lyric'+(suf?' p-lyric'+suf:'')+((!isArr&&line.b)?' bold':'');
+          ly.className='p-lyric'+(suf?' p-lyric'+suf:'')+(tg.pinyin?' p-lyric-py':'')+((!isArr&&line.b)?' bold':'');
           setLyricContentEx(ly,normLyricText(text),setLyricContent);
           segEl.appendChild(ly);
         }
@@ -899,6 +896,17 @@
     }
     if(voltaWrap)row.appendChild(voltaWrap);
     return row;
+  }
+  /* 跟移调页 normalizePreviewRowHeights 一样: 每行把所有简谱音格(.p-n)统一到该行最高音格高度, 底对齐 ->
+     和弦/连音弧/房子线(volta)在整行内高度一致、整整齐齐(离屏算好 --row-note-height 烘进 outerHTML)。 */
+  function projNormalizeRowHeights(scope){
+    if(!scope)return;
+    scope.querySelectorAll('.prev-row').forEach(row=>{
+      row.style.setProperty('--row-note-height','0px');
+      let maxH=0;
+      row.querySelectorAll('.p-n').forEach(nl=>{ maxH=Math.max(maxH,Math.ceil(nl.getBoundingClientRect().height||0)); });
+      if(maxH)row.style.setProperty('--row-note-height',maxH+'px');
+    });
   }
   function projChordCss(){ const el=document.getElementById('cecp-chord-style'); return el?el.textContent:''; }
   /* 分页在控制端做(投影页纯显示): 整首渲成逐行, 离屏测量自然尺寸后按虚拟画布(aspect+字号)贪心装箱。
@@ -953,6 +961,7 @@
       root.appendChild(songStage); root.appendChild(scriptStage);
       setTimeout(()=>{
         const ar=projState.aspect==='4:3'?{w:4,h:3}:{w:16,h:9};
+        projNormalizeRowHeights(songStage); projNormalizeRowHeights(scriptStage); // 先统一每行音格高度(和弦/连音/房子线整齐), 再测页高
         // 测高; 诗歌统一用最宽那首的行宽(songMaxW)避免窄歌被切成一行一页; 经文各自算宽
         let songMaxW=1;
         groups.forEach(g=>g.blocks.forEach(el=>{
@@ -974,6 +983,12 @@
         });
         // 诗歌页统一参考高 = 所有诗歌页里最高那页 -> 每首诗歌所有页同一倍率(字号一致); 经文各自
         let songMaxH=1; raw.forEach(p=>{ if(!p.scripture&&p.gMaxH>songMaxH)songMaxH=p.gMaxH; });
+        // 两端对齐(分散对齐), 跟移调页一样: 诗歌各行按最宽行拉伸填满(短行不拉伸)。离屏算好 seg margin 后烘进 outerHTML, 投影缩放时按比例保持。
+        if(typeof justifyScoreRows==='function'){
+          const songRows=[];
+          groups.forEach(g=>{ if(g.meta.scripture)return; g.blocks.forEach(el=>{ if(el.classList&&el.classList.contains('sw-lrow'))songRows.push(el); }); });
+          if(songRows.length)justifyScoreRows(songRows,{ratio:0.5});
+        }
         projState.pages=raw.map(p=>Object.assign({
           html:p.b.map(x=>x.outerHTML).join(''), refW:p.refW, refH:p.scripture?p.gMaxH:songMaxH
         },p.meta));
@@ -1063,6 +1078,7 @@
     const rb=projResolveBg(curBg), bgCss=projBgCssValue(curBg);
     [[projState.panel,'#ml-proj-preview'],[projState.studio,'#ml-ps-preview']].forEach(([scope,sel])=>{
       if(!scope)return; const box=scope.querySelector(sel); if(!box)return;
+      box.style.paddingBottom=projAspectPad();          // 预览盒子按当前比例变形(4:3 更方 / 16:9 更宽)
       let vid=box.querySelector('.ml-proj-bg-vid');   // 动态视频背景
       if(rb.video){ if(!vid){ vid=document.createElement('video'); vid.className='ml-proj-bg-vid'; vid.muted=true; vid.loop=true; vid.autoplay=true; vid.setAttribute('playsinline',''); box.insertBefore(vid,box.firstChild); } if(vid.getAttribute('src')!==rb.video){ vid.src=rb.video; if(vid.play)vid.play().catch(()=>{}); } box.style.background='#000'; }
       else { if(vid)vid.remove(); box.style.background=bgCss; }
@@ -1097,16 +1113,22 @@
   function projBgCssValue(bg){ const r=projResolveBg(bg); return r.image?('#000 url('+r.image+') center/cover'):r.css; }
   /* 面板 + 演示台 共用: 同步控制按钮亮灭 */
   function projSyncControlButtons(){
-    const curBgMode=projItemBg(projCurrentItem()).mode; // 背景按钮反映"当前这首歌"的背景
+    const cur=projCurrentItem();
+    const curBgMode=projItemBg(cur).mode;                 // 背景按钮反映"当前这首歌"的背景
+    const curTc=projItemTextColor(cur).toLowerCase();     // 字体色按钮反映"当前这首歌/这段经文"
     [projState.panel,projState.studio].forEach(scope=>{
       if(!scope)return;
       scope.querySelectorAll('.ml-proj-tog').forEach(b=>{ const on=!!projState.toggles[b.dataset.k]; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false'); });
       scope.querySelectorAll('.ml-proj-asp').forEach(b=>b.classList.toggle('on',b.dataset.ar===projState.aspect));
       scope.querySelectorAll('.ml-proj-bg').forEach(b=>b.classList.toggle('on',b.dataset.bg===curBgMode||(b.dataset.bg==='image'&&curBgMode==='video')));
+      scope.querySelectorAll('.ml-proj-color[data-color]').forEach(b=>b.classList.toggle('on',b.dataset.color.toLowerCase()===curTc));
+      const cp=scope.querySelector('#ml-ps-colorpick'); if(cp&&/^#[0-9a-f]{6}$/i.test(curTc))cp.value=curTc;
     });
   }
   function projSetToggle(k){ if(!(k in projState.toggles))return; projState.toggles[k]=!projState.toggles[k]; projSyncControlButtons(); projSaveSettings(); projRebuild(); }
   function projSetAspect(ar){ projState.aspect=ar; projSyncControlButtons(); projSaveSettings(); projRebuild(); }
+  function projAspectRatio(){ return projState.aspect==='4:3'?4/3:16/9; }        // 宽/高
+  function projAspectPad(){ return (100/projAspectRatio())+'%'; }                 // 预览/缩略图盒子高度(4:3→75%, 16:9→56.25%)
   function projSetFontScale(v){
     v=Math.max(0.6,Math.min(2.6,Number(v)||1));
     projState.fontScale=v;
@@ -1337,12 +1359,13 @@
       const card=document.createElement('button');
       card.type='button';
       card.className='ml-ps-thumb'+(i===projState.pageIdx?' on':'');
+      card.style.paddingBottom=projAspectPad();          // 缩略图按当前比例变形
       card.innerHTML='<div class="ml-ps-thumb-box" id="ml-ps-th-'+i+'"></div><div class="ml-ps-thumb-no">'+(i+1)+'</div>';
       card.addEventListener('click',()=>{ projState.pageIdx=i; projSyncControlButtons(); projRenderPager(); projRenderPreview(); projPushPage(); });
       box.appendChild(card);
       const th=card.querySelector('#ml-ps-th-'+i);
       th.style.background=projBgCssValue(projItemBg(projState.setlist[pg.itemIdx])); // 每张缩略图各自的歌背景
-      th.style.setProperty('--proj-text',projTextColorValue());
+      th.style.setProperty('--proj-text',projItemTextColor(projState.setlist[pg.itemIdx])); // 各自的字体色
       projFitPageInto(th,pg.html,pg.refW,pg.refH);
     });
   }
@@ -1541,12 +1564,15 @@
   function projColorButtonsHTML(){
     return PROJ_COLOR_PRESETS.map(c=>'<button class="ml-proj-color" data-color="'+c[0]+'" style="--sw:'+c[0]+'" title="'+c[1]+'" type="button"></button>').join('');
   }
-  function projTextColorValue(){ return projState.textColor||'#ffffff'; }
+  /* 字体色以「每个歌单项」为单位: item.textColor 覆盖, 没有则用 projState.textColor 默认(白) —— 跟背景 item.bg 同理 */
+  function projItemTextColor(item){ return (item&&item.textColor)?item.textColor:(projState.textColor||'#ffffff'); }
+  function projTextColorValue(){ return projItemTextColor(projCurrentItem()); } // "当前这首歌/这段经文"的字体色
   function projSetTextColor(color){
     color=String(color||'#ffffff');
-    projState.textColor=color;
-    if(projState.studio) projState.studio.querySelectorAll('.ml-proj-color[data-color]').forEach(b=>b.classList.toggle('on',b.dataset.color.toLowerCase()===color.toLowerCase()));
-    projSaveSettings(); projRenderPreview(); projRenderThumbs(); projPushPage();
+    const item=projCurrentItem();
+    if(item){ item.textColor=color; projSaveSetlist(); }   // 改的是"当前这首歌/这段经文", 每项各自设
+    else { projState.textColor=color; projSaveSettings(); } // 空歌单时改全局默认
+    projSyncControlButtons(); projRenderPreview(); projRenderThumbs(); projPushPage();
   }
   function projAddScriptureFromInput(input){
     const ref=(input.value||'').trim(); if(!ref)return;

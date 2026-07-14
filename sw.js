@@ -1,4 +1,4 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v51-projection-sections-video";
+const CACHE_NAME = "cecp-musiclib-pwa-v58-proj-per-item-textcolor";
 const DATA_CACHE = "cecp-musiclib-data-v1";
 const APP_SHELL = [
   "./?key=cecp2026",
@@ -8,6 +8,7 @@ const APP_SHELL = [
   "./gsap.min.js?v=20260711-justify-rows",
   "./pinyin-dict.js?v=20260711-justify-rows",
   "./bible-service.js?v=20260711-justify-rows",
+  "./pinyin-kai.woff2",
   "./musiclib.js?v=20260711-justify-rows",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
