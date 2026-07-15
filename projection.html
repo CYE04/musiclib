@@ -91,7 +91,12 @@
       curRefW=Number(p.refW)||0; curRefH=Number(p.refH)||0;
       applyBg({css:p.bgCss,image:p.bgImage,video:p.bgVideo});   // 每首歌自己的背景(图/视频, 随页推送)
       $('proj-black').hidden=!p.blank;
-      var cont=$('proj-page'); cont.style.setProperty('--proj-text', p.textColor||'#fff'); cont.innerHTML=p.html||'';
+      var cont=$('proj-page'); cont.style.setProperty('--proj-text', p.textColor||'#fff');
+      // 和弦大小 / 行距 倍率: 必须跟控制端离屏测量时一致, 否则烘进 HTML 的连音弧 px 定位会错位
+      var L=p.layer||{};
+      cont.style.setProperty('--pl-chord', String(L.chord||1));
+      cont.style.setProperty('--pl-gap',   String(L.gap||1));
+      cont.innerHTML=p.html||'';
       var empty=!p.html;                                  // 歌单为空/无内容 -> 提示, 不留旧画面
       var hint=$('proj-hint'); hint.hidden=!empty; if(empty) hint.textContent='歌单为空，请在控制端加入诗歌或经文';
       fit();

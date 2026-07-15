@@ -763,16 +763,30 @@
   const PROJ_SETTINGS_KEY='cecp:musiclib:projection:settings:v1';
   const PROJ_BUS_KEY='cecp:musiclib:projection:bus:v1';
   const PROJ_TOGGLE_DEFS=[['chord','和弦'],['jianpu','简谱'],['lyric','歌词'],['pinyin','拼音']];
+  /* 只保留「和弦」「行距」两个倍率(外加原有的「字号」)。[key,标签,min,max]
+     曾做过「歌词+简谱」与「每行宽度(换行)」——都已按用户要求撤掉:
+     页面是按最宽行自动缩放铺满的, 把歌词+简谱调大会把行一起撑宽 -> 又被缩回去, 实测 3× 只换来 +9% 的实际变化, 等于无效控件。 */
+  const PROJ_LAYER_DEFS=[['chord','和弦',0.4,3],['gap','行距',0.4,3]];
   const PROJ_BG_PRESETS={
     warm:{label:'暖阳',css:'linear-gradient(135deg,#8a4b2f 0%,#a86a44 28%,#7a6a72 60%,#3f4a5e 100%)'},
     night:{label:'深蓝',css:'linear-gradient(160deg,#0b1830 0%,#122844 55%,#0a1220 100%)'},
     black:{label:'纯黑',css:'#000'}
   };
-  const projState={
+  /* 默认参数(唯一真源): projState 初始化 + 「恢复默认」都用它, 免得两处各写一份日后走样。
+     只含全局显示参数; 背景/字体色是「每首歌各自设的内容选择」, 不在恢复范围内(免得一键把每首歌的设置抹掉)。 */
+  const PROJ_DEFAULTS={
     toggles:{chord:true,jianpu:true,lyric:true,pinyin:true},
-    aspect:'16:9',fontScale:1.5, // 默认放大: 每页少放几行, 歌词更大更好读
+    aspect:'16:9',
+    fontScale:1.3,           // 每页少放几行; 1.5 用户实测偏大, 1.3 刚好
+    layer:{chord:1,gap:1}    // 倍率(1=原始): 和弦大小 / 行距
+  };
+  const projState={
+    toggles:Object.assign({},PROJ_DEFAULTS.toggles),
+    aspect:PROJ_DEFAULTS.aspect,fontScale:PROJ_DEFAULTS.fontScale,
     bg:{mode:'warm',css:PROJ_BG_PRESETS.warm.css,image:null}, // 默认背景(新歌/无当前项时)
     textColor:'#ffffff', // 全局字体色(默认白+阴影)
+    // 倍率(1=原始): 和弦大小(chord) / 行距(gap)
+    layer:Object.assign({},PROJ_DEFAULTS.layer),
     bgImages:{}, // imgKey -> dataURL 内存缓存(真身在 IndexedDB)
     setlist:[],studio:null,
     pages:[],pageIdx:0,blank:false,songId:'',songTitle:'',
@@ -801,6 +815,9 @@
         if(PROJ_BG_PRESETS[s.bgMode]) projState.bg.css=PROJ_BG_PRESETS[s.bgMode].css;
       }
       if(typeof s.textColor==='string'&&/^#[0-9a-f]{3,8}$/i.test(s.textColor)) projState.textColor=s.textColor;
+      if(s.layer&&typeof s.layer==='object'){
+        PROJ_LAYER_DEFS.forEach(([k,,mn,mx])=>{ const v=Number(s.layer[k]); if(v>0) projState.layer[k]=Math.max(mn,Math.min(mx,v)); });
+      }
     }catch(_){}
   }
   function projSaveSettings(){
@@ -810,6 +827,7 @@
       prev.aspect=projState.aspect; prev.fontScale=projState.fontScale;
       prev.bgMode=projState.bg.mode; // 图片本身存 IndexedDB, 这里只存模式
       prev.textColor=projState.textColor;
+      prev.layer=Object.assign({},prev.layer,projState.layer);
       localStorage.setItem(PROJ_SETTINGS_KEY,JSON.stringify(prev));
     }catch(_){}
   }
@@ -930,6 +948,7 @@
       const measCss='position:fixed;left:-99999px;top:0;width:auto;visibility:hidden;display:flex;flex-direction:column;align-items:flex-start;';
       const songStage=_div('sw-lb'); songStage.style.cssText=measCss;
       const scriptStage=_div('sw-lb'); scriptStage.style.cssText=measCss;
+      projApplyLayerVars(songStage); projApplyLayerVars(scriptStage); // 分层倍率要先套上, 后面 renderNStr/layoutJpArcs 才按新字号量连音弧
       const groups=[];
       for(let itemIdx=0;itemIdx<list.length;itemIdx++){
         const item=list[itemIdx];
@@ -963,12 +982,16 @@
         const ar=projState.aspect==='4:3'?{w:4,h:3}:{w:16,h:9};
         projNormalizeRowHeights(songStage); projNormalizeRowHeights(scriptStage); // 先统一每行音格高度(和弦/连音/房子线整齐), 再测页高
         // 测高; 诗歌统一用最宽那首的行宽(songMaxW)避免窄歌被切成一行一页; 经文各自算宽
-        let songMaxW=1;
-        groups.forEach(g=>g.blocks.forEach(el=>{
-          const cs=getComputedStyle(el);
-          el._h=(el.offsetHeight||0)+(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0); // 含行间 margin, 免得低估页高把末行裁掉
-          if(!g.meta.scripture&&!el.classList.contains('proj-title')){ const w=el.scrollWidth||0; if(w>songMaxW)songMaxW=w; }
-        }));
+        const measureAll=()=>{
+          let mw=1;
+          groups.forEach(g=>g.blocks.forEach(el=>{
+            const cs=getComputedStyle(el);
+            el._h=(el.offsetHeight||0)+(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0); // 含行间 margin, 免得低估页高把末行裁掉
+            if(!g.meta.scripture&&!el.classList.contains('proj-title')){ const w=el.scrollWidth||0; if(w>mw)mw=w; }
+          }));
+          return mw;
+        };
+        const songMaxW=measureAll();
         // 各组按高度预算贪心装箱; 记录每页自然高度(用于统一缩放的参考高)
         const raw=[];
         groups.forEach(g=>{
@@ -1004,7 +1027,7 @@
     projBusSend({t:'page',chordCss:projChordCss(),payload:{
       html:pg?pg.html:'', refW:pg?(pg.refW||0):0, refH:pg?(pg.refH||0):0, aspect:projState.aspect, blank:projState.blank,
       idx:projState.pageIdx, total:projState.pages.length, title:pg?pg.title:'', songId:pg?pg.songId:'',
-      bgCss:rb.css, bgImage:rb.image, bgVideo:rb.video||null, textColor:projTextColorValue()
+      bgCss:rb.css, bgImage:rb.image, bgVideo:rb.video||null, textColor:projTextColorValue(), layer:Object.assign({},projState.layer)
     }});
   }
   function projRebuild(){
@@ -1083,6 +1106,7 @@
       if(rb.video){ if(!vid){ vid=document.createElement('video'); vid.className='ml-proj-bg-vid'; vid.muted=true; vid.loop=true; vid.autoplay=true; vid.setAttribute('playsinline',''); box.insertBefore(vid,box.firstChild); } if(vid.getAttribute('src')!==rb.video){ vid.src=rb.video; if(vid.play)vid.play().catch(()=>{}); } box.style.background='#000'; }
       else { if(vid)vid.remove(); box.style.background=bgCss; }
       box.style.setProperty('--proj-text',projTextColorValue());
+      projApplyLayerVars(box);   // 预览要跟离屏同字号, 否则烘进 HTML 的连音弧 px 会错位
       projFitPageInto(box,pg?pg.html:'',pg?pg.refW:0,pg?pg.refH:0);
     });
   }
@@ -1131,6 +1155,44 @@
   function projSetAspect(ar){ projState.aspect=ar; projSyncControlButtons(); projSaveSettings(); projRebuild(); }
   function projAspectRatio(){ return projState.aspect==='4:3'?4/3:16/9; }        // 宽/高
   function projAspectPad(){ return (100/projAspectRatio())+'%'; }                 // 预览/缩略图盒子高度(4:3→75%, 16:9→56.25%)
+  /* 把分层倍率写成 CSS 变量。必须在"离屏渲染/测量之前"套上去 ——
+     简谱的连音弧(layoutJpArcs)是按实测 px 定位的, 字号变了得重新量, 所以离屏台/预览/缩略图/投影都要套同一份, 否则弧线错位。 */
+  function projApplyLayerVars(el){
+    if(!el||!el.style)return;
+    const L=projState.layer;
+    el.style.setProperty('--pl-chord',String(L.chord||1));
+    el.style.setProperty('--pl-gap',String(L.gap||1));
+    // 歌词/简谱/每行宽度不再可调: 主动清掉(预览盒是复用的, 不清会残留旧值), 让 CSS 回落到默认 1 = 原始尺寸
+    ['--pl-lyric','--pl-n','--pl-roww'].forEach(v=>el.style.removeProperty(v));
+  }
+  /* 一键恢复默认显示参数: 四个开关 + 比例 + 字号 + 分层大小/行距。
+     不动背景与字体色(那是每首歌各自设的, 抹掉会很意外), 也不动歌单。 */
+  function projResetDefaults(){
+    Object.assign(projState.toggles,PROJ_DEFAULTS.toggles);
+    Object.assign(projState.layer,PROJ_DEFAULTS.layer);
+    projState.aspect=PROJ_DEFAULTS.aspect;
+    projState.fontScale=PROJ_DEFAULTS.fontScale;
+    [projState.panel,projState.studio].forEach(scope=>{
+      if(!scope)return;
+      const f=scope.querySelector('.ml-proj-font'); if(f)f.value=String(projState.fontScale);
+      scope.querySelectorAll('.ml-proj-layer').forEach(s=>{ s.value=String(projState.layer[s.dataset.layer]||1); });
+    });
+    projSyncControlButtons(); projSaveSettings(); projRebuild();
+    showToast('已恢复默认参数（背景与字体色保留）');
+  }
+  function projLayerSlidersHTML(){
+    return PROJ_LAYER_DEFS.map(([k,label,mn,mx])=>
+      '<span class="ml-ps-fontrow"><span class="ml-ps-fontlbl">'+label+'</span>'+
+      '<input type="range" class="ml-proj-layer" data-layer="'+k+'" min="'+mn+'" max="'+mx+'" step="0.05"></span>'
+    ).join('');
+  }
+  function projSetLayer(k,v){
+    if(!(k in projState.layer))return;
+    const def=PROJ_LAYER_DEFS.find(d=>d[0]===k)||[k,'',0.4,3];
+    projState.layer[k]=Math.max(def[2],Math.min(def[3],Number(v)||1));
+    [projState.panel,projState.studio].forEach(scope=>{ if(!scope)return; const s=scope.querySelector('.ml-proj-layer[data-layer="'+k+'"]'); if(s&&s.value!=String(projState.layer[k]))s.value=String(projState.layer[k]); });
+    projSaveSettings(); projRebuild();
+  }
   function projSetFontScale(v){
     v=Math.max(0.6,Math.min(2.6,Number(v)||1));
     projState.fontScale=v;
@@ -1374,6 +1436,7 @@
       const th=card.querySelector('#ml-ps-th-'+i);
       th.style.background=projBgCssValue(projItemBg(projState.setlist[pg.itemIdx])); // 每张缩略图各自的歌背景
       th.style.setProperty('--proj-text',projItemTextColor(projState.setlist[pg.itemIdx])); // 各自的字体色
+      projApplyLayerVars(th);    // 缩略图同样套分层倍率, 跟离屏一致
       projFitPageInto(th,pg.html,pg.refW,pg.refH);
     });
   }
@@ -1530,7 +1593,9 @@
               </div>
               <button class="ml-proj-s2" id="ml-ps-black" type="button">黑屏</button>
               <button class="ml-proj-s2" id="ml-ps-fs" type="button">投影全屏</button>
+              <button class="ml-proj-s2" id="ml-ps-reset" type="button">恢复默认</button>
               <span class="ml-ps-fontrow"><span class="ml-ps-fontlbl">字号</span><input type="range" class="ml-proj-font" id="ml-ps-font" min="0.6" max="2.6" step="0.1"></span>
+              ${projLayerSlidersHTML()}
             </div>
           </div>
         </div>
@@ -1558,6 +1623,8 @@
     ov.querySelector('#ml-ps-black').addEventListener('click',()=>projToggleBlank());
     ov.querySelector('#ml-ps-fs').addEventListener('click',()=>projRequestFullscreen());
     ov.querySelector('#ml-ps-font').addEventListener('input',e=>projSetFontScale(e.target.value));
+    ov.querySelectorAll('.ml-proj-layer').forEach(s=>s.addEventListener('input',e=>projSetLayer(e.target.dataset.layer,e.target.value)));
+    ov.querySelector('#ml-ps-reset').addEventListener('click',()=>projResetDefaults());
     ov.querySelector('#ml-ps-enter').addEventListener('click',()=>projEnterProjection());
     ov.querySelector('#ml-ps-closewin').addEventListener('click',()=>projCloseProjector());
     ov.querySelector('#ml-ps-x').addEventListener('click',()=>projCloseStudio());
@@ -1609,6 +1676,7 @@
     projPreloadSetlistBgImages();      // 预载各歌单项的背景图
     projSyncControlButtons();
     const fs=ov.querySelector('#ml-ps-font'); if(fs) fs.value=String(projState.fontScale);
+    ov.querySelectorAll('.ml-proj-layer').forEach(s=>{ s.value=String(projState.layer[s.dataset.layer]||1); });
     const tc=projTextColorValue();
     ov.querySelectorAll('.ml-proj-color[data-color]').forEach(b=>b.classList.toggle('on',b.dataset.color.toLowerCase()===tc.toLowerCase()));
     const cp=ov.querySelector('#ml-ps-colorpick'); if(cp)cp.value=/^#[0-9a-f]{6}$/i.test(tc)?tc:'#ffffff';
@@ -3792,15 +3860,18 @@
     if(!seg)return '';
     return normalizeTimeSignValue(seg.timeSign||seg.ts||seg.meter||'');
   }
+  /* 小节线的尺寸原本是写死 px 的内联样式 -> 简谱放大时它纹丝不动("｜不会跟着变大")。
+     内联样式一样能读 CSS 变量, 所以全部乘 var(--pl-n,1); 默认 1 时与原来完全一致(移调页零影响)。 */
   function makeBarline(tok){
+    const S=n=>'calc('+n+'px * var(--pl-n,1))'; // 跟着简谱倍率缩放
     const o=document.createElement('span');
     o.style.cssText='display:inline-flex;flex-direction:column;align-items:flex-start;vertical-align:bottom;';
-    const top=document.createElement('span');top.style.height='12px';o.appendChild(top);
-    const mid=document.createElement('span');mid.style.cssText='display:inline-flex;align-items:stretch;height:26px;';
-    function thin(){const l=document.createElement('span');l.style.cssText='width:1.5px;background:currentColor;flex-shrink:0;';return l;}
-    function thick(){const l=document.createElement('span');l.style.cssText='width:3.5px;background:currentColor;flex-shrink:0;';return l;}
-    function gap(px){const g=document.createElement('span');g.style.cssText='width:'+px+'px;flex-shrink:0;';return g;}
-    function dots(){const d=document.createElement('span');d.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;width:6px;flex-shrink:0;';const d1=document.createElement('span');d1.style.cssText='width:3px;height:3px;border-radius:50%;background:currentColor;';const d2=document.createElement('span');d2.style.cssText='width:3px;height:3px;border-radius:50%;background:currentColor;';d.appendChild(d1);d.appendChild(d2);return d;}
+    const top=document.createElement('span');top.style.height=S(12);o.appendChild(top);
+    const mid=document.createElement('span');mid.style.cssText='display:inline-flex;align-items:stretch;height:'+S(26)+';';
+    function thin(){const l=document.createElement('span');l.style.cssText='width:'+S(1.5)+';background:currentColor;flex-shrink:0;';return l;}
+    function thick(){const l=document.createElement('span');l.style.cssText='width:'+S(3.5)+';background:currentColor;flex-shrink:0;';return l;}
+    function gap(px){const g=document.createElement('span');g.style.cssText='width:'+S(px)+';flex-shrink:0;';return g;}
+    function dots(){const d=document.createElement('span');d.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:'+S(4)+';width:'+S(6)+';flex-shrink:0;';const d1=document.createElement('span');d1.style.cssText='width:'+S(3)+';height:'+S(3)+';border-radius:50%;background:currentColor;';const d2=document.createElement('span');d2.style.cssText='width:'+S(3)+';height:'+S(3)+';border-radius:50%;background:currentColor;';d.appendChild(d1);d.appendChild(d2);return d;}
     if(tok==='|'){mid.appendChild(thin());}
     else if(tok==='||'){mid.appendChild(thin());mid.appendChild(gap(2));mid.appendChild(thin());}
     else if(tok==='||/'||tok==='|]'){mid.appendChild(thin());mid.appendChild(gap(2));mid.appendChild(thick());}
@@ -3808,7 +3879,7 @@
     else if(tok===':|'){mid.appendChild(dots());mid.appendChild(gap(3));mid.appendChild(thick());mid.appendChild(gap(1));mid.appendChild(thin());}
     else if(tok==='|:|'){mid.appendChild(dots());mid.appendChild(gap(3));mid.appendChild(thick());mid.appendChild(gap(1));mid.appendChild(thick());mid.appendChild(gap(3));mid.appendChild(dots());}
     o.appendChild(mid);
-    const bot=document.createElement('span');bot.style.height='16px';o.appendChild(bot);
+    const bot=document.createElement('span');bot.style.height=S(16);o.appendChild(bot);
     return o;
   }
   function makeTimeSignature(sig){
