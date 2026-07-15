@@ -51,7 +51,7 @@
   </div>
   <div class="proj-black" id="proj-black" hidden></div>
   <div class="proj-hint" id="proj-hint">已就绪，等待控制台推送…</div>
-  <div class="proj-fshint" id="proj-fshint">点击画面 · 进入全屏</div>
+  <div class="proj-fshint" id="proj-fshint">点击画面 · 进入全屏　|　Esc 退出投影</div>
 
   <script>
   (function(){
@@ -146,7 +146,10 @@
       if(!isFs()&&(e.key==='Enter'||e.key===' '||(e.key&&e.key.toLowerCase&&e.key.toLowerCase()==='f'))){ e.preventDefault(); tryFullscreen(); return; }
       if(['ArrowRight','ArrowDown','PageDown',' '].indexOf(e.key)>=0){ e.preventDefault(); sendNav('next'); }
       else if(['ArrowLeft','ArrowUp','PageUp'].indexOf(e.key)>=0){ e.preventDefault(); sendNav('prev'); }
-      else if(e.key==='Escape'){ if(isFs()&&document.exitFullscreen)document.exitFullscreen(); }
+      else if(e.key==='Escape'){                              // 全屏时先退全屏; 已在窗口态再按 Esc = 退出投影(关掉投影窗口)
+        if(isFs()){ if(document.exitFullscreen)document.exitFullscreen(); else if(document.webkitExitFullscreen)document.webkitExitFullscreen(); }
+        else { send({t:'bye'}); try{ window.close(); }catch(_){} }
+      }
       else if(e.key&&e.key.toLowerCase&&e.key.toLowerCase()==='f'){ tryFullscreen(); }
     });
     document.addEventListener('click',function(e){

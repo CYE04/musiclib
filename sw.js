@@ -1,4 +1,4 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v59-proj-click-fullscreen";
+const CACHE_NAME = "cecp-musiclib-pwa-v60-proj-esc-exit";
 const DATA_CACHE = "cecp-musiclib-data-v1";
 const APP_SHELL = [
   "./?key=cecp2026",
