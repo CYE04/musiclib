@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow">
   <title>投影输出 · CECP 诗歌库</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./musiclib.css?v=20260711-justify-rows">
+  <link rel="stylesheet" href="./musiclib.css?v=20260719-ui1">
   <style>
     /* 屏2 = 纯投影输出。无任何控制按钮; 内容由屏1(控制端)推送当前页, 这里只缩放铺满显示。 */
     html,body{height:100%;margin:0;background:#000;overflow:hidden;cursor:none;}
@@ -38,6 +38,9 @@
     .proj-badge{position:fixed;top:14px;left:0;right:0;text-align:center;color:rgba(255,255,255,.28);font-size:12px;letter-spacing:3px;pointer-events:none;font-family:'Noto Sans SC',sans-serif;z-index:2;text-shadow:0 1px 4px rgba(0,0,0,.7);}
     /* 全屏提示: 未全屏时提示点一下进全屏(去掉浏览器顶部地址栏/标题), 全屏后淡出 */
     .proj-fshint{position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:70;background:rgba(0,0,0,.55);color:#fff;font-size:14px;font-family:'Noto Sans SC',sans-serif;padding:7px 16px;border-radius:999px;letter-spacing:1px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);text-shadow:0 1px 3px rgba(0,0,0,.6);pointer-events:none;transition:opacity .35s;}
+    /* 右上角时钟 + 右下角页码: 低调小元素, 会众不抢眼、同工看得见; 黑屏(z60)会盖掉它们 */
+    .proj-clock{position:fixed;top:14px;right:20px;z-index:50;color:rgba(255,255,255,.42);font-size:16px;font-family:'Noto Sans SC',sans-serif;letter-spacing:1.5px;pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,.6);font-variant-numeric:tabular-nums;}
+    .proj-pageno{position:fixed;bottom:12px;right:20px;z-index:50;color:rgba(255,255,255,.32);font-size:13px;font-family:'Noto Sans SC',sans-serif;letter-spacing:1px;pointer-events:none;text-shadow:0 1px 4px rgba(0,0,0,.6);font-variant-numeric:tabular-nums;}
   </style>
 </head>
 <body>
@@ -52,6 +55,8 @@
   <div class="proj-black" id="proj-black" hidden></div>
   <div class="proj-hint" id="proj-hint">已就绪，等待控制台推送…</div>
   <div class="proj-fshint" id="proj-fshint">点击画面 · 进入全屏　|　Esc 退出投影</div>
+  <div class="proj-clock" id="proj-clock"></div>
+  <div class="proj-pageno" id="proj-pageno"></div>
 
   <script>
   (function(){
@@ -99,6 +104,8 @@
       cont.innerHTML=p.html||'';
       var empty=!p.html;                                  // 歌单为空/无内容 -> 提示, 不留旧画面
       var hint=$('proj-hint'); hint.hidden=!empty; if(empty) hint.textContent='歌单为空，请在控制端加入诗歌或经文';
+      var pn=$('proj-pageno');                            // 右下角小页码(空歌单不显示)
+      if(pn) pn.textContent=(!empty&&p.total>0)?((p.idx+1)+' / '+p.total):'';
       fit();
     }
     function fit(){
@@ -168,6 +175,13 @@
       if(!isFs()){ if(Math.abs(dx)<=50) tryFullscreen(); return; }  // 全屏前: 轻点进全屏
       if(Math.abs(dx)>50) sendNav(dx<0?'next':'prev');
     },{passive:true});
+
+    /* ── 右上角时钟(HH:MM, 半分钟刷一次) ── */
+    function tickClock(){
+      var d=new Date(), hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0');
+      var c=$('proj-clock'); if(c) c.textContent=hh+':'+mm;
+    }
+    tickClock(); setInterval(tickClock,30000);
 
     /* ── Wake Lock 防息屏(不支持则静默降级) ── */
     var wakeLock=null;

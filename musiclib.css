@@ -2092,6 +2092,7 @@ html,body,#music-library{
 #music-library .sw-lyric3{display:block;font-size:22px;opacity:0.6;margin-top:1px;}
 #music-library .sw-lyric4{display:block;font-size:22px;opacity:0.6;margin-top:1px;}
 #music-library .prev-row{--volta-rail:0px;--volta-top:2px;--row-note-height:0px;display:flex;flex-wrap:nowrap;align-items:flex-end;margin-bottom:calc(10px * var(--pl-gap,1));overflow:visible;padding-top:var(--volta-rail);padding-bottom:2px;}
+/* 自动折行(宽歌铺满): 太长的简谱行折成多行, 整列(和弦+简谱+歌词+拼音)一起折, 不拆散 */
 #music-library .prev-row.has-volta{--volta-rail:18px;}
 #music-library .prev-seg{display:inline-flex;flex-direction:column;align-items:flex-start;margin-right:4px;flex-shrink:0;}
 #music-library .p-chord{font-family:'Space Mono',monospace;font-size:calc(12px * var(--pl-chord,1));font-weight:700;color:var(--accent);margin-bottom:2px;min-height:13px;white-space:pre;}
@@ -9376,10 +9377,12 @@ body.ml-detail-lock{overflow:hidden !important;}
 /* 演示台占满整屏, 不留边 */
 body.ml-proj-studio-lock{overflow:hidden !important;}
 #music-library .ml-ps{margin:0;width:100%;height:100%;max-width:none;background:var(--surface);border:none;border-radius:0;display:flex;flex-direction:column;overflow:hidden;transform:none;position:relative;}
-#music-library .ml-ps-head{display:flex;align-items:center;gap:16px;padding:12px 16px;border-bottom:1px solid var(--divider);flex:0 0 auto;}
+#music-library .ml-ps-head{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--divider);flex:0 0 auto;min-width:0;}
+#music-library .ml-ps-title2{white-space:nowrap;flex:0 0 auto;}
 #music-library .ml-ps-title2{font-size:16px;font-weight:700;color:var(--text);flex:0 0 auto;}
-#music-library .ml-ps-toolbar{display:flex;align-items:center;gap:8px;flex:1;}
-#music-library .ml-ps-tb{padding:8px 14px;border:1px solid var(--divider);border-radius:10px;background:var(--bg);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;}
+#music-library .ml-ps-toolbar{display:flex;align-items:center;gap:8px;flex:1 1 auto;min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;}
+#music-library .ml-ps-toolbar::-webkit-scrollbar{display:none;}
+#music-library .ml-ps-tb{padding:8px 14px;border:1px solid var(--divider);border-radius:10px;background:var(--bg);color:var(--text);font-size:14px;font-weight:600;cursor:pointer;white-space:nowrap;flex:0 0 auto;}
 #music-library .ml-ps-tb:hover{background:var(--surface-hover,rgba(0,0,0,.05));}
 #music-library .ml-ps-tb.on{background:var(--accent);border-color:transparent;color:#fff;}
 #music-library .ml-ps-head-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto;}
@@ -9423,7 +9426,11 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 #music-library .ml-ps-right .ml-proj-preview{flex:0 0 auto;margin-bottom:10px;}
 #music-library .ml-ps-pager{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex:0 0 auto;}
 #music-library .ml-ps-pager .ml-proj-pageno{flex:1;}
-#music-library .ml-ps-controls{display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
+#music-library .ml-ps-controls{display:flex;flex-direction:column;gap:10px;}
+#music-library .ml-ps-ctrl-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;min-width:0;}
+#music-library .ml-ps-ctrl-sliders{row-gap:12px;}
+#music-library .ml-ps-ctrl-sliders .ml-ps-fontrow{flex:1 1 190px;min-width:160px;}
+#music-library .ml-ps-fontlbl{white-space:nowrap;flex:0 0 auto;font-size:13px;color:var(--text2);}
 #music-library .ml-ps-controls .ml-ps-sec{font-size:12px;color:var(--text3);margin:0;}
 #music-library .ml-ps-controls .ml-proj-toggles{display:flex;gap:6px;grid-template-columns:none;margin:0;flex-wrap:wrap;}
 #music-library .ml-ps-controls .ml-proj-tog{padding:8px 12px;}
@@ -9442,6 +9449,14 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
   #music-library .ml-ps-left .ml-ps-set-list{max-height:28vh;}
   #music-library .ml-ps-mid .ml-ps-thumbs{max-height:44vh;}
   #music-library .ml-ps-pop{width:calc(100vw - 32px);}
+  /* 手机端: 标题+工具栏换行铺开, 状态文字省略, 按钮更紧凑好点按 */
+  #music-library .ml-ps-head{flex-wrap:wrap;row-gap:8px;padding:10px 12px;}
+  #music-library .ml-ps-toolbar{order:3;flex-basis:100%;}
+  #music-library .ml-ps-status{display:none;}
+  #music-library .ml-ps-tb{padding:9px 13px;font-size:13px;}
+  #music-library .ml-ps-controls .ml-proj-tog,#music-library .ml-ps-controls .ml-proj-s2{padding:9px 11px;font-size:13px;}
+  #music-library .ml-ps-ctrl-sliders .ml-ps-fontrow{flex:1 1 100%;min-width:0;}
+  #music-library .ml-ps-right{padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));}
 }
 
 /* ── 投影标题行(每首第一页顶部: 调/拍号 + 歌名, 参考图第一张) ── */
@@ -9469,9 +9484,8 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 #music-library .ml-ps-fontrow{display:flex;align-items:center;gap:12px;margin-top:10px;}
 #music-library .ml-ps-fontlbl{font-size:13px;color:var(--text-secondary);flex:0 0 auto;}
 #music-library .ml-proj-font{flex:1;accent-color:var(--accent);height:24px;cursor:pointer;}
-/* 分层大小/行距滑块(和弦/简谱/歌词/行距各自调) */
+/* 分层大小/行距滑块(和弦/行距各自调) */
 #music-library .ml-proj-layer{flex:1;accent-color:var(--accent);height:24px;cursor:pointer;}
-#music-library .ml-ps-controls .ml-ps-fontrow{flex:1 0 160px;margin:0;}
 
 /* 本堂歌单拖动排序 */
 #music-library .ml-ps-set-item{cursor:grab;}

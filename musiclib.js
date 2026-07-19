@@ -809,7 +809,7 @@
         PROJ_TOGGLE_DEFS.forEach(([k])=>{ if(typeof s.toggles[k]==='boolean')projState.toggles[k]=s.toggles[k]; });
       }
       if(s.aspect==='4:3'||s.aspect==='16:9') projState.aspect=s.aspect;
-      if(typeof s.fontScale==='number'&&s.fontScale>0) projState.fontScale=s.fontScale;
+      if(typeof s.fontScale==='number'&&s.fontScale>0) projState.fontScale=Math.max(0.6,Math.min(2.6,s.fontScale));
       if(s.bgMode&&(PROJ_BG_PRESETS[s.bgMode]||s.bgMode==='image')){
         projState.bg.mode=s.bgMode;
         if(PROJ_BG_PRESETS[s.bgMode]) projState.bg.css=PROJ_BG_PRESETS[s.bgMode].css;
@@ -948,7 +948,7 @@
       const measCss='position:fixed;left:-99999px;top:0;width:auto;visibility:hidden;display:flex;flex-direction:column;align-items:flex-start;';
       const songStage=_div('sw-lb'); songStage.style.cssText=measCss;
       const scriptStage=_div('sw-lb'); scriptStage.style.cssText=measCss;
-      projApplyLayerVars(songStage); projApplyLayerVars(scriptStage); // 分层倍率要先套上, 后面 renderNStr/layoutJpArcs 才按新字号量连音弧
+      projApplyLayerVars(songStage); projApplyLayerVars(scriptStage); // 和弦/行距倍率先套上再渲染测量
       const groups=[];
       for(let itemIdx=0;itemIdx<list.length;itemIdx++){
         const item=list[itemIdx];
@@ -991,26 +991,30 @@
           }));
           return mw;
         };
-        const songMaxW=measureAll();
-        // 各组按高度预算贪心装箱; 记录每页自然高度(用于统一缩放的参考高)
-        const raw=[];
-        groups.forEach(g=>{
-          let maxW=songMaxW;
-          if(g.meta.scripture){ maxW=1; g.blocks.forEach(el=>{ if(!el.classList.contains('proj-title')){ const w=el.scrollWidth||0; if(w>maxW)maxW=w; } }); }
-          const budget=(ar.h/ar.w)*maxW/(projState.fontScale||1);
-          const gp=[]; let cur=[],hsum=0;
-          g.blocks.forEach(el=>{ if(cur.length&&hsum+el._h>budget){ gp.push({b:cur,h:hsum}); cur=[]; hsum=0; } cur.push(el); hsum+=el._h; });
-          if(cur.length)gp.push({b:cur,h:hsum});
-          let gMaxH=1; gp.forEach(p=>{ if(p.h>gMaxH)gMaxH=p.h; });
-          gp.forEach(p=>raw.push({b:p.b,meta:g.meta,refW:maxW,gMaxH,scripture:!!g.meta.scripture}));
-        });
-        // 诗歌页统一参考高 = 所有诗歌页里最高那页 -> 每首诗歌所有页同一倍率(字号一致); 经文各自
-        let songMaxH=1; raw.forEach(p=>{ if(!p.scripture&&p.gMaxH>songMaxH)songMaxH=p.gMaxH; });
-        // 两端对齐(分散对齐), 跟移调页一样: 诗歌各行按最宽行拉伸填满(短行不拉伸)。离屏算好 seg margin 后烘进 outerHTML, 投影缩放时按比例保持。
-        if(typeof justifyScoreRows==='function'){
-          const songRows=[];
-          groups.forEach(g=>{ if(g.meta.scripture)return; g.blocks.forEach(el=>{ if(el.classList&&el.classList.contains('sw-lrow'))songRows.push(el); }); });
-          if(songRows.length)justifyScoreRows(songRows,{ratio:0.5});
+        // 贪心装箱分页(抽成函数, 折行前后各跑一次); 诗歌统一 maxWForSongs 缩放(字号一致), 经文各自算宽。
+        const collectSongRows=()=>{ const a=[]; groups.forEach(g=>{ if(g.meta.scripture)return; g.blocks.forEach(el=>{ if(el.classList&&el.classList.contains('sw-lrow'))a.push(el); }); }); return a; };
+        const paginate=(maxWForSongs)=>{
+          const raw=[];
+          groups.forEach(g=>{
+            let maxW=maxWForSongs;
+            if(g.meta.scripture){ maxW=1; g.blocks.forEach(el=>{ if(!el.classList.contains('proj-title')){ const w=el.scrollWidth||0; if(w>maxW)maxW=w; } }); }
+            const budget=(ar.h/ar.w)*maxW/(projState.fontScale||1);   // 字号=每页行数控制(越大每页越少行=字越大)
+            const gp=[]; let cur=[],hsum=0;
+            // 装满就换页; 但"只有歌名标题"的页不许单独成页(标题必须带着第一行走, 哪怕稍超预算)
+            g.blocks.forEach(el=>{ if(cur.length&&hsum+el._h>budget&&!cur.every(x=>x.classList&&x.classList.contains('proj-title'))){ gp.push({b:cur,h:hsum}); cur=[]; hsum=0; } cur.push(el); hsum+=el._h; });
+            if(cur.length)gp.push({b:cur,h:hsum});
+            let gMaxH=1; gp.forEach(p=>{ if(p.h>gMaxH)gMaxH=p.h; });
+            gp.forEach(p=>raw.push({b:p.b,meta:g.meta,refW:maxW,gMaxH,scripture:!!g.meta.scripture}));
+          });
+          let smh=1; raw.forEach(p=>{ if(!p.scripture&&p.gMaxH>smh)smh=p.gMaxH; });
+          return {raw,songMaxH:smh};
+        };
+        let songMaxW=measureAll();
+        let {raw,songMaxH}=paginate(songMaxW);
+        // 两端对齐(分散对齐): 级联重排后各行都是真实单行, 拉伸到统一宽 -> 右边缘整齐(短尾行不拉)
+        const songRows=collectSongRows();
+        if(typeof justifyScoreRows==='function' && songRows.length){
+          justifyScoreRows(songRows,{ratio:0.5});
         }
         projState.pages=raw.map(p=>Object.assign({
           html:p.b.map(x=>x.outerHTML).join(''), refW:p.refW, refH:p.scripture?p.gMaxH:songMaxH
@@ -1162,8 +1166,7 @@
     const L=projState.layer;
     el.style.setProperty('--pl-chord',String(L.chord||1));
     el.style.setProperty('--pl-gap',String(L.gap||1));
-    // 歌词/简谱/每行宽度不再可调: 主动清掉(预览盒是复用的, 不清会残留旧值), 让 CSS 回落到默认 1 = 原始尺寸
-    ['--pl-lyric','--pl-n','--pl-roww'].forEach(v=>el.style.removeProperty(v));
+    ['--pl-lyric','--pl-n','--pl-roww'].forEach(v=>el.style.removeProperty(v)); // 歌词/简谱不单独调(恒为原始尺寸), 清掉残留
   }
   /* 一键恢复默认显示参数: 四个开关 + 比例 + 字号 + 分层大小/行距。
      不动背景与字体色(那是每首歌各自设的, 抹掉会很意外), 也不动歌单。 */
@@ -1585,17 +1588,21 @@
               <button class="ml-proj-pg ml-proj-pg-next" id="ml-ps-next" type="button">${icon('chevronLeft',22)}</button>
             </div>
             <div class="ml-ps-controls">
-              <span class="ml-ps-sec">显示</span>
-              <div class="ml-proj-toggles" id="ml-ps-toggles"></div>
-              <div class="ml-proj-aspect" id="ml-ps-aspect">
-                <button class="ml-proj-asp" data-ar="16:9" type="button">16:9</button>
-                <button class="ml-proj-asp" data-ar="4:3" type="button">4:3</button>
+              <div class="ml-ps-ctrl-row">
+                <span class="ml-ps-sec">显示</span>
+                <div class="ml-proj-toggles" id="ml-ps-toggles"></div>
+                <div class="ml-proj-aspect" id="ml-ps-aspect">
+                  <button class="ml-proj-asp" data-ar="16:9" type="button">16:9</button>
+                  <button class="ml-proj-asp" data-ar="4:3" type="button">4:3</button>
+                </div>
+                <button class="ml-proj-s2" id="ml-ps-black" type="button">黑屏</button>
+                <button class="ml-proj-s2" id="ml-ps-fs" type="button">投影全屏</button>
+                <button class="ml-proj-s2" id="ml-ps-reset" type="button">恢复默认</button>
               </div>
-              <button class="ml-proj-s2" id="ml-ps-black" type="button">黑屏</button>
-              <button class="ml-proj-s2" id="ml-ps-fs" type="button">投影全屏</button>
-              <button class="ml-proj-s2" id="ml-ps-reset" type="button">恢复默认</button>
-              <span class="ml-ps-fontrow"><span class="ml-ps-fontlbl">字号</span><input type="range" class="ml-proj-font" id="ml-ps-font" min="0.6" max="2.6" step="0.1"></span>
-              ${projLayerSlidersHTML()}
+              <div class="ml-ps-ctrl-row ml-ps-ctrl-sliders">
+                <span class="ml-ps-fontrow"><span class="ml-ps-fontlbl">字号</span><input type="range" class="ml-proj-font" id="ml-ps-font" min="0.6" max="2.6" step="0.1"></span>
+                ${projLayerSlidersHTML()}
+              </div>
             </div>
           </div>
         </div>
@@ -1693,6 +1700,13 @@
     document.body.classList.remove('ml-proj-studio-lock');
     document.removeEventListener('keydown',projStudioKeydown);
   }
+  /* 旋转/改窗口大小后, 预览与缩略图的缩放是按旧框算的 -> 重配一次(防抖), 否则内容被裁 */
+  let _projRzT=0;
+  window.addEventListener('resize',()=>{
+    if(!(projState.studio&&projState.studio.classList.contains('open')))return;
+    clearTimeout(_projRzT);
+    _projRzT=setTimeout(()=>{ projRenderPreview(); projRenderThumbs(); },180);
+  });
   function projStudioKeydown(e){
     if(!(projState.studio&&projState.studio.classList.contains('open')))return;
     const tag=(e.target&&e.target.tagName)||'';
