@@ -1,3 +1,143 @@
+/* ══ 内联 shared/strict-align.js（严格对位纯函数层）— 权威版本在 shared/strict-align.js；改动先改那边跑测试再同步回此处。宿主页未单独加载它，故内联于此暴露全局 CecpStrictAlign ══ */
+(function (root, factory) {
+  var mod = factory();
+  if (typeof module !== 'undefined' && module.exports) module.exports = mod;
+  if (root) root.CecpStrictAlign = mod;
+})(typeof globalThis !== 'undefined' ? globalThis : (typeof window !== 'undefined' ? window : this), function () {
+  'use strict';
+
+  /* ── 以下三个函数从 renderNStr 逐字复刻（见顶部同步警告）───────────────────── */
+
+  function normalizeTimeSignValue(sig) {
+    var m = String(sig || '').trim().replace(/\s+/g, '').replace(/／/g, '/').match(/^(\d{1,2})\/(\d{1,2})$/);
+    return m ? (m[1] + '/' + m[2]) : '';
+  }
+
+  function extractInlineTimeSignToken(tok) {
+    var m = String(tok || '').trim().match(/^\[(?:ts|timesign|meter):([^\]]+)\]$/i);
+    return m ? normalizeTimeSignValue(m[1]) : '';
+  }
+
+  function isDualAtom(tk) {
+    if (!tk || tk === '/' || tk === '／' || tk === '^' || tk.charAt(0) === '~') return false;
+    if (tk === '(' || tk === ')' || tk === '([' || tk === '])' || tk === '}' || tk === '[v1' || tk === '[v2' || tk === ']v') return false;
+    if (tk === '|' || tk === '||' || tk === '||/' || tk === '|]' || tk === '|:' || tk === ':|' || tk === '|:|') return false;
+    if (/^\{(3|5)$/.test(tk)) return false;
+    if (extractInlineTimeSignToken(tk)) return false;
+    if (/^\[v:(.+)\]$/.test(tk)) return false;
+    return true;
+  }
+
+  /* dual-merge 分词：与 renderNStr 里那段 while 循环逐字一致（把 `X / Y` 合成 `X/Y`）。 */
+  function tokenizeN(nStr) {
+    var s = String(nStr || '').trim();
+    if (!s) return [];
+    var rawToks = s.split(/\s+/), toks = [], ti = 0;
+    while (ti < rawToks.length) {
+      if (ti + 2 < rawToks.length && (rawToks[ti + 1] === '/' || rawToks[ti + 1] === '／') && isDualAtom(rawToks[ti]) && isDualAtom(rawToks[ti + 2])) {
+        toks.push(rawToks[ti] + '/' + rawToks[ti + 2]);
+        ti += 3;
+        continue;
+      }
+      toks.push(rawToks[ti]);
+      ti++;
+    }
+    return toks;
+  }
+
+  /* ── 对位纯函数 ───────────────────────────────────────────────────────────── */
+
+  /** 把 n 串切成音位序列。返回音位 token 数组（结构 token 已剔除，dual 已合并）。 */
+  function splitSlots(nStr) {
+    return tokenizeN(nStr).filter(isDualAtom);
+  }
+
+  /** 一个和弦 token 可能叠两个：逗号分隔。返回 [下, 上, ...]（第一个在下）。 */
+  function splitChordStack(tok) {
+    if (tok == null) return [];
+    return String(tok).split(',').map(function (s) { return s.trim(); }).filter(function (s) { return s.length; });
+  }
+
+  function parseFieldTokens(str) {
+    var s = String(str == null ? '' : str).trim();
+    return s ? s.split(/\s+/) : [];
+  }
+
+  /** 把一行 strict 歌词/字段串还原成"纯展示/搜索文本"：丢掉 `@`（空位）与音位间空白，
+   *  相邻两个拉丁词之间保留一个空格。用于搜索 haystack、歌词面板、song.lyrics 拼接——
+   *  strict 下 `@` 绝不能漏进展示或搜索串。老串（无空白可分/无 @）原样返回，安全。 */
+  function strictLyricPlain(str) {
+    var toks = parseFieldTokens(str), out = '';
+    for (var i = 0; i < toks.length; i++) {
+      var t = toks[i];
+      if (t === '@') continue;
+      if (out && /[0-9A-Za-z]$/.test(out) && /^[0-9A-Za-z]/.test(t)) out += ' ';
+      out += t;
+    }
+    return out;
+  }
+
+  /* 把一行字段（chord 或某行 lyric）对到音位上；@ / 缺失 → null；不足/超出 → warning。 */
+  function alignField(fieldName, raw, slotCount, warnings) {
+    var toks = parseFieldTokens(raw);
+    var vals = [];
+    for (var i = 0; i < slotCount; i++) {
+      var t = i < toks.length ? toks[i] : null;
+      vals.push((t === '@' || t == null) ? null : t);
+    }
+    if (toks.length !== slotCount) {
+      if (toks.length > slotCount) {
+        warnings.push({
+          field: fieldName, kind: 'over',
+          slot: slotCount + 1, extra: toks.length - slotCount,
+          message: fieldName + '：共 ' + slotCount + ' 个音位，但写了 ' + toks.length + ' 个 token —— 第 ' + (slotCount + 1) + ' 个 token 起没有对应音位（多出 ' + (toks.length - slotCount) + ' 个）'
+        });
+      } else {
+        warnings.push({
+          field: fieldName, kind: 'under',
+          slot: toks.length + 1, missing: slotCount - toks.length,
+          message: fieldName + '：共 ' + slotCount + ' 个音位，只写到第 ' + toks.length + ' 个 —— 第 ' + (toks.length + 1) + ' 个音位起没内容（还差 ' + (slotCount - toks.length) + ' 个）'
+        });
+      }
+    }
+    return vals;
+  }
+
+  /**
+   * 把一整行（一个 line 里的一组 seg 拼出来的 n/chord/lyric*）做严格对位。
+   * @param {string} nStr   简谱串
+   * @param {string} chord  和弦串（空格分隔，@=空位，逗号=叠和弦）
+   * @param {string|string[]} lyrics 一行或多行歌词串
+   * @returns {{slotCount:number, slots:string[], chords:(string|null)[],
+   *            lyrics:(string|null)[][], warnings:object[]}}
+   *   chords[i] / lyrics[k][i] 为该音位的原始 token（含逗号叠和弦）或 null（空位）。
+   *   `@` 永不出现在返回值里（一律转 null），杜绝漏进展示/搜索。
+   */
+  function alignRow(nStr, chord, lyrics) {
+    var lys = lyrics == null ? [] : (Array.isArray(lyrics) ? lyrics : [lyrics]);
+    var slots = splitSlots(nStr);
+    var n = slots.length;
+    var warnings = [];
+    var chords = alignField('chord', chord, n, warnings);
+    var outLyrics = [];
+    for (var k = 0; k < lys.length; k++) {
+      outLyrics.push(alignField(k === 0 ? 'lyric' : 'lyric' + (k + 1), lys[k], n, warnings));
+    }
+    return { slotCount: n, slots: slots, chords: chords, lyrics: outLyrics, warnings: warnings };
+  }
+
+  return {
+    splitSlots: splitSlots,
+    alignRow: alignRow,
+    splitChordStack: splitChordStack,
+    strictLyricPlain: strictLyricPlain,
+    tokenizeN: tokenizeN,
+    isDualAtom: isDualAtom,           // 导出仅供测试对拍；生产判定走 splitSlots
+    _timeSign: { normalizeTimeSignValue: normalizeTimeSignValue, extractInlineTimeSignToken: extractInlineTimeSignToken }
+  };
+});
+/* ══ /内联 strict-align（END）══ */
+
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
@@ -876,7 +1016,213 @@
     return out;
   }
   /* 复用 renderScore 的逐段渲染原语, 按四开关裁层 + 每段各配拼音层。产出一整行 DOM。 */
-  function projBuildRow(line,st,useFlat,tg){
+  /* ── 严格对位（align:"strict"）渲染分支（musiclib）──────────────────────────
+     复用现有字形原语（parseJpToken/makeBarline/makeTimeSignature）+ CecpStrictAlign，
+     不另建渲染器；每音位一列（和弦/简谱/歌词三层居中共轴）。openDetail 详情谱 +
+     projBuildRow 投影 共用；老分支完全不动。弧线/连音( ){3}~ 归 Phase4。
+     show={chord,jianpu,lyric,pinyin}：详情全开；投影按 tg 开关。 */
+  function ensureStrictCssML(){
+    if(document.getElementById('ml-strict-css'))return;
+    const s=document.createElement('style');s.id='ml-strict-css';
+    s.textContent=[
+      '.prev-seg.p-slot{align-items:center;min-width:1.2em;margin-right:0;}',
+      '.prev-seg.p-slot .p-chord{text-align:center;white-space:normal;min-width:100%;}',
+      '.prev-seg.p-slot .p-chord.p-chord-multi{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;line-height:1.1;}',
+      '.prev-seg.p-slot .p-chord-multi .p-chord-stk{display:block;line-height:1.2;}',
+      '.prev-seg.p-slot .p-chord-multi .chord-chip{font-size:.85em;}',
+      '.prev-seg.p-slot .p-lyric{text-align:center;padding:0 1px;}',
+      '.prev-seg.p-barslot{min-width:0;margin:0 3px;}'
+    ].join('');
+    (document.head||document.documentElement).appendChild(s);
+  }
+  const STRICT_BARS_ML={'|':1,'||':1,'||/':1,'|]':1,'|:':1,':|':1,'|:|':1};
+  function buildStrictSegColumnsML(seg, st, useFlat, bold, container, show){
+    ensureStrictCssML();
+    show=show||{chord:true,jianpu:true,lyric:true,pinyin:false};
+    const toks=CecpStrictAlign.tokenizeN(seg.n||'');
+    const lyricFields=[seg.lyric||''];
+    if(seg.lyric2!=null)lyricFields.push(seg.lyric2);
+    if(seg.lyric3!=null)lyricFields.push(seg.lyric3);
+    if(seg.lyric4!=null)lyricFields.push(seg.lyric4);
+    const aligned=CecpStrictAlign.alignRow(seg.n||'', seg.chord||'', lyricFields);
+    const nLy=show.lyric?aligned.lyrics.length:0;
+    function lyCls(j){return 'p-lyric'+(j?' p-lyric'+(j+1):'')+(show.pinyin?' p-lyric-py':'')+(bold?' bold':'');}
+    let slot=0, pendingSlurOpen=0, pendingTupletN=0, lastSlotCol=null;
+    toks.forEach(function(tok){
+      if(tok==='^'){const lc=container.lastElementChild;if(lc)lc.setAttribute('data-bb','1');return;}  // 断梁标记
+      if(CecpStrictAlign.isDualAtom(tok)){
+        const col=_div('prev-seg p-slot');
+        if(pendingSlurOpen){col.setAttribute('data-slur-open',pendingSlurOpen);pendingSlurOpen=0;}
+        if(pendingTupletN){col.setAttribute('data-tuplet-open',pendingTupletN);pendingTupletN=0;}
+        if(show.chord){
+          const chVal=aligned.chords[slot];
+          const c=_div('p-chord'+(chVal?'':' empty'));
+          if(chVal){
+            const stack=CecpStrictAlign.splitChordStack(chVal);
+            if(stack.length<=1){ setChordContentEx(c,trChordEx(chVal,st,useFlat,trChord),setChordContent); chordChipDecorate(c); }
+            else { c.classList.add('p-chord-multi'); stack.slice().reverse().forEach(function(sym){const ln=_div('p-chord-stk');setChordContentEx(ln,trChordEx(sym,st,useFlat,trChord),setChordContent);chordChipDecorate(ln);c.appendChild(ln);}); }
+          } else { setChordContentEx(c,' ',setChordContent); }
+          col.appendChild(c);
+        }
+        const nWrap=_div('p-n'); if(show.jianpu)nWrap.appendChild(parseJpToken(tok)); col.appendChild(nWrap);
+        for(let j=0;j<nLy;j++){const lv=aligned.lyrics[j][slot];const l=_div(lyCls(j));setLyricContentEx(l,lv==null?' ':normLyricText(lv),setLyricContent);col.appendChild(l);}
+        container.appendChild(col);
+        slot++;lastSlotCol=col;
+      } else if(STRICT_BARS_ML[tok]){
+        const b=_div('prev-seg p-slot p-barslot');
+        if(show.chord){const bc=_div('p-chord empty');setChordContentEx(bc,' ',setChordContent);b.appendChild(bc);}
+        const bn=_div('p-n');bn.appendChild(makeBarline(tok));b.appendChild(bn);
+        for(let j=0;j<nLy;j++){const bl=_div(lyCls(j));setLyricContentEx(bl,' ',setLyricContent);b.appendChild(bl);}
+        container.appendChild(b);
+      } else if(extractInlineTimeSignToken(tok)){
+        const t=_div('prev-seg p-slot p-barslot');
+        if(show.chord){const tc=_div('p-chord empty');t.appendChild(tc);}
+        const tn=_div('p-n');tn.appendChild(makeTimeSignature(extractInlineTimeSignToken(tok)));t.appendChild(tn);
+        for(let j=0;j<nLy;j++){const tl=_div(lyCls(j));t.appendChild(tl);}
+        container.appendChild(t);
+      } else if(tok==='('||tok==='(['){ pendingSlurOpen++; }
+      else if(tok===')'||tok==='])'){ if(lastSlotCol)lastSlotCol.setAttribute('data-slur-close',((+lastSlotCol.getAttribute('data-slur-close'))||0)+1); }
+      else if(tok==='{3'||tok==='{5'){ pendingTupletN=parseInt(tok.slice(1),10); }
+      else if(tok==='}'){ if(lastSlotCol)lastSlotCol.setAttribute('data-tuplet-close','1'); }
+    });
+  }
+  /* 严格对位「连梁」：相邻下划线音位补齐减时线贴上；小节线/sp/非下划线天然断开。
+     幂等；在 justifyScoreRows 之后、缩放之前跑（自然坐标 scale≈1）。 */
+  function connectStrictBeams(row){
+    if(!row)return;
+    const slots=[].slice.call(row.querySelectorAll('.prev-seg.p-slot'));
+    slots.forEach(c=>{[].forEach.call(c.querySelectorAll('.jp-u1-line,.jp-u2-line'),u=>{u.style.right='';u.style.left='';});});
+    ['jp-u1-line','jp-u2-line'].forEach(cls=>{
+      for(let i=0;i<slots.length-1;i++){
+        const a=slots[i],b=slots[i+1];
+        if(a.classList.contains('p-barslot')||b.classList.contains('p-barslot'))continue;
+        if(a.getAttribute('data-bb'))continue;  // 断梁标记
+        const ua=a.querySelector('.'+cls),ub=b.querySelector('.'+cls);
+        if(!ua||!ub)continue;
+        const ra=ua.getBoundingClientRect(),rb=ub.getBoundingClientRect();
+        let scale=ua.offsetWidth?(ra.width/ua.offsetWidth):1;if(!scale)scale=1;
+        const gap=(rb.left-ra.right)/scale;
+        if(gap>0.3)ua.style.right=(-(gap+1))+'px';
+      }
+    });
+  }
+  /* 严格对位：连音线弧 + 三连音括号。外层弧高、内层弧低（内层在外层里面）。 */
+  function layoutStrictArcs(row){
+    if(!row)return;
+    const prev=row.querySelector('.strict-arc-svg');if(prev)prev.remove();
+    [].forEach.call(row.querySelectorAll('.prev-seg.p-slot .p-chord'),ch=>{ch.style.marginBottom='';});  // 清上次抬升
+    const slots=[].slice.call(row.querySelectorAll('.prev-seg.p-slot')).filter(c=>!c.classList.contains('p-barslot'));
+    if(!slots.length)return;
+    const stack=[],groups=[],tups=[];let tupOpen=null;
+    slots.forEach(col=>{
+      const so=(+col.getAttribute('data-slur-open'))||0, sc=(+col.getAttribute('data-slur-close'))||0;
+      const to=(+col.getAttribute('data-tuplet-open'))||0, tc=col.getAttribute('data-tuplet-close');
+      for(let k=0;k<so;k++)stack.push(col);
+      for(let k=0;k<sc;k++){const st=stack.pop();if(st)groups.push({start:st,end:col});}
+      if(to)tupOpen={start:col,n:to};
+      if(tc&&tupOpen){tups.push({start:tupOpen.start,end:col,n:tupOpen.n});tupOpen=null;}
+    });
+    if(!groups.length&&!tups.length)return;
+    const probe=slots[0].querySelector('.jp-num');let scale=1;
+    if(probe&&probe.offsetWidth){const pr=probe.getBoundingClientRect();scale=pr.width/probe.offsetWidth;}
+    if(!scale)scale=1;
+    const rr=row.getBoundingClientRect();
+    const box=col=>{const el=col.querySelector('.jp-num')||col.querySelector('.p-n')||col;const r=el.getBoundingClientRect(),rr=row.getBoundingClientRect();return {cx:(r.left+r.width/2-rr.left)/scale,top:(r.top-rr.top)/scale};};
+    const ix=c=>slots.indexOf(c);
+    let maxD=0;
+    groups.forEach(g=>{const gs=ix(g.start),ge=ix(g.end);g._d=0;groups.forEach(h=>{if(h===g)return;const hs=ix(h.start),he=ix(h.end);if(hs<=gs&&ge<=he&&(he-hs)>(ge-gs))g._d++;});if(g._d>maxD)maxD=g._d;});
+    const STEP=7,BASE=9;let reserve=0;
+    if(groups.length)reserve=Math.max(reserve,15+maxD*STEP);
+    if(tups.length)reserve=Math.max(reserve,20);
+    [].forEach.call(row.querySelectorAll('.prev-seg.p-slot .p-chord'),ch=>{if(reserve)ch.style.marginBottom=reserve+'px';});  // 整行和弦统一抬到弧线之上
+    const NS='http://www.w3.org/2000/svg';
+    const svg=document.createElementNS(NS,'svg');svg.setAttribute('class','strict-arc-svg');
+    svg.style.cssText='position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:4;';
+    groups.forEach(g=>{
+      const lift=maxD-g._d,arcH=BASE+lift*STEP;
+      const a=box(g.start),b=box(g.end),y=Math.min(a.top,b.top)-2;
+      const p=document.createElementNS(NS,'path');
+      p.setAttribute('d','M '+a.cx.toFixed(1)+' '+y.toFixed(1)+' Q '+((a.cx+b.cx)/2).toFixed(1)+' '+(y-arcH*2).toFixed(1)+' '+b.cx.toFixed(1)+' '+y.toFixed(1));
+      p.setAttribute('fill','none');p.setAttribute('stroke','currentColor');p.setAttribute('stroke-width','1.4');p.setAttribute('stroke-linecap','round');
+      svg.appendChild(p);
+    });
+    tups.forEach(g=>{
+      const a=box(g.start),b=box(g.end),x1=a.cx-4,x2=b.cx+4,y=Math.min(a.top,b.top)-7;
+      const p=document.createElementNS(NS,'path');
+      p.setAttribute('d','M '+x1.toFixed(1)+' '+(y+4)+' L '+x1.toFixed(1)+' '+y+' L '+x2.toFixed(1)+' '+y+' L '+x2.toFixed(1)+' '+(y+4));
+      p.setAttribute('fill','none');p.setAttribute('stroke','currentColor');p.setAttribute('stroke-width','1.2');svg.appendChild(p);
+      const t=document.createElementNS(NS,'text');t.setAttribute('x',((x1+x2)/2).toFixed(1));t.setAttribute('y',(y-2).toFixed(1));t.setAttribute('text-anchor','middle');t.setAttribute('font-size','11');t.setAttribute('fill','currentColor');t.textContent=g.n;svg.appendChild(t);
+    });
+    row.style.position='relative';row.appendChild(svg);
+  }
+  /* 整首级连音弧：栈跨 row 配对（支持跨行连音——上行画开口弧、下行画收口弧）+ 三连音括号。
+     逐行算 reserve 抬升整行和弦到弧上（一行一个高度）。缩放前跑，box 每次重测 row rect。 */
+  function layoutStrictArcsAll(scope){
+    if(!scope)return;
+    var rows=[].slice.call(scope.querySelectorAll('.prev-row'));
+    if(!rows.length)return;
+    rows.forEach(function(row){var s=row.querySelector('.strict-arc-svg');if(s)s.remove();[].forEach.call(row.querySelectorAll('.prev-seg.p-slot .p-chord'),function(ch){ch.style.marginBottom='';});});
+    var all=[];
+    rows.forEach(function(row){[].slice.call(row.querySelectorAll('.prev-seg.p-slot')).forEach(function(col){if(!col.classList.contains('p-barslot'))all.push({col:col,row:row});});});
+    if(!all.length)return;
+    var sstack=[],sgroups=[],tstack=[],tgroups=[];
+    all.forEach(function(s,i){
+      var so=(+s.col.getAttribute('data-slur-open'))||0,sc=(+s.col.getAttribute('data-slur-close'))||0,to=(+s.col.getAttribute('data-tuplet-open'))||0,tc=s.col.getAttribute('data-tuplet-close'),k;
+      for(k=0;k<so;k++)sstack.push(i);
+      for(k=0;k<sc;k++){var st=sstack.pop();if(st!=null)sgroups.push({s:st,e:i});}
+      if(to)tstack.push({i:i,n:to});
+      if(tc){var tt=tstack.pop();if(tt)tgroups.push({s:tt.i,e:i,n:tt.n});}
+    });
+    if(!sgroups.length&&!tgroups.length)return;
+    sgroups.forEach(function(g){g._d=0;sgroups.forEach(function(h){if(h===g)return;if(h.s<=g.s&&g.e<=h.e&&(h.e-h.s)>(g.e-g.s))g._d++;});});
+    var maxD=0;sgroups.forEach(function(g){if(g._d>maxD)maxD=g._d;});
+    var NS='http://www.w3.org/2000/svg';
+    function rIx(r){return rows.indexOf(r);}
+    rows.forEach(function(row){
+      var here=[];
+      sgroups.forEach(function(g){var sr=all[g.s].row,er=all[g.e].row,ri=rIx(row),si=rIx(sr),ei=rIx(er);
+        if(sr===row&&er===row)here.push({g:g,m:'full'});
+        else if(sr===row)here.push({g:g,m:'open'});
+        else if(er===row)here.push({g:g,m:'close'});
+        else if(ri>si&&ri<ei)here.push({g:g,m:'thru'});
+      });
+      var tHere=tgroups.filter(function(g){return all[g.s].row===row&&all[g.e].row===row;});
+      if(!here.length&&!tHere.length)return;
+      var reserve=0;if(here.length)reserve=Math.max(reserve,13+maxD*8);if(tHere.length)reserve=Math.max(reserve,20);
+      [].forEach.call(row.querySelectorAll('.prev-seg.p-slot .p-chord'),function(ch){if(reserve)ch.style.marginBottom=reserve+'px';});
+      var cols=[].slice.call(row.querySelectorAll('.prev-seg.p-slot')).filter(function(c){return !c.classList.contains('p-barslot');});
+      var probe=cols[0]&&cols[0].querySelector('.jp-num'),scale=1;
+      if(probe&&probe.offsetWidth){var pr=probe.getBoundingClientRect();scale=pr.width/probe.offsetWidth;}if(!scale)scale=1;
+      function box(col){var el=col.querySelector('.jp-num')||col.querySelector('.p-n')||col;var r=el.getBoundingClientRect(),rr=row.getBoundingClientRect();return {cx:(r.left+r.width/2-rr.left)/scale,top:(r.top-rr.top)/scale};}
+      function rowW(){return row.getBoundingClientRect().width/scale;}
+      // 旧渲染器 .jp-slur 同款：CSS 边框拱形(border-top/left/right + border-radius:50%/100% = 半椭圆拱)。全=拱、open=左半(左圆右平)、close=右半。三连音括号仍用 SVG。
+      var host=document.createElement('div');host.className='strict-arc-svg';host.style.cssText='position:absolute;left:0;top:0;width:0;height:0;overflow:visible;pointer-events:none;z-index:4;color:currentColor;';
+      var ARCH=9,STK=1.5,GAP=2,ASTEP=8,firstCol=cols[0],lastCol=cols[cols.length-1];
+      function edge(col,side){var el=col.querySelector('.jp-num')||col.querySelector('.p-n')||col;var r=el.getBoundingClientRect(),rr=row.getBoundingClientRect();return ((side==='r'?r.right:r.left)-rr.left)/scale;}
+      here.forEach(function(it){
+        var g=it.g,lift=maxD-g._d,L,W,nt,cls;
+        if(it.m==='full'){var a=box(all[g.s].col),b=box(all[g.e].col);L=a.cx-2;W=(b.cx-a.cx)+4;nt=Math.min(a.top,b.top);cls='f';}
+        else if(it.m==='open'){var a2=box(all[g.s].col);L=a2.cx;W=(edge(lastCol,'r')+4)-a2.cx;nt=a2.top;cls='o';}
+        else if(it.m==='close'){var b2=box(all[g.e].col);L=edge(firstCol,'l')-4;W=b2.cx-L;nt=b2.top;cls='c';}
+        else {L=edge(firstCol,'l')-4;W=(edge(lastCol,'r')+4)-L;nt=box(cols[0]).top;cls='t';}
+        if(W<8)W=8;
+        var top=nt-GAP-ARCH-lift*ASTEP;
+        var css='position:absolute;box-sizing:border-box;pointer-events:none;left:'+L.toFixed(1)+'px;top:'+top.toFixed(1)+'px;width:'+W.toFixed(1)+'px;height:'+ARCH+'px;border:'+STK+'px solid currentColor;border-bottom:none;';
+        if(cls==='f')css+='border-radius:50% 50% 0 0/100% 100% 0 0;';
+        else if(cls==='o')css+='border-right:none;border-radius:50% 0 0 0/100% 0 0 0;';
+        else if(cls==='c')css+='border-left:none;border-radius:0 50% 0 0/0 100% 0 0;';
+        else css+='border-left:none;border-right:none;';
+        var div=document.createElement('div');div.style.cssText=css;host.appendChild(div);
+      });
+      if(tHere.length){
+        var svg=document.createElementNS(NS,'svg');svg.setAttribute('class','strict-arc-tup');svg.style.cssText='position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:4;';
+        tHere.forEach(function(g){var a=box(all[g.s].col),b=box(all[g.e].col),x1=a.cx-4,x2=b.cx+4,y=Math.min(a.top,b.top)-7;var p=document.createElementNS(NS,'path');p.setAttribute('d','M '+x1.toFixed(1)+' '+(y+4)+' L '+x1.toFixed(1)+' '+y+' L '+x2.toFixed(1)+' '+y+' L '+x2.toFixed(1)+' '+(y+4));p.setAttribute('fill','none');p.setAttribute('stroke','currentColor');p.setAttribute('stroke-width','1.2');svg.appendChild(p);var t=document.createElementNS(NS,'text');t.setAttribute('x',((x1+x2)/2).toFixed(1));t.setAttribute('y',(y-2).toFixed(1));t.setAttribute('text-anchor','middle');t.setAttribute('font-size','11');t.setAttribute('fill','currentColor');t.textContent=g.n;svg.appendChild(t);});
+        host.appendChild(svg);
+      }
+      row.style.position='relative';row.appendChild(host);
+    });
+  }
+  function projBuildRow(line,st,useFlat,tg,align){
     const isArr=Array.isArray(line);
     const row=_div('sw-lrow prev-row'+((!isArr&&line.b)?' bold':''));
     const segs=isArr?line:(line.line||[]);
@@ -884,6 +1230,13 @@
     for(const seg of segs){
       if(!segIsRenderableBlock(seg))continue;
       if(segIsLabelBlock(seg)){ continue; } // 投影不显示 chorus/bridge/pre-chorus/to chorus 等段落标记
+      if(align==='strict'){
+        const _vs=getVoltaStartLabel(seg.n);
+        if(_vs){ row.classList.add('has-volta'); voltaWrap=document.createElement('span'); voltaWrap.className='prev-volta'; voltaWrap.setAttribute('data-v',_vs+'.'); }
+        buildStrictSegColumnsML(seg,st,useFlat,(!isArr&&line.b),(voltaWrap||row),{chord:tg.chord,jianpu:tg.jianpu,lyric:(tg.lyric||tg.pinyin),pinyin:tg.pinyin});
+        if(voltaWrap&&hasVoltaEnd(seg.n)){ voltaWrap.classList.add('closed'); row.appendChild(voltaWrap); voltaWrap=null; }
+        continue;
+      }
       const segEl=_div('prev-seg');
       if(tg.chord){
         const chord=document.createElement('div');
@@ -972,7 +1325,7 @@
           titleEl.innerHTML='<span class="proj-title-key">'+esc(curKey)+'调'+(song.timeSign?(' '+esc(song.timeSign)):'')+'</span><span class="proj-title-name">'+esc(song.title||'')+'</span>';
           songStage.appendChild(titleEl); blocks.push(titleEl);
           for(const sec of song.sections||[]){          // 段名(主歌/副歌等)不显示 -> 纯净画面
-            for(const line of sec.lines||[]){ const r=projBuildRow(line,st,useFlat,tg); songStage.appendChild(r); blocks.push(r); }
+            for(const line of sec.lines||[]){ const r=projBuildRow(line,st,useFlat,tg,song.align); songStage.appendChild(r); blocks.push(r); }
           }
           groups.push({blocks,meta:{songId:song.id,title:song.title||'',itemIdx}});
         }
@@ -2874,9 +3227,11 @@
   }
 
   function hasLyricMatch(s,q){
+    const strict=s&&s.align==='strict';
+    const norm=v=>(strict?CecpStrictAlign.strictLyricPlain(v):String(v||'')).toLowerCase();  // strict: 去 @/音位空白再匹配
     for(const sec of s.sections||[])for(const line of sec.lines||[]){
       const arr=Array.isArray(line)?line:(line.line||[]);
-      for(const c of arr)if((c.lyric||'').toLowerCase().includes(q)||(c.lyric2||'').toLowerCase().includes(q)||(c.lyric3||'').toLowerCase().includes(q)||(c.lyric4||'').toLowerCase().includes(q))return true;
+      for(const c of arr)if(norm(c.lyric).includes(q)||norm(c.lyric2).includes(q)||norm(c.lyric3).includes(q)||norm(c.lyric4).includes(q))return true;
     }return false;
   }
   function lower(v){ return String(v||'').trim().toLowerCase(); }
@@ -4181,7 +4536,7 @@
       parent.appendChild(inlineTs?makeTimeSignature(inlineTs):parseJpToken(tk));
     }
     function isDualAtom(tk){
-      if(!tk||tk==='/'||tk==='／'||tk.charAt(0)==='~')return false;
+      if(!tk||tk==='/'||tk==='／'||tk==='^'||tk.charAt(0)==='~')return false;
       if(tk==='('||tk===')'||tk==='(['||tk==='])'||tk==='}'||tk==='[v1'||tk==='[v2'||tk===']v')return false;
       if(tk==='|'||tk==='||'||tk==='||/'||tk==='|]'||tk==='|:'||tk===':|'||tk==='|:|')return false;
       if(/^\{(3|5)$/.test(tk))return false;
@@ -6420,7 +6775,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
   if(typeof document==='undefined'||window.__cecpScoreZoom)return;
   window.__cecpScoreZoom=true;
   var overlay=null,content=null,prevBtn=null,nextBtn=null,countEl=null;
-  var mode='node',imgList=[],imgIdx=0;
+  var mode='node',imgList=[],imgIdx=0,lastClose=0;
   var s=1,tx=0,ty=0,minS=1,maxS=4,natW=1,natH=1;
   var pts={},pinch=null,pan=null,down=null,dragged=false;
   function injectCss(){
@@ -6487,6 +6842,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     updateNav();fitAndCenter();
   }
   function openImage(list,idx){                          // 图片模式(宿主调用)
+    if(Date.now()-lastClose<450)return;                  // 刚点掉那次的 ghost click 别又把它打开(移动端穿透)
     ensure();
     if(overlay.parentNode!==document.body)document.body.appendChild(overlay);
     imgList=(list||[]).filter(Boolean);if(!imgList.length)return;
@@ -6504,7 +6860,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     updateNav();
   }
   function nav(d){if(mode!=='image'||imgList.length<2)return;imgIdx=(imgIdx+d+imgList.length)%imgList.length;showImg();}
-  function close(){if(overlay){overlay.classList.remove('open');document.documentElement.style.overflow='';pts={};pinch=pan=down=null;}}
+  function close(){if(overlay){overlay.classList.remove('open');document.documentElement.style.overflow='';pts={};pinch=pan=down=null;lastClose=Date.now();}}
   function d2(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
   function mid(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};}
   function zoomAt(ns,cx,cy){ns=Math.max(minS,Math.min(maxS,ns));var k=ns/s;tx=cx-(cx-tx)*k;ty=cy-(cy-ty)*k;s=ns;clampPan();apply();}
@@ -6547,6 +6903,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
   }
   document.addEventListener('click',function(e){       // 未放大时点谱 -> 打开(图片由宿主 openImage 触发)
     if(isOpen())return;
+    if(Date.now()-lastClose<450)return;                 // 刚点掉那次的 ghost click 穿透到下层谱, 别又打开
     var t=e.target;if(!t||!t.closest)return;
     if(t.closest('.p-chord:not(.empty)'))return;
     var box=t.closest('.sw-lb-zoomable');
@@ -7325,6 +7682,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
   }
   function _mpExtractPlainLyrics(song){
     const lines=[];
+    const strict=song&&song.align==='strict';
+    const rd=v=>strict?CecpStrictAlign.strictLyricPlain(v):String(v||'').trim();  // strict: 去 @/音位空白
     const push=value=>{
       const tx=spStripTokens(value).replace(/<[^>]*>/g,'').replace(/\u00a0/g,' ').trim();
       if(tx && !lines.includes(tx)) lines.push(tx);
@@ -7337,10 +7696,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         const secondary=[];
         for(const seg of segs){
           if(!seg) continue;
-          const a=String(seg.lyric||'').trim();
-          const b=String(seg.lyric2||'').trim();
-          const c=String(seg.lyric3||'').trim();
-          const d=String(seg.lyric4||'').trim();
+          const a=rd(seg.lyric);
+          const b=rd(seg.lyric2);
+          const c=rd(seg.lyric3);
+          const d=rd(seg.lyric4);
           if(a) primary.push(a);
           if(b) secondary.push(b);
           if(c) secondary.push(c);
@@ -8418,7 +8777,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         const segs=Array.isArray(row)?row:((row&&row.line)||[]);
         const tx=segs.map(seg=>{
           if(!seg||typeof seg!=='object'||typeof seg.label==='string')return '';
-          return spStripTokens(seg.lyric||'');
+          return (s&&s.align==='strict')?CecpStrictAlign.strictLyricPlain(seg.lyric):spStripTokens(seg.lyric||'');  // strict: 去 @/音位空白
         }).join('').replace(/[ㅤ　]+/g,'').replace(/ {2,}/g,' ').trim();
         if(tx)rowTexts.push(tx);
       }
@@ -8734,6 +9093,13 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
           for(const seg of segs){
             if(!segIsRenderableBlock(seg))continue;
             if(segIsLabelBlock(seg)){(voltaWrap||row).appendChild(segRenderLabelBlock(seg,row));continue;}
+            if(s.align==='strict'){
+              const _vs=getVoltaStartLabel(seg.n);
+              if(_vs){row.classList.add('has-volta');voltaWrap=document.createElement('span');voltaWrap.className='prev-volta';voltaWrap.setAttribute('data-v',_vs+'.');}
+              buildStrictSegColumnsML(seg,st,useFlat,(!Array.isArray(line)&&line.b),(voltaWrap||row),{chord:true,jianpu:true,lyric:true,pinyin:false});
+              if(voltaWrap&&hasVoltaEnd(seg.n)){voltaWrap.classList.add('closed');row.appendChild(voltaWrap);voltaWrap=null;}
+              continue;
+            }
             const segEl=_div('prev-seg');
             const chord=document.createElement('div');
             chord.className='p-chord'+(seg.chord?'':' empty');
@@ -8771,6 +9137,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       if(!parent||!lbDiv.isConnected)return;
 
       if(ML_JUSTIFY_ROWS)justifyScoreRows(lbDiv.querySelectorAll('.sw-lrow'));
+      if(s.align==='strict')lbDiv.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
+      if(s.align==='strict')layoutStrictArcsAll(lbDiv);
       const natural=measureNaturalScore();
       if(!natural)return;
 

@@ -12,7 +12,7 @@
   if(typeof document==='undefined'||window.__cecpScoreZoom)return;
   window.__cecpScoreZoom=true;
   var overlay=null,content=null,prevBtn=null,nextBtn=null,countEl=null;
-  var mode='node',imgList=[],imgIdx=0;
+  var mode='node',imgList=[],imgIdx=0,lastClose=0;
   var s=1,tx=0,ty=0,minS=1,maxS=4,natW=1,natH=1;
   var pts={},pinch=null,pan=null,down=null,dragged=false;
   function injectCss(){
@@ -79,6 +79,7 @@
     updateNav();fitAndCenter();
   }
   function openImage(list,idx){                          // 图片模式(宿主调用)
+    if(Date.now()-lastClose<450)return;                  // 刚点掉那次的 ghost click 别又把它打开(移动端穿透)
     ensure();
     if(overlay.parentNode!==document.body)document.body.appendChild(overlay);
     imgList=(list||[]).filter(Boolean);if(!imgList.length)return;
@@ -96,7 +97,7 @@
     updateNav();
   }
   function nav(d){if(mode!=='image'||imgList.length<2)return;imgIdx=(imgIdx+d+imgList.length)%imgList.length;showImg();}
-  function close(){if(overlay){overlay.classList.remove('open');document.documentElement.style.overflow='';pts={};pinch=pan=down=null;}}
+  function close(){if(overlay){overlay.classList.remove('open');document.documentElement.style.overflow='';pts={};pinch=pan=down=null;lastClose=Date.now();}}
   function d2(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
   function mid(a,b){return {x:(a.x+b.x)/2,y:(a.y+b.y)/2};}
   function zoomAt(ns,cx,cy){ns=Math.max(minS,Math.min(maxS,ns));var k=ns/s;tx=cx-(cx-tx)*k;ty=cy-(cy-ty)*k;s=ns;clampPan();apply();}
@@ -139,6 +140,7 @@
   }
   document.addEventListener('click',function(e){       // 未放大时点谱 -> 打开(图片由宿主 openImage 触发)
     if(isOpen())return;
+    if(Date.now()-lastClose<450)return;                 // 刚点掉那次的 ghost click 穿透到下层谱, 别又打开
     var t=e.target;if(!t||!t.closest)return;
     if(t.closest('.p-chord:not(.empty)'))return;
     var box=t.closest('.sw-lb-zoomable');
