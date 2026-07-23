@@ -22,6 +22,7 @@
     if (!tk || tk === '/' || tk === '／' || tk === '^' || tk.charAt(0) === '~') return false;
     if (tk === '(' || tk === ')' || tk === '([' || tk === '])' || tk === '}' || tk === '[v1' || tk === '[v2' || tk === ']v') return false;
     if (tk === '|' || tk === '||' || tk === '||/' || tk === '|]' || tk === '|:' || tk === ':|' || tk === '|:|') return false;
+    if (tk === 'fine' || tk === 'dc' || tk === 'ds' || tk === 'coda' || tk === 'segno') return false;   // 导航记号(非音位)
     if (/^\{(3|5)$/.test(tk)) return false;
     if (extractInlineTimeSignToken(tk)) return false;
     if (/^\[v:(.+)\]$/.test(tk)) return false;
@@ -1035,7 +1036,7 @@
     ].join('');
     (document.head||document.documentElement).appendChild(s);
   }
-  const STRICT_BARS_ML={'|':1,'||':1,'||/':1,'|]':1,'|:':1,':|':1,'|:|':1};
+  const STRICT_BARS_ML={'|':1,'||':1,'||/':1,'|]':1,'|:':1,':|':1,'|:|':1,'fine':1,'dc':1,'ds':1,'coda':1,'segno':1};
   function buildStrictSegColumnsML(seg, st, useFlat, bold, container, show){
     ensureStrictCssML();
     show=show||{chord:true,jianpu:true,lyric:true,pinyin:false};
@@ -4268,6 +4269,13 @@
   }
   /* 小节线的尺寸原本是写死 px 的内联样式 -> 简谱放大时它纹丝不动("｜不会跟着变大")。
      内联样式一样能读 CSS 变量, 所以全部乘 var(--pl-n,1); 默认 1 时与原来完全一致(移调页零影响)。 */
+  /* 官方音乐字体(Bravura 子集, SIL OFL)——只含 segno/coda 字形(U+E047/E048)，用于 segno 记号。懒注入一次。 */
+  function ensureMusicFont(){
+    if(document.getElementById('cecp-music-font'))return;
+    var st=document.createElement('style');st.id='cecp-music-font';
+    st.textContent="@font-face{font-family:'CecpMusic';src:url(data:font/woff2;base64,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) format('woff2');font-display:block;}";
+    (document.head||document.documentElement).appendChild(st);
+  }
   function makeBarline(tok){
     const S=n=>'calc('+n+'px * var(--pl-n,1))'; // 跟着简谱倍率缩放
     const o=document.createElement('span');
@@ -4281,11 +4289,30 @@
     if(tok==='|'){mid.appendChild(thin());}
     else if(tok==='||'){mid.appendChild(thin());mid.appendChild(gap(2));mid.appendChild(thin());}
     else if(tok==='||/'||tok==='|]'){mid.appendChild(thin());mid.appendChild(gap(2));mid.appendChild(thick());}
-    else if(tok==='|:'){mid.appendChild(thin());mid.appendChild(gap(1));mid.appendChild(thick());mid.appendChild(gap(3));mid.appendChild(dots());}
-    else if(tok===':|'){mid.appendChild(dots());mid.appendChild(gap(3));mid.appendChild(thick());mid.appendChild(gap(1));mid.appendChild(thin());}
-    else if(tok==='|:|'){mid.appendChild(dots());mid.appendChild(gap(3));mid.appendChild(thick());mid.appendChild(gap(1));mid.appendChild(thick());mid.appendChild(gap(3));mid.appendChild(dots());}
+    else if(tok==='|:'){mid.appendChild(thick());mid.appendChild(gap(1.5));mid.appendChild(thin());mid.appendChild(gap(3));mid.appendChild(dots());}
+    else if(tok===':|'){mid.appendChild(dots());mid.appendChild(gap(3));mid.appendChild(thin());mid.appendChild(gap(1.5));mid.appendChild(thick());}
+    else if(tok==='|:|'){mid.appendChild(dots());mid.appendChild(gap(3));mid.appendChild(thin());mid.appendChild(gap(1.5));mid.appendChild(thick());mid.appendChild(gap(2));mid.appendChild(thick());mid.appendChild(gap(1.5));mid.appendChild(thin());mid.appendChild(gap(3));mid.appendChild(dots());}
+    else if(tok==='fine'){mid.appendChild(thin());mid.appendChild(gap(2));mid.appendChild(thick());}   // 终止线 + Fine
+    else if(tok==='dc'||tok==='ds'){mid.appendChild(thin());mid.appendChild(gap(2));mid.appendChild(thin());}   // 双线 + D.C./D.S.
+    else if(tok==='coda'||tok==='segno'){mid.appendChild(thin());}
     o.appendChild(mid);
     const bot=document.createElement('span');bot.style.height=S(16);o.appendChild(bot);
+    // 导航记号：Coda/Segno = 记号立于竖线上方；Fine/D.C./D.S. = 双线下方斜体标签
+    if(tok==='coda'||tok==='segno'){
+      top.style.cssText='display:flex;align-items:flex-end;justify-content:center;height:'+S(22)+';line-height:1;';
+      if(tok==='coda'){
+        var z=S(18);
+        top.innerHTML='<svg viewBox="0 0 26 30" width="'+z+'" height="'+z+'" style="display:block;overflow:visible"><ellipse cx="13" cy="15" rx="6.4" ry="9.4" fill="none" stroke="currentColor" stroke-width="1.7"/><line x1="13" y1="2.6" x2="13" y2="27.4" stroke="currentColor" stroke-width="1.7"/><line x1="2.6" y1="15" x2="23.4" y2="15" stroke="currentColor" stroke-width="1.7"/></svg>';
+      }else{   // segno = 官方 Bravura 字形 U+E047(SMuFL)
+        ensureMusicFont();
+        var g=document.createElement('span');g.style.cssText='font-family:CecpMusic;font-size:'+S(20)+';line-height:1;display:block;';g.textContent=String.fromCharCode(0xE047);top.appendChild(g);
+      }
+      o.style.alignItems='center';
+    } else if(tok==='fine'||tok==='dc'||tok==='ds'){
+      bot.textContent=(tok==='fine')?'Fine':(tok==='dc'?'D.C.':'D.S.');
+      bot.style.cssText='display:flex;align-items:flex-start;justify-content:center;height:'+S(16)+';font-family:"Noto Serif SC",Georgia,serif;font-style:italic;font-size:'+S(9.5)+';line-height:1;white-space:nowrap;padding-top:'+S(2)+';';
+      o.style.alignItems='center';
+    }
     return o;
   }
   function makeTimeSignature(sig){
@@ -4405,7 +4432,7 @@
   function parseJpToken(tok,opts){
     opts=opts||{};
     tok=String(tok||'');
-    if(tok==='|'||tok==='||'||tok==='||/'||tok==='|]'||tok==='|:'||tok===':|'||tok==='|:|')return makeBarline(tok);
+    if(tok==='|'||tok==='||'||tok==='||/'||tok==='|]'||tok==='|:'||tok===':|'||tok==='|:|'||tok==='fine'||tok==='dc'||tok==='ds'||tok==='coda'||tok==='segno')return makeBarline(tok);
     const dual=!opts.inDual?parseDualJpToken(tok):null;
     if(dual)return makeDualJpToken(dual);
     if(!tok||tok==='-'||tok===' ')return makeJpPlain(tok);
@@ -4573,7 +4600,7 @@
     function isDualAtom(tk){
       if(!tk||tk==='/'||tk==='／'||tk==='^'||tk.charAt(0)==='~')return false;
       if(tk==='('||tk===')'||tk==='(['||tk==='])'||tk==='}'||tk==='[v1'||tk==='[v2'||tk===']v')return false;
-      if(tk==='|'||tk==='||'||tk==='||/'||tk==='|]'||tk==='|:'||tk===':|'||tk==='|:|')return false;
+      if(tk==='|'||tk==='||'||tk==='||/'||tk==='|]'||tk==='|:'||tk===':|'||tk==='|:|'||tk==='fine'||tk==='dc'||tk==='ds'||tk==='coda'||tk==='segno')return false;
       if(/^\{(3|5)$/.test(tk))return false;
       if(extractInlineTimeSignToken(tk))return false;
       if(/^\[v:(.+)\]$/.test(tk))return false;
