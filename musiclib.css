@@ -2122,9 +2122,9 @@ html,body,#music-library{
 #music-library .jp-aug{position:absolute;right:-0.46em;top:50%;transform:translateY(-50%);font-size:calc(10px * var(--pl-n,1));line-height:1;pointer-events:none;}
 #music-library .jp-u1-line{display:block;position:absolute;left:0;right:0;bottom:calc(3px * var(--pl-n,1));height:calc(1.5px * var(--pl-n,1));background:var(--text);pointer-events:none;z-index:1;}
 #music-library .jp-u2-line{display:block;position:absolute;left:0;right:0;bottom:0;height:calc(1.5px * var(--pl-n,1));background:var(--text);pointer-events:none;z-index:1;}
-#music-library .jp-fermata{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom;position:relative;padding-top:calc(26px * var(--pl-n,1));}
-#music-library .jp-fermata::before{content:'';position:absolute;top:2px;left:50%;transform:translateX(-50%);width:20px;height:10px;border-top:2px solid currentColor;border-left:2px solid currentColor;border-right:2px solid currentColor;border-radius:10px 10px 0 0/10px 10px 0 0;pointer-events:none;box-sizing:border-box;}
-#music-library .jp-fermata::after{content:'';position:absolute;top:13px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;background:currentColor;pointer-events:none;}
+#music-library .jp-fermata{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom;position:relative;padding-top:calc(18px * var(--pl-n,1));}
+#music-library .jp-fermata::before{content:'';position:absolute;top:2px;left:50%;transform:translateX(-50%);width:14px;height:7px;border-top:2px solid currentColor;border-left:2px solid currentColor;border-right:2px solid currentColor;border-radius:7px 7px 0 0/7px 7px 0 0;pointer-events:none;box-sizing:border-box;}
+#music-library .jp-fermata::after{content:'';position:absolute;top:9px;left:50%;transform:translateX(-50%);width:3.5px;height:3.5px;border-radius:50%;background:currentColor;pointer-events:none;}
 #music-library .jp-dual{display:inline-flex;flex-direction:column;align-items:center;justify-content:flex-end;vertical-align:bottom;line-height:1;margin:0 .04em;}
 #music-library .jp-dual-top,#music-library .jp-dual-bot{display:inline-flex;align-items:flex-end;}
 #music-library .jp-dual-top{margin-bottom:calc(-5px * var(--pl-n,1));}

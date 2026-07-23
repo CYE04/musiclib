@@ -43,7 +43,7 @@
   }
 
   function isDualAtom(tk) {
-    if (!tk || tk === '/' || tk === '／' || tk === '^' || tk.charAt(0) === '~') return false;
+    if (!tk || tk === '/' || tk === '／' || tk === '!' || tk.charAt(0) === '~') return false;
     if (tk === '(' || tk === ')' || tk === '([' || tk === '])' || tk === '}' || tk === '[v1' || tk === '[v2' || tk === ']v') return false;
     if (tk === '|' || tk === '||' || tk === '||/' || tk === '|]' || tk === '|:' || tk === ':|' || tk === '|:|') return false;
     if (tk === 'fine' || tk === 'dc' || tk === 'ds' || tk === 'coda' || tk === 'segno') return false;   // 导航记号(非音位)
