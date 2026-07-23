@@ -88,11 +88,55 @@
     return s ? s.split(/\s+/) : [];
   }
 
+  /* ── 歌词智能分词（仅 lyric 字段用；chord/n 不走这里）─────────────────────────
+     目标：中文直接连写、每字一个音位；拖腔/无词的音写 `@`；标点自动粘前一个字（不占音位）；
+     英文/拼音按空格断音节（一串拉丁=一个音位）。老的「每字敲空格」写法结果完全一致。
+     规则：汉字/假名/韩文等「非拉丁字」各自成一个 token；拉丁字母/数字/'/- 累积成一个词；
+     空白=分隔；`@`=独立占位 token；标点贴到前一个 token（无前字则暂存、行首标点自成词）。
+     不用正则做分类（charCode + indexOf），四份内联可逐字照搬、免模板转义坑。 */
+  var LYRIC_PUNCT = '，。、；：？！…—―～·「」『』（）〔〕【】《》〈〉“”‘’,.;:?!(){}';
+  function isLyricPunctChar(ch) { return LYRIC_PUNCT.indexOf(ch) >= 0; }
+  function isLyricWordChar(ch) {
+    var c = ch.charCodeAt(0);
+    return (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || ch === "'" || ch === '-';
+  }
+  function isLyricSpaceChar(ch) { return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '　'; }
+
+  /* 拆出「尾随标点」用于悬挂渲染：`说，` → {base:'说', punct:'，'}。
+     标点挂在字后面、不计入音位格宽，字仍居中对位音符。全是标点/空则整体当 base（不留空底座）。 */
+  function splitTrailingPunct(s) {
+    s = String(s == null ? '' : s);
+    var i = s.length;
+    while (i > 0 && isLyricPunctChar(s.charAt(i - 1))) i--;
+    if (i === 0) return { base: s, punct: '' };
+    return { base: s.slice(0, i), punct: s.slice(i) };
+  }
+
+  function tokenizeLyric(str) {
+    var arr = Array.from(String(str == null ? '' : str)), toks = [], buf = '';
+    function flush() { if (buf) { toks.push(buf); buf = ''; } }
+    for (var i = 0; i < arr.length; i++) {
+      var ch = arr[i];
+      if (isLyricSpaceChar(ch)) { flush(); continue; }
+      if (ch === '@') { flush(); toks.push('@'); continue; }
+      if (isLyricPunctChar(ch)) {
+        if (buf) buf += ch;
+        else if (toks.length && toks[toks.length - 1] !== '@') toks[toks.length - 1] += ch;
+        else buf += ch;
+        continue;
+      }
+      if (isLyricWordChar(ch)) { buf += ch; continue; }
+      flush(); toks.push(ch);   // 汉字等：各自一个音位
+    }
+    flush();
+    return toks;
+  }
+
   /** 把一行 strict 歌词/字段串还原成"纯展示/搜索文本"：丢掉 `@`（空位）与音位间空白，
    *  相邻两个拉丁词之间保留一个空格。用于搜索 haystack、歌词面板、song.lyrics 拼接——
    *  strict 下 `@` 绝不能漏进展示或搜索串。老串（无空白可分/无 @）原样返回，安全。 */
   function strictLyricPlain(str) {
-    var toks = parseFieldTokens(str), out = '';
+    var toks = tokenizeLyric(str), out = '';
     for (var i = 0; i < toks.length; i++) {
       var t = toks[i];
       if (t === '@') continue;
@@ -104,7 +148,7 @@
 
   /* 把一行字段（chord 或某行 lyric）对到音位上；@ / 缺失 → null；不足/超出 → warning。 */
   function alignField(fieldName, raw, slotCount, warnings) {
-    var toks = parseFieldTokens(raw);
+    var toks = fieldName === 'chord' ? parseFieldTokens(raw) : tokenizeLyric(raw);
     var vals = [];
     for (var i = 0; i < slotCount; i++) {
       var t = i < toks.length ? toks[i] : null;
@@ -157,6 +201,9 @@
     splitChordStack: splitChordStack,
     strictLyricPlain: strictLyricPlain,
     tokenizeN: tokenizeN,
+    tokenizeLyric: tokenizeLyric,     // 歌词智能分词（连写/@/标点粘字）；供测试与内联同步核对
+    splitTrailingPunct: splitTrailingPunct,   // 尾随标点拆分（悬挂渲染用）
+
     isDualAtom: isDualAtom,           // 导出仅供测试对拍；生产判定走 splitSlots
     _timeSign: { normalizeTimeSignValue: normalizeTimeSignValue, extractInlineTimeSignToken: extractInlineTimeSignToken }
   };

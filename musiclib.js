@@ -64,11 +64,51 @@
     return s ? s.split(/\s+/) : [];
   }
 
+  /* ── 歌词智能分词（仅 lyric 字段用；chord/n 不走这里）——同 shared/strict-align.js ──
+     中文连写每字一位；拖腔/无词的音写 `@`；标点自动粘前一个字（不占音位）；英文/拼音按空格断音节。
+     不用正则做分类（charCode + indexOf），免模板转义坑。改动先改 shared 跑测试再同步回此处。 */
+  var LYRIC_PUNCT = '，。、；：？！…—―～·「」『』（）〔〕【】《》〈〉“”‘’,.;:?!(){}';
+  function isLyricPunctChar(ch) { return LYRIC_PUNCT.indexOf(ch) >= 0; }
+  function isLyricWordChar(ch) {
+    var c = ch.charCodeAt(0);
+    return (c >= 48 && c <= 57) || (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || ch === "'" || ch === '-';
+  }
+  function isLyricSpaceChar(ch) { return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '　'; }
+
+  function tokenizeLyric(str) {
+    var arr = Array.from(String(str == null ? '' : str)), toks = [], buf = '';
+    function flush() { if (buf) { toks.push(buf); buf = ''; } }
+    for (var i = 0; i < arr.length; i++) {
+      var ch = arr[i];
+      if (isLyricSpaceChar(ch)) { flush(); continue; }
+      if (ch === '@') { flush(); toks.push('@'); continue; }
+      if (isLyricPunctChar(ch)) {
+        if (buf) buf += ch;
+        else if (toks.length && toks[toks.length - 1] !== '@') toks[toks.length - 1] += ch;
+        else buf += ch;
+        continue;
+      }
+      if (isLyricWordChar(ch)) { buf += ch; continue; }
+      flush(); toks.push(ch);
+    }
+    flush();
+    return toks;
+  }
+
+  /* 尾随标点拆分（悬挂渲染用）：`说，`→{base:'说',punct:'，'}；同 shared/strict-align.js。 */
+  function splitTrailingPunct(s) {
+    s = String(s == null ? '' : s);
+    var i = s.length;
+    while (i > 0 && isLyricPunctChar(s.charAt(i - 1))) i--;
+    if (i === 0) return { base: s, punct: '' };
+    return { base: s.slice(0, i), punct: s.slice(i) };
+  }
+
   /** 把一行 strict 歌词/字段串还原成"纯展示/搜索文本"：丢掉 `@`（空位）与音位间空白，
    *  相邻两个拉丁词之间保留一个空格。用于搜索 haystack、歌词面板、song.lyrics 拼接——
    *  strict 下 `@` 绝不能漏进展示或搜索串。老串（无空白可分/无 @）原样返回，安全。 */
   function strictLyricPlain(str) {
-    var toks = parseFieldTokens(str), out = '';
+    var toks = tokenizeLyric(str), out = '';
     for (var i = 0; i < toks.length; i++) {
       var t = toks[i];
       if (t === '@') continue;
@@ -80,7 +120,7 @@
 
   /* 把一行字段（chord 或某行 lyric）对到音位上；@ / 缺失 → null；不足/超出 → warning。 */
   function alignField(fieldName, raw, slotCount, warnings) {
-    var toks = parseFieldTokens(raw);
+    var toks = fieldName === 'chord' ? parseFieldTokens(raw) : tokenizeLyric(raw);
     var vals = [];
     for (var i = 0; i < slotCount; i++) {
       var t = i < toks.length ? toks[i] : null;
@@ -133,6 +173,8 @@
     splitChordStack: splitChordStack,
     strictLyricPlain: strictLyricPlain,
     tokenizeN: tokenizeN,
+    tokenizeLyric: tokenizeLyric,
+    splitTrailingPunct: splitTrailingPunct,
     isDualAtom: isDualAtom,           // 导出仅供测试对拍；生产判定走 splitSlots
     _timeSign: { normalizeTimeSignValue: normalizeTimeSignValue, extractInlineTimeSignToken: extractInlineTimeSignToken }
   };
@@ -1026,12 +1068,13 @@
     if(document.getElementById('ml-strict-css'))return;
     const s=document.createElement('style');s.id='ml-strict-css';
     s.textContent=[
-      '.prev-seg.p-slot{align-items:center;min-width:1.2em;margin-right:0;}',
+      '.prev-seg.p-slot{align-items:center;min-width:1.2em;margin:0 2px;}',
       '.prev-seg.p-slot .p-chord{text-align:center;white-space:normal;min-width:100%;}',
       '.prev-seg.p-slot .p-chord.p-chord-multi{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;line-height:1.1;}',
       '.prev-seg.p-slot .p-chord-multi .p-chord-stk{display:block;line-height:1.2;}',
       '.prev-seg.p-slot .p-chord-multi .chord-chip{font-size:.85em;}',
       '.prev-seg.p-slot .p-lyric{text-align:center;padding:0 1px;}',
+      '.prev-seg.p-slot .p-lyric .p-punct{display:inline-block;width:0;overflow:visible;white-space:pre;pointer-events:none;}',
       '.prev-seg.p-barslot{min-width:0;margin:0 3px;}'
     ].join('');
     (document.head||document.documentElement).appendChild(s);
@@ -1066,7 +1109,7 @@
           col.appendChild(c);
         }
         const nWrap=_div('p-n'); if(show.jianpu)nWrap.appendChild(parseJpToken(tok)); col.appendChild(nWrap);
-        for(let j=0;j<nLy;j++){const lv=aligned.lyrics[j][slot];const l=_div(lyCls(j));setLyricContentEx(l,lv==null?' ':normLyricText(lv),setLyricContent);col.appendChild(l);}
+        for(let j=0;j<nLy;j++){const lv=aligned.lyrics[j][slot];const l=_div(lyCls(j));if(lv==null){setLyricContentEx(l,' ',setLyricContent);}else{const lsp=CecpStrictAlign.splitTrailingPunct(lv);setLyricContentEx(l,normLyricText(lsp.base||' '),setLyricContent);if(lsp.punct){const pun=document.createElement('span');pun.className='p-punct';pun.textContent=lsp.punct;l.appendChild(pun);}}col.appendChild(l);}
         container.appendChild(col);
         slot++;lastSlotCol=col;
       } else if(STRICT_BARS_ML[tok]){
