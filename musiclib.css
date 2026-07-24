@@ -9510,3 +9510,18 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 /* 带声调拼音字体(方正楷体拼音字库子集): 拼音开时歌词用它, 每字上方自带声调拼音, 对齐完美 */
 @font-face{font-family:'FZKTPY';src:url('./pinyin-kai.woff2') format('woff2');font-display:swap;}
 #music-library .p-lyric.p-lyric-py{font-family:'FZKTPY','Noto Serif SC',serif;line-height:2.05;}
+
+/* ══ 严格对位（align:"strict"）列样式 ── 与 musiclib.js ensureStrictCssML 同一套规则 ══
+   为什么写在这里：投影窗口 projection.html 是独立文档，只加载本 CSS、不跑 musiclib.js，
+   JS 注入的严格样式到不了投影 → 悬挂标点失效、列不居中、实宽>refW 导致整页偏移被裁。
+   本块带 #music-library 前缀（优先级压过上方 .prev-seg 的 flex-start），主站+投影同源生效。
+   改动须与 ensureStrictCssML 同步。 */
+#music-library .prev-seg.p-slot{align-items:center !important;min-width:1.2em;margin:0 2px;}
+#music-library .prev-seg.p-slot .p-chord{text-align:center;white-space:normal;min-width:100%;}
+#music-library .prev-seg.p-slot .p-chord.p-chord-multi{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;line-height:1.1;}
+#music-library .prev-seg.p-slot .p-chord-multi .p-chord-stk{display:block;line-height:1.2;}
+#music-library .prev-seg.p-slot .p-chord-multi .chord-chip{font-size:.85em;}
+#music-library .prev-seg.p-slot .p-lyric{text-align:center;padding:0 1px;}
+#music-library .prev-seg.p-slot .p-lyric .p-punct{display:inline-block;width:0;overflow:visible;white-space:pre;pointer-events:none;}
+#music-library .prev-seg.p-slot.p-punct-gap{margin-right:0.5em !important;}
+#music-library .prev-seg.p-barslot{min-width:0;margin:0 3px;}
