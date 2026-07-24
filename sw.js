@@ -1,15 +1,15 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v78-imgzoom-unified";
+const CACHE_NAME = "cecp-musiclib-pwa-v79-zoom-ghostclick-fix";
 const DATA_CACHE = "cecp-musiclib-data-v1";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
   "./projection.html",
-  "./musiclib.css?v=20260719-scorezoom3",
+  "./musiclib.css?v=20260719-scorezoom4",
   "./gsap.min.js?v=20260711-justify-rows",
   "./pinyin-dict.js?v=20260711-justify-rows",
   "./bible-service.js?v=20260711-justify-rows",
   "./pinyin-kai.woff2",
-  "./musiclib.js?v=20260719-scorezoom3",
+  "./musiclib.js?v=20260719-scorezoom4",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
   "./icons/favicon.ico",
