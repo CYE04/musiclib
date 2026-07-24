@@ -75,6 +75,23 @@
   }
   function isLyricSpaceChar(ch) { return ch === ' ' || ch === '\t' || ch === '\n' || ch === '\r' || ch === '　'; }
 
+  /* 和弦智能分词（仅 chord）：空格分隔 + `@` 自分隔，使 `C@@@G@` = `C @ @ @ G @`；真和弦整体保留、`C,G` 不拆。同 shared/strict-align.js。 */
+  function tokenizeChord(str) {
+    var s = String(str == null ? '' : str).trim();
+    if (!s) return [];
+    var raw = s.split(/\s+/), out = [];
+    for (var i = 0; i < raw.length; i++) {
+      var t = raw[i], buf = '';
+      for (var j = 0; j < t.length; j++) {
+        var ch = t.charAt(j);
+        if (ch === '@') { if (buf) { out.push(buf); buf = ''; } out.push('@'); }
+        else buf += ch;
+      }
+      if (buf) out.push(buf);
+    }
+    return out;
+  }
+
   function tokenizeLyric(str) {
     var arr = Array.from(String(str == null ? '' : str)), toks = [], buf = '';
     function flush() { if (buf) { toks.push(buf); buf = ''; } }
@@ -120,7 +137,7 @@
 
   /* 把一行字段（chord 或某行 lyric）对到音位上；@ / 缺失 → null；不足/超出 → warning。 */
   function alignField(fieldName, raw, slotCount, warnings) {
-    var toks = fieldName === 'chord' ? parseFieldTokens(raw) : tokenizeLyric(raw);
+    var toks = fieldName === 'chord' ? tokenizeChord(raw) : tokenizeLyric(raw);
     var vals = [];
     for (var i = 0; i < slotCount; i++) {
       var t = i < toks.length ? toks[i] : null;
@@ -174,6 +191,7 @@
     strictLyricPlain: strictLyricPlain,
     tokenizeN: tokenizeN,
     tokenizeLyric: tokenizeLyric,
+    tokenizeChord: tokenizeChord,
     splitTrailingPunct: splitTrailingPunct,
     isDualAtom: isDualAtom,           // 导出仅供测试对拍；生产判定走 splitSlots
     _timeSign: { normalizeTimeSignValue: normalizeTimeSignValue, extractInlineTimeSignToken: extractInlineTimeSignToken }
