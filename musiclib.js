@@ -2831,6 +2831,27 @@
     });
   }
 
+  /* 导出专用：和弦芯片固定用「浅色主题」配色（内联 !important），不受当前明暗主题影响。
+     必须在 makeExportTextBlack 之后调用——它会把所有元素刷成黑字，这里再把和弦改回来。 */
+  function exportForceLightChordChips(scope){
+    if(!scope||!scope.querySelectorAll)return;
+    var chips=scope.querySelectorAll('.chord-chip');
+    for(var i=0;i<chips.length;i++){
+      var el=chips[i],cls=String(el.className||''),pc=-1;
+      var parts=cls.split(/\s+/);
+      for(var j=0;j<parts.length;j++){
+        if(parts[j].indexOf('chord-pc')===0){pc=parseInt(parts[j].slice(8),10);break;}
+      }
+      if(!(pc>=0&&pc<=11))continue;
+      var h=(pc*30+210)%360;
+      el.style.setProperty('background','hsl('+h+',34%,94%)','important');
+      el.style.setProperty('outline-color','hsl('+h+',38%,74%)','important');
+      el.style.setProperty('color','hsl('+h+',90%,20%)','important');
+      el.style.setProperty('-webkit-text-fill-color','hsl('+h+',90%,20%)','important');
+    }
+  }
+
+
   function composeA4SongImage(scoreBlob,opt={}){
     return Promise.all([blobToImage(scoreBlob),loadImageForExport(LOGO_SRC)]).then(([scoreImg,logoImg])=>{
       const W=2000,H=2828;
@@ -2871,7 +2892,7 @@
         const logoW=1180;
         const logoH=logoW*(logoImg.naturalHeight||logoImg.height)/(logoImg.naturalWidth||logoImg.width);
         ctx.save();
-        ctx.globalAlpha=0.07;
+        ctx.globalAlpha=0.045;
         ctx.drawImage(logoImg,(W-logoW)/2,(H-logoH)/2,logoW,logoH);
         ctx.restore();
       }
@@ -2973,6 +2994,7 @@
         }
         normalizeExportNotation(snap.node);
         if(opt.a4) makeExportTextBlack(snap.node);
+      exportForceLightChordChips(snap.node);
         lyricHlPrepareExport(snap.node);
         if(opt.a4) snap.node.style.setProperty('background','#ffffff','important');
         return waitPaint2()
@@ -3061,7 +3083,7 @@
         const logoW=1180;
         const logoH=logoW*(logoImg.naturalHeight||logoImg.height)/(logoImg.naturalWidth||logoImg.width);
         ctx.save();
-        ctx.globalAlpha=0.07;
+        ctx.globalAlpha=0.045;
         ctx.drawImage(logoImg,(W-logoW)/2,(H-logoH)/2,logoW,logoH);
         ctx.restore();
       }
@@ -3106,6 +3128,7 @@
       normalizeExportNotation(snap.node);
       reserveChordAccidentalWidth(snap.node);   // §4：12 调导出宽度恒定
       makeExportTextBlack(snap.node);
+      exportForceLightChordChips(snap.node);
       lyricHlPrepareExport(snap.node);
       snap.node.style.setProperty('background','#ffffff','important');
       return waitPaint2()
@@ -3505,11 +3528,15 @@
     return {day,picks};
   }
   function getSongLyricHighlight(song){
+    const strict=!!(song&&song.align==='strict');   // strict: 歌词里的 @ 是空位标记，展示前必须剥掉
     for(const sec of song.sections||[]){
       for(const line of sec.lines||[]){
         const arr=Array.isArray(line)?line:(line.line||[]);
-        const text=arr.map(c=>cleanText(c.lyric||c.lyric2||'')).join('');
-        const cleaned=cleanText(text.split(SP_TOKEN).join(' ').replace(/[ㅤ|，,。.!！?？、]/g,' '));
+        const text=arr.map(c=>{
+          const raw=c.lyric||c.lyric2||'';
+          return cleanText(strict?CecpStrictAlign.strictLyricPlain(raw):raw);
+        }).join('');
+        const cleaned=cleanText(text.split(SP_TOKEN).join(' ').replace(/[ㅤ|｜，,。.!！?？、；;]/g,' '));
         if(cleaned&&cleaned.length>=6) return cleaned.length>34?cleaned.slice(0,34)+'…':cleaned;
       }
     }
