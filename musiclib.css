@@ -2117,7 +2117,7 @@ html,body,#music-library{
 #music-library .jp-dot-top{height:calc(8px * var(--pl-n,1));justify-content:flex-end;top:calc(-2px * var(--pl-n,1));}
 #music-library .jp-dot-bot{height:calc(8px * var(--pl-n,1));justify-content:flex-start;}
 /* 八度点画成 CSS 实心圆：比字形的 · 更粗更清楚，尺寸与水平对中都不受字体影响 */
-#music-library .jp-dot-top>span,#music-library .jp-dot-bot>span{display:block;width:calc(4.5px * var(--pl-n,1));height:calc(4.5px * var(--pl-n,1));border-radius:50%;background:currentColor;font-size:0;line-height:0;flex:0 0 auto;}
+#music-library .jp-dot-top>span,#music-library .jp-dot-bot>span{display:block;width:calc(4px * var(--pl-n,1));height:calc(4px * var(--pl-n,1));border-radius:50%;background:currentColor;font-size:0;line-height:0;flex:0 0 auto;}
 /* 低音点贴近数字；有减时线(8分/16分)时改为贴近下划线。只用 top 位移，盒高恒定 → 不影响整体排版 */
 #music-library .jp-wrap .jp-dot-bot{top:calc(-10.5px * var(--pl-n,1));}
 #music-library .jp-wrap:has(.jp-u1-line) .jp-dot-bot{top:calc(-1px * var(--pl-n,1));}
@@ -2126,7 +2126,7 @@ html,body,#music-library{
 #music-library .jp-num-row{width:1em;display:inline-flex;align-items:center;justify-content:center;position:relative;padding-bottom:calc(3px * var(--pl-n,1));}
 #music-library .jp-num{font-size:calc(19px * var(--pl-n,1));line-height:1;display:inline-flex;align-items:center;justify-content:center;text-align:center;width:1em;height:1em;position:relative;top:-0.12em;}
 /* 附点/延音点：同款实心圆；上下对准数字墨迹中心，左右保持原来的间距 */
-#music-library .jp-aug{position:absolute;right:calc(-5.5px * var(--pl-n,1));top:50%;transform:translateY(-50%) translateY(calc(0.5px * var(--pl-n,1)));width:calc(4.5px * var(--pl-n,1));height:calc(4.5px * var(--pl-n,1));border-radius:50%;background:currentColor;font-size:0;line-height:0;pointer-events:none;}
+#music-library .jp-aug{position:absolute;right:calc(-5px * var(--pl-n,1));top:50%;transform:translateY(-50%) translateY(calc(0.5px * var(--pl-n,1)));width:calc(4px * var(--pl-n,1));height:calc(4px * var(--pl-n,1));border-radius:50%;background:currentColor;font-size:0;line-height:0;pointer-events:none;}
 #music-library .jp-u1-line{display:block;position:absolute;left:0;right:0;bottom:calc(3px * var(--pl-n,1));height:calc(1.5px * var(--pl-n,1));background:var(--text);pointer-events:none;z-index:1;}
 #music-library .jp-u2-line{display:block;position:absolute;left:0;right:0;bottom:0;height:calc(1.5px * var(--pl-n,1));background:var(--text);pointer-events:none;z-index:1;}
 #music-library .jp-fermata{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom;position:relative;padding-top:calc(18px * var(--pl-n,1));}

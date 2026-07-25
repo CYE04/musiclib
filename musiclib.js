@@ -4520,11 +4520,11 @@
   function styleJpAugEl(el){
     if(!el)return;
     el.style.position='absolute';
-    el.style.right='-5.5px';
+    el.style.right='-5px';
     el.style.top='50%';
     el.style.transform='translateY(-50%) translateY(0.5px)';
-    el.style.width='4.5px';
-    el.style.height='4.5px';
+    el.style.width='4px';
+    el.style.height='4px';
     el.style.borderRadius='50%';
     el.style.background='currentColor';
     el.style.fontSize='0';
@@ -9370,10 +9370,17 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       if(!parent||!lbDiv.isConnected)return;
 
       if(ML_JUSTIFY_ROWS)justifyScoreRows(lbDiv.querySelectorAll('.sw-lrow'));
-      if(s.align==='strict')lbDiv.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
-      if(s.align==='strict')layoutStrictArcsAll(lbDiv);
       const natural=measureNaturalScore();
       if(!natural)return;
+      /* ⚠️ 梁/弧必须排在 measureNaturalScore() 之后：它才把 lbDiv 撑到自然宽度。
+         在那之前行还被容器挤着(.sw-lrow 是 flex，窄屏上音位列会被 flex-shrink 压扁)，
+         此时量到的音位坐标是压缩过的，撑开后弧线就整体左移——屏幕越窄偏得越多，
+         桌面宽屏因为容器≈自然宽所以看不出来。 */
+      if(s.align==='strict'){
+        lbDiv.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
+        layoutStrictArcsAll(lbDiv);
+        natural.height=lbDiv.scrollHeight||natural.height;   // 弧线给和弦加了 marginBottom，行会变高
+      }
 
       // 版面居中：内容最大宽度 SCORE_MAXW，窄屏两侧留 SCORE_PAD；曲谱缩放到此宽度并水平居中。
       // 不锁 A4、不额外整页 transform（沿用既有 fit 缩放）。导出克隆已 transform:none，故不受影响。
