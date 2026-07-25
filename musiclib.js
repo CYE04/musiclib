@@ -18,11 +18,26 @@
     return m ? normalizeTimeSignValue(m[1]) : '';
   }
 
+  /* 小节线 / 导航记号 / 两者组合(||coda 等) —— 与三宿主 barNavOf 同一套判定，不用正则。 */
+  function isBarNavTok(tk) {
+    var BARS = { '|': 1, '||': 1, '||/': 1, '|]': 1, '|:': 1, ':|': 1, '|:|': 1 };
+    var t = String(tk || '');
+    if (BARS[t]) return true;
+    var NAVS = ['fine', 'dc', 'ds', 'coda', 'segno'];
+    for (var i = 0; i < NAVS.length; i++) {
+      var n = NAVS[i];
+      if (t.length >= n.length && t.slice(-n.length) === n) {
+        var pre = t.slice(0, t.length - n.length);
+        if (pre === '' || BARS[pre]) return true;
+      }
+    }
+    return false;
+  }
+
   function isDualAtom(tk) {
     if (!tk || tk === '/' || tk === '／' || tk === '!' || tk.charAt(0) === '~') return false;
     if (tk === '(' || tk === ')' || tk === '([' || tk === '])' || tk === '}' || tk === '[v1' || tk === '[v2' || tk === ']v') return false;
-    if (tk === '|' || tk === '||' || tk === '||/' || tk === '|]' || tk === '|:' || tk === ':|' || tk === '|:|') return false;
-    if (tk === 'fine' || tk === 'dc' || tk === 'ds' || tk === 'coda' || tk === 'segno') return false;   // 导航记号(非音位)
+    if (isBarNavTok(tk)) return false;   // 小节线/导航记号/两者组合(如 ||coda) 都不是音位
     if (/^\{(3|5)$/.test(tk)) return false;
     if (extractInlineTimeSignToken(tk)) return false;
     if (/^\[v:(.+)\]$/.test(tk)) return false;
@@ -1135,7 +1150,7 @@
         if(col.querySelector('.p-punct'))col.classList.add('p-punct-gap');   // 悬挂标点后留一点空间
         container.appendChild(col);
         slot++;lastSlotCol=col;
-      } else if(STRICT_BARS_ML[tok]){
+      } else if(isBarlineTok(tok)){
         const b=_div('prev-seg p-slot p-barslot');
         if(show.chord){const bc=_div('p-chord empty');setChordContentEx(bc,' ',setChordContent);b.appendChild(bc);}
         const bn=_div('p-n');bn.appendChild(makeBarline(tok));b.appendChild(bn);
@@ -2993,7 +3008,7 @@
     portrait:{W:2000,H:2828},
     landscape:{W:2828,H:2000},
     headerH:250,bottomH:118,sideM:150,
-    minLyricPx:24,maxScale:2.6
+    minLyricPx:24,maxScale:2.6,ss:1.5
   };
   function exportMeasureLyricFont(scope){
     const el=scope.querySelector('.p-lyric');
@@ -3108,7 +3123,7 @@
             EXPORT_FIT.maxScale
           );
           if(sPort*lyricPx>=EXPORT_FIT.minLyricPx){
-            return nodeToPngBlobRobust(snap.node,'#ffffff',{scale:sPort}).then(blob=>({blob,page:P}));
+            return nodeToPngBlobRobust(snap.node,'#ffffff',{scale:sPort*EXPORT_FIT.ss}).then(blob=>({blob,page:P}));
           }
           exportApplyTwoColumns(snap.node,cw);
           return waitPaint2().then(()=>{
@@ -3122,7 +3137,7 @@
               (L.H-EXPORT_FIT.headerH-EXPORT_FIT.bottomH)/ch2,
               EXPORT_FIT.maxScale
             );
-            return nodeToPngBlobRobust(snap.node,'#ffffff',{scale:sLand}).then(blob=>({blob,page:L}));
+            return nodeToPngBlobRobust(snap.node,'#ffffff',{scale:sLand*EXPORT_FIT.ss}).then(blob=>({blob,page:L}));
           });
         })
         .finally(()=>snap.cleanup());
@@ -4342,7 +4357,26 @@
   }
   /* 小节线的尺寸原本是写死 px 的内联样式 -> 简谱放大时它纹丝不动("｜不会跟着变大")。
      内联样式一样能读 CSS 变量, 所以全部乘 var(--pl-n,1); 默认 1 时与原来完全一致(移调页零影响)。 */
+  /* 导航记号可与任意小节线组合：写法 = 小节线token + 记号名 连写，如 ||coda、:|fine、|:|segno。
+     单写 coda/dc/... 时用各自的默认小节线（向后兼容）。不用正则(musictool 模板内禁反斜杠)。 */
+  function barNavOf(tok){
+    var NAVS={fine:'||/',dc:'||',ds:'||',coda:'|',segno:'|'};
+    var t=String(tok||'');
+    for(var n in NAVS){
+      if(t.length>=n.length&&t.slice(-n.length)===n){
+        var pre=t.slice(0,t.length-n.length);
+        if(pre==='')return {bar:NAVS[n],nav:n};
+        if(pre==='|'||pre==='||'||pre==='||/'||pre==='|]'||pre==='|:'||pre===':|'||pre==='|:|')return {bar:pre,nav:n};
+      }
+    }
+    return {bar:t,nav:''};
+  }
+  function isBarlineTok(tok){
+    var b=barNavOf(tok).bar;
+    return b==='|'||b==='||'||b==='||/'||b==='|]'||b==='|:'||b===':|'||b==='|:|';
+  }
   function makeBarline(tok){
+    var _bn=barNavOf(tok),bar=_bn.bar,nav=_bn.nav;
     const S=n=>'calc('+n+'px * var(--pl-n,1))'; // 跟着简谱倍率缩放
     const o=document.createElement('span');
     o.style.cssText='display:inline-flex;flex-direction:column;align-items:flex-start;vertical-align:bottom;';
@@ -4352,27 +4386,25 @@
     function thick(){const l=document.createElement('span');l.style.cssText='width:'+S(3.5)+';background:currentColor;flex-shrink:0;';return l;}
     function gap(px){const g=document.createElement('span');g.style.cssText='width:'+S(px)+';flex-shrink:0;';return g;}
     function dots(){const d=document.createElement('span');d.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:center;gap:'+S(4)+';width:'+S(6)+';flex-shrink:0;';const d1=document.createElement('span');d1.style.cssText='width:'+S(3)+';height:'+S(3)+';border-radius:50%;background:currentColor;';const d2=document.createElement('span');d2.style.cssText='width:'+S(3)+';height:'+S(3)+';border-radius:50%;background:currentColor;';d.appendChild(d1);d.appendChild(d2);return d;}
-    if(tok==='|'){mid.appendChild(thin());}
-    else if(tok==='||'){mid.appendChild(thin());mid.appendChild(gap(2));mid.appendChild(thin());}
-    else if(tok==='||/'||tok==='|]'){mid.appendChild(thin());mid.appendChild(gap(2));mid.appendChild(thick());}
-    else if(tok==='|:'){mid.appendChild(thick());mid.appendChild(gap(1.5));mid.appendChild(thin());mid.appendChild(gap(3));mid.appendChild(dots());}
-    else if(tok===':|'){mid.appendChild(dots());mid.appendChild(gap(3));mid.appendChild(thin());mid.appendChild(gap(1.5));mid.appendChild(thick());}
-    else if(tok==='|:|'){mid.appendChild(dots());mid.appendChild(gap(3));mid.appendChild(thin());mid.appendChild(gap(1.5));mid.appendChild(thick());mid.appendChild(gap(2));mid.appendChild(thick());mid.appendChild(gap(1.5));mid.appendChild(thin());mid.appendChild(gap(3));mid.appendChild(dots());}
-    else if(tok==='fine'){mid.appendChild(thin());mid.appendChild(gap(2));mid.appendChild(thick());}   // 终止线 + Fine
-    else if(tok==='dc'||tok==='ds'){mid.appendChild(thin());mid.appendChild(gap(2));mid.appendChild(thin());}   // 双线 + D.C./D.S.
-    else if(tok==='coda'||tok==='segno'){mid.appendChild(thin());}
+    if(bar==='|'){mid.appendChild(thin());}
+    else if(bar==='||'){mid.appendChild(thin());mid.appendChild(gap(2));mid.appendChild(thin());}
+    else if(bar==='||/'||bar==='|]'){mid.appendChild(thin());mid.appendChild(gap(2));mid.appendChild(thick());}
+    else if(bar==='|:'){mid.appendChild(thick());mid.appendChild(gap(1.5));mid.appendChild(thin());mid.appendChild(gap(3));mid.appendChild(dots());}
+    else if(bar===':|'){mid.appendChild(dots());mid.appendChild(gap(3));mid.appendChild(thin());mid.appendChild(gap(1.5));mid.appendChild(thick());}
+    else if(bar==='|:|'){mid.appendChild(dots());mid.appendChild(gap(3));mid.appendChild(thin());mid.appendChild(gap(1.5));mid.appendChild(thick());mid.appendChild(gap(2));mid.appendChild(thick());mid.appendChild(gap(1.5));mid.appendChild(thin());mid.appendChild(gap(3));mid.appendChild(dots());}
+    else if(nav==='coda'||nav==='segno'){mid.appendChild(thin());}
     o.appendChild(mid);
     const bot=document.createElement('span');bot.style.height=S(16);o.appendChild(bot);
     // 导航记号：Coda/Segno = 记号立于竖线上方；Fine/D.C./D.S. = 双线下方斜体标签
-    if(tok==='coda'||tok==='segno'){
+    if(nav==='coda'||nav==='segno'){
       top.style.cssText='display:flex;align-items:flex-end;justify-content:center;height:'+S(22)+';line-height:1;';
-      if(tok==='coda'){
+      if(nav==='coda'){
         var z=S(18);
         top.innerHTML='<svg viewBox="0 0 26 30" width="'+z+'" height="'+z+'" style="display:block;overflow:visible"><ellipse cx="13" cy="15" rx="6.4" ry="9.4" fill="none" stroke="currentColor" stroke-width="1.7"/><line x1="13" y1="2.6" x2="13" y2="27.4" stroke="currentColor" stroke-width="1.7"/><line x1="2.6" y1="15" x2="23.4" y2="15" stroke="currentColor" stroke-width="1.7"/></svg>';
       }else{ top.innerHTML='<svg viewBox="4 -759 546 786" width="'+S(10)+'" height="'+S(14)+'" style="display:block;overflow:visible"><path transform="scale(1,-1)" d="M135 665C141 665 148 663 151 652L153 645C160 618 175 559 226 559C267 559 295 583 295 626C295 641 292 657 287 673C271 719 204 736 153 736C83 736 4 650 4 551C4 527 9 502 20 477C52 404 197 315 205 312C209 310 211 308 211 304C211 300 209 295 205 288C198 274 54 15 54 15C52 11 51 6 51 2C51 -14 63 -27 79 -27C89 -27 99 -21 104 -12C104 -12 259 268 262 274C262 273 270 279 274 279C289 276 489 217 489 122C489 83 465 57 431 52L428 51C407 51 390 65 390 96V107C390 145 365 173 337 173C333 173 329 172 325 171C288 162 254 146 254 106C254 45 316 -8 375 -8C388 -8 402 -6 417 -1C497 26 550 91 550 174C550 183 549 193 548 203C533 313 375 402 363 408C351 415 346 419 346 424C346 426 347 428 348 430C353 438 508 717 508 717C511 722 512 726 512 731C512 747 499 759 484 759C474 759 464 754 459 745C459 745 300 458 294 449C291 444 289 441 285 441C282 441 279 442 275 444C266 447 115 505 89 550C83 561 75 582 75 603C75 630 87 658 129 665ZM415 466C415 435 441 409 472 409C504 409 529 435 529 466C529 498 504 523 472 523C441 523 415 498 415 466ZM140 264C140 295 115 321 83 321C52 321 26 295 26 264C26 232 52 207 83 207C115 207 140 232 140 264Z" fill="currentColor"/></svg>'; }
       o.style.alignItems='center';
-    } else if(tok==='fine'||tok==='dc'||tok==='ds'){
-      bot.textContent=(tok==='fine')?'Fine':(tok==='dc'?'D.C.':'D.S.');
+    } else if(nav==='fine'||nav==='dc'||nav==='ds'){
+      bot.textContent=(nav==='fine')?'Fine':(nav==='dc'?'D.C.':'D.S.');
       bot.style.cssText='display:flex;align-items:flex-start;justify-content:center;height:'+S(16)+';font-family:"Noto Serif SC",Georgia,serif;font-style:italic;font-size:'+S(9.5)+';line-height:1;white-space:nowrap;padding-top:'+S(2)+';';
       o.style.alignItems='center';
     }
@@ -4495,7 +4527,7 @@
   function parseJpToken(tok,opts){
     opts=opts||{};
     tok=String(tok||'');
-    if(tok==='|'||tok==='||'||tok==='||/'||tok==='|]'||tok==='|:'||tok===':|'||tok==='|:|'||tok==='fine'||tok==='dc'||tok==='ds'||tok==='coda'||tok==='segno')return makeBarline(tok);
+    if(isBarlineTok(tok))return makeBarline(tok);
     const dual=!opts.inDual?parseDualJpToken(tok):null;
     if(dual)return makeDualJpToken(dual);
     if(!tok||tok==='-'||tok===' ')return makeJpPlain(tok);
@@ -4663,7 +4695,7 @@
     function isDualAtom(tk){
       if(!tk||tk==='/'||tk==='／'||tk==='!'||tk.charAt(0)==='~')return false;
       if(tk==='('||tk===')'||tk==='(['||tk==='])'||tk==='}'||tk==='[v1'||tk==='[v2'||tk===']v')return false;
-      if(tk==='|'||tk==='||'||tk==='||/'||tk==='|]'||tk==='|:'||tk===':|'||tk==='|:|'||tk==='fine'||tk==='dc'||tk==='ds'||tk==='coda'||tk==='segno')return false;
+      if(isBarlineTok(tk))return false;
       if(/^\{(3|5)$/.test(tk))return false;
       if(extractInlineTimeSignToken(tk))return false;
       if(/^\[v:(.+)\]$/.test(tk))return false;
@@ -5090,7 +5122,7 @@ function chordStyleEnsureCss(){
   var light='',dark='',i,h;
   for(i=0;i<12;i++){
     h=chordStyleHue(i);
-    light+='.chord-chip.chord-pc'+i+'{background:hsl('+h+',65%,86%);outline-color:hsl('+h+',48%,60%);color:hsl('+h+',90%,20%);}';
+    light+='.chord-chip.chord-pc'+i+'{background:hsl('+h+',34%,94%);outline-color:hsl('+h+',38%,74%);color:hsl('+h+',90%,20%);}';
     dark+='.chord-chip.chord-pc'+i+'{background:hsl('+h+',42%,26%);outline-color:hsl('+h+',45%,48%);color:hsl('+h+',72%,84%);}';
   }
   var darkAttr=dark.split('.chord-chip.').join('html[data-resolved-theme="dark"] .chord-chip.');

@@ -42,11 +42,26 @@
     return m ? normalizeTimeSignValue(m[1]) : '';
   }
 
+  /* 小节线 / 导航记号 / 两者组合(||coda 等) —— 与三宿主 barNavOf 同一套判定，不用正则。 */
+  function isBarNavTok(tk) {
+    var BARS = { '|': 1, '||': 1, '||/': 1, '|]': 1, '|:': 1, ':|': 1, '|:|': 1 };
+    var t = String(tk || '');
+    if (BARS[t]) return true;
+    var NAVS = ['fine', 'dc', 'ds', 'coda', 'segno'];
+    for (var i = 0; i < NAVS.length; i++) {
+      var n = NAVS[i];
+      if (t.length >= n.length && t.slice(-n.length) === n) {
+        var pre = t.slice(0, t.length - n.length);
+        if (pre === '' || BARS[pre]) return true;
+      }
+    }
+    return false;
+  }
+
   function isDualAtom(tk) {
     if (!tk || tk === '/' || tk === '／' || tk === '!' || tk.charAt(0) === '~') return false;
     if (tk === '(' || tk === ')' || tk === '([' || tk === '])' || tk === '}' || tk === '[v1' || tk === '[v2' || tk === ']v') return false;
-    if (tk === '|' || tk === '||' || tk === '||/' || tk === '|]' || tk === '|:' || tk === ':|' || tk === '|:|') return false;
-    if (tk === 'fine' || tk === 'dc' || tk === 'ds' || tk === 'coda' || tk === 'segno') return false;   // 导航记号(非音位)
+    if (isBarNavTok(tk)) return false;   // 小节线/导航记号/两者组合(如 ||coda) 都不是音位
     if (/^\{(3|5)$/.test(tk)) return false;
     if (extractInlineTimeSignToken(tk)) return false;
     if (/^\[v:(.+)\]$/.test(tk)) return false;
