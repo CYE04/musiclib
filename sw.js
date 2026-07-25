@@ -1,4 +1,4 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v79-zoom-ghostclick-fix";
+const CACHE_NAME = "cecp-musiclib-pwa-v80-pinyin-pro";
 const DATA_CACHE = "cecp-musiclib-data-v1";
 const APP_SHELL = [
   "./?key=cecp2026",
@@ -6,6 +6,7 @@ const APP_SHELL = [
   "./projection.html",
   "./musiclib.css?v=20260719-scorezoom4",
   "./gsap.min.js?v=20260711-justify-rows",
+  "./pinyin-pro.js?v=20260725-pypro",
   "./pinyin-dict.js?v=20260711-justify-rows",
   "./bible-service.js?v=20260711-justify-rows",
   "./pinyin-kai.woff2",

@@ -1080,8 +1080,30 @@
   function projBusSend(msg){ msg.role='console'; msg.v=++projState.ver; projEnsureBus().send(msg); }
   /* 当前调 = 跟随详情页(存 song-state.lastKey), 不依赖 openDetail 闭包 */
   function projCurKey(song){ const s=getSongState(song.id)||{}; return s.lastKey||song.origKey||'C'; }
-  /* 逐字拼音: 占位/空格 -> 空串; 非中文字母数字原样; 其余用 cecpPinyinOf */
+  /* 整句拼音(pinyin-pro)：type:'all' 逐字对齐(含非中文,isZh 标记)，多音字按词消歧。
+     库没加载/异常时返回 null，调用方走旧字典逐字兜底。 */
+  function cecpPinyinAll(text,toneType){
+    try{
+      if(window.pinyinPro&&typeof window.pinyinPro.pinyin==='function'){
+        return window.pinyinPro.pinyin(String(text||''),{type:'all',toneType:toneType||'none'});
+      }
+    }catch(_){}
+    return null;
+  }
+  /* 逐字拼音: 占位/空格 -> 空串; 非中文字母数字原样。
+     pinyin-pro 优先(带声调+多音字按词消歧: 喜乐/长阔/重复 等不再注错)；旧字典 cecpPinyinOf 兜底。 */
   function projPinyinSyllables(text){
+    const clean=spStripTokens(String(text||''));
+    const all=cecpPinyinAll(clean,'symbol');
+    if(all){
+      return all.map(it=>{
+        const ch=it.origin;
+        if(ch==='ㅤ'||ch==='　'||ch===' '||ch===' ') return '';
+        if(it.isZh) return it.pinyin||'';
+        if(/[a-z0-9]/i.test(ch)) return ch;
+        return '';
+      });
+    }
     const out=[]; const has=typeof window.cecpPinyinOf==='function';
     for(const ch of spStripTokens(String(text||''))){  // 先去掉 {sp} 排版补位符, 免得注出 "s p"
       if(ch==='ㅤ'||ch==='　'||ch===' '||ch===' '){ out.push(''); continue; }
@@ -3033,8 +3055,8 @@
     headerH:250,bottomH:118,sideM:150,
     minLyricPx:24,maxScale:2.6,ss:1.5
   };
-  /* 导出图纸张底色：淡纸黄，比纯白柔和、久看不刺眼（只作用于「下载歌谱图」，屏幕与移调面板导出不变） */
-  var EXPORT_PAPER_BG='#f7f2e4';
+  /* 导出图纸张底色：暖白，比纯白柔和、久看不刺眼（只作用于「下载歌谱图」，屏幕与移调面板导出不变） */
+  var EXPORT_PAPER_BG='#faf7f1';
   function exportMeasureLyricFont(scope){
     const el=scope.querySelector('.p-lyric');
     if(!el)return 19;
@@ -3715,13 +3737,21 @@
   /* ── 拼音搜索(增强,字典加载失败自动降级为原有搜索) ── */
   function buildPinyinIndex(song){
     try{
-      if(typeof window.cecpPinyinOf!=='function')return {};
       const text=[song.title,song.artist,song.sub].filter(Boolean).join(' ');
       const syl=[];
-      for(const ch of text){
-        const py=window.cecpPinyinOf(ch);
-        if(py)syl.push(py);
-        else if(/[a-z0-9]/i.test(ch))syl.push(ch.toLowerCase());
+      const all=cecpPinyinAll(text,'none');   // pinyin-pro 整句消歧(音乐→yinyue)；失败走旧字典
+      if(all){
+        for(const it of all){
+          if(it.isZh&&it.pinyin)syl.push(it.pinyin);
+          else if(/[a-z0-9]/i.test(it.origin))syl.push(it.origin.toLowerCase());
+        }
+      }else{
+        if(typeof window.cecpPinyinOf!=='function')return {};
+        for(const ch of text){
+          const py=window.cecpPinyinOf(ch);
+          if(py)syl.push(py);
+          else if(/[a-z0-9]/i.test(ch))syl.push(ch.toLowerCase());
+        }
       }
       if(!syl.length)return {};
       return {
