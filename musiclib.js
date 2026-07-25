@@ -1094,7 +1094,8 @@
       '.prev-seg.p-slot .p-lyric{text-align:center;padding:0 1px;}',
       '.prev-seg.p-slot .p-lyric .p-punct{display:inline-block;width:0;overflow:visible;white-space:pre;pointer-events:none;}',
       '.prev-seg.p-slot.p-punct-gap{margin-right:0.5em !important;}',
-      '.prev-seg.p-barslot{min-width:0;margin:0 3px;}'
+      '.prev-seg.p-barslot{min-width:0;margin:0 3px;}',
+      '.strict-label-row{display:block;margin:0 0 2px;line-height:1;}'
     ].join('');
     (document.head||document.documentElement).appendChild(s);
   }
@@ -1110,12 +1111,14 @@
     const aligned=CecpStrictAlign.alignRow(seg.n||'', seg.chord||'', lyricFields);
     const nLy=show.lyric?aligned.lyrics.length:0;
     function lyCls(j){return 'p-lyric'+(j?' p-lyric'+(j+1):'')+(show.pinyin?' p-lyric-py':'')+(bold?' bold':'');}
-    let slot=0, pendingSlurOpen=0, pendingTupletN=0, lastSlotCol=null;
+    let slot=0, pendingSlurOpen=0, pendingSlurClose=0, pendingTupletN=0, lastSlotCol=null;
     toks.forEach(function(tok){
       if(tok==='!'){const lc=container.lastElementChild;if(lc)lc.setAttribute('data-bb','1');return;}  // 断梁标记
       if(CecpStrictAlign.isDualAtom(tok)){
         const col=_div('prev-seg p-slot');
         if(pendingSlurOpen){col.setAttribute('data-slur-open',pendingSlurOpen);pendingSlurOpen=0;}
+      var _isSp=(tok==='sp'||tok==='sp_'||tok==='sp__');if(_isSp)col.setAttribute('data-sp','1');
+      if(pendingSlurClose&&!_isSp){col.setAttribute('data-slur-close',((+col.getAttribute('data-slur-close'))||0)+pendingSlurClose);pendingSlurClose=0;}   // ~ 收口跳过 sp(同老版 layoutJpArcs：原子不含 sp)
         if(pendingTupletN){col.setAttribute('data-tuplet-open',pendingTupletN);pendingTupletN=0;}
         if(show.chord){
           const chVal=aligned.chords[slot];
@@ -1148,6 +1151,7 @@
       else if(tok===')'||tok==='])'){ if(lastSlotCol)lastSlotCol.setAttribute('data-slur-close',((+lastSlotCol.getAttribute('data-slur-close'))||0)+1); }
       else if(tok==='{3'||tok==='{5'){ pendingTupletN=parseInt(tok.slice(1),10); }
       else if(tok==='}'){ if(lastSlotCol)lastSlotCol.setAttribute('data-tuplet-close','1'); }
+        else if(tok.charAt(0)==='~'){var tieSpan=jpTieSpan(tok)||1;var tieCols=[].slice.call(container.querySelectorAll('.prev-seg.p-slot')).filter(function(c){return !c.classList.contains('p-barslot')&&!c.getAttribute('data-sp');});var tieStart=tieCols[tieCols.length-tieSpan];if(tieStart){tieStart.setAttribute('data-slur-open',((+tieStart.getAttribute('data-slur-open'))||0)+1);pendingSlurClose++;}}
     });
   }
   /* 严格对位「连梁」：相邻下划线音位补齐减时线贴上；小节线/sp/非下划线天然断开。
@@ -1237,7 +1241,8 @@
       if(to)tstack.push({i:i,n:to});
       if(tc){var tt=tstack.pop();if(tt)tgroups.push({s:tt.i,e:i,n:tt.n});}
     });
-    if(!sgroups.length&&!tgroups.length)return;
+    var dangles=[];while(sstack.length){var _ds=sstack.pop();if(_ds!=null)dangles.push(_ds);}   // 未闭合的 ( ：先画到行尾的开口半弧，边写边可见
+    if(!sgroups.length&&!tgroups.length&&!dangles.length)return;
     sgroups.forEach(function(g){g._d=0;sgroups.forEach(function(h){if(h===g)return;if(h.s<=g.s&&g.e<=h.e&&(h.e-h.s)>(g.e-g.s))g._d++;});});
     var maxD=0;sgroups.forEach(function(g){if(g._d>maxD)maxD=g._d;});
     var NS='http://www.w3.org/2000/svg';
@@ -1250,6 +1255,7 @@
         else if(er===row)here.push({g:g,m:'close'});
         else if(ri>si&&ri<ei)here.push({g:g,m:'thru'});
       });
+      dangles.forEach(function(_ds){if(all[_ds].row===row)here.push({g:{s:_ds,e:_ds,_d:0},m:'open'});});
       var tHere=tgroups.filter(function(g){return all[g.s].row===row&&all[g.e].row===row;});
       if(!here.length&&!tHere.length)return;
       var reserve=0;if(here.length)reserve=Math.max(reserve,13+maxD*8);if(tHere.length)reserve=Math.max(reserve,20);
@@ -9207,7 +9213,18 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
           let voltaWrap=null;
           for(const seg of segs){
             if(!segIsRenderableBlock(seg))continue;
-            if(segIsLabelBlock(seg)){(voltaWrap||row).appendChild(segRenderLabelBlock(seg,row));continue;}
+            if(segIsLabelBlock(seg)){
+              if(s.align==='strict'){   // 严格模式：段落标记独立一行(不与弧线/和弦挤)
+                const lw=_div('strict-label-row');
+                const lh=segRenderLabelBlock(seg,row);
+                const ltag=lh.querySelector('.sec-label');
+                if(ltag){ltag.style.position='static';ltag.style.left='';ltag.style.top='';ltag.style.fontSize='13px';lw.appendChild(ltag);}
+                else lw.appendChild(lh);
+                le.appendChild(lw);
+                continue;
+              }
+              (voltaWrap||row).appendChild(segRenderLabelBlock(seg,row));continue;
+            }
             if(s.align==='strict'){
               const _vs=getVoltaStartLabel(seg.n);
               if(_vs){row.classList.add('has-volta');voltaWrap=document.createElement('span');voltaWrap.className='prev-volta';voltaWrap.setAttribute('data-v',_vs+'.');}
