@@ -1118,7 +1118,7 @@
         const col=_div('prev-seg p-slot');
         if(pendingSlurOpen){col.setAttribute('data-slur-open',pendingSlurOpen);pendingSlurOpen=0;}
       var _isSp=(tok==='sp'||tok==='sp_'||tok==='sp__');if(_isSp)col.setAttribute('data-sp','1');
-      if(pendingSlurClose&&!_isSp){col.setAttribute('data-slur-close',((+col.getAttribute('data-slur-close'))||0)+pendingSlurClose);pendingSlurClose=0;}   // ~ 收口跳过 sp(同老版 layoutJpArcs：原子不含 sp)
+      if(pendingSlurClose&&!_isSp){col.setAttribute('data-tie-close',((+col.getAttribute('data-tie-close'))||0)+pendingSlurClose);pendingSlurClose=0;}   // ~ 收口跳过 sp(同老版 layoutJpArcs：原子不含 sp)
         if(pendingTupletN){col.setAttribute('data-tuplet-open',pendingTupletN);pendingTupletN=0;}
         if(show.chord){
           const chVal=aligned.chords[slot];
@@ -1151,7 +1151,7 @@
       else if(tok===')'||tok==='])'){ if(lastSlotCol)lastSlotCol.setAttribute('data-slur-close',((+lastSlotCol.getAttribute('data-slur-close'))||0)+1); }
       else if(tok==='{3'||tok==='{5'){ pendingTupletN=parseInt(tok.slice(1),10); }
       else if(tok==='}'){ if(lastSlotCol)lastSlotCol.setAttribute('data-tuplet-close','1'); }
-        else if(tok.charAt(0)==='~'){var tieSpan=jpTieSpan(tok)||1;var tieCols=[].slice.call(container.querySelectorAll('.prev-seg.p-slot')).filter(function(c){return !c.classList.contains('p-barslot')&&!c.getAttribute('data-sp');});var tieStart=tieCols[tieCols.length-tieSpan];if(tieStart){tieStart.setAttribute('data-slur-open',((+tieStart.getAttribute('data-slur-open'))||0)+1);pendingSlurClose++;}}
+        else if(tok.charAt(0)==='~'){var tieSpan=jpTieSpan(tok)||1;var tieCols=[].slice.call(container.querySelectorAll('.prev-seg.p-slot')).filter(function(c){return !c.classList.contains('p-barslot')&&!c.getAttribute('data-sp');});var tieStart=tieCols[tieCols.length-tieSpan];if(tieStart){tieStart.setAttribute('data-tie-open',((+tieStart.getAttribute('data-tie-open'))||0)+1);pendingSlurClose++;}}
     });
   }
   /* 严格对位「连梁」：相邻下划线音位补齐减时线贴上；小节线/sp/非下划线天然断开。
@@ -1233,15 +1233,18 @@
     var all=[];
     rows.forEach(function(row){[].slice.call(row.querySelectorAll('.prev-seg.p-slot')).forEach(function(col){if(!col.classList.contains('p-barslot'))all.push({col:col,row:row});});});
     if(!all.length)return;
-    var sstack=[],sgroups=[],tstack=[],tgroups=[];
+    var sstack=[],ystack=[],sgroups=[],tstack=[],tgroups=[];
     all.forEach(function(s,i){
       var so=(+s.col.getAttribute('data-slur-open'))||0,sc=(+s.col.getAttribute('data-slur-close'))||0,to=(+s.col.getAttribute('data-tuplet-open'))||0,tc=s.col.getAttribute('data-tuplet-close'),k;
       for(k=0;k<so;k++)sstack.push(i);
       for(k=0;k<sc;k++){var st=sstack.pop();if(st!=null)sgroups.push({s:st,e:i});}
+      var yc=(+s.col.getAttribute('data-tie-close'))||0,yo=(+s.col.getAttribute('data-tie-open'))||0;   // ~ 连音独立栈：同列先收后开(链式 1~1~1 = 相邻小弧,同老版)
+      for(k=0;k<yc;k++){var yt=ystack.pop();if(yt!=null)sgroups.push({s:yt,e:i,tie:1});}
+      for(k=0;k<yo;k++)ystack.push(i);
       if(to)tstack.push({i:i,n:to});
       if(tc){var tt=tstack.pop();if(tt)tgroups.push({s:tt.i,e:i,n:tt.n});}
     });
-    var dangles=[];while(sstack.length){var _ds=sstack.pop();if(_ds!=null)dangles.push(_ds);}   // 未闭合的 ( ：先画到行尾的开口半弧，边写边可见
+    var dangles=[];while(sstack.length){var _ds=sstack.pop();if(_ds!=null)dangles.push(_ds);}while(ystack.length){var _dy=ystack.pop();if(_dy!=null)dangles.push(_dy);}   // 未闭合的 ( ：先画到行尾的开口半弧，边写边可见
     if(!sgroups.length&&!tgroups.length&&!dangles.length)return;
     sgroups.forEach(function(g){g._d=0;sgroups.forEach(function(h){if(h===g)return;if(h.s<=g.s&&g.e<=h.e&&(h.e-h.s)>(g.e-g.s))g._d++;});});
     var maxD=0;sgroups.forEach(function(g){if(g._d>maxD)maxD=g._d;});
@@ -1271,7 +1274,7 @@
       function edge(col,side){var el=col.querySelector('.jp-num')||col.querySelector('.p-n')||col;var r=el.getBoundingClientRect(),rr=row.getBoundingClientRect();return ((side==='r'?r.right:r.left)-rr.left)/scale;}
       here.forEach(function(it){
         var g=it.g,lift=maxD-g._d,L,W,nt,cls;
-        if(it.m==='full'){var a=box(all[g.s].col),b=box(all[g.e].col);L=a.cx-2;W=(b.cx-a.cx)+4;nt=Math.min(a.top,b.top);cls='f';}
+        if(it.m==='full'){var a=box(all[g.s].col),b=box(all[g.e].col);var pad=g.tie?0:2;L=a.cx-pad;W=(b.cx-a.cx)+pad*2;nt=Math.min(a.top,b.top);cls='f';}
         else if(it.m==='open'){var a2=box(all[g.s].col);L=a2.cx;W=(edge(lastCol,'r')+4)-a2.cx;nt=a2.top;cls='o';}
         else if(it.m==='close'){var b2=box(all[g.e].col);L=edge(firstCol,'l')-4;W=b2.cx-L;nt=b2.top;cls='c';}
         else {L=edge(firstCol,'l')-4;W=(edge(lastCol,'r')+4)-L;nt=box(cols[0]).top;cls='t';}
@@ -9218,7 +9221,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
                 const lw=_div('strict-label-row');
                 const lh=segRenderLabelBlock(seg,row);
                 const ltag=lh.querySelector('.sec-label');
-                if(ltag){ltag.style.position='static';ltag.style.left='';ltag.style.top='';ltag.style.fontSize='13px';lw.appendChild(ltag);}
+                if(ltag){ltag.style.position='relative';ltag.style.top='';ltag.style.fontSize='13px';lw.appendChild(ltag);}
                 else lw.appendChild(lh);
                 le.appendChild(lw);
                 continue;
