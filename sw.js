@@ -1,4 +1,4 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v82-pinyin-restore";
+const CACHE_NAME = "cecp-musiclib-pwa-v83-jpdots";
 const DATA_CACHE = "cecp-musiclib-data-v1";
 const APP_SHELL = [
   "./?key=cecp2026",

@@ -2984,12 +2984,17 @@
       styleJpDashLineEl(dashLine);
     });
     scope.querySelectorAll('.jp-aug').forEach(a=>{
-      a.style.position='absolute';
-      a.style.top='50%';
-      a.style.right='-0.46em';
-      a.style.transform='translateY(-50%)';
-      a.style.lineHeight='1';
-      a.style.display='inline-block';
+      styleJpAugEl(a);
+      a.style.display='block';
+    });
+    /* 导出时 .jp-lines-wrap 的 padding-bottom 由 4px 变 12px、下划线由 bottom:3/0 变 4/0，
+       低音点要跟着重算，否则导出图里点会比屏幕上低 5px */
+    scope.querySelectorAll('.jp-dot-bot').forEach(b=>{
+      const wrap=b.parentElement;
+      if(!wrap||!wrap.classList.contains('jp-wrap'))return;
+      if(wrap.parentElement&&/jp-dual-(top|bot)/.test(wrap.parentElement.className||''))return;
+      b.style.position='relative';
+      b.style.top=wrap.querySelector('.jp-u2-line')?'2px':(wrap.querySelector('.jp-u1-line')?'-2px':'-15.5px');
     });
   }
 
@@ -4515,9 +4520,15 @@
   function styleJpAugEl(el){
     if(!el)return;
     el.style.position='absolute';
-    el.style.right='-0.46em';
+    el.style.right='-5.5px';
     el.style.top='50%';
-    el.style.transform='translateY(-50%)';
+    el.style.transform='translateY(-50%) translateY(0.5px)';
+    el.style.width='4.5px';
+    el.style.height='4.5px';
+    el.style.borderRadius='50%';
+    el.style.background='currentColor';
+    el.style.fontSize='0';
+    el.style.lineHeight='0';
     el.style.pointerEvents='none';
   }
   function styleJpAccEl(el){
