@@ -1091,10 +1091,12 @@
     return null;
   }
   /* 逐字拼音: 占位/空格 -> 空串; 非中文字母数字原样。
-     pinyin-pro 优先(带声调+多音字按词消歧: 喜乐/长阔/重复 等不再注错)；旧字典 cecpPinyinOf 兜底。 */
+     只用 pinyin-pro（按词消歧: 音乐/银行/重复/长阔 等不再注错）。
+     带声调(toneType:'symbol')；拼音层字体栈已移除无声调字形的 FZKTPY，
+     改用系统楷体→衬线体回退，两者都有完整 āáǎà 字形，不会混排。 */
   function projPinyinSyllables(text){
     const clean=spStripTokens(String(text||''));
-    const all=cecpPinyinAll(clean,'symbol');
+    const all=cecpPinyinAll(clean,'symbol');   // 带声调；字体栈已换成含声调字形的(见 musiclib.css 拼音层)
     if(all){
       return all.map(it=>{
         const ch=it.origin;
@@ -1104,14 +1106,7 @@
         return '';
       });
     }
-    const out=[]; const has=typeof window.cecpPinyinOf==='function';
-    for(const ch of spStripTokens(String(text||''))){  // 先去掉 {sp} 排版补位符, 免得注出 "s p"
-      if(ch==='ㅤ'||ch==='　'||ch===' '||ch===' '){ out.push(''); continue; }
-      let py=has?window.cecpPinyinOf(ch):'';
-      if(!py&&/[a-z0-9]/i.test(ch)) py=ch;
-      out.push(py||'');
-    }
-    return out;
+    return [];   // pinyin-pro 没加载 -> 不注拼音（不再用旧字典兜底）
   }
   /* 复用 renderScore 的逐段渲染原语, 按四开关裁层 + 每段各配拼音层。产出一整行 DOM。 */
   /* ── 严格对位（align:"strict"）渲染分支（musiclib）──────────────────────────
@@ -3745,14 +3740,7 @@
           if(it.isZh&&it.pinyin)syl.push(it.pinyin);
           else if(/[a-z0-9]/i.test(it.origin))syl.push(it.origin.toLowerCase());
         }
-      }else{
-        if(typeof window.cecpPinyinOf!=='function')return {};
-        for(const ch of text){
-          const py=window.cecpPinyinOf(ch);
-          if(py)syl.push(py);
-          else if(/[a-z0-9]/i.test(ch))syl.push(ch.toLowerCase());
-        }
-      }
+      }else return {};   // pinyin-pro 没加载 -> 不建拼音索引（不再用旧字典兜底）
       if(!syl.length)return {};
       return {
         _pySyl:syl,

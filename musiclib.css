@@ -9508,8 +9508,10 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 #music-library .ml-proj-preview-scale{z-index:1;}
 
 /* 带声调拼音字体(方正楷体拼音字库子集): 拼音开时歌词用它, 每字上方自带声调拼音, 对齐完美 */
-@font-face{font-family:'FZKTPY';src:url('./pinyin-kai.woff2') format('woff2');font-display:swap;}
-#music-library .p-lyric.p-lyric-py{font-family:'FZKTPY','Noto Serif SC',serif;line-height:2.05;}
+/* 拼音层字体：必须含带声调字母(āáǎà…)。原来的 FZKTPY(pinyin-kai.woff2) 只有 a-z，
+   留在栈里会让带声调的字回退成别的字体、同一行混排，故已移除。
+   统一用 'Noto Sans SC'/sans-serif —— 与上方 .p-pinyin 同款，声调字形完整、各设备一致。 */
+#music-library .p-lyric.p-lyric-py{font-family:'Noto Sans SC',sans-serif;line-height:2.05;}
 
 /* ══ 严格对位（align:"strict"）列样式 ── 与 musiclib.js ensureStrictCssML 同一套规则 ══
    为什么写在这里：投影窗口 projection.html 是独立文档，只加载本 CSS、不跑 musiclib.js，
