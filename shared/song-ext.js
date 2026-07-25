@@ -169,7 +169,8 @@ function segRenderLabelBlock(seg,row){
   tag.className='sec-label'+(jump?' sec-label-jump':'');
   var color=secLabelColor(seg.label);
   var dx=Number(seg.dx)||0;
-  var base='display:inline-block;position:absolute;left:'+dx+'px;top:16px;white-space:nowrap;line-height:1.4;font-size:0.58em;padding:0 7px;border-radius:999px;box-sizing:border-box;letter-spacing:0.4px;z-index:2;';
+  var dy=Number(seg.dy)||0;   // 上下偏移(可拖)：正=往下,可把标记拖到谱下方当 Fine 用
+  var base='display:inline-block;position:absolute;left:'+dx+'px;top:'+(16+dy)+'px;white-space:nowrap;line-height:1.4;font-size:0.58em;padding:0 7px;border-radius:999px;box-sizing:border-box;letter-spacing:0.4px;z-index:2;';
   if(jump){
     tag.style.cssText=base+'font-style:italic;font-weight:600;color:'+color+';border:1px solid '+color+';background:transparent;opacity:0.92;';
   }else{
@@ -200,7 +201,7 @@ function segRenderLabelBlock(seg,row){
         var cr=ch.getBoundingClientRect();
         var scale=(holder.offsetHeight&&hr.height)?(hr.height/holder.offsetHeight):1;
         if(!scale)scale=1;
-        tag.style.top=((cr.bottom-hr.top)/scale+SEC_LABEL_TOP_GAP_PX)+'px';
+        tag.style.top=((cr.bottom-hr.top)/scale+SEC_LABEL_TOP_GAP_PX+dy)+'px';
       }
     });
   }
