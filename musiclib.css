@@ -2113,13 +2113,13 @@ html,body,#music-library{
 #music-library .jp-plain-sym{font-size:calc(15px * var(--pl-n,1));line-height:1;text-align:center;display:inline-flex;align-items:center;justify-content:center;width:1em;height:1em;}
 #music-library .jp-plain-sym.is-dash{position:relative;top:-0.12em;}
 #music-library .jp-plain-bot{height:calc(16px * var(--pl-n,1));}
-#music-library .jp-dot-top,#music-library .jp-dot-bot{width:1em;font-size:calc(8px * var(--pl-n,1));line-height:.6;color:var(--text);text-align:center;display:flex;flex-direction:column;align-items:center;}
+#music-library .jp-dot-top,#music-library .jp-dot-bot{width:1em;font-size:calc(11px * var(--pl-n,1));line-height:.436;color:var(--text);text-align:center;display:flex;flex-direction:column;align-items:center;}
 #music-library .jp-dot-top{height:calc(8px * var(--pl-n,1));justify-content:flex-end;}
 #music-library .jp-dot-bot{height:calc(8px * var(--pl-n,1));justify-content:flex-start;}
 #music-library .jp-lines-wrap{width:1em;display:inline-flex;flex-direction:column;align-items:stretch;padding-bottom:calc(4px * var(--pl-n,1));position:relative;}
 #music-library .jp-num-row{width:1em;display:inline-flex;align-items:center;justify-content:center;position:relative;padding-bottom:calc(3px * var(--pl-n,1));}
 #music-library .jp-num{font-size:calc(19px * var(--pl-n,1));line-height:1;display:inline-flex;align-items:center;justify-content:center;text-align:center;width:1em;height:1em;position:relative;top:-0.12em;}
-#music-library .jp-aug{position:absolute;right:-0.46em;top:50%;transform:translateY(-50%);font-size:calc(10px * var(--pl-n,1));line-height:1;pointer-events:none;}
+#music-library .jp-aug{position:absolute;right:-0.46em;top:50%;transform:translateY(-50%);font-size:calc(13px * var(--pl-n,1));line-height:1;pointer-events:none;}
 #music-library .jp-u1-line{display:block;position:absolute;left:0;right:0;bottom:calc(3px * var(--pl-n,1));height:calc(1.5px * var(--pl-n,1));background:var(--text);pointer-events:none;z-index:1;}
 #music-library .jp-u2-line{display:block;position:absolute;left:0;right:0;bottom:0;height:calc(1.5px * var(--pl-n,1));background:var(--text);pointer-events:none;z-index:1;}
 #music-library .jp-fermata{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom;position:relative;padding-top:calc(18px * var(--pl-n,1));}

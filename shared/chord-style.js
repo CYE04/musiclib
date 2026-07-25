@@ -63,7 +63,7 @@ function chordStyleEnsureCss(){
   var darkAttr=dark.split('.chord-chip.').join('html[data-resolved-theme="dark"] .chord-chip.');
   var darkAuto=dark.split('.chord-chip.').join('html:not([data-resolved-theme="light"]) .chord-chip.');
   st.textContent=
-    '.chord-chip{border-radius:4px;outline:1px solid transparent;outline-offset:0;}'+
+    '.chord-chip{border-radius:4px;outline:1px solid transparent;outline-offset:0;padding-left:.2em;padding-right:.2em;}'+
     light+darkAttr+
     '@media (prefers-color-scheme: dark){'+darkAuto+'}';
   document.head.appendChild(st);
