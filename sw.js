@@ -1,12 +1,13 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v81-pinyin-tone";
+const CACHE_NAME = "cecp-musiclib-pwa-v82-pinyin-restore";
 const DATA_CACHE = "cecp-musiclib-data-v1";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
   "./projection.html",
-  "./musiclib.css?v=20260725-pinyintone",
+  "./musiclib.css?v=20260725-pyrestore",
   "./gsap.min.js?v=20260711-justify-rows",
   "./pinyin-pro.js?v=20260725-pypro",
+  "./pinyin-kai.woff2",
   "./bible-service.js?v=20260711-justify-rows",
   "./musiclib.js?v=20260719-scorezoom4",
   "./manifest.webmanifest",
