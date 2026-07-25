@@ -33,7 +33,10 @@ function justifyScoreRows(rowList,opts){
   var widths=rows.map(function(row){
     var prev=row.style.display;
     row.style.display='inline-flex';
-    var w=row.scrollWidth;
+    /* 必须用 offsetWidth：flex 容器的 scrollWidth 不含子项 margin，
+       而最终行宽是含 margin 的，两者不是同一个量 -> 严格模式每列都有 margin
+       (列间距/悬挂标点间隙)，列数越多误差越大，各行拉不齐(实测差 15px)。 */
+    var w=row.offsetWidth;
     row.style.display=prev;
     return w;
   });
