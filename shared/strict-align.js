@@ -59,7 +59,7 @@
   }
 
   function isDualAtom(tk) {
-    if (!tk || tk === '/' || tk === '／' || tk === '!' || tk.charAt(0) === '~') return false;
+    if (!tk || tk === '/' || tk === '／' || tk === '!' || tk.charAt(0) === '~' || tk.charAt(0) === '*') return false;
     if (tk === '(' || tk === ')' || tk === '([' || tk === '])' || tk === '}' || tk === '[v1' || tk === '[v2' || tk === ']v') return false;
     if (isBarNavTok(tk)) return false;   // 小节线/导航记号/两者组合(如 ||coda) 都不是音位
     if (/^\{(3|5)$/.test(tk)) return false;

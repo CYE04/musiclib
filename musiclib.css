@@ -2098,9 +2098,13 @@ html,body,#music-library{
 #music-library .p-chord{font-family:'Space Mono',monospace;font-size:calc(12px * var(--pl-chord,1));font-weight:700;color:var(--accent);margin-bottom:2px;min-height:13px;white-space:pre;}
 #music-library .p-chord.empty{visibility:hidden;}
 #music-library .p-n{font-family:'Space Mono',monospace;font-size:calc(1em * var(--pl-n,1));color:var(--text);margin-bottom:1px;line-height:1.2;display:flex;align-items:flex-end;min-height:var(--row-note-height);}
-#music-library .p-lyric{font-family:'Noto Serif SC',serif;font-size:calc(18px * var(--pl-lyric,1));color:var(--text2);white-space:pre-wrap;}
-#music-library .p-lyric.bold{font-weight:700;color:var(--text);}
-#music-library .p-lyric2,#music-library .p-lyric3,#music-library .p-lyric4{opacity:0.65;margin-top:1px;}
+#music-library .p-lyric{font-family:'Noto Serif SC',serif;font-size:calc(18px * var(--pl-lyric,1));font-weight:600;color:var(--text);white-space:pre-wrap;}
+/* 加粗＝真的更重一档。字体常只有 400/700，700→800 可能毫无变化，再叠一层极细横向 text-shadow 兜底。 */
+#music-library .p-lyric.bold{font-weight:800;text-shadow:.32px 0 0 currentColor,-.32px 0 0 currentColor;}
+#music-library .p-lyric2,#music-library .p-lyric3,#music-library .p-lyric4{margin-top:1px;}
+#music-library .p-lyric2{color:var(--ly2);}
+#music-library .p-lyric3{color:var(--ly3);}
+#music-library .p-lyric4{color:var(--ly4);}
 #music-library .chord-gap,
 #music-library .lyric-gap{display:inline-block;white-space:pre;visibility:hidden;pointer-events:none;font:inherit;line-height:inherit;}
 #music-library .prev-volta{display:inline-flex;align-items:flex-end;position:relative;}
@@ -3569,6 +3573,10 @@ html,body,#music-library{
   --text:#f4f6fb;
   --text2:#a4adbf;
   --text3:#697185;
+  /* 歌词分行配色：第 1 行主色，第 2/3/4 行蓝/绿/紫区分；暗底用提亮版 */
+  --ly2:#7FB0FF;
+  --ly3:#52C994;
+  --ly4:#C88FEC;
   --accent:#e3bf42;
   --accent-light:rgba(227,191,66,.18);
   --border:rgba(255,255,255,.10);
@@ -4152,6 +4160,10 @@ html,body,#music-library{
     --text:#111827;
     --text2:#4b5569;
     --text3:#7f8aa3;
+    /* 亮底：三种都要够深 */
+    --ly2:#123C8F;
+    --ly3:#0E4F33;
+    --ly4:#5C2178;
     --accent:#c58e18;
     --accent-light:rgba(197,142,24,.16);
     --border:rgba(15,23,42,.12);
