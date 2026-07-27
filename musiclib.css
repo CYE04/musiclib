@@ -2407,7 +2407,7 @@ html,body,#music-library{
 .pl-times { display:flex; justify-content:space-between; margin-top:4px; font-size:11px; color:var(--player-text3); font-variant-numeric:tabular-nums; }
 
 /* Controls */
-.pl-controls { display:flex; align-items:center; justify-content:center; gap:6px; width:100%; }
+.pl-controls { display:flex; align-items:center; justify-content:center; gap:clamp(3px,1.4vw,6px); width:100%; min-width:0; }
 .pl-btn {
   background:none; border:none; color:var(--player-btn);
   width:34px; height:34px; border-radius:50%;
@@ -2518,62 +2518,68 @@ html,body,#music-library{
   box-shadow:0 0 14px rgba(239,203,92,.16),0 0 0 1px rgba(239,203,92,.22) inset;
 }
 
+/* MP3 练习(变调)入口。旧版是 148x58 的大方块、单独占一行，跟旁边一排 34px 圆钮完全不搭。
+   现在改成跟 .pl-btn 同高的紧凑 chip，直接排进控件行；宽度自适应内容，窄屏只留图标。 */
 .ml-audio-tool{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  gap:12px;
-  min-width:148px;
+  gap:6px;
+  height:34px;
+  min-width:34px;
   max-width:100%;
-  min-height:58px;
-  margin:0 auto;
-  padding:10px 12px 10px 18px;
-  border:1px solid rgba(255,255,255,.18);
-  border-radius:22px;
-  background:
-    linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,.055)),
-    radial-gradient(circle at 18% 0%,rgba(232,201,81,.16),transparent 46%),
-    rgba(9,11,18,.62);
-  color:var(--player-text);
-  box-shadow:0 18px 42px rgba(0,0,0,.30),0 1px 0 rgba(255,255,255,.18) inset;
+  padding:0 clamp(7px,2.2vw,11px);
+  border:1px solid transparent;
+  border-radius:999px;
+  background:var(--player-btn-hover-bg,rgba(255,255,255,.08));
+  color:var(--player-btn);
+  box-shadow:none;
   cursor:pointer;
-  font-weight:800;
-  backdrop-filter:blur(14px);
-  -webkit-backdrop-filter:blur(14px);
-  transition:transform .15s ease,border-color .15s ease,background .15s ease,box-shadow .15s ease;
+  font-weight:700;
+  flex-shrink:1;
+  transition:color .15s,background .15s,border-color .15s,transform .1s;
 }
-.ml-audio-tool:hover{
-  transform:translateY(-2px);
-  border-color:rgba(232,201,81,.48);
-  box-shadow:0 22px 50px rgba(0,0,0,.36),0 0 0 1px rgba(232,201,81,.12) inset;
-}
+.ml-audio-tool:hover{ color:var(--player-text); background:var(--player-btn-hover-bg); border-color:rgba(255,255,255,.16); transform:none; box-shadow:none; }
+.ml-audio-tool:active{ transform:scale(.92); }
+.ml-audio-tool-ico{ display:block; flex:0 0 auto; opacity:.85; }
 .ml-audio-tool-k{
-  color:rgba(255,255,255,.62);
+  color:inherit; opacity:.6;
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-size:11px;
-  letter-spacing:.12em;
-  line-height:1;
+  font-size:9px; letter-spacing:.1em; line-height:1;
+  flex:0 1 auto; min-width:0; overflow:hidden;   /* 空间不够时先牺牲它 */
 }
 .ml-audio-tool-v{
-  min-width:54px;
-  color:#fff;
-  font-size:15px;
+  flex:0 1 auto; min-width:0;                    /* 可被压缩，压不下就省略号，绝不把行撑溢出 */
+  color:inherit;
+  font-size:clamp(11px,3vw,12px);
   line-height:1.1;
   white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
 }
 .ml-audio-tool-mode{
-  min-width:48px;
-  height:38px;
-  border-radius:16px;
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  background:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,.055));
-  color:rgba(255,255,255,.52);
+  min-width:0; height:auto;
+  padding:2px 6px; border-radius:999px;
+  display:inline-flex; align-items:center; justify-content:center;
+  background:rgba(255,255,255,.10);
+  color:inherit; opacity:.7;
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
-  font-size:9px;
-  letter-spacing:.08em;
-  box-shadow:0 1px 0 rgba(255,255,255,.12) inset;
+  font-size:8px; letter-spacing:.06em; line-height:1;
+  box-shadow:none; flex:0 1 auto; min-width:0; overflow:hidden;
+}
+/* 生效时才点亮，并把 OFF 徽章收起来（此时 v 显示的就是实际数值，徽章是冗余的） */
+.ml-audio-tool.is-shifted{ color:var(--accent); background:rgba(232,201,81,.16); border-color:rgba(232,201,81,.34); }
+.ml-audio-tool.is-shifted .ml-audio-tool-ico{ opacity:1; }
+.ml-audio-tool.is-shifted .ml-audio-tool-k{ display:none; }
+/* 窄屏：只留图标，文字全收 —— 控件行放不下时不至于把播放键挤走 */
+@media (max-width:420px){
+  .ml-audio-tool{ padding:0 8px; gap:5px; }
+  .ml-audio-tool-k{ display:none; }
+  .ml-audio-tool:not(.is-shifted) .ml-audio-tool-v{ display:none; }
+}
+@media (max-width:340px){
+  .ml-audio-tool .ml-audio-tool-mode{ display:none; }
+  .ml-audio-tool{ padding:0 7px; }
 }
 .ml-audio-tool.is-shifted .ml-audio-tool-v{color:#f6d978;}
 .ml-audio-tool.is-pro .ml-audio-tool-mode{
@@ -2624,6 +2630,7 @@ html,body,#music-library{
   padding:18px;
   font-family:'Noto Sans SC',-apple-system,BlinkMacSystemFont,sans-serif;
 }
+
 
 /* ── Header ── */
 #ml-audio-panel-head{
@@ -9231,17 +9238,8 @@ body.ml-detail-lock{overflow:hidden !important;}
 }
 
 /* ===== 修复:底部 dock 里的 MP3 练习按钮尺寸(原为大卡片样式,溢出 dock) ===== */
-#music-library #ml-player-dock .ml-audio-tool-dock{
-  min-width:auto;
-  min-height:38px;
-  padding:5px 12px;
-  gap:6px;
-  border-radius:12px;
-  margin:0 4px 0 0;
-}
-#music-library #ml-player-dock .ml-audio-tool-dock .ml-audio-tool-k{font-size:10px;}
-#music-library #ml-player-dock .ml-audio-tool-dock .ml-audio-tool-v{font-size:11px;}
-#music-library #ml-player-dock .ml-audio-tool-dock .ml-audio-tool-mode{font-size:9px;}
+/* dock 里跟着新的紧凑 chip 走，只保留右边距；别再覆写尺寸/圆角，否则两处又不一致 */
+#music-library #ml-player-dock .ml-audio-tool-dock{ margin:0 4px 0 0; }
 
 /* ---- Nowbar 底部播放条：侧栏布局下按内容列居中，修复被侧栏遮切 ----
    桌面/平板布局左侧有固定侧栏（>1180px 为 240px，861~1180px 为 210px），

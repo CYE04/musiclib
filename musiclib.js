@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='2026.07.11.02-justify-rows';
+  const ML_VER='20260726-audiotool';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -544,12 +544,8 @@
         <button class="pl-btn" id="ml-mp-next" aria-label="下一首"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 6a1 1 0 0 0-1 1v10a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1zm-3.2 5.65-7.1-4.8A.43.43 0 0 0 7 7.2v9.6a.43.43 0 0 0 .7.35l7.1-4.8a.43.43 0 0 0 0-.7z"/></svg></button>
         <button class="pl-btn" id="ml-mp-seek-fwd" aria-label="前进15秒"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/><text x="12" y="15.5" text-anchor="middle" font-size="5.5" fill="currentColor" font-family="system-ui,sans-serif" font-weight="600">15</text></svg></button>
         <button class="pl-btn pl-repeat" id="ml-mp-repeat" aria-label="循环"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+        <button class="ml-audio-tool" id="ml-mp-pitch-open" type="button" aria-label="打开 MP3 变调面板"><svg class="ml-audio-tool-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg><span class="ml-audio-tool-k">MP3</span><span class="ml-audio-tool-v">练习</span><span class="ml-audio-tool-mode">OFF</span></button>
       </div>
-      <button class="ml-audio-tool" id="ml-mp-pitch-open" type="button" aria-label="打开 MP3 变调面板">
-        <span class="ml-audio-tool-k">MP3</span>
-        <span class="ml-audio-tool-v">变调</span>
-        <span class="ml-audio-tool-mode">OFF</span>
-      </button>
       <div class="pl-vol-wrap">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
         <input class="pl-vol" id="ml-mp-vol" type="range" min="0" max="1" step="0.02" value="1">
@@ -627,11 +623,7 @@
           </div>
         </div>
         <div id="ml-player-dock-right">
-          <button class="ml-audio-tool ml-audio-tool-dock" id="ml-player-pitch-open" type="button" aria-label="打开 MP3 变调面板">
-            <span class="ml-audio-tool-k">MP3</span>
-            <span class="ml-audio-tool-v">变调</span>
-            <span class="ml-audio-tool-mode">OFF</span>
-          </button>
+          <button class="ml-audio-tool ml-audio-tool-dock" id="ml-player-pitch-open" type="button" aria-label="打开 MP3 变调面板"><svg class="ml-audio-tool-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg><span class="ml-audio-tool-k">MP3</span><span class="ml-audio-tool-v">练习</span><span class="ml-audio-tool-mode">OFF</span></button>
           <span class="ml-player-vol-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></span>
           <input id="ml-player-dock-vol" type="range" min="0" max="1" step="0.02" value="1">
         </div>
@@ -7023,14 +7015,29 @@ var ChordEngine=(function(){
     }
   }
 
-  /* 手机 PWA 锁竖屏。manifest 的 "orientation":"portrait" 是主力（Android 认），
-     这里用 Screen Orientation API 再补一刀。⚠️ iOS Safari 两者都不支持，
-     装到主屏的 PWA 在 iPhone 上仍会跟着系统转 —— 目前没有网页端能锁住它的办法。 */
+  /* 手机 PWA 锁竖屏。两条腿：manifest 的 "orientation":"portrait"（Android 装成 PWA 后生效，
+     但**改了 manifest 要重装/等 Chrome 刷新才认**），以及这里的 Screen Orientation API。
+     lock() 只有在「已安装的 standalone PWA」或全屏下才允许，浏览器普通标签页会直接 reject，
+     所以要在 DOM ready / 可见 / 首次交互后各试一次。失败原因记在 window.__mlOrientLock 便于排查。
+     ⚠️ iOS Safari 两者都不支持，iPhone 上仍会跟着系统转，网页端无解。 */
   (function lockPortrait(){
-    try{
+    var done=false;
+    function why(v){ try{ window.__mlOrientLock=v; }catch(e){} }
+    function attempt(tag){
+      if(done) return;
       var so=window.screen&&window.screen.orientation;
-      if(so&&typeof so.lock==='function') so.lock('portrait').catch(function(){});
-    }catch(e){}
+      if(!so||typeof so.lock!=='function'){ why('unsupported@'+tag); return; }
+      try{
+        so.lock('portrait').then(function(){ done=true; why('locked@'+tag); },
+                                 function(err){ why((err&&err.name||'reject')+'@'+tag); });
+      }catch(e){ why((e&&e.name||'throw')+'@'+tag); }
+    }
+    attempt('init');
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',function(){attempt('domready');});
+    document.addEventListener('visibilitychange',function(){ if(!document.hidden) attempt('visible'); });
+    ['pointerdown','touchstart'].forEach(function(ev){
+      document.addEventListener(ev,function once(){ attempt('gesture'); document.removeEventListener(ev,once); },{once:true,passive:true});
+    });
   })();
 
   return API;
@@ -7360,7 +7367,14 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       el.title=mode==='pro'?'SoundTouch 独立变调':(mode==='loading'?'正在启动音频处理':'MP3 练习控制');
       const v=el.querySelector('.ml-audio-tool-v');
       const tag=el.querySelector('.ml-audio-tool-mode');
-      if(v) v.textContent=active ? `调性 ${_mpPitchText(trans)} · Pitch ${_mpFinePitchText(fine)} · ${_mpSpeedText(speed)}` : '练习';
+      // 紧凑标签：只显示真正被改过的那几项，详细数值在面板里看（原来那串太长，控件行放不下）
+      if(v){
+        const bits=[];
+        if(trans!==0) bits.push(_mpPitchText(trans));
+        if(fine!==0) bits.push('♪'+_mpFinePitchText(fine));
+        if(Math.round(speed*100)!==100) bits.push(_mpSpeedText(speed));
+        v.textContent=bits.length?bits.join(' '):'练习';
+      }
       if(tag) tag.textContent=mode==='pro'?'PRO':(mode==='loading'?'…':(mode==='limited'?'ERR':'OFF'));
     });
     const set=(id,val)=>{ const el=$(id); if(el) el.textContent=val; };
@@ -8475,9 +8489,15 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       const p=Math.max(0, Math.min(1, (e.clientX-r.left)/r.width));
       _mpAudio.currentTime=_mpAudio.duration*p;
     });
-    $('ml-nowbar-expand')?.addEventListener('click',()=>{
+    $('ml-nowbar-expand')?.addEventListener('click',(e)=>{
+      e.stopPropagation();
       _mpSetExpanded(true);
       _mpSetLyricsMode(true);
+    });
+    // 点这一栏的任意空白处就打开播放页（Spotify 那样），控制按钮/进度条除外
+    $('ml-nowbar')?.addEventListener('click',e=>{
+      if(e.target.closest('.ml-nowbar-btn, #ml-nowbar-progress')) return;
+      _mpSetExpanded(true);
     });
     $('ml-miniplayer')?.addEventListener('click',e=>{
       if(e.target.closest('.pl-btn, .pl-progress-wrap, .pl-vol-wrap, #ml-mp-expand, .pl-vol, .ml-audio-tool')) return;
