@@ -1,4 +1,4 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v86-navmark";
+const CACHE_NAME = "cecp-musiclib-pwa-v87-player-portrait";
 const DATA_CACHE = "cecp-musiclib-data-v1";
 const APP_SHELL = [
   "./?key=cecp2026",

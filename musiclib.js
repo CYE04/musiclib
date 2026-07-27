@@ -7023,6 +7023,16 @@ var ChordEngine=(function(){
     }
   }
 
+  /* 手机 PWA 锁竖屏。manifest 的 "orientation":"portrait" 是主力（Android 认），
+     这里用 Screen Orientation API 再补一刀。⚠️ iOS Safari 两者都不支持，
+     装到主屏的 PWA 在 iPhone 上仍会跟着系统转 —— 目前没有网页端能锁住它的办法。 */
+  (function lockPortrait(){
+    try{
+      var so=window.screen&&window.screen.orientation;
+      if(so&&typeof so.lock==='function') so.lock('portrait').catch(function(){});
+    }catch(e){}
+  })();
+
   return API;
 })();
 if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
@@ -7758,18 +7768,26 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpRenderQueue();
     return idx;
   }
-  // "播放"：立即播放该歌曲，绝不修改播放列表 / 播放队列。
-  // 如果该歌曲已在队列中，直接定位播放；否则仅作为"当前播放"，不插入队列。
+  // "播放"＝像正常音乐软件那样：把**整个曲库**（有音频的那些）当成播放队列，
+  // 从点的这首开始往下一首一首连播，**不需要先加进播放列表**。
+  // 旧行为是 _mpIdx=-1 的"游离播放"，一曲放完 _mpNextIdxFrom(-1) 拿不到下一首就断了。
+  // 歌曲已在当前队列里就直接定位（保住用户手攒的列表）；不在才用曲库重新铺队列。
   function playSongNow(song){
     if(!song||!hasSongAudio(song)) return;
     _mpBind();
     const idx=_mpSongs.findIndex(x=>x.id===song.id);
-    if(idx>=0){
-      _mpPlayIdx(idx,true);
-    }else{
+    if(idx>=0){ _mpPlayIdx(idx,true); return; }
+    const lib=songs.filter(hasSongAudio);
+    const at=lib.findIndex(x=>x.id===song.id);
+    if(at>=0){
+      _mpSongs=lib.slice();
       _mpIdx=-1;
-      _mpLoadAndPlaySong(song,true);
+      _mpRenderQueue();
+      _mpPlayIdx(at,true);
+      return;
     }
+    _mpIdx=-1;                       // 曲库里找不到（例如临时传进来的歌）才退回游离播放
+    _mpLoadAndPlaySong(song,true);
   }
   // "添加到播放列表"：只入队，不播放、不打断当前播放。
   function addSongToPlaylist(song){
