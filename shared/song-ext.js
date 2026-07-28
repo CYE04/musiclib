@@ -178,32 +178,46 @@ function segRenderLabelBlock(seg,row){
   }
   tag.textContent=String(seg.label||'');
   holder.appendChild(tag);
+  /* 给段落标记让出一条带(把和弦顶上去)并把徽章定位到和弦下方。
+     ⚠️ 这里必须能重试：makeSecLabel 是在内存里拼行时调用的，
+     youth 这类「先拼好整首再交给宿主 append」的路径，首帧 holder.isConnected 还是 false。
+     老代码是一次性 rAF + 直接 return，于是回调永远没跑成 —— 徽章停在初始 top:16px、
+     和弦也没让位，两者就撞在一起（严格模式因为 layoutStrictArcsAll 每次都会重设
+     .p-chord 的 marginBottom，所以看不出问题）。 */
+  function placeSecLabel(){
+    if(!holder.isConnected)return false;
+    var scope=holder.closest?holder.closest('.prev-row'):null;
+    if(!scope)return false;
+    var pillH=tag.offsetHeight||13;
+    var band=pillH+SEC_LABEL_TOP_GAP_PX*2;
+    var chords=scope.querySelectorAll('.p-chord');
+    for(var i=0;i<chords.length;i++){
+      chords[i].style.marginBottom=(2+band)+'px';
+    }
+    var ref=holder.nextElementSibling;
+    while(ref&&!(ref.querySelector&&ref.querySelector('.p-chord')))ref=ref.nextElementSibling;
+    if(!ref){
+      ref=holder.previousElementSibling;
+      while(ref&&!(ref.querySelector&&ref.querySelector('.p-chord')))ref=ref.previousElementSibling;
+    }
+    var ch=ref?ref.querySelector('.p-chord'):scope.querySelector('.p-chord');
+    if(ch){
+      var hr=holder.getBoundingClientRect();
+      var cr=ch.getBoundingClientRect();
+      var scale=(holder.offsetHeight&&hr.height)?(hr.height/holder.offsetHeight):1;
+      if(!scale)scale=1;
+      tag.style.top=((cr.bottom-hr.top)/scale+SEC_LABEL_TOP_GAP_PX+dy)+'px';
+    }
+    return true;
+  }
+  holder.cecpPlaceSecLabel=placeSecLabel;   // 宿主布局settle后可再调一次
   if(typeof requestAnimationFrame==='function'){
-    requestAnimationFrame(function(){
-      if(!holder.isConnected)return;
-      var scope=holder.closest?holder.closest('.prev-row'):null;
-      if(!scope)return;
-      var pillH=tag.offsetHeight||13;
-      var band=pillH+SEC_LABEL_TOP_GAP_PX*2;
-      var chords=scope.querySelectorAll('.p-chord');
-      for(var i=0;i<chords.length;i++){
-        chords[i].style.marginBottom=(2+band)+'px';
-      }
-      var ref=holder.nextElementSibling;
-      while(ref&&!(ref.querySelector&&ref.querySelector('.p-chord')))ref=ref.nextElementSibling;
-      if(!ref){
-        ref=holder.previousElementSibling;
-        while(ref&&!(ref.querySelector&&ref.querySelector('.p-chord')))ref=ref.previousElementSibling;
-      }
-      var ch=ref?ref.querySelector('.p-chord'):scope.querySelector('.p-chord');
-      if(ch){
-        var hr=holder.getBoundingClientRect();
-        var cr=ch.getBoundingClientRect();
-        var scale=(holder.offsetHeight&&hr.height)?(hr.height/holder.offsetHeight):1;
-        if(!scale)scale=1;
-        tag.style.top=((cr.bottom-hr.top)/scale+SEC_LABEL_TOP_GAP_PX+dy)+'px';
-      }
-    });
+    var tries=0;
+    (function retry(){
+      if(placeSecLabel())return;
+      if(++tries>40)return;                 // 约 40 帧兜底，避免节点永远不入档时空转
+      requestAnimationFrame(retry);
+    })();
   }
   return holder;
 }

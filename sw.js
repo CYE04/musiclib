@@ -1,4 +1,4 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v88-audiotool";
+const CACHE_NAME = "cecp-musiclib-pwa-v89-seclabel";
 const DATA_CACHE = "cecp-musiclib-data-v1";
 const APP_SHELL = [
   "./?key=cecp2026",

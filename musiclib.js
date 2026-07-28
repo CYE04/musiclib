@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='20260726-audiotool';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20260726-seclabel';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -5129,32 +5129,46 @@ function segRenderLabelBlock(seg,row){
   }
   tag.textContent=String(seg.label||'');
   holder.appendChild(tag);
+  /* 给段落标记让出一条带(把和弦顶上去)并把徽章定位到和弦下方。
+     ⚠️ 这里必须能重试：makeSecLabel 是在内存里拼行时调用的，
+     youth 这类「先拼好整首再交给宿主 append」的路径，首帧 holder.isConnected 还是 false。
+     老代码是一次性 rAF + 直接 return，于是回调永远没跑成 —— 徽章停在初始 top:16px、
+     和弦也没让位，两者就撞在一起（严格模式因为 layoutStrictArcsAll 每次都会重设
+     .p-chord 的 marginBottom，所以看不出问题）。 */
+  function placeSecLabel(){
+    if(!holder.isConnected)return false;
+    var scope=holder.closest?holder.closest('.prev-row'):null;
+    if(!scope)return false;
+    var pillH=tag.offsetHeight||13;
+    var band=pillH+SEC_LABEL_TOP_GAP_PX*2;
+    var chords=scope.querySelectorAll('.p-chord');
+    for(var i=0;i<chords.length;i++){
+      chords[i].style.marginBottom=(2+band)+'px';
+    }
+    var ref=holder.nextElementSibling;
+    while(ref&&!(ref.querySelector&&ref.querySelector('.p-chord')))ref=ref.nextElementSibling;
+    if(!ref){
+      ref=holder.previousElementSibling;
+      while(ref&&!(ref.querySelector&&ref.querySelector('.p-chord')))ref=ref.previousElementSibling;
+    }
+    var ch=ref?ref.querySelector('.p-chord'):scope.querySelector('.p-chord');
+    if(ch){
+      var hr=holder.getBoundingClientRect();
+      var cr=ch.getBoundingClientRect();
+      var scale=(holder.offsetHeight&&hr.height)?(hr.height/holder.offsetHeight):1;
+      if(!scale)scale=1;
+      tag.style.top=((cr.bottom-hr.top)/scale+SEC_LABEL_TOP_GAP_PX+dy)+'px';
+    }
+    return true;
+  }
+  holder.cecpPlaceSecLabel=placeSecLabel;   // 宿主布局settle后可再调一次
   if(typeof requestAnimationFrame==='function'){
-    requestAnimationFrame(function(){
-      if(!holder.isConnected)return;
-      var scope=holder.closest?holder.closest('.prev-row'):null;
-      if(!scope)return;
-      var pillH=tag.offsetHeight||13;
-      var band=pillH+SEC_LABEL_TOP_GAP_PX*2;
-      var chords=scope.querySelectorAll('.p-chord');
-      for(var i=0;i<chords.length;i++){
-        chords[i].style.marginBottom=(2+band)+'px';
-      }
-      var ref=holder.nextElementSibling;
-      while(ref&&!(ref.querySelector&&ref.querySelector('.p-chord')))ref=ref.nextElementSibling;
-      if(!ref){
-        ref=holder.previousElementSibling;
-        while(ref&&!(ref.querySelector&&ref.querySelector('.p-chord')))ref=ref.previousElementSibling;
-      }
-      var ch=ref?ref.querySelector('.p-chord'):scope.querySelector('.p-chord');
-      if(ch){
-        var hr=holder.getBoundingClientRect();
-        var cr=ch.getBoundingClientRect();
-        var scale=(holder.offsetHeight&&hr.height)?(hr.height/holder.offsetHeight):1;
-        if(!scale)scale=1;
-        tag.style.top=((cr.bottom-hr.top)/scale+SEC_LABEL_TOP_GAP_PX+dy)+'px';
-      }
-    });
+    var tries=0;
+    (function retry(){
+      if(placeSecLabel())return;
+      if(++tries>40)return;                 // 约 40 帧兜底，避免节点永远不入档时空转
+      requestAnimationFrame(retry);
+    })();
   }
   return holder;
 }
@@ -9462,6 +9476,13 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         lbDiv.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
         layoutStrictArcsAll(lbDiv);
         natural.height=lbDiv.scrollHeight||natural.height;   // 弧线给和弦加了 marginBottom，行会变高
+      }else{
+        // 老格式：段落标记的让位/定位在这里重排一次（严格模式由 layoutStrictArcsAll 负责，不碰）
+        const _sl=lbDiv.querySelectorAll('.sec-label-holder');
+        if(_sl.length){
+          _sl.forEach(h=>{ if(h.cecpPlaceSecLabel)h.cecpPlaceSecLabel(); });
+          natural.height=lbDiv.scrollHeight||natural.height;
+        }
       }
 
       // 版面居中：内容最大宽度 SCORE_MAXW，窄屏两侧留 SCORE_PAD；曲谱缩放到此宽度并水平居中。
