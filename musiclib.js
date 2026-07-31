@@ -307,6 +307,61 @@
   if(document.body) document.body.classList.add('ml-fullscreen');
   root.setAttribute('data-ml-version',ML_VER);
   try{console.info('[musiclib] loaded version',ML_VER);}catch(_){}
+
+  /* ── 嵌入模式 ?embed=1 ──────────────────────────────────────
+     给内通「现场」页当谱面板用：只显示 ?song= 那一首的详情
+     （简谱 / 移调 / 原图 / 节拍器都在），曲库外壳全部藏起来；
+     大播放器压成一条，点 ♪ 才展开。纯新增，不带 embed 参数时毫无影响。 */
+  const ML_EMBED=(function(){
+    try{
+      const v=new URL(location.href).searchParams.get('embed');
+      return v!==null && v!=='0' && v!=='false';
+    }catch(_){return false;}
+  })();
+  if(ML_EMBED){
+    root.classList.add('ml-embed');
+    const es=document.createElement('style');
+    es.id='ml-embed-style';
+    /* 注意：musiclib.css 里不少规则用了 #music-library #xxx（两个 ID）+ !important，
+       所以这里也必须带 #music-library 前缀，否则特异性不够压不过它。 */
+    const E='#music-library.ml-embed';
+    const EC=E+':not(.ml-embed-player)';
+    es.textContent=[
+      /* 只留详情浮层，其余曲库外壳（搜索/列表/首页面板/播放大视图…）全藏 */
+      E+'>*{display:none!important}',
+      E+'>#ml-detail{display:block!important}',
+      /* 灯箱/提示条平时不占位，只有自己打开时才显示 */
+      E+'>#ml-lightbox.open{display:block!important}',
+      E+'>#ml-toast.show{display:block!important}',
+      /* 详情占满、不再是浮层 */
+      E+' #ml-detail{position:static!important;inset:auto!important;background:transparent!important}',
+      E+' #ml-detail-overlay,'+E+' #ml-detail-swipe-hint{display:none!important}',
+      E+' #ml-detail-dialog{position:static!important;width:100%!important;max-width:none!important;',
+      '  height:100dvh!important;max-height:100dvh!important;border-radius:0!important;',
+      '  transform:none!important;opacity:1!important;box-shadow:none!important}',
+      /* 头部：只留歌名（返回/本堂/投影都去掉） */
+      E+' #ml-back,'+E+' #ml-detail-service,'+E+' #ml-detail-projection{display:none!important}',
+      E+' #ml-detail-header{padding-left:14px!important}',
+      /* 大播放器压成一条：封面/歌词/进度/音量先收起，只留播放键 + 标题 + MP3 */
+      E+' #ml-miniplayer{padding:6px 10px!important}',
+      EC+' #ml-mp-stage{display:none!important;height:0!important;min-height:0!important}',
+      EC+' .pl-progress-wrap,'+EC+' .pl-vol-wrap{display:none!important}',
+      EC+' #ml-mp-seek-back,'+EC+' #ml-mp-seek-fwd,'+EC+' #ml-mp-prev,',
+      EC+' #ml-mp-next,'+EC+' #ml-mp-repeat{display:none!important}',
+      E+' .pl-song-row{gap:8px}',
+      /* 节拍器：平时收起，点小图标才展开（现场不占地方） */
+      E+':not(.ml-embed-metro) .ml-met{display:none!important}',
+      E+'.ml-embed-metro .ml-met{display:block!important}',
+      /* 展开/收起播放器的小图标 */
+      '.ml-embed-toggle{flex:none;width:30px;height:30px;border-radius:9px;border:none;cursor:pointer;',
+      '  display:inline-flex;align-items:center;justify-content:center;font-size:14px;',
+      '  background:rgba(127,127,127,.16);color:inherit}',
+      '.ml-embed-toggle.on{background:rgba(0,113,227,.18)}',
+      /* 谱身占满剩余高度 */
+      E+' #ml-detail-body{max-height:none!important}',
+    ].join('\n');
+    document.head.appendChild(es);
+  }
   ensureNoIndexMeta();
   if(!hasInternalKey()){
     renderInternalOnlyNotice();
@@ -3192,10 +3247,38 @@
     const songId=getSongIdFromUrl();
     if(!songId||!songs.length) return;
     const target=songs.find(x=>x.id===songId);
-    if(target) openDetail(target,{fromUrl:true});
+    if(target){
+      openDetail(target,{fromUrl:true});
+      if(ML_EMBED) setupEmbedPlayerToggle();
+    }
+  }
+
+  /* 嵌入模式：给压扁的播放器加一个 ♪ 展开/收起小图标 */
+  function setupEmbedPlayerToggle(){
+    if(!ML_EMBED) return;
+    const row=root.querySelector('#ml-miniplayer .pl-song-row');
+    if(!row||row.querySelector('.ml-embed-toggle')) return;
+    const mk=(txt,title,cls,fn)=>{
+      const b=document.createElement('button');
+      b.type='button'; b.className='ml-embed-toggle'; b.title=title;
+      b.setAttribute('aria-label',title); b.textContent=txt;
+      b.addEventListener('click',()=>{ b.classList.toggle('on',fn()); });
+      row.appendChild(b);
+      return b;
+    };
+    mk('♪','展开或收起播放器','player',()=>root.classList.toggle('ml-embed-player'));
+    mk('🥁','展开或收起节拍器','metro',()=>{
+      const on=root.classList.toggle('ml-embed-metro');
+      if(on){
+        const met=root.querySelector('.ml-met');
+        if(met) setTimeout(()=>{ try{met.scrollIntoView({block:'nearest',behavior:'smooth'});}catch(_){} },60);
+      }
+      return on;
+    });
   }
 
   function closeDetail(fromPop){
+    if(ML_EMBED) return;   /* 嵌入模式只有一首歌，详情不给关 */
     projClosePanel(); // 关详情页顺手收起投影控制台面板(投影窗口不强制关, 见 projCloseProjector)
     if(!fromPop && _detailStatePushed){
       history.back();
