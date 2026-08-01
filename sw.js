@@ -1,15 +1,15 @@
-const CACHE_NAME = "cecp-musiclib-pwa-v89-seclabel";
+const CACHE_NAME = "cecp-musiclib-pwa-v90-home";
 const DATA_CACHE = "cecp-musiclib-data-v1";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./index.html",
   "./projection.html",
-  "./musiclib.css?v=20260725-pyrestore",
+  "./musiclib.css?v=20260801-home17",
   "./gsap.min.js?v=20260711-justify-rows",
   "./pinyin-pro.js?v=20260725-pypro",
   "./pinyin-kai.woff2",
   "./bible-service.js?v=20260711-justify-rows",
-  "./musiclib.js?v=20260719-scorezoom4",
+  "./musiclib.js?v=20260801-home17",
   "./manifest.webmanifest",
   "./olive-fellowship-logo.png",
   "./icons/favicon.ico",

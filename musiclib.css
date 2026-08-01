@@ -10168,3 +10168,19 @@ html.ml-fullscreen body.ml-fullscreen #music-library > #ml-header,
   #music-library #ml-nav #ml-hero-projection,
   #music-library #ml-nav #ml-nav-theme{display:none !important;}
 }
+
+/* ── iOS PWA（standalone + black-translucent 状态栏）安全区 ──
+   顶栏是 fixed 的，必须自己让出刘海/状态栏高度；--ml-navh 量的是 offsetHeight
+   （含 padding），下方内容的让位会自动跟上，无需另改。浏览器里 env() 为 0，无副作用。 */
+#music-library #ml-nav{
+  padding-top:calc(18px + env(safe-area-inset-top,0px)) !important;
+  padding-left:max(var(--ml-gut),env(safe-area-inset-left)) !important;
+  padding-right:max(var(--ml-gut),env(safe-area-inset-right)) !important;
+}
+@media (max-width:860px){
+  #music-library #ml-nav{padding-top:calc(12px + env(safe-area-inset-top,0px)) !important;}
+}
+/* 歌曲详情的固定头同理（整页弹层，头贴着屏幕最上沿） */
+#music-library #ml-detail-header{
+  padding-top:calc(10px + env(safe-area-inset-top,0px)) !important;
+}
