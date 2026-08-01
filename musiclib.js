@@ -264,12 +264,8 @@
     {id:'快歌',label:'快歌',match:s=>{const bpm=getSongBpm(s);return Number.isFinite(bpm)&&bpm>=FAST_BPM_MIN;}},
     {id:'慢歌',label:'慢歌',match:s=>{const bpm=getSongBpm(s);return Number.isFinite(bpm)&&bpm<=SLOW_BPM_MAX;}},
     {id:'本堂',label:'本堂',match:s=>!!getSongState(s.id).serviceUsed},
-    {id:'收藏',label:'收藏',visible:false,match:s=>!!getSongState(s.id).favorite}
-  ];
-  const HOME_CATEGORIES=[
-    {id:'快歌',label:'快歌',tone:'sky'},
-    {id:'慢歌',label:'慢歌',tone:'sage'},
-    {id:'收藏',label:'收藏',tone:'violet'}
+    // 收藏直接做成筛选 chip（原来的「按场景找歌」卡片区和 chips 重复，已删）
+    {id:'收藏',label:'收藏',match:s=>!!getSongState(s.id).favorite}
   ];
   const SOURCE_RULES=[
     {name:'赞美之泉',patterns:['赞美之泉','stream of praise']},
@@ -285,6 +281,41 @@
     {name:'激励者乐团',patterns:['planetshakers']},
     {name:'其他',patterns:[]}
   ];
+
+  /* ══ 作者 / 团队头像 ══════════════════════════════════════════════
+     首页「按作者 / 团队」那排圆头像的图，放在 resouces 仓库的 artist/ 下：
+         https://cecpadua.github.io/resouces/artist/<名字拼音>.jpg
+
+     加新作者：把正方形图片(1:1，200×200 以上)按【作者名的全拼、全小写、
+     不加声调不加空格】命名丢进 artist/ 就行，代码不用动 —— 下面
+     artistLogoUrl() 会自动按拼音拼出网址（赞美之泉 → zanmeizhiquan.jpg）。
+
+     只有拼音猜不出来的才需要在这张表里写一行，比如英文名的团队：
+     KUA Worship 的文件叫 kua.jpg，按拼音会猜成 kuaworship.jpg，所以得手写。
+
+     图 404 也不会出问题：自动退回「该作者第一首有封面的歌」，再退回名字首字。
+     ⚠️ 别直接外链官方 logo（防盗链 + 版权），自己存一份进 artist/。 */
+  const ARTIST_LOGO_BASE='https://cecpadua.github.io/resouces/artist/';
+  const ARTIST_LOGOS={
+    'KUA Worship':'kua.jpg'      // 英文名，拼音猜不出来，手写文件名
+    // 其余走拼音自动匹配：赞美之泉/约书亚乐团/火把音乐 已在 artist/ 里
+  };
+  /* 作者名 -> 头像网址。表里手写的优先；否则用 pinyin-pro 转全拼去猜文件名。
+     值里带 :// 就当成完整网址直接用，否则当成 artist/ 下的文件名。 */
+  function artistLogoUrl(name){
+    const key=cleanText(name);
+    if(!key) return '';
+    const manual=ARTIST_LOGOS[key];
+    if(manual) return /:\/\//.test(manual)?manual:ARTIST_LOGO_BASE+manual;
+    let slug='';
+    try{
+      if(window.pinyinPro&&typeof window.pinyinPro.pinyin==='function'){
+        slug=window.pinyinPro.pinyin(key,{toneType:'none',type:'array'}).join('');
+      }
+    }catch(_){}
+    slug=String(slug||key).toLowerCase().replace(/[^a-z0-9]/g,'');
+    return slug?ARTIST_LOGO_BASE+slug+'.jpg':'';
+  }
 
   if(!document.getElementById('ml-style')){
     const s=document.createElement('link');s.id='ml-style';s.rel='stylesheet';
@@ -397,6 +428,7 @@
       theme:`<svg ${common}><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z"/></svg>`,
       more:`<svg ${common}><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>`,
       chevronLeft:`<svg ${common}><path d="m15 18-6-6 6-6"/></svg>`,
+      chevronRight:`<svg ${common}><path d="m9 18 6-6-6-6"/></svg>`,
       sun:`<svg ${common}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
       system:`<svg ${common}><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>`,
       listMusic:`<svg ${common}><path d="M4 6h10"/><path d="M4 10h10"/><path d="M4 14h7"/><path d="M16 5v11"/><path d="m16 8 4-1v8"/><circle cx="14" cy="18" r="2"/><circle cx="18" cy="16" r="2"/></svg>`,
@@ -451,26 +483,34 @@
             <span class="ml-brand-sub">敬拜练习 · 歌谱 · 音频</span>
           </span>
         </div>
+        <div id="ml-search-wrap">
+          <span id="ml-search-icon">${icon('search')}</span>
+          <input id="ml-search" type="search" placeholder="搜索歌名、拼音、歌手、歌词、主题..." autocomplete="off" autocorrect="off"/>
+          <button id="ml-search-clear" type="button" aria-label="清空搜索" hidden>${icon('close',16)}</button>
+        </div>
         <div id="ml-nav-actions">
           <button class="ml-weather-pill" id="ml-weather-pill" type="button" aria-label="今日天气">--°C</button>
+          <button id="ml-hero-projection" class="ml-nav-icon-btn" type="button" aria-label="进入投影模式" title="进入投影模式">${icon('projection')}</button>
           <button class="ml-nav-icon-btn" id="ml-nav-search" type="button" aria-label="聚焦搜索">${icon('search')}</button>
           <button class="ml-nav-icon-btn" id="ml-nav-theme" type="button" aria-label="切换深浅主题">${icon('system')}</button>
         </div>
       </div>
-      <div id="ml-hero">
-        <div class="ml-hero-copy">
-          <div id="ml-header-kicker">CECP MUSIC LIBRARY</div>
-          <h1 id="ml-title">今天想唱什么?</h1>
-          <div id="ml-subtitle">搜索歌名、歌手、歌词、调性与主题，快速找到敬拜练习需要的诗歌。</div>
-          <button id="ml-hero-projection" class="ml-hero-proj-btn" type="button">${icon('projection',18)}<span>进入投影模式</span></button>
-        </div>
-        <div id="ml-hero-meta">
-          <div class="ml-hero-chip"><span class="ml-hero-chip-label">歌曲</span><strong id="ml-hero-song-count">--</strong></div>
-          <div class="ml-hero-chip"><span class="ml-hero-chip-label">收藏</span><strong id="ml-hero-fav-count">0</strong></div>
-          <div class="ml-hero-chip"><span class="ml-hero-chip-label">本堂</span><strong id="ml-hero-service-count">0</strong></div>
+      <div id="ml-greet-row" data-part="home">
+        <h1 id="ml-greet-title">诗歌库</h1>
+        <div id="ml-greet-stats">
+          <span class="ml-greet-stat"><strong id="ml-hero-song-count">--</strong> 首诗歌</span>
+          <span class="ml-greet-stat"><strong id="ml-hero-fav-count">0</strong> 收藏</span>
+          <span class="ml-greet-stat"><strong id="ml-hero-service-count">0</strong> 本堂唱过</span>
         </div>
       </div>
-      <section id="ml-worship-picks" class="ml-reveal" aria-label="每日推荐">
+      <section id="ml-tiles-sec" data-part="home" aria-label="继续上次练习">
+        <div class="ml-shelf-head">
+          <h2>继续练习</h2>
+          <button class="ml-shelf-more" type="button" data-nav="library">全部诗歌 ${icon('chevronRight',15)}</button>
+        </div>
+        <div id="ml-recent-list" class="ml-tile-grid"></div>
+      </section>
+      <section id="ml-worship-picks" class="ml-reveal" data-part="home" aria-label="每日推荐">
         <div id="ml-wp-glow" aria-hidden="true"></div>
         <div id="ml-wp-bg" aria-hidden="true"></div>
         <div id="ml-wp-shell">
@@ -501,44 +541,15 @@
           </div>
         </div>
       </section>
-      <div id="ml-home-grid">
-        <section class="ml-home-panel" id="ml-recent-panel" aria-label="最近使用">
-          <div class="ml-panel-head">
-            <div>
-              <div class="ml-section-label">最近使用</div>
-              <h2>继续上次练习</h2>
-            </div>
-            <button class="ml-panel-link" type="button" data-nav="library">查看全部</button>
-          </div>
-          <div id="ml-recent-list" class="ml-compact-list"></div>
-        </section>
-        <section class="ml-home-panel" id="ml-category-panel" aria-label="快捷分类">
-          <div class="ml-panel-head">
-            <div>
-              <div class="ml-section-label">快捷分类</div>
-              <h2>按服事场景找歌</h2>
-            </div>
-          </div>
-          <div id="ml-category-grid"></div>
-        </section>
-      </div>
-      <div id="ml-search-row">
-        <div id="ml-search-wrap">
-          <span id="ml-search-icon">${icon('search')}</span>
-          <input id="ml-search" type="search" placeholder="搜索歌名、拼音、歌手、歌词、主题..." autocomplete="off" autocorrect="off"/>
-          <button id="ml-search-clear" type="button" aria-label="清空搜索" hidden>${icon('close',16)}</button>
-        </div>
-        <button id="ml-search-submit" type="button" aria-label="搜索">${icon('search',20)}</button>
-        <div id="ml-count-wrap">
-          <span class="ml-count-label">总数</span>
-          <strong id="ml-count"></strong>
-        </div>
-      </div>
-      <div id="ml-search-history" hidden></div>
-      <div id="ml-filter-section">
+      <div id="ml-shelves" data-part="home"></div>
+      <div id="ml-search-history" data-part="browse" hidden></div>
+      <div id="ml-filter-section" data-part="browse">
         <div id="ml-filter-section-head">
-          <div class="ml-section-label">筛选诗歌</div>
           <h2>全部歌曲</h2>
+          <div id="ml-count-wrap">
+            <span class="ml-count-label">总数</span>
+            <strong id="ml-count"></strong>
+          </div>
         </div>
         <div id="ml-filter-bar" aria-label="快捷筛选"></div>
       </div>
@@ -798,6 +809,9 @@
         <div id="ml-nowbar-progress"><div id="ml-nowbar-fill"></div></div>
       </div>
       <div id="ml-nowbar-controls">
+        <button class="ml-nowbar-btn" id="ml-nowbar-shuffle" type="button" aria-label="随机播放">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
+        </button>
         <button class="ml-nowbar-btn" id="ml-nowbar-prev" type="button" aria-label="上一首">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6a1 1 0 0 1 1 1v10a1 1 0 1 1-2 0V7a1 1 0 0 1 1-1zm3.2 5.65 7.1-4.8A.43.43 0 0 1 17 7.2v9.6a.43.43 0 0 1-.7.35L9.2 12.35a.43.43 0 0 1 0-.7z"/></svg>
         </button>
@@ -807,8 +821,17 @@
         <button class="ml-nowbar-btn" id="ml-nowbar-next" type="button" aria-label="下一首">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 6a1 1 0 0 0-1 1v10a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1zm-3.2 5.65-7.1-4.8A.43.43 0 0 0 7 7.2v9.6a.43.43 0 0 0 .7.35l7.1-4.8a.43.43 0 0 0 0-.7z"/></svg>
         </button>
-        <button class="ml-nowbar-btn" id="ml-nowbar-expand" type="button" aria-label="打开歌词">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h13"/><path d="M8 12h13"/><path d="M8 18h13"/><path d="M3 6h.01"/><path d="M3 12h.01"/><path d="M3 18h.01"/></svg>
+        <button class="ml-nowbar-btn" id="ml-nowbar-repeat" type="button" aria-label="单曲循环">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+        </button>
+        <div id="ml-nowbar-times"><span id="ml-nowbar-cur">0:00</span><span id="ml-nowbar-dur">0:00</span></div>
+      </div>
+      <div id="ml-nowbar-extra">
+        <button class="ml-nowbar-btn" id="ml-nowbar-expand" type="button" aria-label="打开歌词" title="歌词">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><path d="M12 18v4"/><path d="M8 22h8"/></svg>
+        </button>
+        <button class="ml-nowbar-btn" id="ml-nowbar-queue" type="button" aria-label="播放队列" title="播放队列">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13"/><path d="M3 12h13"/><path d="M3 18h9"/><path d="m16 15 5 3-5 3Z"/></svg>
         </button>
       </div>
     </div>
@@ -862,6 +885,9 @@
     const listNotice=document.createElement('button');
     listNotice.id='ml-notice';
     listNotice.type='button';
+    // 只跟着搜索框走：贴在搜索框正下方，首页(货架视图)不出现。
+    // 歌曲详情里另有一条 #ml-detail-notice，版权说明仍然到得了。
+    listNotice.dataset.part='browse';
     listNotice.setAttribute('aria-label','版权与申请新歌说明');
     listNotice.innerHTML=noticeHTML;
     // Keep the copyright notice inside the main header area, directly
@@ -925,9 +951,43 @@
   renderSearchHistory();
   renderQuickFilters();
 
+  root.dataset.view='home';
+  (function bindTopbarScroll(){
+    // 顶栏必须挪出 #ml-header：那块是 position:relative + z-index:1 的层叠上下文，
+    // 关在里面的话顶栏的 z-index 再高也只在这块内部有效，会被同级的 #ml-list-stage 盖住。
+    const navEl=$('ml-nav');
+    if(navEl && navEl.parentElement!==root) root.insertBefore(navEl,root.firstChild);
+
+    // 滚的是 #music-library 这个容器，不是 window —— 只听 window 的话顶栏分隔线永远不出现
+    let ticking=false;
+    const sync=()=>{
+      const y=root.scrollTop||window.scrollY||document.documentElement.scrollTop||0;
+      root.dataset.scrolled=y>4?'1':'0';
+      ticking=false;
+    };
+    const onScroll=()=>{
+      if(ticking) return;
+      ticking=true;
+      requestAnimationFrame(sync);
+    };
+    root.addEventListener('scroll',onScroll,{passive:true});
+    window.addEventListener('scroll',onScroll,{passive:true});
+    sync();
+
+    // 顶栏是 fixed 的，不占位；把它的实测高度喂给 --ml-navh，内容据此留出上边距
+    const nav=$('ml-nav');
+    if(nav){
+      const syncNavH=()=>root.style.setProperty('--ml-navh',nav.offsetHeight+'px');
+      syncNavH();
+      if(window.ResizeObserver) new ResizeObserver(syncNavH).observe(nav);
+      window.addEventListener('resize',syncNavH,{passive:true});
+    }
+  })();
+
   let _searchDebounce=0,_lastRenderedQuery=null;
   $('ml-search').addEventListener('input',e=>{
     query=e.target.value.trim();
+    if(query) setView('library');
     updateSearchControls();
     scheduleRememberSearch(query);
     clearTimeout(_searchDebounce);
@@ -971,7 +1031,7 @@
       closeDetail();
     }
   });
-  $('ml-nav-search')?.addEventListener('click',()=>{$('ml-search')?.focus();});
+  $('ml-nav-search')?.addEventListener('click',()=>handleNav('search'));
   $('ml-nav-settings')?.addEventListener('click',cycleMusicTheme);
   $('ml-side-profile')?.addEventListener('click',cycleMusicTheme);
   $('ml-weather-pill')?.addEventListener('click',updateWorshipGreeting);
@@ -3743,6 +3803,8 @@
     const h=now.getHours();
     const greeting=h<5?'夜深平安':h<11?'早安，今日推荐已更新':h<17?'午后平安':h<21?'晚上好，今日推荐已更新':'夜晚平安';
     main.textContent=greeting;
+    const greetTitle=$('ml-greet-title');
+    if(greetTitle) greetTitle.textContent=h<5?'夜深平安':h<11?'早安':h<17?'午安':h<21?'晚上好':'夜晚平安';
     const timeStr=now.toLocaleTimeString('zh-CN',{hour:'2-digit',minute:'2-digit'});
     sub.textContent=timeStr+' · 正在同步今日天气';
     const pill=$('ml-weather-pill');
@@ -4134,41 +4196,188 @@
         .map(song=>({song,state:states[song.id]||{},at:Math.max(Number(states[song.id]?.openedAt||0),Number(states[song.id]?.playedAt||0))}))
         .filter(item=>item.at)
         .sort((a,b)=>b.at-a.at)
-        .slice(0,4);
-      recentBox.innerHTML=recent.length ? recent.map(({song,state,at})=>`
-        <button type="button" class="ml-compact-row" data-id="${song.id}">
-          <span class="ml-row-title">${esc(song.title||'未命名诗歌')}</span>
-          <span class="ml-row-meta">${state.lastKey?`上次 ${esc(state.lastKey)} · `:''}${formatRelativeTime(at)}</span>
-          <strong>${esc(state.lastKey||song.origKey||'--')}</strong>
+        .slice(0,6);
+      const tileSec=$('ml-tiles-sec');
+      if(tileSec) tileSec.hidden=!recent.length;
+      recentBox.innerHTML=recent.map(({song,state,at})=>`
+        <button type="button" class="ml-tile" data-id="${song.id}">
+          <span class="ml-tile-art">${song.cover?`<img src="${esc(song.cover)}" alt="" loading="lazy">`:'<span class="ml-art-fallback">♪</span>'}</span>
+          <span class="ml-tile-copy">
+            <span class="ml-tile-title">${esc(song.title||'未命名诗歌')}</span>
+            <span class="ml-tile-meta">${state.lastKey?`上次 ${esc(state.lastKey)} 调`:formatRelativeTime(at)}</span>
+          </span>
+          ${hasSongAudio(song)?`<span class="ml-tile-play" data-play="${song.id}">${icon('play',14)}</span>`:''}
         </button>
-      `).join('') : '<div class="ml-panel-empty">打开一首歌后，这里会显示最近使用。</div>';
-      recentBox.querySelectorAll('[data-id]').forEach(btn=>{
-        btn.addEventListener('click',()=>{
+      `).join('');
+      recentBox.querySelectorAll('.ml-tile').forEach(btn=>{
+        btn.addEventListener('click',e=>{
           const song=songs.find(s=>s.id===btn.dataset.id);
-          if(song) openDetail(song);
+          if(!song) return;
+          if(e.target.closest('[data-play]')){
+            e.preventDefault();
+            playSongNow(song);
+            return;
+          }
+          openDetail(song);
         });
       });
     }
 
-    const categoryGrid=$('ml-category-grid');
-    if(categoryGrid){
-      const categories=HOME_CATEGORIES
-        .map(item=>Object.assign({},item,{count:quickFilterCount(item.id)}))
-        .filter(item=>item.count>0 || item.id==='收藏')
-        .slice(0,6);
-      categoryGrid.innerHTML=categories.length ? categories.map(item=>`
-        <button class="ml-category-card is-${item.tone}" type="button" data-filter="${item.id}" ${item.count===0?'disabled':''}>
-          <span class="ml-category-icon">${icon(item.id==='收藏'?'heart':item.id==='快歌'?'play':item.id==='慢歌'?'theme':item.id==='圣餐'?'score':'library',18)}</span>
-          <strong>${item.label}</strong>
-          <small>${item.count} 首</small>
-        </button>
-      `).join('') : '<div class="ml-panel-empty">暂无可用分类。</div>';
-      categoryGrid.querySelectorAll('[data-filter]').forEach(btn=>{
-        btn.addEventListener('click',()=>{
-          setIntentFilter(btn.dataset.filter||'全部',{resetSource:true,scrollList:true});
-        });
-      });
+    renderHomeShelves(states);
+  }
+
+  // 首页货架：收藏 / 本堂唱过 / 按作者 / 专辑。
+  // 全部复用既有的 sourceFilter + intentFilter，点「查看全部」即切到诗歌库视图并带上筛选。
+  function renderHomeShelves(states){
+    const box=$('ml-shelves');
+    if(!box) return;
+    // 诗歌库/搜索视图下首页整块隐藏，跳过重建（搜索每敲一下都会走 render）
+    if(root.dataset.view==='library') return;
+    if(!songs.length){ box.innerHTML=''; return; }
+    const st=states||getAllSongStates();
+    const shelves=[];
+
+    const favs=songs.filter(s=>st[s.id]&&st[s.id].favorite)
+      .sort((a,b)=>Number(st[b.id]?.favoriteAt||0)-Number(st[a.id]?.favoriteAt||0));
+    if(favs.length) shelves.push({key:'fav',title:'你的收藏',sub:favs.length+' 首',songs:favs,filter:'收藏'});
+
+    const served=songs.filter(s=>st[s.id]&&st[s.id].serviceUsed)
+      .sort((a,b)=>Number(st[b.id]?.serviceUsedAt||0)-Number(st[a.id]?.serviceUsedAt||0));
+    if(served.length) shelves.push({key:'svc',title:'本堂唱过',sub:served.length+' 首',songs:served,filter:'本堂'});
+
+    let html=shelves.map(shelf=>`
+      <section class="ml-shelf" aria-label="${esc(shelf.title)}">
+        <div class="ml-shelf-head">
+          <h2>${esc(shelf.title)}</h2>
+          <button class="ml-shelf-more" type="button" data-shelf-filter="${esc(shelf.filter)}">查看全部 ${icon('chevronRight',15)}</button>
+        </div>
+        <div class="ml-shelf-row">${shelf.songs.slice(0,12).map(songCardHTML).join('')}</div>
+      </section>
+    `).join('');
+
+    const artists=getArtistFilterItems().slice(0,14);
+    if(artists.length){
+      html+=`<section class="ml-shelf" aria-label="按作者">
+        <div class="ml-shelf-head">
+          <h2>按作者 / 团队</h2>
+          <button class="ml-shelf-more" type="button" data-nav="library">全部 ${icon('chevronRight',15)}</button>
+        </div>
+        <div class="ml-shelf-row">${artists.map(item=>{
+          // 头像三级兜底：artist/ 里的图 → 该作者第一首有封面的歌 → 名字首字。
+          // 兜底逻辑在下面统一挂 error 监听（inline onerror + loading=lazy 不可靠）。
+          const logo=artistLogoUrl(item.name);
+          const coverSong=songs.find(s=>s.cover&&getArtistGroupName(s)===item.name);
+          const initial=esc(Array.from(item.name)[0]||'♪');
+          const art=logo||(coverSong&&coverSong.cover)||'';
+          return `<button class="ml-shelf-card is-round" type="button" data-source="${esc(item.name)}">
+            <span class="ml-shelf-art">${art?`<img src="${esc(art)}" alt="" data-art-fallback="${coverSong&&coverSong.cover&&logo!==coverSong.cover?esc(coverSong.cover):''}" data-art-initial="${initial}">`:`<span class="ml-art-fallback">${initial}</span>`}</span>
+            <span class="ml-shelf-title">${esc(item.name)}</span>
+            <span class="ml-shelf-sub">${item.count} 首</span>
+          </button>`;
+        }).join('')}</div>
+      </section>`;
     }
+
+    const albums=groupSongsBy(songs.filter(s=>cleanText(s.album)),getAlbumGroupName)
+      .filter(g=>g.name!=='单曲与其他')
+      .sort((a,b)=>{
+        const ay=Math.max(...a.songs.map(s=>Number(s.albumYear||0)));
+        const by=Math.max(...b.songs.map(s=>Number(s.albumYear||0)));
+        return by-ay||b.songs.length-a.songs.length;
+      })
+      .slice(0,14);
+    if(albums.length){
+      html+=`<section class="ml-shelf" aria-label="专辑">
+        <div class="ml-shelf-head">
+          <h2>专辑</h2>
+          <button class="ml-shelf-more" type="button" data-nav="library">全部 ${icon('chevronRight',15)}</button>
+        </div>
+        <div class="ml-shelf-row">${albums.map(group=>{
+          const first=group.songs.find(s=>s.cover)||group.songs[0];
+          const year=cleanText(first.albumYear);
+          return `<button class="ml-shelf-card" type="button" data-album="${esc(group.name)}" data-album-source="${esc(getArtistGroupName(first))}">
+            <span class="ml-shelf-art">${first.cover?`<img src="${esc(first.cover)}" alt="" loading="lazy">`:'<span class="ml-art-fallback">♪</span>'}</span>
+            <span class="ml-shelf-title">${esc(group.name)}</span>
+            <span class="ml-shelf-sub">${[year,group.songs.length+' 首'].filter(Boolean).join(' · ')}</span>
+          </button>`;
+        }).join('')}</div>
+      </section>`;
+    }
+
+    box.innerHTML=html;
+
+    // 作者头像坏图兜底：换成该作者的歌曲封面，再不行换名字首字
+    box.querySelectorAll('img[data-art-initial]').forEach(img=>{
+      const applyFallback=()=>{
+        const next=img.dataset.artFallback;
+        if(next){
+          img.removeAttribute('data-art-fallback');
+          img.src=next;
+          return;
+        }
+        const span=document.createElement('span');
+        span.className='ml-art-fallback';
+        span.textContent=img.dataset.artInitial||'♪';
+        img.replaceWith(span);
+      };
+      img.addEventListener('error',applyFallback);
+      if(img.complete&&img.naturalWidth===0) applyFallback();
+    });
+
+    box.querySelectorAll('[data-shelf-filter]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        setView('library');
+        setIntentFilter(btn.dataset.shelfFilter||'全部',{resetSource:true,scrollList:true});
+      });
+    });
+    box.querySelectorAll('[data-nav]').forEach(btn=>{
+      btn.addEventListener('click',()=>handleNav(btn.dataset.nav||'library'));
+    });
+    box.querySelectorAll('[data-source]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        sourceFilter=btn.dataset.source||'全部';
+        intentFilter='全部';
+        setView('library');
+        render();
+        $('ml-list-stage')?.scrollIntoView({behavior:'smooth',block:'start'});
+      });
+    });
+    box.querySelectorAll('[data-album]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        sourceFilter=btn.dataset.albumSource||'全部';
+        intentFilter='全部';
+        setView('library');
+        render();
+        const target=root.querySelector(`.ml-group[data-group="${CSS.escape(btn.dataset.album||'')}"]`);
+        (target||$('ml-list-stage'))?.scrollIntoView({behavior:'smooth',block:'start'});
+      });
+    });
+    box.querySelectorAll('.ml-shelf-card[data-id]').forEach(btn=>{
+      btn.addEventListener('click',e=>{
+        const song=songs.find(s=>s.id===btn.dataset.id);
+        if(!song) return;
+        if(e.target.closest('[data-play]')){
+          e.preventDefault();
+          playSongNow(song);
+          return;
+        }
+        openDetail(song);
+      });
+    });
+  }
+
+  function songCardHTML(song){
+    const state=getSongState(song.id);
+    const key=state.lastKey||song.origKey||'';
+    return `<button class="ml-shelf-card" type="button" data-id="${song.id}">
+      <span class="ml-shelf-art">
+        ${song.cover?`<img src="${esc(song.cover)}" alt="" loading="lazy">`:'<span class="ml-art-fallback">♪</span>'}
+        ${key?`<span class="ml-shelf-key">${esc(key)}</span>`:''}
+        ${hasSongAudio(song)?`<span class="ml-shelf-play" data-play="${song.id}">${icon('play',15)}</span>`:''}
+      </span>
+      <span class="ml-shelf-title">${esc(song.title||'未命名诗歌')}</span>
+      <span class="ml-shelf-sub">${esc(song.displayArtist||song.artist||song.source||'诗歌')}</span>
+    </button>`;
   }
   function updateDetailStateButtons(song){
     if(!song) return;
@@ -4211,24 +4420,35 @@
   }
   function syncNavActive(mode){
     root.dataset.nav=mode||'home';
-    root.querySelectorAll('[data-nav]').forEach(btn=>{
+    root.querySelectorAll('#ml-side-nav [data-nav],#ml-bottom-nav [data-nav]').forEach(btn=>{
       btn.classList.toggle('active',btn.dataset.nav===(mode||'home'));
     });
+  }
+  // 首页 / 诗歌库 两个视图共用同一份 DOM，只切换显示：
+  // home 显示货架区，library 显示搜索 + 筛选 + 分组列表。功能全部保留，互不删减。
+  function setView(view){
+    const next=view==='library'?'library':'home';
+    if(root.dataset.view===next) return;
+    root.dataset.view=next;
+    if(next==='home') renderHomePanels();
   }
   function handleNav(mode){
     if(mode==='search'){
       syncNavActive('search');
+      setView('library');
       root.scrollTo({top:0,behavior:'smooth'});
       setTimeout(()=>{$('ml-search')?.focus();},120);
       return;
     }
     if(mode==='favorites'){
       syncNavActive('favorites');
-      setIntentFilter('收藏',{resetSource:true,scrollList:true});
+      setView('library');
+      setIntentFilter('收藏',{clearQuery:true,resetSource:true,scrollList:true});
       return;
     }
     if(mode==='service'){
       syncNavActive('library');
+      setView('library');
       setIntentFilter('全部',{resetSource:true,scrollList:true});
       return;
     }
@@ -4241,8 +4461,11 @@
       cycleMusicTheme();
       return;
     }
-    syncNavActive(mode==='library'?'library':'home');
-    setIntentFilter('全部',{clearQuery:mode!=='library',resetSource:mode!=='library',scrollList:mode==='library'});
+    const toLibrary=mode==='library';
+    syncNavActive(toLibrary?'library':'home');
+    setView(toLibrary?'library':'home');
+    if(!toLibrary) root.scrollTo({top:0,behavior:'smooth'});
+    setIntentFilter('全部',{clearQuery:!toLibrary,resetSource:!toLibrary,scrollList:toLibrary});
   }
   function hi(t,q){
     if(!q||!t)return t||'';
@@ -8025,6 +8248,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(r1) r1.classList.toggle('on',!!_mpLoop);
     if(r2) r2.classList.toggle('on',!!_mpLoop);
     if(s2) s2.classList.toggle('on',!!_mpShuffle);
+    $('ml-nowbar-repeat')?.classList.toggle('on',!!_mpLoop);
+    $('ml-nowbar-shuffle')?.classList.toggle('on',!!_mpShuffle);
   }
   function _mpNextIdxFrom(cur){
     if(!_mpSongs.length) return 0;
@@ -8463,6 +8688,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpAudio.addEventListener('loadedmetadata',()=>{
       $('ml-mp-dur').textContent=_mpFmt(_mpAudio.duration);
       const xd=$('ml-player-dur'); if(xd) xd.textContent=_mpFmt(_mpAudio.duration);
+      const nd=$('ml-nowbar-dur'); if(nd) nd.textContent=_mpFmt(_mpAudio.duration);
       _mpSyncPanelTime();
     });
     _mpAudio.addEventListener('timeupdate',()=>{
@@ -8472,6 +8698,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       $('ml-mp-fill').style.width=dur?((_mpAudio.currentTime/dur)*100)+'%':'0%';
       const xf=$('ml-player-fill'); if(xf) xf.style.width=dur?((_mpAudio.currentTime/dur)*100)+'%':'0%';
       const nf=$('ml-nowbar-fill'); if(nf) nf.style.width=dur?((_mpAudio.currentTime/dur)*100)+'%':'0%';
+      const nc=$('ml-nowbar-cur'); if(nc) nc.textContent=_mpFmt(_mpAudio.currentTime);
       _mpSyncLrc(_mpAudio.currentTime);
       _mpHandleAbLoop();
       _mpSyncPanelTime();
@@ -8519,6 +8746,20 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     $('ml-player-shuffle')?.addEventListener('click',()=>{
       _mpShuffle=!_mpShuffle;
       _mpSyncModeUI();
+    });
+    $('ml-nowbar-shuffle')?.addEventListener('click',()=>{
+      _mpShuffle=!_mpShuffle;
+      _mpSyncModeUI();
+      showToast(_mpShuffle?'随机播放已开':'随机播放已关');
+    });
+    $('ml-nowbar-repeat')?.addEventListener('click',()=>{
+      _mpLoop=!_mpLoop;
+      _mpSyncModeUI();
+      showToast(_mpLoop?'单曲循环已开':'单曲循环已关');
+    });
+    $('ml-nowbar-queue')?.addEventListener('click',e=>{
+      e.stopPropagation();
+      _mpSetPlaylistOpen(true);
     });
     $('ml-mp-pitch-open')?.addEventListener('click',e=>{e.stopPropagation();_mpSetPanelOpen(true);});
     $('ml-player-pitch-open')?.addEventListener('click',e=>{e.stopPropagation();_mpSetPanelOpen(true);});
@@ -9116,6 +9357,39 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     const hd=document.createElement('div');hd.className='sw-hd';
     hd.appendChild(titleRow);hd.appendChild(togBtn);wrap.appendChild(hd);
 
+    // ── 练习工具行：移调 / 变速练习 / 节拍器 一排常驻，全是既有功能的入口 ──
+    const practiceRow=document.createElement('div');
+    practiceRow.className='ml-practice-row';
+    practiceRow.innerHTML=`
+      <button type="button" class="ml-practice-chip" data-act="key" aria-label="移调面板">
+        ${icon('arrowLeftRight',15)}<span>移调</span>
+      </button>
+      <button type="button" class="ml-practice-chip" data-act="tempo" ${hasSongAudio(s)?'':'disabled'} aria-label="变速变调练习">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        <span>变速</span>
+      </button>
+      <button type="button" class="ml-practice-chip" data-act="metro" aria-label="节拍器">
+        ${icon('timerReset',15)}<span>节拍器</span>
+      </button>`;
+    practiceRow.querySelector('[data-act="key"]')?.addEventListener('click',e=>{
+      togBtn.click();
+      e.currentTarget.classList.toggle('is-on',panel.classList.contains('open'));
+    });
+    practiceRow.querySelector('[data-act="tempo"]')?.addEventListener('click',()=>{
+      if(!hasSongAudio(s)) return;
+      _mpBind();
+      _mpSetPanelOpen(true);
+    });
+    practiceRow.querySelector('[data-act="metro"]')?.addEventListener('click',()=>{
+      const met=body.querySelector('.ml-met');
+      if(!met) return;
+      met.scrollIntoView({behavior:'smooth',block:'center'});
+      met.classList.remove('ml-met-flash');
+      void met.offsetWidth;             // 重启动画
+      met.classList.add('ml-met-flash');
+    });
+    wrap.appendChild(practiceRow);
+
     const kg=document.createElement('div');kg.className='sw-kg';
     const capoEl=document.createElement('div');
     capoEl.className='sw-capo plain';
@@ -9405,9 +9679,12 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       lrc.href=s.lrc;lrc.target='_blank';
       lrc.textContent='📝 LRC';toolsRow.appendChild(lrc);
     }
+    // 工具排（荧光笔/分享/下载图片）跟移调联动——荧光笔画在当前调的谱上、
+    // 下载导出的也是当前调，必须贴着谱放（谱上方）；节拍器没有联动，垫底，
+    // 练习行的「节拍器」chip 会滚过来。
     if(hasRenderedScore&&toolsRow.children.length){tools.appendChild(toolsRow);scoreModeShell.insertBefore(tools,scoreMain);}
 
-    if(hasRenderedScore) scoreModeShell.insertBefore(createMetronome(s.bpm || 72),scoreMain);
+    if(hasRenderedScore) scoreModeShell.appendChild(createMetronome(s.bpm || 72));
 
     function renderImageScore(){
       imagePanel.innerHTML='';

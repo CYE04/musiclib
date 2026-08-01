@@ -9547,3 +9547,624 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 #music-library .prev-seg.p-slot.p-punct-gap{margin-right:0.5em;}
 #music-library .prev-seg.p-barslot{min-width:0;margin:0 3px;}
 #music-library .strict-label-row{display:block;margin:0 0 2px;line-height:1;}
+
+/* ═══════════════════════════════════════════════════════════════════
+   首页货架框架（Spotify 式）
+   —— 顶栏 + 问候 + 继续练习磁贴 + 今日推荐 + 收藏/本堂/作者/专辑货架。
+   首页与诗歌库共用同一份 DOM，用 [data-view] 切显示，功能一个不少。
+   配色只用既有 token（--surface/--divider/--accent…），深浅色自动跟随。
+   ═══════════════════════════════════════════════════════════════════ */
+#music-library{--ml-gut:clamp(22px,4vw,56px);}
+
+/* ── 视图切换 ── */
+#music-library[data-view="library"] [data-part="home"]{display:none !important;}
+#music-library[data-view="home"] [data-part="browse"]{display:none !important;}
+#music-library[data-view="home"] > #ml-list-stage,
+#music-library[data-view="home"] > #ml-empty{display:none !important;}
+
+/* ── 顶栏：贴顶、满宽、滚动后出现分隔线 ── */
+#music-library #ml-header{padding-top:0 !important;}
+#music-library #ml-nav{
+  position:sticky !important;top:0 !important;z-index:14 !important;
+  margin:0 calc(-1 * var(--ml-gut)) 20px !important;
+  padding:18px var(--ml-gut) 14px !important;
+  background:var(--bg) !important;
+  border-bottom:1px solid transparent !important;
+  transition:border-color .18s ease !important;
+  gap:14px !important;
+}
+#music-library[data-scrolled="1"] #ml-nav{border-bottom-color:var(--divider) !important;}
+#ml-topbar-search{
+  flex:1 1 auto;min-width:0;max-width:380px;height:38px;
+  display:flex;align-items:center;gap:9px;padding:0 14px;
+  border:1px solid var(--divider);border-radius:999px;
+  background:var(--surface-secondary);color:var(--text-muted);
+  font:400 13.5px/1 inherit;cursor:pointer;text-align:left;
+}
+#ml-topbar-search span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#ml-topbar-search:hover{border-color:var(--accent);color:var(--text-secondary);}
+
+/* ── 问候行 ── */
+#ml-greet-row{margin:0 0 22px;}
+#ml-greet-title{font-size:27px;font-weight:700;line-height:1.2;color:var(--text-primary);margin:0 0 7px;}
+#ml-greet-stats{display:flex;flex-wrap:wrap;gap:4px 16px;font-size:13px;color:var(--text-muted);}
+.ml-greet-stat strong{font-weight:600;color:var(--text-secondary);}
+
+/* ── 货架通用 ── */
+#music-library .ml-shelf-head{
+  display:flex;align-items:baseline;justify-content:space-between;
+  gap:12px;margin:0 0 12px;
+}
+#music-library .ml-shelf-head h2{
+  font-size:19px;font-weight:700;line-height:1.25;color:var(--text-primary);margin:0;
+}
+#music-library .ml-shelf-more{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:2px;
+  border:0;background:transparent;padding:4px 2px;
+  font:600 12.5px/1 inherit;color:var(--text-muted);cursor:pointer;
+}
+#music-library .ml-shelf-more:hover{color:var(--accent);}
+#music-library .ml-shelf-more svg{width:15px;height:15px;}
+#ml-tiles-sec,#music-library .ml-shelf,#ml-category-sec{margin:0 0 30px;}
+#ml-tiles-sec[hidden]{display:none;}
+
+/* ── 继续练习磁贴 ── */
+.ml-tile-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+#music-library .ml-tile{
+  position:relative;display:flex;align-items:center;gap:12px;
+  min-height:60px;padding:0 12px 0 0;overflow:hidden;
+  border:0;border-radius:8px;background:var(--surface-secondary);
+  color:var(--text-primary);text-align:left;cursor:pointer;
+  transition:background .15s ease;
+}
+#music-library .ml-tile:hover{background:var(--accent-soft);}
+.ml-tile-art{
+  flex:0 0 auto;width:60px;height:60px;overflow:hidden;
+  background:var(--surface);display:flex;align-items:center;justify-content:center;
+}
+.ml-tile-art img{width:100%;height:100%;object-fit:cover;display:block;}
+.ml-tile-copy{min-width:0;display:flex;flex-direction:column;gap:3px;}
+.ml-tile-title{font-size:14px;font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ml-tile-meta{font-size:12px;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+#music-library .ml-tile-play{
+  margin-left:auto;flex:0 0 auto;width:30px;height:30px;border-radius:50%;
+  background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;
+  opacity:0;transform:translateY(3px);transition:opacity .15s ease,transform .15s ease;
+}
+#music-library .ml-tile:hover .ml-tile-play{opacity:1;transform:none;}
+
+/* ── 横滑货架 ── */
+#music-library .ml-shelf-row{
+  display:flex;gap:14px;overflow-x:auto;overflow-y:hidden;
+  padding:2px 0 6px;margin:0 calc(-1 * var(--ml-gut));
+  padding-left:var(--ml-gut);padding-right:var(--ml-gut);
+  scroll-snap-type:x proximity;scrollbar-width:none;-webkit-overflow-scrolling:touch;
+}
+#music-library .ml-shelf-row::-webkit-scrollbar{display:none;}
+#music-library .ml-shelf-card{
+  position:relative;flex:0 0 auto;width:146px;scroll-snap-align:start;
+  display:flex;flex-direction:column;gap:3px;
+  padding:0;border:0;background:transparent;color:var(--text-primary);
+  text-align:left;cursor:pointer;
+}
+.ml-shelf-art{
+  position:relative;width:146px;height:146px;margin-bottom:9px;
+  border-radius:8px;overflow:hidden;background:var(--surface-secondary);
+  display:flex;align-items:center;justify-content:center;
+}
+.ml-shelf-card.is-round .ml-shelf-art{border-radius:50%;}
+.ml-shelf-art img{width:100%;height:100%;object-fit:cover;display:block;}
+.ml-art-fallback{font-size:30px;font-weight:600;color:var(--text-muted);}
+.ml-shelf-title{font-size:14px;font-weight:600;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ml-shelf-sub{font-size:12px;color:var(--text-muted);line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ml-shelf-card.is-round .ml-shelf-title,
+.ml-shelf-card.is-round .ml-shelf-sub{text-align:center;}
+/* 调性徽章：练习时最常扫的一眼信息，直接压在封面上 */
+#music-library .ml-shelf-key{
+  position:absolute;left:7px;top:7px;z-index:2;
+  min-width:22px;height:20px;padding:0 6px;border-radius:5px;
+  background:rgba(16,22,19,.72);color:#fff;
+  font:600 11.5px/20px 'Space Mono','DM Mono',ui-monospace,monospace;
+  text-align:center;letter-spacing:.3px;backdrop-filter:blur(3px);
+}
+#music-library .ml-shelf-play{
+  position:absolute;right:8px;bottom:8px;z-index:2;
+  width:36px;height:36px;border-radius:50%;
+  background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  opacity:0;transform:translateY(6px);
+  transition:opacity .16s ease,transform .16s ease;
+  box-shadow:0 4px 12px rgba(0,0,0,.22);
+}
+#music-library .ml-shelf-card:hover .ml-shelf-play{opacity:1;transform:none;}
+#music-library .ml-shelf-card:hover .ml-shelf-art{filter:brightness(.94);}
+@media (hover:none){
+  #music-library .ml-shelf-play,#music-library .ml-tile-play{opacity:1;transform:none;}
+}
+@media (prefers-reduced-motion:reduce){
+  #music-library .ml-shelf-play,#music-library .ml-tile-play{transition:none;}
+}
+#music-library .ml-shelf-card:focus-visible,
+#music-library .ml-tile:focus-visible,
+#ml-topbar-search:focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:8px;}
+
+/* ── 今日推荐：拍平，去掉发光/渐变，与货架同一语言（三首推荐逻辑不动） ── */
+#music-library #ml-worship-picks{
+  margin:0 0 30px !important;padding:0 !important;
+  background:transparent !important;border:0 !important;
+  box-shadow:none !important;border-radius:0 !important;overflow:visible !important;
+}
+#music-library #ml-wp-glow,#music-library #ml-wp-bg{display:none !important;}
+#music-library #ml-wp-shell{
+  border:1px solid var(--divider) !important;border-radius:12px !important;
+  background:var(--surface) !important;overflow:hidden !important;
+}
+
+/* ── 按场景找歌 ── */
+#music-library #ml-category-grid{
+  display:flex !important;flex-wrap:wrap !important;gap:10px !important;
+  grid-template-columns:none !important;
+}
+#music-library .ml-category-card{
+  flex:0 0 auto;display:inline-flex;align-items:center;gap:9px;
+  min-height:44px;padding:0 16px;border-radius:999px;
+  border:1px solid var(--divider);background:var(--surface);
+  color:var(--text-primary);cursor:pointer;
+}
+#music-library .ml-category-card:hover:not(:disabled){border-color:var(--accent);color:var(--accent);}
+#music-library .ml-category-card:disabled{opacity:.45;cursor:default;}
+#music-library .ml-category-card .ml-category-icon{display:inline-flex;color:var(--accent);}
+#music-library .ml-category-card strong{font-size:14px;font-weight:600;}
+#music-library .ml-category-card small{font-size:12px;color:var(--text-muted);}
+
+/* ── 平板 / 手机 ── */
+@media (max-width:1180px){
+  .ml-tile-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+@media (max-width:860px){
+  #music-library{--ml-gut:16px;}
+  #music-library #ml-nav{margin:0 calc(-1 * var(--ml-gut)) 16px !important;padding:12px var(--ml-gut) 10px !important;}
+  #ml-topbar-search{display:none;}
+  #ml-greet-title{font-size:23px;}
+  #music-library .ml-shelf-head h2{font-size:17px;}
+  #music-library .ml-shelf-card,.ml-shelf-art{width:132px;}
+  .ml-shelf-art{height:132px;}
+  #ml-tiles-sec,#music-library .ml-shelf,#ml-category-sec{margin:0 0 26px;}
+}
+@media (max-width:480px){
+  .ml-tile-grid{grid-template-columns:1fr;}
+  #music-library .ml-shelf-card,.ml-shelf-art{width:124px;}
+  .ml-shelf-art{height:124px;}
+}
+
+/* ── 今日推荐：改用主题 token 重新上色 + 压缩高度 ──
+   逻辑完全不动（getDailyWorshipPicks / setWorshipHero / 三首卡片照旧），
+   只把原来那套「深蓝渐变 + 发光 + 玻璃」换成与货架一致的扁平配色。 */
+#music-library #ml-worship-picks{
+  --wp-ink:var(--text-primary);
+  --wp-muted:var(--text-secondary);
+  --wp-soft:var(--text-muted);
+  --wp-line:var(--divider);
+  --wp-line-strong:var(--divider);
+  --wp-gold:var(--accent);
+  --wp-shadow:none !important;
+  min-height:0 !important;isolation:auto !important;
+}
+#music-library #ml-worship-picks::before,
+#music-library #ml-worship-picks::after{display:none !important;}
+#music-library #ml-wp-shell{
+  grid-template-columns:minmax(0,1.25fr) minmax(290px,.75fr) !important;
+  gap:0 !important;min-height:0 !important;padding:0 !important;
+  border:1px solid var(--divider) !important;border-radius:12px !important;
+  background:var(--surface) !important;
+}
+#music-library #ml-wp-hero,
+#music-library #ml-wp-side{
+  border:0 !important;border-radius:0 !important;
+  background:transparent !important;box-shadow:none !important;
+  backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
+}
+#music-library #ml-wp-hero{
+  position:relative;min-height:0 !important;
+  padding:20px 20px 20px 180px !important;justify-content:center !important;
+}
+#music-library #ml-wp-hero::before{
+  content:'';position:absolute;left:20px;top:20px;
+  width:140px;height:140px;border-radius:10px;
+  background-image:var(--wp-cover);background-size:cover;background-position:center;
+  background-color:var(--surface-secondary);
+}
+#music-library .ml-wp-eyebrow{
+  margin-bottom:8px !important;padding:4px 10px !important;
+  border-color:var(--divider) !important;background:var(--surface-secondary) !important;
+  color:var(--accent) !important;font-weight:600 !important;
+}
+#music-library #ml-wp-subtitle{margin-bottom:10px !important;color:var(--text-muted) !important;font-weight:400 !important;}
+#music-library #ml-wp-title{font-size:30px !important;margin-bottom:4px !important;color:var(--text-primary) !important;}
+#music-library #ml-wp-artist{font-size:14px !important;margin-bottom:10px !important;color:var(--text-secondary) !important;}
+#music-library #ml-wp-lyric{font-size:15px !important;line-height:1.6 !important;color:var(--text-secondary) !important;}
+#music-library #ml-wp-tags{margin-top:12px !important;gap:7px !important;}
+#music-library #ml-wp-tags span,
+#music-library .ml-wp-card-tag{
+  min-height:26px !important;border-color:var(--divider) !important;
+  background:var(--surface-secondary) !important;color:var(--text-muted) !important;font-weight:500 !important;
+}
+#music-library #ml-wp-actions{margin-top:16px !important;}
+#music-library .ml-wp-action{
+  min-height:40px !important;font-weight:600 !important;
+  border-color:var(--divider) !important;background:var(--surface-secondary) !important;
+  color:var(--text-primary) !important;box-shadow:none !important;
+}
+#music-library .ml-wp-action:hover{transform:none !important;background:var(--accent-soft) !important;border-color:var(--accent) !important;}
+#music-library .ml-wp-action.is-primary{background:var(--accent) !important;border-color:var(--accent) !important;color:#fff !important;}
+#music-library .ml-wp-action.is-primary:hover{background:var(--accent-hover) !important;}
+#music-library .ml-wp-action-icon{background:transparent !important;width:auto !important;height:auto !important;}
+#music-library #ml-wp-side{
+  gap:0 !important;padding:14px !important;
+  border-left:1px solid var(--divider) !important;justify-content:center !important;
+}
+#music-library #ml-wp-greeting{
+  min-height:0 !important;padding:0 0 12px !important;margin-bottom:12px !important;
+  border:0 !important;border-bottom:1px solid var(--divider) !important;
+  border-radius:0 !important;background:none !important;
+}
+#music-library #ml-wp-greeting-main{font-size:12px !important;font-weight:600 !important;color:var(--text-muted) !important;}
+#music-library #ml-wp-greeting-sub{font-size:17px !important;font-weight:600 !important;color:var(--text-primary) !important;}
+#music-library #ml-wp-list{gap:6px !important;}
+#music-library .ml-wp-card{
+  min-height:0 !important;grid-template-columns:48px minmax(0,1fr) auto !important;
+  gap:10px !important;padding:7px !important;border:0 !important;border-radius:8px !important;
+  background:transparent !important;box-shadow:none !important;
+}
+#music-library .ml-wp-card:hover,
+#music-library .ml-wp-card.active{
+  transform:none !important;background:var(--surface-secondary) !important;
+  border-color:transparent !important;box-shadow:none !important;
+}
+#music-library .ml-wp-card.active{background:var(--accent-soft) !important;}
+#music-library .ml-wp-card-cover{
+  width:48px !important;height:48px !important;border-radius:6px !important;
+  background:var(--surface-secondary) !important;color:var(--text-muted) !important;
+}
+#music-library .ml-wp-card-kicker{display:none !important;}
+#music-library .ml-wp-card-copy{gap:2px !important;}
+#music-library .ml-wp-card-copy strong{font-size:14px !important;font-weight:600 !important;color:var(--text-primary) !important;}
+#music-library .ml-wp-card-copy small{font-size:12px !important;color:var(--text-muted) !important;}
+@media (max-width:1180px){
+  #music-library #ml-wp-shell{grid-template-columns:1fr !important;}
+  #music-library #ml-wp-side{border-left:0 !important;border-top:1px solid var(--divider) !important;}
+}
+@media (max-width:860px){
+  #music-library #ml-wp-hero{padding:16px !important;}
+  #music-library #ml-wp-hero::before{position:relative;left:0;top:0;display:block;width:96px;height:96px;margin-bottom:12px;}
+  #music-library #ml-wp-title{font-size:24px !important;}
+}
+
+/* ── 顶栏搜索框（唯一的搜索入口，原来下面那条已合并到这里） ── */
+#music-library #ml-nav > #ml-search-wrap{
+  flex:1 1 auto !important;min-width:0 !important;max-width:440px !important;
+  height:38px !important;margin:0 !important;
+  display:flex !important;align-items:center !important;gap:8px !important;
+  padding:0 12px !important;
+  border:1px solid var(--divider) !important;border-radius:999px !important;
+  background:var(--surface-secondary) !important;box-shadow:none !important;
+}
+#music-library #ml-nav > #ml-search-wrap:focus-within{border-color:var(--accent) !important;}
+#music-library #ml-nav > #ml-search-wrap #ml-search-icon{flex:0 0 auto;display:flex;color:var(--text-muted);}
+#music-library #ml-nav > #ml-search-wrap #ml-search{
+  flex:1 1 auto !important;min-width:0 !important;height:100% !important;
+  border:0 !important;background:transparent !important;padding:0 !important;
+  font:400 13.5px/1 inherit !important;color:var(--text-primary) !important;box-shadow:none !important;
+}
+#music-library #ml-nav > #ml-search-wrap #ml-search::placeholder{color:var(--text-muted);}
+#music-library #ml-nav > #ml-search-wrap #ml-search-clear{
+  flex:0 0 auto;width:22px;height:22px;border:0;border-radius:50%;
+  background:transparent;color:var(--text-muted);display:flex;align-items:center;justify-content:center;cursor:pointer;
+}
+#music-library #ml-nav > #ml-search-wrap #ml-search-clear:hover{background:var(--divider);color:var(--text-primary);}
+/* 搜索框就在眼前时，放大镜按钮是多余的；窄屏搜索框收起后再放出来 */
+#music-library #ml-nav-search{display:none !important;}
+#music-library #ml-filter-section-head{
+  display:flex !important;align-items:baseline !important;justify-content:space-between !important;gap:12px !important;
+}
+
+/* ── 播放条：整条贴底通栏（Spotify 式），首页/曲库/详情都一样 ── */
+#music-library #ml-nowbar{
+  left:0 !important;right:0 !important;bottom:0 !important;
+  width:100% !important;max-width:none !important;min-height:0 !important;
+  height:calc(74px + env(safe-area-inset-bottom,0px)) !important;
+  padding:0 18px env(safe-area-inset-bottom,0px) !important;
+  grid-template-columns:minmax(0,1fr) auto !important;
+  gap:16px !important;align-items:center !important;
+  border:0 !important;border-top:1px solid var(--divider) !important;border-radius:0 !important;
+  background:var(--surface) !important;
+  backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
+  box-shadow:none !important;color:var(--text-primary) !important;
+  transform:translateY(100%) !important;
+}
+#music-library #ml-nowbar.is-visible{transform:none !important;}
+/* 进度条抽出来贴在整条的上沿，细线一根，不占内容高度 */
+#music-library #ml-nowbar-progress{
+  position:absolute !important;left:0 !important;right:0 !important;top:0 !important;
+  width:auto !important;max-width:none !important;height:3px !important;margin:0 !important;
+  border-radius:0 !important;background:var(--divider) !important;
+}
+#music-library #ml-nowbar-fill{border-radius:0 !important;background:var(--accent) !important;}
+#music-library #ml-nowbar-cover{
+  grid-row:1;grid-column:1;
+  width:52px !important;height:52px !important;border-radius:6px !important;
+  border:0 !important;box-shadow:none !important;
+  background:var(--surface-secondary) !important;color:var(--text-muted) !important;
+}
+#music-library #ml-nowbar{grid-template-areas:'cover main controls' !important;grid-template-columns:52px minmax(0,1fr) auto !important;}
+#music-library #ml-nowbar-cover{grid-area:cover;}
+#music-library #ml-nowbar-main{grid-area:main;min-width:0 !important;gap:1px !important;}
+#music-library #ml-nowbar-controls{grid-area:controls;gap:4px !important;}
+#music-library #ml-nowbar-title{font-size:14px !important;font-weight:600 !important;color:var(--text-primary) !important;}
+#music-library #ml-nowbar-artist{font-size:12px !important;color:var(--text-muted) !important;}
+#music-library #ml-nowbar-lyric{font-size:12px !important;color:var(--text-secondary) !important;}
+#music-library .ml-nowbar-btn{
+  width:36px !important;height:36px !important;border-radius:50% !important;
+  border:0 !important;background:transparent !important;color:var(--text-secondary) !important;box-shadow:none !important;
+}
+#music-library .ml-nowbar-btn:hover{background:var(--surface-secondary) !important;color:var(--text-primary) !important;}
+#music-library .ml-nowbar-btn.is-main{
+  width:40px !important;height:40px !important;
+  background:var(--accent) !important;color:#fff !important;
+}
+#music-library .ml-nowbar-btn.is-main:hover{background:var(--accent-hover) !important;}
+@media (max-width:1180px){
+  #music-library #ml-nowbar-lyric{display:none !important;}
+}
+@media (max-width:860px){
+  /* 手机：搜索框只在诗歌库/搜索视图露出，首页顶栏保持干净，用放大镜进搜索 */
+  #music-library[data-view="home"] #ml-nav > #ml-search-wrap{display:none !important;}
+  #music-library #ml-nav-search{display:inline-flex !important;}
+  #music-library[data-view="library"] #ml-nav-search{display:none !important;}
+  #music-library #ml-nowbar{
+    bottom:calc(66px + env(safe-area-inset-bottom,0px)) !important;
+    height:64px !important;padding:0 12px !important;
+    border-bottom:1px solid var(--divider) !important;
+    grid-template-columns:44px minmax(0,1fr) auto !important;gap:10px !important;
+  }
+  #music-library #ml-nowbar-cover{width:44px !important;height:44px !important;}
+}
+
+/* ── 播放条：随机 / 循环 / 队列 / 时间（Spotify 基础件） ── */
+#music-library #ml-nowbar{
+  grid-template-areas:'cover main times controls' !important;
+  grid-template-columns:52px minmax(0,1fr) auto auto !important;
+}
+#music-library #ml-nowbar-times{
+  grid-area:times;display:flex;align-items:center;gap:6px;
+  font:400 12px/1 'DM Mono','Space Mono',ui-monospace,monospace;
+  color:var(--text-muted);white-space:nowrap;
+}
+#music-library #ml-nowbar-times span:first-child::after{content:'/';margin-left:6px;opacity:.5;}
+#music-library .ml-nowbar-btn.on{color:var(--accent) !important;}
+#music-library .ml-nowbar-btn.on:hover{background:var(--accent-soft) !important;}
+@media (max-width:1180px){
+  #music-library #ml-nowbar-times,
+  #music-library #ml-nowbar-shuffle,
+  #music-library #ml-nowbar-repeat{display:none !important;}
+  #music-library #ml-nowbar{grid-template-areas:'cover main controls' !important;grid-template-columns:52px minmax(0,1fr) auto !important;}
+}
+@media (max-width:860px){
+  #music-library #ml-nowbar-expand{display:none !important;}
+  #music-library #ml-nowbar{grid-template-columns:44px minmax(0,1fr) auto !important;}
+}
+
+/* ── 播放条最终布局：左信息 / 中控件(绝对居中) / 右附加 ── */
+#music-library #ml-nowbar{
+  display:flex !important;grid-template-areas:none !important;grid-template-columns:none !important;
+  align-items:center !important;gap:12px !important;position:fixed !important;
+}
+#music-library #ml-nowbar-cover{flex:0 0 auto;}
+#music-library #ml-nowbar-main{
+  flex:1 1 auto;min-width:0 !important;max-width:calc(50% - 190px);
+  display:flex !important;flex-direction:column !important;justify-content:center !important;
+}
+#music-library #ml-nowbar-controls{
+  position:absolute !important;left:50% !important;top:0 !important;bottom:0 !important;
+  transform:translateX(-50%) !important;
+  display:flex !important;align-items:center !important;gap:4px !important;
+}
+#music-library #ml-nowbar-times{
+  margin-left:8px;display:flex;align-items:center;gap:5px;
+  font:400 12px/1 'DM Mono','Space Mono',ui-monospace,monospace;
+  color:var(--text-muted);white-space:nowrap;
+}
+#music-library #ml-nowbar-extra{
+  margin-left:auto;flex:0 0 auto;display:flex;align-items:center;gap:4px;
+}
+@media (max-width:1180px){
+  #music-library #ml-nowbar-main{max-width:none;}
+  #music-library #ml-nowbar-controls{position:static !important;transform:none !important;margin-left:auto !important;}
+}
+
+/* ── 手机顶栏收紧：品牌名换行会把粘性顶栏顶高、盖住下面的卡片 ── */
+@media (max-width:860px){
+  #music-library #ml-nav{min-height:0 !important;align-items:center !important;}
+  #music-library #ml-nav #ml-brand .ml-brand-copy{display:none !important;}
+  #music-library #ml-nav #ml-brand{flex:0 0 auto !important;}
+  #music-library #ml-nav-actions{margin-left:auto !important;gap:6px !important;}
+  #music-library .ml-weather-pill{font-size:12px !important;padding:0 10px !important;}
+}
+
+/* 播放键：原来是「奶油白 → 封面取色」的渐变，换成实心主题色，深浅色下对比都稳 */
+#music-library #ml-nowbar-playpause{
+  background:var(--accent) !important;color:#fff !important;
+  box-shadow:none !important;
+}
+#music-library #ml-nowbar-playpause:hover{background:var(--accent-hover) !important;}
+#music-library #ml-nowbar.is-playing #ml-nowbar-playpause{background:var(--accent) !important;}
+
+/* 控件真正居中：时间挂到控件组右侧（绝对定位，不参与居中计算），左侧标题不越界 */
+#music-library #ml-nowbar-main{max-width:calc(50% - 250px);}
+#music-library #ml-nowbar-times{
+  position:absolute;left:100%;top:50%;transform:translateY(-50%);
+  margin-left:12px;
+}
+@media (max-width:1180px){
+  #music-library #ml-nowbar-times{position:static;transform:none;margin-left:8px;}
+}
+
+/* 顶栏真正贴死在最上沿：
+   滚动容器是 #music-library 本身，它有 12px 上内边距，
+   sticky top:0 是相对「内边距盒」定位的 → 顶栏会停在 12px 处，
+   那 12px 缝隙里就能看见滚过去的内容。把上内边距挪进顶栏自己身上。 */
+#music-library{padding-top:0 !important;}
+#music-library #ml-nav{padding-top:24px !important;}
+@media (max-width:860px){
+  #music-library #ml-nav{padding-top:16px !important;}
+}
+
+/* 上一条被 html.ml-fullscreen body.ml-fullscreen #music-library 的 12px 内边距压住了，
+   这里用同等权重的选择器收掉顶部内边距（左右缩进保留，整体仍是内嵌卡片的样子）。 */
+@media (max-width:900px){
+  html.ml-fullscreen body.ml-fullscreen #music-library,
+  #music-library{padding-top:0 !important;}
+}
+
+/* scroll-snap 对齐用的是滚动口边缘，不认 padding —— 首卡会被吸到贴边、标题被裁。
+   补 scroll-padding 让吸附点落在留白之后。 */
+#music-library .ml-shelf-row{scroll-padding-left:var(--ml-gut);scroll-padding-right:var(--ml-gut);}
+
+/* ── 顶栏统一：首页和其他页长一样，搜索框常驻、扁平实心、不做半透明质感 ── */
+#music-library #ml-nav > #ml-search-wrap{
+  background:var(--surface) !important;
+  border:1px solid var(--divider) !important;
+  border-radius:8px !important;
+  backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
+  box-shadow:none !important;
+  opacity:1 !important;
+}
+#music-library #ml-nav > #ml-search-wrap #ml-search{
+  background:transparent !important;backdrop-filter:none !important;-webkit-backdrop-filter:none !important;
+}
+/* 放大镜按钮彻底去掉：搜索框本身一直在，不需要再点一下才出现 */
+#music-library #ml-nav-search{display:none !important;}
+@media (max-width:860px){
+  /* 手机上首页也保留搜索框（原来只在诗歌库视图露出，两个页面长得不一样） */
+  #music-library[data-view="home"] #ml-nav > #ml-search-wrap{display:flex !important;}
+  #music-library #ml-nav-search,
+  #music-library[data-view="library"] #ml-nav-search{display:none !important;}
+  #music-library #ml-nav{flex-wrap:wrap !important;gap:8px 10px !important;}
+  #music-library #ml-nav > #ml-search-wrap{order:3 !important;flex:1 1 100% !important;max-width:none !important;}
+}
+
+/* ── 顶栏改 fixed：常驻最上方，所有视图一致 ──
+   之前用 sticky 卡在 #ml-header 里：首页那块很高所以看着像钉住了，
+   诗歌库页 #ml-header 很矮，一滚完顶栏就跟着跑了。
+   sticky 又没法跨出 grid 项的格子，所以直接 fixed，
+   内容那边用 --ml-navh（JS 实测高度）留出等高的上边距。
+   z-index 取 14：压得住内容，又在详情页(1900)/播放条(850)/底栏(820)之下。 */
+#music-library #ml-nav{
+  position:fixed !important;top:0 !important;right:0 !important;
+  left:240px !important;                 /* 桌面侧栏宽度，与 grid-template-columns 一致 */
+  z-index:14 !important;
+  margin:0 !important;
+  padding:18px var(--ml-gut) !important;
+  flex-wrap:nowrap !important;
+  background:var(--bg) !important;
+  border-bottom:1px solid transparent !important;
+}
+#music-library[data-scrolled="1"] #ml-nav{border-bottom-color:var(--divider) !important;}
+#music-library #ml-header{padding-top:var(--ml-navh,74px) !important;}
+@media (max-width:1180px){
+  #music-library #ml-nav{left:210px !important;}   /* 同上，跟随窄屏侧栏宽度 */
+}
+@media (max-width:860px){
+  #music-library #ml-nav{
+    left:0 !important;padding:12px var(--ml-gut) !important;
+    flex-wrap:nowrap !important;gap:8px !important;
+  }
+  #music-library #ml-nav > #ml-search-wrap{
+    order:0 !important;flex:1 1 auto !important;max-width:none !important;height:36px !important;
+  }
+  #music-library #ml-nav-actions{flex:0 0 auto !important;}
+}
+@media (max-width:600px){
+  #music-library .ml-weather-pill{display:none !important;}
+}
+
+/* 上面那条 padding-top 被 html.ml-fullscreen body.ml-fullscreen #music-library > #ml-header
+   （min-width:901px 下的 clamp(20px,2.1vw,30px)）压住了，用同等权重再写一次。
+   顶栏是 fixed 不占位，内容必须自己让出 --ml-navh 这么高。 */
+html.ml-fullscreen body.ml-fullscreen #music-library > #ml-header,
+#music-library #ml-header{
+  padding-top:var(--ml-navh,74px) !important;
+}
+
+/* ── 歌曲页练习工具行：移调 / 变速练习 / 节拍器（都是既有功能的入口） ── */
+#music-library .ml-practice-row{
+  display:flex;flex-wrap:wrap;gap:8px;
+  margin:2px 0 14px;
+}
+#music-library .ml-practice-chip{
+  display:inline-flex;align-items:center;gap:7px;
+  min-height:38px;padding:0 14px;
+  border:1px solid var(--divider);border-radius:999px;
+  background:var(--surface);color:var(--text-primary);
+  font:600 13px/1 inherit;cursor:pointer;
+  transition:border-color .15s ease,background .15s ease;
+}
+#music-library .ml-practice-chip:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft);}
+#music-library .ml-practice-chip:disabled{opacity:.4;cursor:default;}
+#music-library .ml-practice-chip svg{color:var(--accent);}
+#music-library .ml-practice-chip strong{
+  font:600 12px/1 'DM Mono','Space Mono',ui-monospace,monospace;
+  color:var(--text-secondary);letter-spacing:.3px;
+}
+#music-library .ml-practice-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
+/* 点「节拍器」定位过去时闪一下边框，让人知道落点在哪 */
+@keyframes ml-met-flash{0%,100%{box-shadow:0 0 0 0 transparent;}30%{box-shadow:0 0 0 3px var(--accent-soft);border-color:var(--accent);}}
+#music-library .ml-met.ml-met-flash{animation:ml-met-flash 1.2s ease 1;}
+@media (prefers-reduced-motion:reduce){
+  #music-library .ml-met.ml-met-flash{animation:none;}
+}
+/* 原来的「移调」折叠大按钮：功能保留（练习行的「移调」chip 靠它开合面板），
+   但入口职责已被练习行接管，不再显示，避免两个移调按钮叠着 */
+#music-library .sw-tog{display:none !important;}
+#music-library .ml-practice-chip.is-on{border-color:var(--accent);background:var(--accent-soft);}
+
+/* 顶栏搜索框里的放大镜：旧规则是 absolute（配合旧搜索行的 46px 缩进），
+   在新的 flex 顶栏里会压到文字上，改回 flex 子项。 */
+#music-library #ml-nav > #ml-search-wrap #ml-search-icon{
+  position:static !important;left:auto !important;top:auto !important;
+  transform:none !important;display:flex !important;align-items:center !important;
+}
+#music-library #ml-nav > #ml-search-wrap #ml-search{padding:0 !important;}
+#music-library #ml-nav > #ml-search-wrap #ml-search-clear{position:static !important;transform:none !important;}
+
+/* 清空按钮：旧规则的 display:inline-flex !important 会压过 hidden 属性，空值时也显示 × */
+#music-library #ml-search-clear[hidden]{display:none !important;}
+
+/* ── 搜索框最终版：实心圆角条，无边框、无聚焦橘圈、无任何玻璃/发光 ── */
+#music-library #ml-nav > #ml-search-wrap,
+#music-library #ml-nav > #ml-search-wrap:focus-within,
+#music-library #ml-nav > #ml-search-wrap:hover{
+  background:var(--surface-secondary) !important;
+  border:0 !important;
+  box-shadow:none !important;
+  outline:none !important;
+}
+#music-library #ml-nav > #ml-search-wrap #ml-search,
+#music-library #ml-nav > #ml-search-wrap #ml-search:focus,
+#music-library #ml-nav > #ml-search-wrap #ml-search:focus-visible{
+  border:0 !important;box-shadow:none !important;outline:none !important;
+  background:transparent !important;
+}
+/* 键盘用户仍要看得到焦点：不用橘圈，改用文字色加深一点的极淡描边 */
+#music-library #ml-nav > #ml-search-wrap:focus-within{
+  box-shadow:inset 0 0 0 1px var(--border-md,rgba(0,0,0,.15)) !important;
+}
+
+/* ── 诗歌库里的「按场景找歌」：跟筛选 chips 同排语言，横向一行 ── */
+#music-library #ml-category-sec{margin:-4px 0 18px;}
+
+/* ── 去重：桌面端侧栏已有投影/主题入口，顶栏不再重复；手机端(无侧栏)保留 ── */
+@media (min-width:861px){
+  #music-library #ml-nav #ml-hero-projection,
+  #music-library #ml-nav #ml-nav-theme{display:none !important;}
+}
