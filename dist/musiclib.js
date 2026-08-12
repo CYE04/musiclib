@@ -2879,6 +2879,8 @@
     const host=document.createElement('div');
     host.style.cssText='position:fixed;left:-20000px;top:0;z-index:-1;pointer-events:none;';
     const clone=panelInner.cloneNode(true);
+    // CECP-A4-PAGE: 屏幕上为填满 A4 撑开的行距(paddingBottom)不进导出图——导出仍按自然行距排
+    clone.querySelectorAll('.sw-lline').forEach(l=>{l.style.paddingBottom='';});
     if(opt.tight){
       clone.style.display='inline-block';
       clone.style.width='max-content';
@@ -7439,8 +7441,19 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     var root=(src.closest&&src.closest('#music-library,#ym-root'))||document.body;
     if(overlay.parentNode!==root)root.appendChild(overlay);
     mode='node';imgList=[];
-    content.className=('czoom-content '+src.className).replace('sw-lb-zoomable','').replace(/\s+/g,' ');
-    content.innerHTML=src.innerHTML;
+    var pg=src.closest&&src.closest('.sw-page');
+    if(pg){
+      /* CECP-A4-PAGE: 谱套在 A4 纸里时连纸一起放大——克隆整个 .sw-page
+         (内联宽高 + 谱的内联 transform 都带着, 所见即所得的那张纸)。
+         去掉克隆里的 sw-lb-zoomable, 免得在放大层里点谱又触发一次 open。 */
+      content.className='czoom-content czoom-paper';
+      content.innerHTML=pg.outerHTML;
+      var zl=content.querySelector('.sw-lb-zoomable');
+      if(zl)zl.classList.remove('sw-lb-zoomable');
+    }else{
+      content.className=('czoom-content '+src.className).replace('sw-lb-zoomable','').replace(/\s+/g,' ');
+      content.innerHTML=src.innerHTML;
+    }
     overlay.classList.add('open');document.documentElement.style.overflow='hidden';
     updateNav();fitAndCenter();
   }
@@ -9499,31 +9512,92 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     }
 
     let fitRaf=0;
-    const getViewportBox=()=>{
-      const vv=window.visualViewport;
-      return vv?{
-        width:vv.width||window.innerWidth||document.documentElement.clientWidth||0,
-        height:vv.height||window.innerHeight||document.documentElement.clientHeight||0,
-        offsetTop:vv.offsetTop||0
-      }:{
-        width:window.innerWidth||document.documentElement.clientWidth||0,
-        height:window.innerHeight||document.documentElement.clientHeight||0,
-        offsetTop:0
-      };
+    /* ═══════════ CECP-A4-PAGE v1 BEGIN ═══════════
+       屏幕上的移调谱按一张 A4 纸呈现，**规范 = 同一页下方那张「原图谱卡片」
+       `.ml-score-image-page`**（用户原话：「跟下面那个原图一样的大小的显示」）：
+       ① 纸撑满所在容器的宽度(跟原图卡片一样,不留额外边距、不设 max-width)；
+       ② 纸是 A4 比例(210:297)，高 = 宽×1.4142；装不下就按整张 A4 往下接、正常上下滚；
+       ③ 内容按**宽度**等比缩放(scale 单参数) —— 绝不再出现 scale(x,y) 压扁，
+          也**绝不因为高度装不下就再缩小**(那会把字缩到看不清,用户明确要求「得能看得见」)；
+       ④ 内容不够高时把行与行的间距均匀撑开填满整页(只动行距,字号/对位一律不变)。
+       ⚠️ 「纸」是 lbDiv **外面**新套的 .sw-page —— 导出(buildExportClone)和放大
+          (CECP-SCORE-ZOOM)都只克隆 lbDiv 本身，故这两条路径完全不受影响。
+       ⚠️ 与 [[strict-arc-fit-order]] 的顺序约束不冲突：撑开行距只加纵向 padding，
+          在梁/弧布局**之后**做，不改任何行内水平坐标。 */
+    const A4_RATIO=297/210;        // 1.41428…
+    const PAGE_MX=12,PAGE_MY=12;   // 纸内页边距,对齐 .ml-score-image-page 的 padding:12px
+                                   // (lbDiv 自己还有 8/18/16/8 的 padding,叠加后就是页边距)
+    const SPREAD_MAX=0.9;          // 每个行间隙最多再撑开 0.9×平均行高(防两行歌被拉散)
+    const ensureScorePageCss=()=>{
+      if(document.getElementById('ml-a4-page-css'))return;
+      const st=document.createElement('style');
+      st.id='ml-a4-page-css';
+      /* 必须带 #music-library 前缀:本站样式全带 ID 前缀,不带会被压过。
+         纸的外观逐条对齐 .ml-score-image-page(原图卡片):同样的浅色纸、1px 描边、圆角、
+         深色模式下同样保持浅色 + 阴影。纸永远是浅色 → 纸内把取色变量钉回浅色主题值，
+         并把和弦芯片强制用浅色配色(否则深色模式下深底芯片戳在浅纸上)。 */
+      let chip='';
+      for(let i=0;i<12;i++){
+        const h=chordStyleHue(i);
+        chip+='#music-library .sw-page .chord-chip.chord-pc'+i+'{background:hsl('+h+',34%,94%);outline-color:hsl('+h+',38%,74%);color:hsl('+h+',90%,20%);}';
+      }
+      st.textContent=[
+        '#music-library .sw-page{position:relative;box-sizing:border-box;margin:0 0 14px;overflow:hidden;',
+        'background:#f7f4ee;color:#241C17;border:1px solid #E9E0D8;border-radius:8px;',
+        '--text:#241C17;--text2:#6F655D;--text3:#9A8F85;--border:#E9E0D8;--accent:#C76524;}',
+        'html[data-resolved-theme="dark"] #music-library .sw-page{background:#f4efe7;',
+        'box-shadow:0 12px 32px rgba(0,0,0,.24);}',
+        '@media (prefers-color-scheme:dark){html:not([data-resolved-theme="light"]) #music-library .sw-page{',
+        'background:#f4efe7;box-shadow:0 12px 32px rgba(0,0,0,.24);}}',
+        '#music-library .sw-page>.sw-lb{background:transparent !important;}'
+      ].join('')+chip;
+      document.head.appendChild(st);
     };
-    const shouldUseScreenHeightFit=()=>{
-      const coarse=window.matchMedia?window.matchMedia('(pointer: coarse)').matches:false;
-      const noHover=window.matchMedia?window.matchMedia('(hover: none)').matches:false;
-      const touchPoints=navigator.maxTouchPoints||0;
-      return coarse||(noHover&&touchPoints>0);
+    const ensureScorePage=()=>{
+      ensureScorePageCss();
+      let pg=lbDiv.parentElement;
+      if(pg&&pg.classList&&pg.classList.contains('sw-page'))return pg;
+      /* 纸挂在 panel 下(panelInner 的弟弟)而不是 panelInner 里：panelInner 是
+         overflow:hidden 的玻璃卡，纸要比它宽(对齐原图卡片)会被裁。 */
+      pg=document.createElement('div');
+      pg.className='sw-page';
+      panel.appendChild(pg);
+      pg.appendChild(lbDiv);
+      return pg;
     };
-    const getAvailableScoreHeight=()=>{
-      const viewport=getViewportBox();
-      const header=document.getElementById('ml-detail-header');
-      const headerHeight=header?header.getBoundingClientRect().height:0;
-      const chromeHeight=Math.max(0,panelInner.scrollHeight-lbDiv.scrollHeight);
-      return Math.max(0,viewport.height-headerHeight-chromeHeight);
+    /* 把 slack 像素均匀分到行与行之间(用 paddingBottom,不覆盖 CSS 的 margin 规则)。
+       幂等：每次先清空再重设，所以可以反复调用来逼近目标高度。 */
+    const spreadScoreLines=slack=>{
+      const lines=lbDiv.querySelectorAll('.sw-lline');
+      const n=lines.length;
+      lines.forEach(l=>{l.style.paddingBottom='';});
+      if(n<2||!(slack>1))return 0;
+      let sum=0;
+      lines.forEach(l=>{sum+=l.offsetHeight||0;});
+      const avg=sum/n;
+      if(!(avg>0))return 0;
+      const gaps=n-1;
+      const per=Math.min(slack/gaps,avg*SPREAD_MAX);
+      if(!(per>0.5))return 0;
+      for(let i=0;i<gaps;i++)lines[i].style.paddingBottom=per.toFixed(2)+'px';
+      return per*gaps;
     };
+    /* 把内容高度撑到 target(未缩放坐标)。
+       ⚠️ 不能靠「加了多少 padding 就长多少」来预测：给「段落里最后一行」加 padding 会
+          解开它与 .sw-lsec 之间的外边距合并，scrollHeight 会多涨一截(实测 4 段歌多 60px)。
+          所以撑一次 → 实测 → 按差额回收一次，第二次就精确落在 target。 */
+    const fillScoreHeight=(base,target)=>{
+      if(!(target-base>1))return base;
+      spreadScoreLines(target-base);
+      let got=lbDiv.scrollHeight||base;
+      const over=got-target;
+      if(over>0.5){
+        spreadScoreLines(target-base-over);
+        got=lbDiv.scrollHeight||base;
+      }
+      return got;
+    };
+    /* ═══════════ CECP-A4-PAGE v1 END ═══════════ */
     const resetScoreFit=()=>{
       lbDiv.style.transform='';
       lbDiv.style.transformOrigin='';
@@ -9531,6 +9605,9 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       lbDiv.style.marginBottom='';
       lbDiv.style.padding='8px 18px 16px 8px';
       lbDiv.style.boxSizing='border-box';
+      lbDiv.querySelectorAll('.sw-lline').forEach(l=>{l.style.paddingBottom='';});
+      const pg=lbDiv.parentElement;
+      if(pg&&pg.classList&&pg.classList.contains('sw-page')){pg.style.width='';pg.style.height='';}
       justifyScoreRowsClear(lbDiv);
       if(lbDiv.parentElement)lbDiv.parentElement.style.overflow='hidden';
     };
@@ -9820,10 +9897,21 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       scheduleFitRows();
     }
     function fitRows(){
+      if(!lbDiv.isConnected||!lbDiv.parentNode)return;
+      const pageEl=ensureScorePage();       // 幂等：把 lbDiv 套进 .sw-page（A4 纸）
+      /* 纸要跟下面的原图卡片一样宽：把 .sw-wrap 的左右 padding 吃掉(panel 负 margin)，
+         玻璃卡(panelInner)补回同样的正 margin 保持原宽。数值实测取自 computed style，
+         各断点(26/16/14px)都自动跟。 */
+      const wrapEl=panel.parentElement;
+      if(wrapEl){
+        const wcs=getComputedStyle(wrapEl);
+        const padL=parseFloat(wcs.paddingLeft)||0,padR=parseFloat(wcs.paddingRight)||0;
+        panel.style.marginLeft=(-padL)+'px';panel.style.marginRight=(-padR)+'px';
+        panelInner.style.marginLeft=padL+'px';panelInner.style.marginRight=padR+'px';
+      }
+      const host=panel;                     // 纸的宽度基准 = 撑到 wrap 全宽的 panel
       resetScoreFit();
       normalizePreviewRowHeights();
-      const parent=lbDiv.parentElement;
-      if(!parent||!lbDiv.isConnected)return;
 
       if(ML_JUSTIFY_ROWS)justifyScoreRows(lbDiv.querySelectorAll('.sw-lrow'));
       const natural=measureNaturalScore();
@@ -9845,32 +9933,28 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         }
       }
 
-      // 版面居中：内容最大宽度 SCORE_MAXW，窄屏两侧留 SCORE_PAD；曲谱缩放到此宽度并水平居中。
-      // 不锁 A4、不额外整页 transform（沿用既有 fit 缩放）。导出克隆已 transform:none，故不受影响。
-      const SCORE_MAXW=1000,SCORE_PAD=16;   // ← 平板实测后可调这个数
-      const rawAvail=parent.clientWidth||natural.width;
-      if(!rawAvail)return;
-      const availableWidth=Math.max(1,Math.min(rawAvail-SCORE_PAD*2,SCORE_MAXW));
-      const centerX=Math.max(0,(rawAvail-availableWidth)/2);
+      /* ── CECP-A4-PAGE：纸撑满容器宽(同原图卡片)，正好一张 A4，整首歌装在这一张上 ── */
+      const pageW=Math.max(1,host.clientWidth||natural.width);
+      const pageH=pageW*A4_RATIO;
+      const cw=Math.max(1,pageW-PAGE_MX*2);
+      const ch=Math.max(1,pageH-PAGE_MY*2);
 
-      let scaleX=availableWidth/natural.width;
-      if(!isFinite(scaleX)||scaleX<=0)scaleX=1;
-      let scaleY=scaleX;
-      if(shouldUseScreenHeightFit()){
-        const availableHeight=getAvailableScoreHeight();
-        if(availableHeight>0){
-          const fittedHeight=natural.height*scaleX;
-          if(fittedHeight>availableHeight){
-            scaleY=scaleX*(availableHeight/fittedHeight);
-          }
-        }
-      }
-      if(!isFinite(scaleY)||scaleY<=0)scaleY=scaleX;
+      /* 单参数 scale = 等比：横竖同一个比例，简谱/和弦/歌词的形状与对位一律不变。
+         min(宽比,高比) → 整首歌完整落在这一张 A4 里，跟下面那张原图谱一模一样的看法：
+         纸比屏幕高就上下滚，字小就点谱放大(CECP-SCORE-ZOOM)。 */
+      let scale=Math.min(cw/natural.width,ch/natural.height);
+      if(!isFinite(scale)||scale<=0)scale=1;
 
-      lbDiv.style.transform='translateX('+centerX.toFixed(1)+'px) scale('+scaleX+','+scaleY+')';
+      // 内容不够高：把剩下的高度均匀撑到行与行之间（字号不动），把整页填满
+      natural.height=fillScoreHeight(natural.height,ch/scale);
+
+      pageEl.style.width=pageW.toFixed(1)+'px';
+      pageEl.style.height=pageH.toFixed(1)+'px';
+      const offX=PAGE_MX+Math.max(0,(cw-natural.width*scale)/2);
+      const offY=PAGE_MY+Math.max(0,(ch-natural.height*scale)/2);
       lbDiv.style.transformOrigin='left top';
+      lbDiv.style.transform='translate('+offX.toFixed(1)+'px,'+offY.toFixed(1)+'px) scale('+scale+')';
       lbDiv.style.width=natural.width+'px';
-      lbDiv.style.marginBottom=(natural.height*(scaleY-1)+18)+'px';
     }
     if(hasRenderedScore){
       renderScore();
