@@ -1,0 +1,6 @@
+User-agent: *
+Disallow: /诗歌库
+Disallow: /musiclib
+Disallow: /upload
+Disallow: /api/song-audio
+Disallow: /api/songs

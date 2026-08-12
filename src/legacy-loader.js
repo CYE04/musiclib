@@ -1,0 +1,48 @@
+/* legacy 引擎装载器 —— 唯一职责:在 React 把 #music-library 挂到文档里之后,
+   按原 index.html <body> 末尾的顺序注入那 4 个 <script>。
+
+   为什么用注入而不是 import：
+   musiclib.js 是一个自执行 IIFE,顶层就有 `const root=document.getElementById('music-library')`
+   (L335),必须在容器已入档之后才执行。原版靠"div 写在 script 之前"保证,这里靠 useEffect 时序保证。
+   注入的是同样的 URL、同样的顺序、同样的 ?v= 查询串,所以脚本内部的 document.currentScript
+   相对定位(LOGO_SRC / TRANSPOSE_LOGO_SRC / SOUNDTOUCH_PROCESSOR_URL,L230-253)结果与原版逐字节一致。
+
+   legacy 文件本身一个字节都没改。 */
+
+const LEGACY_SCRIPTS = [
+  "./gsap.min.js?v=20260711-justify-rows",
+  "./pinyin-pro.js?v=20260725-pypro",
+  "./bible-service.js?v=20260711-justify-rows",
+  "./musiclib.js?v=20260801-home17",
+];
+
+let started = false;
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement("script");
+    el.src = new URL(src, document.baseURI).href;
+    el.async = false; // 保序:即便浏览器并行下载,也按插入顺序执行
+    el.dataset.cecpLegacy = "1";
+    el.onload = () => resolve();
+    el.onerror = () => reject(new Error("legacy script failed: " + src));
+    document.body.appendChild(el);
+  });
+}
+
+/** 顺序装载 legacy 引擎。多次调用只生效一次(引擎无法卸载重入)。 */
+export async function initMusicLib() {
+  if (started) return;
+  started = true;
+  for (const src of LEGACY_SCRIPTS) await loadScript(src);
+}
+
+/* 原引擎没有任何销毁逻辑(事件委托挂在 document 上、全局单例状态),
+   所以卸载是无操作。React StrictMode 的双跑由 initMusicLib 的 started 闸门挡掉。
+   若将来要支持真正的卸载/重入,那属于修改 musiclib.js 内部逻辑,需另行批准。 */
+export function cleanupMusicLib() {}
+
+if (typeof window !== "undefined") {
+  window.initMusicLib = initMusicLib;
+  window.cleanupMusicLib = cleanupMusicLib;
+}

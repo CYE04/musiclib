@@ -1,0 +1,16 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "musiclib",
+  "compatibility_date": "2026-06-11",
+  "observability": {
+    "enabled": true
+  },
+  // 原版直接把 musiclib/ 整个目录当静态资产发布；React 版的可发布产物是 vite build 的输出。
+  // 部署前必须先 npm run build，否则发上去的是空目录。
+  "assets": {
+    "directory": "./dist"
+  },
+  "compatibility_flags": [
+    "nodejs_compat"
+  ]
+}

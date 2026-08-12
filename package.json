@@ -1,0 +1,22 @@
+{
+  "name": "cecp-musiclib-react",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "conformance": "node ../shared/strict-align.conformance.js",
+    "deploy:preview": "npm run build && npx wrangler@4 versions upload",
+    "deploy": "npm run build && npx wrangler@4 deploy"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.11"
+  }
+}
