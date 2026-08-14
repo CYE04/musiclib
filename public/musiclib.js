@@ -3139,7 +3139,10 @@
       exportForceLightChordChips(snap.node);
         lyricHlPrepareExport(snap.node);
         if(opt.a4) snap.node.style.setProperty('background','#ffffff','important');
-        return waitPaint2()
+        /* 墨迹进导出:克隆里的 canvas 是空的(位图不随 cloneNode 走),
+           换成实时画布的 toDataURL 图片,并等它解码完再截图。 */
+        return scoreInkPrepareExport(snap.node,panelInner)
+          .then(()=>waitPaint2())
           .then(()=>nodeToPngBlobRobust(snap.node,bg))
           .then(blob=>opt.a4?composeA4SongImage(blob,opt):blob)
           .finally(()=>snap.cleanup());
@@ -3277,7 +3280,9 @@
       exportForceLightChordChips(snap.node);
       lyricHlPrepareExport(snap.node);
       snap.node.style.setProperty('background',EXPORT_PAPER_BG,'important');
-      return waitPaint2()
+      /* 墨迹进导出:同上,克隆的 canvas 是空的,换成实时位图并等解码 */
+      return scoreInkPrepareExport(snap.node,panelInner)
+        .then(()=>waitPaint2())
         .then(()=>{
           // strict: 克隆里的梁/弧是屏幕坐标, 导出按 max-content 重新排版了, 得按新布局重排(非 strict 为 no-op)
           snap.node.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
@@ -6657,6 +6662,38 @@ function scoreInkCreate(opts){
 
 /* 按钮提示气泡：桌面悬停 350ms / 触屏长按 480ms 显示按钮用途。
    一个页面共用一个气泡节点。不吃掉任何点击。 */
+/* 导出用：把克隆体里的空白墨迹画布换成实时画布的位图。
+   canvas 的像素不随 cloneNode 走，克隆出来永远是空的 —— 这就是为什么
+   墨迹一直进不了导出的 PNG。换成 <img src=toDataURL> 之后 html2canvas 能正常拍到。
+   墨迹坐标本来就归一化到谱容器，所以图片按 100%/100% 拉满新盒子＝正确的变换：
+   导出会按 max-content 重新排版，盒子变了，笔记跟着等比缩放，相对位置不变。
+   返回 Promise，等图片解码完再让调用方去截图（data: URL 也不是同步可用的）。 */
+function scoreInkPrepareExport(cloneRoot,liveRoot){
+  if(!cloneRoot)return Promise.resolve();
+  var clones=cloneRoot.querySelectorAll('.cecp-ink-layer');
+  if(!clones.length)return Promise.resolve();
+  var lives=(liveRoot||document).querySelectorAll('.cecp-ink-layer');
+  var waits=[];
+  for(var i=0;i<clones.length;i++){
+    var c=clones[i],src=lives[i]||null,url='';
+    if(src&&src.width&&src.height){
+      try{url=src.toDataURL('image/png');}catch(_){url='';}
+    }
+    if(!url){                                   /* 没有墨迹就直接摘掉空画布 */
+      if(c.parentNode)c.parentNode.removeChild(c);
+      continue;
+    }
+    var img=document.createElement('img');
+    img.alt='';
+    img.style.cssText='position:absolute;inset:0;width:100%;height:100%;'
+      +'object-fit:fill;pointer-events:none;';
+    img.src=url;
+    if(c.parentNode)c.parentNode.replaceChild(img,c);
+    waits.push(img.decode?img.decode().catch(function(){}):Promise.resolve());
+  }
+  return Promise.all(waits);
+}
+
 function scoreInkTipBind(btn,label){
   var tip=document.getElementById('cecp-ink-tip');
   if(!tip){
