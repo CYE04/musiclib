@@ -55,13 +55,17 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches
-              .open(DATA_CACHE)
-              .then((cache) => cache.put(keyUrl, copy))
-              .catch(() => {});
-          }
+          // ⚠️ 403/429/5xx 不是网络异常，不会自己掉进下面的 .catch()。
+          // 不主动 throw 的话，GitHub 未认证 API 限流（60 次/小时/IP）返回的 403
+          // 会原样穿透给页面 —— 明明 DATA_CACHE 里躺着完整歌库，用户却看到"载入失败"，
+          // 而他唯一会做的动作（再刷一次）只会再烧一次配额。
+          // 教会同一个 wifi 出口，主日早上很容易撞到这个。
+          if (!response || !response.ok) throw new Error("bad response " + (response && response.status));
+          const copy = response.clone();
+          caches
+            .open(DATA_CACHE)
+            .then((cache) => cache.put(keyUrl, copy))
+            .catch(() => {});
           return response;
         })
         .catch(() =>

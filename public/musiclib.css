@@ -2604,14 +2604,18 @@ html,body,#music-library{
   -webkit-backdrop-filter:blur(2px);
 }
 #ml-audio-panel{
-  --ap-accent:#e8c951;
-  --ap-bg:#16181f;
-  --ap-card:rgba(255,255,255,.06);
-  --ap-card-hover:rgba(255,255,255,.1);
-  --ap-line:rgba(255,255,255,.1);
-  --ap-text:#f6f7fb;
-  --ap-text2:rgba(246,247,251,.56);
-  --ap-text3:rgba(246,247,251,.34);
+  /* 2026-08：这 8 个变量原来写死成一块近黑底 + 黄色强调（#16181f / #e8c951），
+     戳在这个暖色浅底的站里很突兀。面板剩下 283 行样式全都走 var(--ap-*)，
+     所以只改这 8 个值就整体换肤，其余一行不动。
+     全部接到站点主题变量上 → 自动跟随明暗，不用再写第二套深色规则。 */
+  --ap-accent:#C76524;
+  --ap-bg:#FFFDF9;
+  --ap-card:#F8F1E8;
+  --ap-card-hover:#F3E8DC;
+  --ap-line:#E9E0D8;
+  --ap-text:#241C17;
+  --ap-text2:#6F655D;
+  --ap-text3:#9A8F85;
   position:fixed;
   left:50%;
   right:auto;
@@ -2747,7 +2751,7 @@ html,body,#music-library{
   text-transform:none;
   padding:3px 8px;
   border-radius:8px;
-  background:rgba(255,255,255,.06);
+  background:var(--ap-card);
 }
 
 /* reset / round icon buttons inside rowtop */
@@ -2757,7 +2761,7 @@ html,body,#music-library{
   height:40px;
   border:0;
   border-radius:12px;
-  background:rgba(255,255,255,.06);
+  background:var(--ap-card);
   color:var(--ap-text2);
   font-size:16px;
   cursor:pointer;
@@ -2781,7 +2785,7 @@ html,body,#music-library{
   height:40px;
   border:0;
   border-radius:12px;
-  background:rgba(255,255,255,.06);
+  background:var(--ap-card);
   color:var(--ap-text);
   font-size:18px;
   font-weight:700;
@@ -2800,7 +2804,7 @@ html,body,#music-library{
   -webkit-appearance:none;
   height:5px;
   border-radius:999px;
-  background:rgba(255,255,255,.12);
+  background:var(--ap-card-hover);
   outline:none;
   cursor:pointer;
 }
@@ -2826,7 +2830,7 @@ html,body,#music-library{
 #ml-audio-reset-all{
   border:0;
   border-radius:10px;
-  background:rgba(255,255,255,.06);
+  background:var(--ap-card);
   color:var(--ap-text2);
   min-height:34px;
   padding:0 8px;
@@ -2887,7 +2891,7 @@ html,body,#music-library{
   height:30px;
   padding:0 10px;
   border-radius:10px;
-  background:rgba(255,255,255,.06);
+  background:var(--ap-card);
   color:var(--ap-text2);
   font-family:'DM Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
   font-size:11px;
@@ -2909,7 +2913,7 @@ html,body,#music-library{
 #ml-audio-loop-grid button{
   border:0;
   border-radius:12px;
-  background:rgba(255,255,255,.06);
+  background:var(--ap-card);
   color:var(--ap-text);
   min-height:48px;
   display:flex;
@@ -2943,7 +2947,7 @@ html,body,#music-library{
 #ml-audio-panel-foot button{
   border:0;
   border-radius:14px;
-  background:rgba(255,255,255,.06);
+  background:var(--ap-card);
   color:var(--ap-text2);
   height:48px;
   font-size:16px;
@@ -2995,17 +2999,26 @@ html,body,#music-library{
   -webkit-backdrop-filter:blur(6px);
 }
 #ml-audio-panel{
-  --ap-accent:#ffc83d;
-  --ap-bg:#0f0f10;
-  --ap-card:#181818;
-  --ap-card-strong:#292317;
-  --ap-card-hover:#222;
-  --ap-line:rgba(255,255,255,.08);
-  --ap-text:#f2eee6;
-  --ap-text2:#918f8b;
-  --ap-text3:#6e6c69;
-  --ap-track:#454545;
-  --ap-track-dim:#393939;
+  /* ⚠️ 这一处才是生效的：上面 2611 行还有一组同名变量，同权重但在前面，会被这里盖掉。
+     改配色只改这里；两处都留着是因为上面那组还定义了别的属性。
+     2026-08：原值是一块近黑底 + 亮黄强调（#0f0f10 / #ffc83d），在暖色浅底的站里很突兀。
+     现在全部接到站点主题变量上，自动跟随明暗，不必再写第二套深色规则。 */
+  /* ⚠️ 这里必须写死取值，不能用 var(--surface) 之类：
+     #ml-audio-panel 是 portal 到 document.body 的，而站点主题变量定义在
+     #music-library 上（musiclib.css:95），够不着 —— var() 会解析失败并静默回退，
+     结果就是「文字色换了、底色没换」那种半吊子状态（踩过）。
+     取值逐条对齐 #music-library 的浅色主题；深色由下面那块 data-resolved-theme 覆盖。 */
+  --ap-accent:#C76524;
+  --ap-bg:#FFFDF9;
+  --ap-card:#F8F1E8;
+  --ap-card-strong:#F8E7D8;
+  --ap-card-hover:#F3E8DC;
+  --ap-line:#E9E0D8;
+  --ap-text:#241C17;
+  --ap-text2:#6F655D;
+  --ap-text3:#9A8F85;
+  --ap-track:#E9E0D8;
+  --ap-track-dim:#F8F1E8;
   left:50%;
   bottom:0;
   width:min(585px,100vw);
@@ -3034,7 +3047,7 @@ html,body,#music-library{
   height:44px;
   border:0;
   background:transparent;
-  color:#dedbd4;
+  color:var(--ap-text);
   display:inline-flex;
   align-items:center;
   justify-content:center;
@@ -3049,7 +3062,7 @@ html,body,#music-library{
   font-size:31px;
   font-weight:850;
   line-height:1.1;
-  color:#f4f0e9;
+  color:var(--ap-text);
 }
 #ml-audio-panel-play{
   width:calc(100% - 8px);
@@ -3064,7 +3077,7 @@ html,body,#music-library{
   font-weight:800;
 }
 #ml-audio-panel-play-icon{
-  color:#d8d4ca;
+  color:var(--ap-text);
   font-size:34px;
 }
 #ml-audio-panel .ml-audio-panel-row{
@@ -3114,7 +3127,7 @@ html,body,#music-library{
   height:46px;
   border-radius:0;
   background:transparent;
-  color:#d9d6cf;
+  color:var(--ap-text);
   font-size:45px;
   font-weight:300;
 }
@@ -3125,13 +3138,13 @@ html,body,#music-library{
 #ml-audio-panel .ml-audio-panel-control input::-webkit-slider-thumb{
   width:28px;
   height:28px;
-  background:#3d3d3d;
+  background:var(--ap-track);
   box-shadow:none;
 }
 #ml-audio-panel .ml-audio-panel-control input::-moz-range-thumb{
   width:28px;
   height:28px;
-  background:#3d3d3d;
+  background:var(--ap-track);
 }
 #ml-audio-panel .ml-audio-panel-row[data-control="speed"]{
   height:160px;
@@ -3180,7 +3193,7 @@ html,body,#music-library{
   border:0;
   border-radius:0;
   background:transparent;
-  color:#e6e2da;
+  color:var(--ap-text);
   font-size:28px;
   line-height:1;
 }
@@ -3204,7 +3217,7 @@ html,body,#music-library{
 #ml-audio-loop-swap{
   border:0;
   background:transparent;
-  color:#ede9e0;
+  color:var(--ap-text);
   cursor:pointer;
   display:flex;
   align-items:center;
@@ -3235,7 +3248,7 @@ html,body,#music-library{
   border-bottom:2px solid rgba(242,238,230,.78);
   border-radius:0;
   background:transparent;
-  color:#f4f0e9;
+  color:var(--ap-text);
   font:800 31px/1.2 Inter,'Noto Sans SC',system-ui,sans-serif;
   outline:none;
   padding:0 2px 4px;
@@ -3264,19 +3277,19 @@ html,body,#music-library{
   height:84px;
   border-radius:50%;
   background:transparent;
-  color:#eeeae3;
+  color:var(--ap-text);
   font-size:33px;
 }
 #ml-audio-panel-main{
   width:112px;
   height:112px!important;
   justify-self:center;
-  background:#37313e!important;
-  color:#f5f1ea!important;
+  background:var(--ap-card-strong)!important;
+  color:var(--ap-text)!important;
   font-size:45px!important;
 }
 #ml-audio-panel-help{
-  border:2px solid #d8d4cb!important;
+  border:2px solid var(--ap-line)!important;
   width:38px!important;
   height:38px!important;
   align-self:center;
@@ -3285,14 +3298,14 @@ html,body,#music-library{
 }
 #ml-audio-panel-time{
   margin:-14px 24px 8px auto;
-  color:#f4ecd9;
+  color:var(--ap-text);
   text-align:right;
   font:800 29px/1.2 Inter,'Noto Sans SC',system-ui,sans-serif;
 }
 #ml-audio-panel-status{
   margin:0;
   height:6px;
-  background:linear-gradient(90deg,var(--ap-accent) 0 18%,#3b3741 18% 100%);
+  background:linear-gradient(90deg,var(--ap-accent) 0 18%,var(--ap-track) 18% 100%);
   color:transparent;
   overflow:hidden;
 }
@@ -7817,10 +7830,10 @@ body.ml-detail-lock{overflow:hidden !important;}
   max-height:calc(100dvh - 24px)!important;
   transform:translate(-50%,-50%)!important;
   padding:18px!important;
-  border:1px solid rgba(255,255,255,.13)!important;
+  border:1px solid var(--ap-line)!important;
   border-radius:28px!important;
-  background:#15191f!important;
-  box-shadow:0 28px 90px rgba(0,0,0,.66)!important;
+  background:var(--ap-bg)!important;
+  box-shadow:0 28px 90px rgba(0,0,0,.28)!important;
   overflow:auto!important;
 }
 #ml-audio-panel-head{
@@ -7834,16 +7847,16 @@ body.ml-detail-lock{overflow:hidden !important;}
   text-align:left!important;
   font-size:20px!important;
   font-weight:800!important;
-  color:#f5f5f5!important;
+  color:var(--ap-text)!important;
 }
-#ml-audio-panel-title::before{content:'♫  ✦  ';color:#f1cf4c;}
+#ml-audio-panel-title::before{content:'♫  ✦  ';color:var(--ap-accent);}
 #ml-audio-panel-close{
   position:static!important;
   width:46px!important;
   height:46px!important;
   border-radius:15px!important;
-  background:#252a31!important;
-  color:#9da2aa!important;
+  background:var(--ap-card)!important;
+  color:var(--ap-text2)!important;
   font-size:24px!important;
 }
 #ml-audio-panel-play{
@@ -7853,7 +7866,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   padding:0 16px!important;
   border:1px solid rgba(255,255,255,.12)!important;
   border-radius:16px!important;
-  background:#24282e!important;
+  background:var(--ap-card)!important;
   font-size:16px!important;
   justify-content:flex-start!important;
 }
@@ -7866,7 +7879,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   padding:18px!important;
   border:1px solid rgba(255,255,255,.11)!important;
   border-radius:17px!important;
-  background:#24272c!important;
+  background:var(--ap-card)!important;
 }
 #ml-audio-panel .ml-audio-panel-rowtop{
   min-height:32px!important;
@@ -7874,14 +7887,14 @@ body.ml-detail-lock{overflow:hidden !important;}
   font-size:14px!important;
   letter-spacing:.08em!important;
   text-transform:uppercase!important;
-  color:#a9abb0!important;
+  color:var(--ap-text2)!important;
 }
 #ml-audio-panel .ml-audio-panel-rowtop strong{
   min-width:54px!important;
   padding:7px 12px!important;
   border-radius:10px!important;
-  background:#30343a!important;
-  color:#f6f6f6!important;
+  background:var(--ap-card)!important;
+  color:var(--ap-text)!important;
   font-size:16px!important;
   text-align:center!important;
 }
@@ -7889,7 +7902,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   width:38px!important;
   height:38px!important;
   border-radius:12px!important;
-  background:#30343a!important;
+  background:var(--ap-card)!important;
   font-size:18px!important;
 }
 #ml-audio-panel .ml-audio-panel-control{
@@ -7900,18 +7913,18 @@ body.ml-detail-lock{overflow:hidden !important;}
   width:52px!important;
   height:52px!important;
   border-radius:14px!important;
-  background:#30343a!important;
+  background:var(--ap-card)!important;
   font-size:25px!important;
   font-weight:800!important;
 }
-#ml-audio-panel .ml-audio-panel-control input{height:6px!important;background:#454950!important;}
+#ml-audio-panel .ml-audio-panel-control input{height:6px!important;background:var(--ap-track)!important;}
 #ml-audio-panel .ml-audio-panel-control input::-webkit-slider-thumb{
-  width:24px!important;height:24px!important;background:#f2cf45!important;
-  box-shadow:0 0 0 7px rgba(242,207,69,.13)!important;
+  width:24px!important;height:24px!important;background:var(--ap-accent)!important;
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--ap-accent) 22%,transparent)!important;
 }
 #ml-audio-panel .ml-audio-panel-control input::-moz-range-thumb{
-  width:24px!important;height:24px!important;background:#f2cf45!important;
-  box-shadow:0 0 0 7px rgba(242,207,69,.13)!important;
+  width:24px!important;height:24px!important;background:var(--ap-accent)!important;
+  box-shadow:0 0 0 7px color-mix(in srgb,var(--ap-accent) 22%,transparent)!important;
 }
 #ml-audio-panel .ml-audio-panel-row[data-control="speed"]{height:auto!important;}
 #ml-audio-tempo-value{font-size:15px!important;}
@@ -7922,13 +7935,13 @@ body.ml-detail-lock{overflow:hidden !important;}
   gap:7px!important;
   padding:12px!important;
   border-radius:13px!important;
-  background:#30343a!important;
+  background:var(--ap-card)!important;
 }
 .ml-audio-loop-time{
   border:0!important;padding:0!important;font-size:18px!important;text-align:right!important;
 }
 .ml-audio-loop-label,.ml-audio-loop-jump,#ml-audio-loop-swap{display:none!important;}
-.ml-audio-loop-mark{width:26px!important;height:30px!important;font-size:15px!important;color:#8e929a!important;}
+.ml-audio-loop-mark{width:26px!important;height:30px!important;font-size:15px!important;color:var(--ap-text3)!important;}
 #ml-audio-loop-message{margin:8px 0 0!important;min-height:0!important;font-size:11px!important;}
 #ml-audio-panel-foot{
   width:100%!important;
@@ -7940,20 +7953,20 @@ body.ml-detail-lock{overflow:hidden !important;}
   width:100%!important;
   height:56px!important;
   border-radius:15px!important;
-  background:#282c32!important;
+  background:var(--ap-card)!important;
   font-size:22px!important;
 }
 #ml-audio-panel-main{
   width:100%!important;
   height:56px!important;
   border-radius:15px!important;
-  background:#f2cf45!important;
-  color:#181818!important;
+  background:var(--ap-accent)!important;
+  color:var(--ap-bg)!important;
   font-size:25px!important;
 }
 #ml-audio-panel-help{width:100%!important;height:56px!important;border:0!important;}
-#ml-audio-panel-time{margin:10px 0 0!important;text-align:center!important;font-size:13px!important;color:#7e838b!important;}
-#ml-audio-panel-status{height:0!important;margin:0!important;overflow:visible!important;background:none!important;color:#7e838b!important;font-size:11px!important;text-align:center!important;}
+#ml-audio-panel-time{margin:10px 0 0!important;text-align:center!important;font-size:13px!important;color:var(--ap-text3)!important;}
+#ml-audio-panel-status{height:0!important;margin:0!important;overflow:visible!important;background:none!important;color:var(--ap-text3)!important;font-size:11px!important;text-align:center!important;}
 @media(max-width:480px){
   #ml-audio-panel{width:calc(100vw - 16px)!important;max-height:calc(100dvh - 16px)!important;padding:14px!important;border-radius:22px!important;}
   #ml-audio-panel .ml-audio-panel-row{padding:14px!important;margin-bottom:10px!important;}
@@ -8474,8 +8487,8 @@ body.ml-detail-lock{overflow:hidden !important;}
   padding:0 8px 0 12px !important;
   border:1px solid rgba(255,255,255,.12) !important;
   border-radius:999px !important;
-  background:#30343a !important;
-  color:#b9bdc5 !important;
+  background:var(--ap-card) !important;
+  color:var(--ap-text2) !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:space-between !important;
@@ -8486,8 +8499,8 @@ body.ml-detail-lock{overflow:hidden !important;}
   transition:background .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease !important;
 }
 #ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch:hover{
-  background:#373c43 !important;
-  color:#f3f0e9 !important;
+  background:var(--ap-card-hover) !important;
+  color:var(--ap-text) !important;
 }
 #ml-audio-panel .ml-audio-loop-switch-text{
   min-width:28px !important;
@@ -8499,19 +8512,19 @@ body.ml-detail-lock{overflow:hidden !important;}
   height:26px !important;
   flex:0 0 26px !important;
   border-radius:50% !important;
-  background:#727781 !important;
+  background:var(--ap-text3) !important;
   box-shadow:0 2px 7px rgba(0,0,0,.28) !important;
   pointer-events:none !important;
   transition:background .18s ease,transform .18s ease,box-shadow .18s ease !important;
 }
 #ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch.active{
-  border-color:rgba(242,207,69,.62) !important;
-  background:rgba(242,207,69,.16) !important;
-  color:#f2cf45 !important;
-  box-shadow:0 0 0 3px rgba(242,207,69,.08),inset 0 1px 0 rgba(255,255,255,.06) !important;
+  border-color:color-mix(in srgb,var(--ap-accent) 62%,transparent) !important;
+  background:color-mix(in srgb,var(--ap-accent) 16%,transparent) !important;
+  color:var(--ap-accent) !important;
+  box-shadow:0 0 0 3px color-mix(in srgb,var(--ap-accent) 12%,transparent),inset 0 1px 0 var(--ap-card) !important;
 }
 #ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch.active .ml-audio-loop-switch-knob{
-  background:#f2cf45 !important;
+  background:var(--ap-accent) !important;
   box-shadow:0 0 0 5px rgba(242,207,69,.12),0 2px 7px rgba(0,0,0,.28) !important;
 }
 #ml-audio-panel .ml-audio-panel-row[data-control="loop"].is-active{
@@ -8550,7 +8563,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   font-size:20px !important;
   font-weight:850 !important;
   line-height:1.1 !important;
-  color:#f5f5f5 !important;
+  color:var(--ap-text) !important;
   letter-spacing:-.015em !important;
 }
 #ml-audio-panel-title::before{
@@ -8567,7 +8580,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   height:40px !important;
   flex:0 0 40px !important;
   border-radius:13px !important;
-  background:#f5f1e8 !important;
+  background:var(--ap-text) !important;
   border:1px solid rgba(255,255,255,.18) !important;
   box-shadow:0 7px 18px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.72) !important;
   display:inline-flex !important;
@@ -8584,17 +8597,17 @@ body.ml-detail-lock{overflow:hidden !important;}
 #ml-audio-panel-close{
   width:48px !important;
   height:48px !important;
-  border:1px solid rgba(255,255,255,.08) !important;
+  border:1px solid var(--ap-line) !important;
   border-radius:16px !important;
-  background:#282d34 !important;
-  color:#c6cad0 !important;
+  background:var(--ap-card) !important;
+  color:var(--ap-text2) !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
   box-shadow:inset 0 1px 0 rgba(255,255,255,.045) !important;
 }
 #ml-audio-panel-close:hover{
-  background:#333941 !important;
+  background:var(--ap-card-hover) !important;
   color:#fff !important;
   border-color:rgba(242,207,69,.28) !important;
   box-shadow:0 0 0 4px rgba(242,207,69,.07),inset 0 1px 0 rgba(255,255,255,.06) !important;
@@ -8680,8 +8693,8 @@ body.ml-detail-lock{overflow:hidden !important;}
   padding:0 !important;
   border:1px solid rgba(255,255,255,.10) !important;
   border-radius:14px !important;
-  background:#30343a !important;
-  color:#d2d5da !important;
+  background:var(--ap-card) !important;
+  color:var(--ap-text2) !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
@@ -8703,7 +8716,7 @@ body.ml-detail-lock{overflow:hidden !important;}
 #ml-audio-panel .ml-ap-icon-btn:focus-visible{
   transform:translateY(-2px) !important;
   border-color:rgba(242,207,69,.30) !important;
-  background:#393e45 !important;
+  background:var(--ap-card-hover) !important;
   color:#fff !important;
   box-shadow:0 8px 18px rgba(0,0,0,.18),0 0 0 3px rgba(242,207,69,.055),inset 0 1px 0 rgba(255,255,255,.06) !important;
 }
@@ -8757,15 +8770,15 @@ body.ml-detail-lock{overflow:hidden !important;}
   min-height:52px !important;
   flex-basis:52px !important;
   border-radius:16px !important;
-  border-color:#f2cf45 !important;
-  background:#f2cf45 !important;
-  color:#181818 !important;
-  box-shadow:0 10px 24px rgba(242,207,69,.18),inset 0 1px 0 rgba(255,255,255,.30) !important;
+  border-color:var(--ap-accent) !important;
+  background:var(--ap-accent) !important;
+  color:#fff !important;
+  box-shadow:0 10px 24px color-mix(in srgb,var(--ap-accent) 20%,transparent),inset 0 1px 0 transparent !important;
 }
 #ml-audio-panel #ml-audio-panel-main.ml-ap-icon-btn:hover{
-  background:#f6d85e !important;
-  color:#101010 !important;
-  box-shadow:0 13px 28px rgba(242,207,69,.25),0 0 0 4px rgba(242,207,69,.08) !important;
+  background:var(--ap-accent) !important;
+  color:#fff !important;
+  box-shadow:0 13px 28px color-mix(in srgb,var(--ap-accent) 26%,transparent),0 0 0 4px color-mix(in srgb,var(--ap-accent) 10%,transparent) !important;
 }
 #ml-audio-panel #ml-audio-panel-main.is-playing > svg{animation:ml-ap-pulse .9s ease-in-out infinite alternate;}
 @keyframes ml-ap-pulse{from{transform:scale(.92)}to{transform:scale(1.08)}}
@@ -8776,8 +8789,8 @@ body.ml-detail-lock{overflow:hidden !important;}
 }
 #ml-audio-panel #ml-audio-panel-play:hover{
   transform:translateY(-1px) !important;
-  border-color:rgba(242,207,69,.26) !important;
-  background:#2b3036 !important;
+  border-color:color-mix(in srgb,var(--ap-accent) 26%,transparent) !important;
+  background:var(--ap-card-hover) !important;
   box-shadow:0 9px 22px rgba(0,0,0,.16) !important;
 }
 #ml-audio-panel #ml-audio-panel-play:active{transform:scale(.985) !important;}
@@ -8786,8 +8799,8 @@ body.ml-detail-lock{overflow:hidden !important;}
   height:34px !important;
   margin-left:auto !important;
   border-radius:11px !important;
-  background:rgba(255,255,255,.055) !important;
-  color:#f2cf45 !important;
+  background:var(--ap-card) !important;
+  color:var(--ap-accent) !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
@@ -8835,7 +8848,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   --ml-ap-btn-size:46px;
   width:46px !important;
   height:46px !important;
-  color:#bfc3ca !important;
+  color:var(--ap-text2) !important;
 }
 #ml-audio-panel .ml-audio-loop-time{
   min-width:0 !important;
@@ -8942,7 +8955,7 @@ body.ml-detail-lock{overflow:hidden !important;}
 }
 #ml-audio-panel .ml-loop-action-label{
   display:block !important;
-  color:#aeb2ba !important;
+  color:var(--ap-text3) !important;
   font:700 9px/1 Inter,"Noto Sans SC",system-ui,sans-serif !important;
   letter-spacing:.02em !important;
   white-space:nowrap !important;
@@ -10183,4 +10196,142 @@ html.ml-fullscreen body.ml-fullscreen #music-library > #ml-header,
 /* 歌曲详情的固定头同理（整页弹层，头贴着屏幕最上沿） */
 #music-library #ml-detail-header{
   padding-top:calc(10px + env(safe-area-inset-top,0px)) !important;
+}
+
+/* ═══ 节拍器弹窗（2026-08：从「垫在谱底的一大块」改成「点 chip 弹小窗」）═══
+   定位那几行对齐 #ml-audio-panel（变速面板），保证两者观感一致；
+   z-index 比它高一级，同时点开时代码会先关掉变速面板，不会叠着弹。
+   ⚠️ 必须用 .ml-met-pop 这个新类名做定位，不能复用 .ml-met ——
+   musiclib.css:957 和 2147 两处把 .ml-met 的圆角/背景/边框写死了（含 !important），会打架。 */
+#music-library .ml-met-pop{
+  position:fixed;
+  left:50%;
+  right:auto;
+  bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  transform:translateX(-50%);
+  z-index:100002;
+  width:min(330px,calc(100vw - 32px));
+  max-height:calc(100vh - 40px);
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  border-radius:22px;
+  box-shadow:0 24px 70px rgba(0,0,0,.28);
+  animation:ml-met-pop-in .18s cubic-bezier(.32,.72,0,1);
+}
+/* 小窗里把内边距收紧一档，别撑那么大 */
+#music-library .ml-met-pop .ml-met-top{padding:12px 14px;}
+#music-library .ml-met-pop .ml-met-body{padding:12px 14px 14px;gap:8px;}
+/* 按钮加大加明显：描边加粗一档、底色用面色而不是页底色，按下去有反馈 */
+#music-library .ml-met-pop .ml-met-btn{
+  width:44px;height:44px;border-radius:14px;
+  border:1.5px solid var(--border-md,var(--divider));
+  background:var(--surface,var(--bg));
+  font-size:24px;font-weight:600;
+  box-shadow:0 1px 2px rgba(0,0,0,.05);
+}
+#music-library .ml-met-pop .ml-met-btn:hover{background:var(--surface-hover,var(--bg3));}
+#music-library .ml-met-pop .ml-met-btn:active{transform:scale(.94);}
+#music-library .ml-met-pop .ml-met-toggle{min-width:76px;height:40px;font-size:15px;}
+/* 停止态也要一眼看得出来（原来 .off 是灰底，弱到几乎看不见） */
+#music-library .ml-met-pop .ml-met-toggle.off{
+  background:var(--surface,var(--bg));
+  color:var(--accent);
+  border:1.5px solid var(--accent);
+  box-shadow:none;
+}
+#music-library .ml-met-pop .ml-met-bpm{font-size:32px;}
+#music-library .ml-met-pop[hidden]{display:none;}
+/* 弹窗里的节拍器卡片自己已经有底/边框/圆角，这里只去掉它原来的外边距 */
+#music-library .ml-met-pop>.ml-met{margin:0;}
+/* 小窗里这两行是多余的说明文字，占掉近一半高度 —— 只在弹窗内隐藏，
+   不动 createMetronome，别的地方（嵌入模式）还照旧显示 */
+#music-library .ml-met-pop .ml-met-sub,
+#music-library .ml-met-pop .ml-met-hint{display:none;}
+/* 给右上角的 × 让出位置,否则会和「开始」按钮挤在一起。
+   46px = × 的宽 28 + 右边距 14 + 4px 间隙(实测 34px 还差 7px 重叠)。 */
+#music-library .ml-met-pop .ml-met-top{padding-right:46px;}
+#music-library .ml-met-pop-x{
+  position:absolute;top:10px;right:14px;z-index:2;
+  width:28px;height:28px;line-height:1;
+  border:0;border-radius:50%;
+  background:var(--bg3,rgba(128,128,128,.14));color:var(--text2,#6F655D);
+  font-size:19px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+}
+#music-library .ml-met-pop-x:hover{background:var(--accent-soft,rgba(128,128,128,.24));}
+@keyframes ml-met-pop-in{from{opacity:0;transform:translateX(-50%) translateY(10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+@media (prefers-reduced-motion:reduce){#music-library .ml-met-pop{animation:none;}}
+/* 练习行的节拍器 chip 打开时高亮 */
+#music-library .sw-pill.is-on,#music-library [data-act="metro"].is-on{
+  background:var(--accent-soft,rgba(199,101,36,.14));
+  border-color:var(--accent,#C76524);
+  color:var(--accent,#C76524);
+}
+
+
+/* 变速面板的深色主题：面板 portal 在 body 上，拿不到 #music-library 的变量，
+   所以这里按站点深色调色板逐条写死。两条选择器＝手动切深色 + 跟随系统。 */
+html[data-resolved-theme="dark"] #ml-audio-panel,
+html:not([data-resolved-theme="light"]) #ml-audio-panel{
+  --ap-accent:#D77A38;
+  --ap-bg:#18201C;
+  --ap-card:#202A25;
+  --ap-card-strong:rgba(215,122,56,.16);
+  --ap-card-hover:#25312B;
+  --ap-line:rgba(255,255,255,.08);
+  --ap-text:#F5F1EA;
+  --ap-text2:#BCC4BF;
+  --ap-text3:#89948E;
+  --ap-track:rgba(255,255,255,.14);
+  --ap-track-dim:#202A25;
+}
+@media (prefers-color-scheme: light){
+  html:not([data-resolved-theme="dark"]) #ml-audio-panel{
+    --ap-accent:#C76524;
+    --ap-bg:#FFFDF9;
+    --ap-card:#F8F1E8;
+    --ap-card-strong:#F8E7D8;
+    --ap-card-hover:#F3E8DC;
+    --ap-line:#E9E0D8;
+    --ap-text:#241C17;
+    --ap-text2:#6F655D;
+    --ap-text3:#9A8F85;
+    --ap-track:#E9E0D8;
+    --ap-track-dim:#F8F1E8;
+  }
+}
+
+/* ═══ GoodNotes 式工具条图标（2026-08）═══
+   条形容器沿用 .sw-tools-row 原有的浅面板底+描边+圆角；
+   这里只定义图标按钮与分隔线。旧的 .sw-pill/.yt-btn 规则原样保留（别处还在用）。 */
+#music-library .sw-ico-btn{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:40px;height:40px;padding:0;
+  border:none;border-radius:11px;
+  background:transparent;color:var(--text-secondary);
+  cursor:pointer;
+  transition:background .14s ease,color .14s ease,transform .12s ease;
+}
+#music-library .sw-ico-btn:hover{background:var(--surface-hover);color:var(--text-primary);}
+#music-library .sw-ico-btn:active{transform:scale(.92);}
+#music-library .sw-ico-btn:disabled{opacity:.55;cursor:default;}
+#music-library .sw-ico-btn svg{display:block;}
+/* YouTube 保持品牌红，但线稿形态与其它图标一致 */
+#music-library .sw-ico-yt{color:#E53E30;}
+#music-library .sw-ico-yt:hover{background:rgba(229,62,48,.1);color:#E53E30;}
+html[data-resolved-theme="dark"] #music-library .sw-ico-yt{color:#FF6B5E;}
+/* 分隔线（照 GoodNotes：竖细线把「标注」和「分享/导出」分组） */
+#music-library .sw-tools-sep{
+  width:1px;height:24px;flex:0 0 1px;
+  background:var(--divider);margin:0 3px;
+}
+/* 导出忙碌态：图标转圈（文字状态改由 toast 承担） */
+#music-library .sw-ico-btn.is-busy svg{animation:sw-ico-spin 1s linear infinite;}
+@keyframes sw-ico-spin{to{transform:rotate(360deg);}}
+@media (prefers-reduced-motion:reduce){#music-library .sw-ico-btn.is-busy svg{animation:none;opacity:.5;}}
+
+/* 工具条图标的激活态(笔/荧光笔/橡皮选中时) */
+#music-library .sw-ico-btn.is-on{
+  background:var(--accent-soft,#F8E7D8);
+  color:var(--accent,#C76524);
 }

@@ -13,7 +13,7 @@ const LEGACY_SCRIPTS = [
   "./gsap.min.js?v=20260711-justify-rows",
   "./pinyin-pro.js?v=20260725-pypro",
   "./bible-service.js?v=20260711-justify-rows",
-  "./musiclib.js?v=20260813-a4page",
+  "./musiclib.js?v=20260813-ink7",
 ];
 
 let started = false;
@@ -30,11 +30,16 @@ function loadScript(src) {
   });
 }
 
-/** 顺序装载 legacy 引擎。多次调用只生效一次(引擎无法卸载重入)。 */
+/** 装载 legacy 引擎。多次调用只生效一次(引擎无法卸载重入)。
+ *
+ * 四个标签一次性全插进去、并行下载,执行顺序由上面的 `el.async = false` 保证
+ * (经典外部脚本 async=false 时,浏览器按插入 DOM 的顺序执行,与下载完成顺序无关)。
+ * 原来这里是 `for (const src of ...) await loadScript(src)` —— 那是串行下载,
+ * 白白等掉三个往返,而 async=false 本来就已经保住顺序了。 */
 export async function initMusicLib() {
   if (started) return;
   started = true;
-  for (const src of LEGACY_SCRIPTS) await loadScript(src);
+  await Promise.all(LEGACY_SCRIPTS.map(loadScript));
 }
 
 /* 原引擎没有任何销毁逻辑(事件委托挂在 document 上、全局单例状态),

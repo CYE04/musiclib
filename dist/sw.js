@@ -3,10 +3,10 @@
    桶名带内容指纹 —— 任何资源变化都会换桶，activate 里的清理逻辑随即删掉旧桶，
    老用户不会卡在旧壳上，也不用再记得手动 bump 版本号。 */
 /* CECP-PRECACHE-BEGIN */
-const CACHE_NAME = "cecp-musiclib-pwa-89b190a3d6";
+const CACHE_NAME = "cecp-musiclib-pwa-273e17772a";
 const APP_SHELL = [
   "./?key=cecp2026",
-  "./assets/index-DuRyiWkK.js",
+  "./assets/index-Lp8Ggd1J.js",
   "./bible-service.js?v=20260711-justify-rows",
   "./cecp-olive-logo.svg",
   "./gsap.min.js?v=20260711-justify-rows",
@@ -18,8 +18,8 @@ const APP_SHELL = [
   "./icons/icon-512.png",
   "./index.html",
   "./manifest.webmanifest",
-  "./musiclib.css?v=20260801-home17",
-  "./musiclib.js?v=20260813-a4page",
+  "./musiclib.css?v=20260813-ink7",
+  "./musiclib.js?v=20260813-ink7",
   "./olive-fellowship-logo.png",
   "./pinyin-kai.woff2",
   "./pinyin-pro.js?v=20260725-pypro",
@@ -73,13 +73,17 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          if (response && response.ok) {
-            const copy = response.clone();
-            caches
-              .open(DATA_CACHE)
-              .then((cache) => cache.put(keyUrl, copy))
-              .catch(() => {});
-          }
+          // ⚠️ 403/429/5xx 不是网络异常，不会自己掉进下面的 .catch()。
+          // 不主动 throw 的话，GitHub 未认证 API 限流（60 次/小时/IP）返回的 403
+          // 会原样穿透给页面 —— 明明 DATA_CACHE 里躺着完整歌库，用户却看到"载入失败"，
+          // 而他唯一会做的动作（再刷一次）只会再烧一次配额。
+          // 教会同一个 wifi 出口，主日早上很容易撞到这个。
+          if (!response || !response.ok) throw new Error("bad response " + (response && response.status));
+          const copy = response.clone();
+          caches
+            .open(DATA_CACHE)
+            .then((cache) => cache.put(keyUrl, copy))
+            .catch(() => {});
           return response;
         })
         .catch(() =>

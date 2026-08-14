@@ -381,6 +381,15 @@
       EC+' #ml-mp-next,'+EC+' #ml-mp-repeat{display:none!important}',
       E+' .pl-song-row{gap:8px}',
       /* 节拍器：平时收起，点小图标才展开（现场不占地方） */
+      /* 嵌入模式里节拍器仍然是「内联展开」，不走弹窗那一套：
+         把弹窗壳整个摊平（否则 .ml-met 被包在 [hidden] 的壳里，
+         下面两条 display:block!important 救不了父级，节拍器永远出不来）。 */
+      E+' .ml-met-pop{position:static!important;display:block!important;width:auto!important;',
+      '  max-height:none!important;overflow:visible!important;box-shadow:none!important;',
+      '  transform:none!important;animation:none!important;border-radius:0!important;z-index:auto!important}',
+      E+' .ml-met-pop-x{display:none!important}',
+      E+' .ml-met-pop .ml-met-sub,'+E+' .ml-met-pop .ml-met-hint{display:block!important}',
+      E+' .ml-met-pop .ml-met-top{padding-right:0!important}',
       E+':not(.ml-embed-metro) .ml-met{display:none!important}',
       E+'.ml-embed-metro .ml-met{display:block!important}',
       /* 展开/收起播放器的小图标 */
@@ -3353,6 +3362,9 @@
     }
     destroyAP();
     stopMetronome();
+    // 关详情页时把节拍器弹窗一并收起：详情体虽然每首歌重建，
+    // 但同一首歌再打开时不该还停在上次开着的状态。
+    detail.querySelectorAll('.ml-met-pop').forEach((p)=>{p.hidden=true;});
     _mpSetExpanded(false);
     detail.classList.remove('open');
     root.classList.remove('ml-has-detail-open');
@@ -5483,7 +5495,7 @@ function segRenderLabelBlock(seg,row){
 /* ═══════════ CECP-SONG-EXT v1 END ═══════════ */
 
 /* ═══════════ CECP-CHORD-STYLE v1 BEGIN ═══════════
-   共享模块：和弦文字视觉样式（按根音固定配色的填充 + 描边小片）。
+   共享模块：和弦文字视觉样式（按根音固定配色的纯文字，不加任何底色/边框）。
    本块在以下三个文件中逐字节相同（权威版本 = shared/chord-style.js）：
      musiclib/musiclib.js / youth-engine.js / musictool/musictool.js
    修改流程：先改 shared/chord-style.js，再同步三处，diff 校验一致。
@@ -5491,14 +5503,19 @@ function segRenderLabelBlock(seg,row){
    （musictool.js 经 CMS 部署会丢失一层反斜杠），
    转义字符一律用 String.fromCharCode 构造。
    硬性约束：只做视觉，不改布局——和弦按等宽字体与歌词逐字对齐，
-   因此不用 padding/border/margin，描边用 outline（不占布局空间），
+   因此不用 padding/border/margin/outline，只改 color。
    字号、行高、margin、min-height 全部继承宿主 .p-chord 原样。
+   2026-08 起去掉了底色与描边小片（用户反馈更占地方）：
+   和弦回到纯文字，仅靠颜色区分根音。这条约束原本就写在这里，
+   后来 padding 被加了进来，现在改回来了。
    配色规则：同根音共用一色（G/G7/Gsus4/Gm 同色），12 音名 12 色，
    色相按半音序直接展开（pc*30°）：常见进行（I-IV-V、关系小调）
    的根音相距纯四/五度或小三度，映射后色差足够大，
    同一首歌里的常用和弦颜色能明显区分；
-   填充色醒目但文字对比度优先：浅色主题浅底深字、深色主题深底浅字
-   （同色相配对，保证和弦文字一眼可辨）；
+   文字对比度优先：浅色主题深字(L20%)、深色主题浅字(L84%)，
+   直接压在宿主背景上（不再有自己的底色）。这两个亮度值是去底色后实测过的：
+   压在 #F4EFE7 / #101613 上最差对比度 5.71 / 9.85，均过 WCAG AA(4.5)。
+   ⚠️ 别把浅色调到 28%，G/A/B 那几个黄绿色相会掉到 3.3~4.1，投影上发虚；
    深浅主题分别取色：优先 html[data-resolved-theme]，
    无该属性的宿主回退 prefers-color-scheme。 */
 var CHORD_STYLE_PC={C:0,D:2,E:4,F:5,G:7,A:9,B:11};
@@ -5541,13 +5558,12 @@ function chordStyleEnsureCss(){
   var light='',dark='',i,h;
   for(i=0;i<12;i++){
     h=chordStyleHue(i);
-    light+='.chord-chip.chord-pc'+i+'{background:hsl('+h+',34%,94%);outline-color:hsl('+h+',38%,74%);color:hsl('+h+',90%,20%);}';
-    dark+='.chord-chip.chord-pc'+i+'{background:hsl('+h+',42%,26%);outline-color:hsl('+h+',45%,48%);color:hsl('+h+',72%,84%);}';
+    light+='.chord-chip.chord-pc'+i+'{color:hsl('+h+',90%,20%);}';
+    dark+='.chord-chip.chord-pc'+i+'{color:hsl('+h+',72%,84%);}';
   }
   var darkAttr=dark.split('.chord-chip.').join('html[data-resolved-theme="dark"] .chord-chip.');
   var darkAuto=dark.split('.chord-chip.').join('html:not([data-resolved-theme="light"]) .chord-chip.');
   st.textContent=
-    '.chord-chip{border-radius:4px;outline:1px solid transparent;outline-offset:0;padding-left:.2em;padding-right:.2em;}'+
     light+darkAttr+
     '@media (prefers-color-scheme: dark){'+darkAuto+'}';
   document.head.appendChild(st);
@@ -5948,6 +5964,338 @@ function lyricHlPrepareExport(scope){
    根节点（innerHTML 会被重建但节点本身持久），getSongId 惰性取歌曲 id。
    colorIdx 语义：0~4 = 对应颜色画笔，-1 = 橡皮擦（擦除任意颜色的标记，
    不要求笔画起点当前颜色与被擦除的标记颜色一致）。 */
+/* ═══════════ CECP-SCORE-INK v1 BEGIN ═══════════
+   共享模块：移调谱自由笔记（GoodNotes 式 canvas 墨迹层）。
+   权威版本 = shared/score-ink.js；宿主：musiclib.js / youth-engine.js（两处逐字节同步）。
+   核心算法移植自 cecp-intercom/cecp.js 的 ink 层（bindInkPointer/drawStroke/
+   penWidthFactor/eraseAt/pushInkOp），砍掉 WebSocket 同步/激光笔/文字框/形状工具；
+   新增：按住不动自动拉直（GoodNotes 的「画线不松手变直线」）与按钮悬停/长按提示。
+
+   设计约束：
+   - 引擎(渲染谱面的代码)零改动：canvas 是谱容器里的一个 absolute 覆盖层，
+     不参与 fitRows 测量，不影响任何几何。宿主只需在重渲染谱面后调 attach()。
+   - 墨迹按「歌 + 调」分桶存 localStorage（cecp-score-ink:<songId>@<key>）：
+     移调后排版完全不同，各画各的，跟 intercom 的 currentSongKey 同思路。
+   - 坐标归一化到谱容器宽高，重放按当前尺寸缩放；排版随宽度变化时可能有偏移，
+     这是练习标记的已知限制（intercom 同样如此）。
+   - v1 已知限制：墨迹不进 PNG 导出、不进全屏放大器（两者走克隆，canvas 位图不随克隆走）。
+   - 工具条按钮由宿主自己画（musiclib 用 .sw-ico-btn，youth 用自己的风格），
+     本块只提供引擎 API + 提示气泡助手，不写死任何宿主类名。 */
+function scoreInkCreate(opts){
+  var host=opts.host;                       /* 谱容器（canvas 挂进去 absolute 盖住它） */
+  var getKey=opts.getKey;                   /* ()=>'songId@F' 当前存储键 */
+  var onState=opts.onState||function(){};   /* 工具/撤销可用性变化时回调宿主刷按钮 */
+  var S={tool:'none',color:'#C0392B',strokes:[],undoStack:[],redoStack:[]};
+  var PEN_W=2.4,HL_W=11,HL_ALPHA=0.34,ERASE_R=0.018;
+  var HOLD_MS=430,HOLD_EPS=0.006;           /* 按住不动多久拉直 / 多近算"没动" */
+  var canvas=null,ctx=null,box={w:1,h:1},drawing=null,raf=0,holdTimer=0;
+  var lastPt=null,lastMoveAt=0,saveTimer=0,ro=null,destroyed=false;
+
+  function storeKey(){return 'cecp-score-ink:'+getKey();}
+  function ensureCanvas(){
+    if(canvas&&canvas.isConnected)return;
+    if(canvas){try{canvas.remove();}catch(_){}}
+    canvas=document.createElement('canvas');
+    canvas.className='cecp-ink-layer';
+    canvas.style.cssText='position:absolute;inset:0;z-index:30;touch-action:none;';
+    if(getComputedStyle(host).position==='static')host.style.position='relative';
+    host.appendChild(canvas);
+    ctx=canvas.getContext('2d');
+    bindPointer();
+    syncInteractive();
+  }
+  function resize(){
+    if(!canvas)return;
+    /* ⚠️ 必须用 offsetWidth/offsetHeight(布局尺寸，不含祖先 transform)，
+       不能用 getBoundingClientRect()。谱容器常带 transform:scale(…)(A4 纸适配、
+       fitRows 缩放)，而 canvas 就活在那个被缩放的坐标系里 ——
+       拿含 transform 的尺寸去设 style.width，等于再缩一次：
+       实测 host 视觉 623px 时 canvas 只有 496px(=623×0.7957)，画布盖不满谱、坐标全偏。
+       canvas 用 inset:0 铺满 host 就够了，本来也不该再设 style 尺寸。 */
+    /* 用 clientWidth/Height 而不是 offsetWidth/Height：canvas 是 inset:0 的绝对定位
+       子节点，它的包含块是宿主的 padding box —— clientWidth 正好是这个盒子，
+       offsetWidth 还含 border。今天 .sw-lb 没 border 两者相等，加了就会错。 */
+    var r=host.getBoundingClientRect();
+    var w=Math.max(1,host.clientWidth||r.width),h=Math.max(1,host.clientHeight||r.height);
+    box={w:w,h:h};
+    var dpr=Math.min(2.5,window.devicePixelRatio||1);
+    /* ⚠️ 面积上限：改用布局尺寸后 box.h 不再是「视口高」而是「整首歌高」(常见 1200~4000px)，
+       dpr 2.5 下位图能到 2500×10000 = 25M 像素，超过 iOS Safari 的 canvas 面积上限
+       (约 16.7M) 整块会直接变空白 —— 比它想修的 bug 更难查。按面积把 dpr 夹回来，
+       CSS 尺寸不变、只是位图密度降一点，长歌上肉眼几乎看不出。 */
+    var MAX_AREA=15200000;                     /* 留约 5% 余量，别顶着 16.7M 的天花板 */
+    if(w*h*dpr*dpr>MAX_AREA)dpr=Math.sqrt(MAX_AREA/(w*h));
+    canvas.width=Math.max(1,Math.floor(w*dpr));   /* floor 不 round：宁可少一行像素也别反超 */
+    canvas.height=Math.max(1,Math.floor(h*dpr));
+    /* style 尺寸必须显式设成布局尺寸：canvas 的 width 属性会兼作 CSS 尺寸，
+       不设的话位图宽会把 inset:0 顶掉，画布反而撑成两倍。 */
+    canvas.style.width=w+'px';canvas.style.height=h+'px';
+    /* 变换从「实际位图尺寸 ÷ 布局尺寸」反推，而不是用 dpr —— 上面夹紧和取整之后
+       两者可能已经对不上，用 dpr 会让墨迹整体错位。这样写永远自洽。 */
+    ctx.setTransform(canvas.width/w,0,0,canvas.height/h,0,0);
+    redraw();
+  }
+  /* 粗细跟着谱宽缩放：手机上和桌面看着一样粗（intercom 的 inkScale 同思路） */
+  function scale(){return Math.max(0.5,Math.min(1.6,box.w/900));}
+
+  function drawStroke(s){
+    var pts=s.pts||[];if(!pts.length)return;
+    var P=pts.map(function(p){return [p[0]*box.w,p[1]*box.h,p[2]==null?1:p[2]];});
+    var k=scale();
+    ctx.save();
+    ctx.lineCap='round';ctx.lineJoin='round';
+    ctx.strokeStyle=s.color;
+    var base=s.width*k;
+    if(s.tool==='hl'){ctx.globalAlpha=s.alpha||HL_ALPHA;}
+    var varying=(s.tool==='pen');
+    if(P.length<3){
+      ctx.lineWidth=base;
+      ctx.beginPath();ctx.moveTo(P[0][0],P[0][1]);
+      for(var i=1;i<P.length;i++)ctx.lineTo(P[i][0],P[i][1]);
+      if(P.length===1)ctx.lineTo(P[0][0]+0.1,P[0][1]+0.1);
+      ctx.stroke();ctx.restore();return;
+    }
+    /* 逐段二次贝塞尔取中点：既平滑又支持粗细渐变（照抄 intercom drawStroke） */
+    var prevM=[(P[0][0]+P[1][0])/2,(P[0][1]+P[1][1])/2];
+    ctx.beginPath();ctx.moveTo(P[0][0],P[0][1]);ctx.lineTo(prevM[0],prevM[1]);
+    ctx.lineWidth=Math.max(0.35,base*(varying?(P[0][2]||1):1));ctx.stroke();
+    for(var j=1;j<P.length-1;j++){
+      var m1=[(P[j][0]+P[j+1][0])/2,(P[j][1]+P[j+1][1])/2];
+      ctx.lineWidth=Math.max(0.35,base*(varying?(P[j][2]||1):1));
+      ctx.beginPath();ctx.moveTo(prevM[0],prevM[1]);
+      ctx.quadraticCurveTo(P[j][0],P[j][1],m1[0],m1[1]);ctx.stroke();
+      prevM=m1;
+    }
+    ctx.beginPath();
+    ctx.lineWidth=Math.max(0.35,base*(varying?(P[P.length-1][2]||1):1));
+    ctx.moveTo(prevM[0],prevM[1]);ctx.lineTo(P[P.length-1][0],P[P.length-1][1]);
+    ctx.stroke();ctx.restore();
+  }
+  function redraw(){
+    if(!ctx)return;
+    ctx.clearRect(0,0,box.w,box.h);
+    for(var i=0;i<S.strokes.length;i++)drawStroke(S.strokes[i]);
+    if(drawing)drawStroke(drawing);
+  }
+  function scheduleRedraw(){
+    if(raf)return;
+    raf=requestAnimationFrame(function(){raf=0;if(!destroyed)redraw();});
+  }
+
+  /* 每个采样点的粗细系数：真压感优先，退回「快=细、慢=粗」（intercom penWidthFactor） */
+  function widthFactor(ev,p,prev){
+    if(S.tool!=='pen')return 1;
+    var f;
+    var pr=(typeof ev.pressure==='number'&&ev.pressure>0&&ev.pressure!==0.5)?ev.pressure:-1;
+    if(pr>=0){f=0.4+pr*1.25;}
+    else{
+      var dx=(p[0]-prev[0])*box.w,dy=(p[1]-prev[1])*box.h;
+      var v=Math.sqrt(dx*dx+dy*dy);
+      f=1.3-Math.min(1,v/22)*0.8;
+    }
+    return Math.max(0.18,1+(f-1)*0.5);
+  }
+
+  /* 点到线段距离的整笔命中（橡皮=碰到就整根删，GoodNotes 的「笔画橡皮擦」） */
+  function strokeHit(st,p,r){
+    var pts=st.pts||[],ar=box.w/(box.h||1);
+    function segDist(a,b){
+      var ax=a[0],ay=a[1]/(ar||1)*ar,bx=b[0],by=b[1];
+      var px=p[0],py=p[1];
+      var vx=bx-ax,vy=(by-ay);
+      var t=((px-ax)*vx+(py-ay)*vy)/((vx*vx+vy*vy)||1e-9);
+      t=Math.max(0,Math.min(1,t));
+      var qx=ax+vx*t,qy=ay+vy*t;
+      var dx=px-qx,dy=(py-qy)*(box.h/box.w);
+      return Math.sqrt(dx*dx+dy*dy);
+    }
+    if(pts.length===1)return segDist(pts[0],pts[0])<r;
+    for(var i=0;i<pts.length-1;i++)if(segDist(pts[i],pts[i+1])<r)return true;
+    return false;
+  }
+  function eraseAt(p){
+    var gone=[];
+    S.strokes=S.strokes.filter(function(st){
+      if(!strokeHit(st,p,ERASE_R))return true;
+      gone.push(st);return false;
+    });
+    if(gone.length){pushOp({del:gone,add:[]});scheduleRedraw();persist();}
+  }
+
+  function pushOp(op){
+    if(!op||(!(op.del||[]).length&&!(op.add||[]).length))return;
+    S.undoStack.push(op);
+    if(S.undoStack.length>60)S.undoStack.shift();
+    S.redoStack.length=0;
+    onState(api);
+  }
+  function applyOp(op,reverse){
+    var remove=reverse?(op.add||[]):(op.del||[]);
+    var restore=reverse?(op.del||[]):(op.add||[]);
+    var kill={};remove.forEach(function(x){kill[x.id]=1;});
+    S.strokes=S.strokes.filter(function(x){return !kill[x.id];});
+    restore.forEach(function(x){S.strokes.push(x);});
+    scheduleRedraw();persist();onState(api);
+  }
+
+  function persist(){
+    clearTimeout(saveTimer);
+    saveTimer=setTimeout(function(){
+      try{
+        if(S.strokes.length)localStorage.setItem(storeKey(),JSON.stringify({v:1,strokes:S.strokes}));
+        else localStorage.removeItem(storeKey());
+      }catch(_){}
+    },250);
+  }
+  function load(){
+    S.strokes=[];S.undoStack=[];S.redoStack=[];
+    try{
+      var raw=localStorage.getItem(storeKey());
+      if(raw){var d=JSON.parse(raw);if(d&&d.strokes)S.strokes=d.strokes;}
+    }catch(_){}
+    onState(api);
+  }
+
+  function nid(){return 'ink'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
+  function norm(ev){
+    var r=host.getBoundingClientRect();
+    return [(ev.clientX-r.left)/(r.width||1),(ev.clientY-r.top)/(r.height||1)];
+  }
+  /* 按住不动自动拉直：定时看最后一次「有效移动」离现在多久。
+     拉直后继续拖只更新终点（GoodNotes：变直后还能调线的长短方向）。 */
+  function armHold(){
+    clearInterval(holdTimer);
+    holdTimer=setInterval(function(){
+      if(!drawing||drawing.snapped)return;
+      if(Date.now()-lastMoveAt<HOLD_MS)return;
+      var pts=drawing.pts;
+      if(pts.length<6)return;                       /* 太短的点按不算 */
+      var a=pts[0],b=pts[pts.length-1];
+      var dx=(b[0]-a[0])*box.w,dy=(b[1]-a[1])*box.h;
+      if(Math.sqrt(dx*dx+dy*dy)<18)return;          /* 就是个点/太短，别拉 */
+      drawing.snapped=true;
+      drawing.pts=[[a[0],a[1],1],[b[0],b[1],1]];
+      scheduleRedraw();
+    },110);
+  }
+  function bindPointer(){
+    canvas.addEventListener('pointerdown',function(ev){
+      if(S.tool==='none')return;
+      ev.preventDefault();
+      try{canvas.setPointerCapture(ev.pointerId);}catch(_){}
+      var p=norm(ev);
+      if(S.tool==='erase'){eraseAt(p);return;}
+      drawing={id:nid(),tool:S.tool,color:S.color,
+        width:S.tool==='hl'?HL_W:PEN_W,
+        alpha:S.tool==='hl'?HL_ALPHA:1,
+        pts:[[p[0],p[1],1]]};
+      lastPt=p;lastMoveAt=Date.now();
+      armHold();
+    });
+    canvas.addEventListener('pointermove',function(ev){
+      if(S.tool==='none')return;
+      var p=norm(ev);
+      if(S.tool==='erase'){if(ev.buttons)eraseAt(p);return;}
+      if(!drawing)return;
+      ev.preventDefault();
+      if(drawing.snapped){                          /* 已拉直：只动终点 */
+        drawing.pts[1]=[p[0],p[1],1];
+        lastMoveAt=Date.now();
+        scheduleRedraw();return;
+      }
+      var lastP=drawing.pts[drawing.pts.length-1];
+      var dx=p[0]-lastP[0],dy=p[1]-lastP[1];
+      if(dx*dx+dy*dy<0.0000045)return;              /* 太密的点丢掉（intercom 同款阈值） */
+      if(Math.sqrt(dx*dx+dy*dy)>HOLD_EPS)lastMoveAt=Date.now();
+      drawing.pts.push([p[0],p[1],widthFactor(ev,p,lastP)]);
+      lastPt=p;
+      scheduleRedraw();
+    });
+    var finish=function(){
+      clearInterval(holdTimer);holdTimer=0;
+      var d=drawing;drawing=null;
+      if(!d)return;
+      if(d.pts.length<2)d.pts.push([d.pts[0][0]+0.001,d.pts[0][1]+0.001,1]);
+      delete d.snapped;
+      S.strokes.push(d);
+      pushOp({del:[],add:[d]});
+      scheduleRedraw();persist();
+    };
+    canvas.addEventListener('pointerup',finish);
+    canvas.addEventListener('pointercancel',finish);
+  }
+  function syncInteractive(){
+    if(!canvas)return;
+    /* 没选工具时画布完全不吃事件：谱照常滚、和弦照常点 */
+    canvas.style.pointerEvents=(S.tool==='none')?'none':'auto';
+    canvas.style.cursor=S.tool==='erase'?'cell':(S.tool==='none'?'':'crosshair');
+  }
+
+  var api={
+    attach:function(){                      /* 谱面重渲染(移调/初次)后调用：幂等 */
+      if(destroyed)return;
+      ensureCanvas();
+      if(!ro&&typeof ResizeObserver!=='undefined'){
+        ro=new ResizeObserver(function(){resize();});
+        ro.observe(host);
+      }
+      resize();load();scheduleRedraw();
+    },
+    setTool:function(t){S.tool=(S.tool===t)?'none':t;syncInteractive();onState(api);},
+    getTool:function(){return S.tool;},
+    setColor:function(c){S.color=c;if(S.tool==='none')S.tool='pen';syncInteractive();onState(api);},
+    getColor:function(){return S.color;},
+    undo:function(){var op=S.undoStack.pop();if(op){S.redoStack.push(op);applyOp(op,true);}},
+    redo:function(){var op=S.redoStack.pop();if(op){S.undoStack.push(op);applyOp(op,false);}},
+    canUndo:function(){return S.undoStack.length>0;},
+    canRedo:function(){return S.redoStack.length>0;},
+    clearAll:function(){
+      if(!S.strokes.length)return;
+      var gone=S.strokes.slice();
+      S.strokes=[];pushOp({del:gone,add:[]});scheduleRedraw();persist();
+    },
+    hasStrokes:function(){return S.strokes.length>0;},
+    reload:function(){load();scheduleRedraw();},   /* 调变了：换存储桶重读 */
+    destroy:function(){
+      destroyed=true;clearInterval(holdTimer);clearTimeout(saveTimer);
+      if(ro){try{ro.disconnect();}catch(_){}ro=null;}
+      if(canvas){try{canvas.remove();}catch(_){}canvas=null;}
+    }
+  };
+  return api;
+}
+
+/* 按钮提示气泡：桌面悬停 350ms / 触屏长按 480ms 显示按钮用途。
+   一个页面共用一个气泡节点。不吃掉任何点击。 */
+function scoreInkTipBind(btn,label){
+  var tip=document.getElementById('cecp-ink-tip');
+  if(!tip){
+    tip=document.createElement('div');
+    tip.id='cecp-ink-tip';
+    tip.style.cssText='position:fixed;z-index:100005;padding:5px 10px;border-radius:8px;'+
+      'background:rgba(28,24,20,.92);color:#fff;font-size:12px;line-height:1.4;'+
+      'pointer-events:none;opacity:0;transition:opacity .12s ease;white-space:nowrap;';
+    document.body.appendChild(tip);
+  }
+  var showTimer=0,hideTimer=0;
+  function show(){
+    var r=btn.getBoundingClientRect();
+    tip.textContent=label;
+    tip.style.left=Math.max(6,Math.min(window.innerWidth-tip.offsetWidth-6,r.left+r.width/2-tip.offsetWidth/2))+'px';
+    tip.style.top=(r.top-34<6?r.bottom+8:r.top-34)+'px';
+    tip.style.opacity='1';
+    clearTimeout(hideTimer);
+    hideTimer=setTimeout(hide,2200);
+  }
+  function hide(){tip.style.opacity='0';}
+  btn.addEventListener('mouseenter',function(){showTimer=setTimeout(show,350);});
+  btn.addEventListener('mouseleave',function(){clearTimeout(showTimer);hide();});
+  btn.addEventListener('touchstart',function(){showTimer=setTimeout(show,480);},{passive:true});
+  btn.addEventListener('touchend',function(){clearTimeout(showTimer);},{passive:true});
+  btn.addEventListener('touchmove',function(){clearTimeout(showTimer);},{passive:true});
+}
+/* ═══════════ CECP-SCORE-INK v1 END ═══════════ */
+
 function lyricHlCreateController(root,getSongId){
   lyricHlEnsureCss();
   var active=false;
@@ -7454,6 +7802,12 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       content.className=('czoom-content '+src.className).replace('sw-lb-zoomable','').replace(/\s+/g,' ');
       content.innerHTML=src.innerHTML;
     }
+    /* CECP-SCORE-INK: 墨迹是画在 <canvas> 上的，而 canvas 的位图不随 innerHTML 克隆走——
+       克隆出来是一张空白画布，既盖在谱上吃掉指针事件(橡皮/点击退出都会失灵)，
+       又让页面同时存在两个 .cecp-ink-layer(宿主按类名取节点时会取错)。
+       放大器本来就是只读的图片式查看器，不需要墨迹层，直接摘掉。 */
+    var inks=content.querySelectorAll('.cecp-ink-layer');
+    for(var ii=0;ii<inks.length;ii++)inks[ii].parentNode.removeChild(inks[ii]);
     overlay.classList.add('open');document.documentElement.style.overflow='hidden';
     updateNav();fitAndCenter();
   }
@@ -7522,7 +7876,16 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(Date.now()-lastClose<450)return;                 // 刚点掉那次的 ghost click 穿透到下层谱, 别又打开
     var t=e.target;if(!t||!t.closest)return;
     if(t.closest('.p-chord:not(.empty)'))return;
+    /* CECP-SCORE-INK: 正在用笔/荧光笔/橡皮时，点谱是「画」不是「放大」。
+       两道判断都要：① target 就是画布(真实点击时画布在最上层，命中的就是它)；
+       ② 谱里存在一个正在吃事件的画布(pointer-events!=='none')——
+       合成事件或从子节点冒上来的 click 到不了画布，只靠 ① 会漏。 */
+    if(t.classList&&t.classList.contains('cecp-ink-layer'))return;
     var box=t.closest('.sw-lb-zoomable');
+    if(box){
+      var ink=box.querySelector('.cecp-ink-layer');
+      if(ink&&getComputedStyle(ink).pointerEvents!=='none')return;
+    }
     if(box&&box.textContent.trim())open(box);
   },false);
   document.addEventListener('keydown',function(e){if(!isOpen())return;if(e.key==='Escape')close();else if(mode==='image'&&e.key==='ArrowLeft')nav(-1);else if(mode==='image'&&e.key==='ArrowRight')nav(1);});
@@ -9393,13 +9756,20 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       _mpBind();
       _mpSetPanelOpen(true);
     });
+    /* 节拍器 chip：开合弹窗。用 querySelector 现取而不是闭包捕获，
+       因为弹窗是在本函数后面才建的（跟原来取 .ml-met 的写法一致）。 */
+    function syncMetroChip(){
+      const chip=practiceRow.querySelector('[data-act="metro"]');
+      const pop=body.querySelector('.ml-met-pop');
+      if(chip) chip.classList.toggle('is-on',!!(pop&&!pop.hidden));
+    }
     practiceRow.querySelector('[data-act="metro"]')?.addEventListener('click',()=>{
-      const met=body.querySelector('.ml-met');
-      if(!met) return;
-      met.scrollIntoView({behavior:'smooth',block:'center'});
-      met.classList.remove('ml-met-flash');
-      void met.offsetWidth;             // 重启动画
-      met.classList.add('ml-met-flash');
+      const pop=body.querySelector('.ml-met-pop');
+      if(!pop) return;
+      const willOpen=pop.hidden;
+      if(willOpen) _mpSetPanelOpen(false);   // 变速面板与节拍器不叠着弹
+      pop.hidden=!willOpen;
+      syncMetroChip();
     });
     wrap.appendChild(practiceRow);
 
@@ -9535,11 +9905,12 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       /* 必须带 #music-library 前缀:本站样式全带 ID 前缀,不带会被压过。
          纸的外观逐条对齐 .ml-score-image-page(原图卡片):同样的浅色纸、1px 描边、圆角、
          深色模式下同样保持浅色 + 阴影。纸永远是浅色 → 纸内把取色变量钉回浅色主题值，
-         并把和弦芯片强制用浅色配色(否则深色模式下深底芯片戳在浅纸上)。 */
+         并把和弦强制用浅色主题的文字色(否则深色模式下共享块给的浅色字压在浅纸上看不见)。
+         2026-08 和弦去掉底色/描边后，这里也只剩 color —— 与 CECP-CHORD-STYLE 保持一致。 */
       let chip='';
       for(let i=0;i<12;i++){
         const h=chordStyleHue(i);
-        chip+='#music-library .sw-page .chord-chip.chord-pc'+i+'{background:hsl('+h+',34%,94%);outline-color:hsl('+h+',38%,74%);color:hsl('+h+',90%,20%);}';
+        chip+='#music-library .sw-page .chord-chip.chord-pc'+i+'{color:hsl('+h+',90%,20%);}';
       }
       st.textContent=[
         '#music-library .sw-page{position:relative;box-sizing:border-box;margin:0 0 14px;overflow:hidden;',
@@ -9657,6 +10028,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       renderHomePanels();
       renderKeyButtons();
       renderScore();
+      // 移调重建了谱容器内容:重挂墨迹层并按新调换存储桶(墨迹按 歌+调 分桶)
+      if(typeof inkCtl!=='undefined'&&inkCtl)inkCtl.attach();
       // 投影联动: 若面板开着这首歌, 移调后重算分页并推当前页
       if(projState.songId===s.id&&projState.panel&&projState.panel.classList.contains('open')) projRebuild();
       if(fxReady()){
@@ -9698,25 +10071,94 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
 
     const tools=document.createElement('div');tools.className='sw-tools';
     const toolsRow=document.createElement('div');toolsRow.className='sw-tools-row';
-    toolsRow.appendChild(lyricHlCreateController(lbDiv,()=>s.id));
 
-    const shareBtn=document.createElement('button');
-    shareBtn.className='sw-pill';
-    shareBtn.type='button';
-    shareBtn.textContent='🔗 分享';
+    /* GoodNotes 式图标条（2026-08）：一排 24×24 线稿图标 + 分隔线，
+       替代原来的 emoji 文字胶囊。功能与回调一个都没动，只换了长相。 */
+    const SW_ICONS={
+      pen:'<path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/>',
+      hl:'<path d="M9.5 13.5 5 18v2.5h2.5L12 16"/><path d="m9.5 13.5 6.8-6.8a1.8 1.8 0 0 1 2.5 0l-1.5-1.5a1.8 1.8 0 0 1 2.5 0l1 1a1.8 1.8 0 0 1 0 2.5L14 15.5"/><path d="M4 22h16"/>',
+      eraser:'<path d="M20 20H8.5l-4.2-4.2a2 2 0 0 1 0-2.8L13 4.3a2 2 0 0 1 2.8 0l4.9 4.9a2 2 0 0 1 0 2.8L13 19.7"/><path d="M8.5 20 5 16.5"/>',
+      undo:'<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6.7 3L3 13"/>',
+      trash:'<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M10 11v6"/><path d="M14 11v6"/>',
+      share:'<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
+      download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
+      youtube:'<rect x="2.6" y="5.6" width="18.8" height="12.8" rx="3.6"/><path d="m10.2 9.2 5 2.8-5 2.8z" fill="currentColor" stroke="none"/>',
+      lrc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/>'
+    };
+    const swIcoSvg=(name)=>'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+SW_ICONS[name]+'</svg>';
+    const swIcoBtn=(name,label)=>{
+      const b=document.createElement('button');
+      b.type='button';b.className='sw-ico-btn';
+      b.setAttribute('aria-label',label);
+      b.innerHTML=swIcoSvg(name);
+      /* 悬停 350ms / 长按 480ms 弹小气泡说明用途(不用原生 title,免得双重提示) */
+      scoreInkTipBind(b,label);
+      return b;
+    };
+    const swSep=()=>{const sp=document.createElement('span');sp.className='sw-tools-sep';return sp;};
+
+    /* GoodNotes 式自由笔记（CECP-SCORE-INK）：笔/荧光笔在谱上随便画，
+       不再限于「滑过歌词字」；按住不动自动拉直；橡皮整笔擦；撤销。
+       墨迹按 歌+调 分桶存本地。旧的 lyric-hl 字符荧光笔从工具条退役
+       （共享块保留未删，已存的旧标记数据不受影响）。 */
+    const inkCtl=scoreInkCreate({
+      host:lbDiv,
+      getKey:()=>s.id+'@'+curKey,
+      onState:(ink)=>{
+        inkPenBtn.classList.toggle('is-on',ink.getTool()==='pen');
+        inkHlBtn.classList.toggle('is-on',ink.getTool()==='hl');
+        inkEraseBtn.classList.toggle('is-on',ink.getTool()==='erase');
+        inkUndoBtn.disabled=!ink.canUndo();
+        inkClearBtn.disabled=!ink.hasStrokes();
+        const active=ink.getTool()==='pen'||ink.getTool()==='hl';
+        inkDots.style.display=active?'inline-flex':'none';
+        inkDots.querySelectorAll('button').forEach(d=>{
+          d.style.boxShadow=(d.dataset.c===ink.getColor())?'0 0 0 2px var(--accent,#C76524)':'none';
+          d.style.transform=(d.dataset.c===ink.getColor())?'scale(1.15)':'none';
+        });
+      }
+    });
+    const inkPenBtn=swIcoBtn('pen','笔（按住不动可拉直）');
+    inkPenBtn.addEventListener('click',()=>inkCtl.setTool('pen'));
+    const inkHlBtn=swIcoBtn('hl','荧光笔（按住不动可拉直）');
+    inkHlBtn.addEventListener('click',()=>inkCtl.setTool('hl'));
+    const inkEraseBtn=swIcoBtn('eraser','橡皮（整笔擦除）');
+    inkEraseBtn.addEventListener('click',()=>inkCtl.setTool('erase'));
+    const inkDots=document.createElement('span');
+    inkDots.style.cssText='display:none;align-items:center;gap:6px;margin:0 2px;';
+    ['#C0392B','#1D5FBF','#1E8E4E','#E67E22','#262626'].forEach((c)=>{
+      const d=document.createElement('button');
+      d.type='button';d.dataset.c=c;
+      d.setAttribute('aria-label','笔颜色');
+      d.style.cssText='width:17px;height:17px;border-radius:50%;border:1px solid rgba(0,0,0,.18);padding:0;cursor:pointer;background:'+c+';transition:transform .12s ease;';
+      d.addEventListener('click',()=>inkCtl.setColor(c));
+      inkDots.appendChild(d);
+    });
+    const inkUndoBtn=swIcoBtn('undo','撤销上一笔');
+    inkUndoBtn.addEventListener('click',()=>inkCtl.undo());
+    const inkClearBtn=swIcoBtn('trash','清空本页笔记');
+    inkClearBtn.addEventListener('click',()=>inkCtl.clearAll());
+    inkUndoBtn.disabled=true;inkClearBtn.disabled=true;
+
+    toolsRow.appendChild(inkPenBtn);
+    toolsRow.appendChild(inkHlBtn);
+    toolsRow.appendChild(inkEraseBtn);
+    toolsRow.appendChild(inkDots);
+    toolsRow.appendChild(inkUndoBtn);
+    toolsRow.appendChild(inkClearBtn);
+    toolsRow.appendChild(swSep());
+
+    const shareBtn=swIcoBtn('share','分享');
     shareBtn.addEventListener('click',()=>shareSong(s));
     toolsRow.appendChild(shareBtn);
 
-    const exportBtn=document.createElement('button');
-    exportBtn.className='sw-pill';
-    exportBtn.type='button';
-    exportBtn.textContent='🖼 下载图片';
+    const exportBtn=swIcoBtn('download','下载图片');
     exportBtn.addEventListener('click',()=>{
       if(exportBtn.disabled) return;
-      const old=exportBtn.textContent;
+      /* 忙碌态用类名转圈，不再改 textContent（图标按钮里没有文字可改）;
+         状态提示本来就有 showToast，文字态是冗余的 */
       exportBtn.disabled=true;
-      exportBtn.style.opacity='.65';
-      exportBtn.textContent='生成中...';
+      exportBtn.classList.add('is-busy');
       const exportOpts={
         title:s.title||'transpose',
         key:curKey,
@@ -9731,37 +10173,61 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         return exportTransposePanel(lbDiv,exportOpts);
       }).then(()=>{
         showToast('图片已下载');
-        exportBtn.textContent='已下载';
       }).catch(err=>{
         showToast('导出失败，请重试');
-        exportBtn.textContent='下载失败';
         try{ console.error('[musiclib] export transpose image failed',err); }catch(_){}
       }).finally(()=>{
         setTimeout(()=>{
           exportBtn.disabled=false;
-          exportBtn.style.opacity='';
-          exportBtn.textContent=old;
+          exportBtn.classList.remove('is-busy');
         },1200);
       });
     });
     toolsRow.appendChild(exportBtn);
 
     if(s.youtube){
-      const yt=document.createElement('a');yt.className='yt-btn';yt.href=s.youtube;yt.target='_blank';yt.title='YouTube';
-      yt.innerHTML='<svg viewBox="0 0 24 24"><path d="M23.5 6.2a3 3 0 0 0-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 0 0 .5 6.2 31.2 31.2 0 0 0 0 12a31.2 31.2 0 0 0 .5 5.8 3 3 0 0 0 2.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 0 0 2.1-2.1A31.2 31.2 0 0 0 24 12a31.2 31.2 0 0 0-.5-5.8zM9.7 15.5V8.5l6.3 3.5-6.3 3.5z"/></svg>';
+      const yt=document.createElement('a');
+      yt.className='sw-ico-btn sw-ico-yt';yt.href=s.youtube;yt.target='_blank';
+      yt.setAttribute('aria-label','YouTube');
+      yt.innerHTML=swIcoSvg('youtube');
+      scoreInkTipBind(yt,'打开 YouTube 视频');
       toolsRow.appendChild(yt);
     }
     if(s.lrc){
-      const lrc=document.createElement('a');lrc.className='sw-pill';
+      const lrc=document.createElement('a');lrc.className='sw-ico-btn';
       lrc.href=s.lrc;lrc.target='_blank';
-      lrc.textContent='📝 LRC';toolsRow.appendChild(lrc);
+      lrc.setAttribute('aria-label','LRC 歌词文件');
+      lrc.innerHTML=swIcoSvg('lrc');
+      scoreInkTipBind(lrc,'下载 LRC 歌词文件');
+      toolsRow.appendChild(lrc);
     }
     // 工具排（荧光笔/分享/下载图片）跟移调联动——荧光笔画在当前调的谱上、
     // 下载导出的也是当前调，必须贴着谱放（谱上方）；节拍器没有联动，垫底，
     // 练习行的「节拍器」chip 会滚过来。
     if(hasRenderedScore&&toolsRow.children.length){tools.appendChild(toolsRow);scoreModeShell.insertBefore(tools,scoreMain);}
+    // 墨迹层的初次挂载在下方 renderScore() 之后(那里才真正建好谱内容);
+    // 移调重渲染后在 setCurrentKey 里再挂。attach 幂等,多挂无害。
 
-    if(hasRenderedScore) scoreModeShell.appendChild(createMetronome(s.bpm || 72));
+    /* 节拍器改成「点 chip 弹小窗」：原来它是垫在谱底的一大块，要滚到底才看得见。
+       三条硬约束（踩了就是线上事故）：
+       ① 绝不 portal 到 document.body —— 嵌入模式的显隐 CSS 用 `#music-library ... .ml-met`
+          选择器、🥁 按钮用 root.querySelector('.ml-met')，portal 出去两个都失效；
+       ② wrapper 必须挂在每首歌重建的 scoreModeShell 里，否则换歌会留鬼影（点开始只有第一份变停止）；
+       ③ createMetronome 内部一行不改 —— startMetronome/stopMetronome 靠
+          document.querySelector('.ml-met-toggle') 找按钮，假设全页只有一份；
+          且「开始」必须仍由用户直接点击触发，那是 iOS 解锁 AudioContext 的时机，
+          改成「打开弹窗即自动起拍」会让 iOS 全程静音。 */
+    if(hasRenderedScore){
+      const metPop=document.createElement('div');
+      metPop.className='ml-met-pop';metPop.hidden=true;
+      const metClose=document.createElement('button');
+      metClose.className='ml-met-pop-x';metClose.type='button';
+      metClose.setAttribute('aria-label','关闭节拍器');metClose.textContent='×';
+      metClose.onclick=()=>{metPop.hidden=true;syncMetroChip();};
+      metPop.appendChild(metClose);
+      metPop.appendChild(createMetronome(s.bpm || 72));
+      scoreModeShell.appendChild(metPop);
+    }
 
     function renderImageScore(){
       imagePanel.innerHTML='';
@@ -9959,6 +10425,9 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(hasRenderedScore){
       renderScore();
       scheduleFitRows();
+      // 初次 renderScore 会重建 lbDiv 内容,把之前挂的墨迹画布抹掉 —— 这里重挂(幂等)。
+      // 之前挂在 tools 插入之后是不够的:那时谱还没渲染。
+      inkCtl.attach();
     }
     if(window._mlFitCleanup)window._mlFitCleanup();
     const onViewportChange=()=>scheduleFitRows();

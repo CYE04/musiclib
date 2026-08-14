@@ -39,9 +39,17 @@ function precacheManifest() {
       const swPath = path.join(dist, "sw.js");
       if (!fs.existsSync(swPath)) return;
 
+      /* 点开头的文件一律不算数：public/.DS_Store 会被 Vite 原样拷进 dist，
+         既会被当成静态资产发布到线上，又会混进下面的内容指纹里——
+         于是同样的内容能算出两个桶名，"上线后核对 CACHE_NAME" 这个检查就失效了。
+         这里直接删掉，而不是只在遍历时跳过：跳过的话它照样会被 wrangler 发上去。 */
       const walk = (dir, base = "") =>
         fs.readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
           const rel = base ? `${base}/${e.name}` : e.name;
+          if (e.name.startsWith(".")) {
+            if (!e.isDirectory()) fs.rmSync(path.join(dir, e.name));
+            return [];
+          }
           return e.isDirectory() ? walk(path.join(dir, e.name), rel) : [rel];
         });
 
