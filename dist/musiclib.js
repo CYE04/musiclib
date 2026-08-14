@@ -5985,13 +5985,65 @@ function scoreInkCreate(opts){
   var host=opts.host;                       /* 谱容器（canvas 挂进去 absolute 盖住它） */
   var getKey=opts.getKey;                   /* ()=>'songId@F' 当前存储键 */
   var onState=opts.onState||function(){};   /* 工具/撤销可用性变化时回调宿主刷按钮 */
-  var S={tool:'none',color:'#C0392B',strokes:[],undoStack:[],redoStack:[]};
-  var PEN_W=2.4,HL_W=11,HL_ALPHA=0.34,ERASE_R=0.018;
-  var HOLD_MS=430,HOLD_EPS=0.006;           /* 按住不动多久拉直 / 多近算"没动" */
+  /* 笔的各项参数照搬 cecp-intercom 的 ink 层（GoodNotes 那套）：
+       pen   笔型 fountain(钢笔,有粗细变化) / ball(圆珠笔,恒定) / brush(画笔,更粗更软)
+       width 笔尖粗细       press 压力灵敏度(0=完全恒定)
+       flat  笔尖扁平度(0=圆头, 1=凿头, 按行笔方向变宽窄)
+       stab  画笔稳定性(把落点往上一点拉, 磨掉手抖)
+     荧光笔独立一套 hlWidth/hlAlpha，跟笔互不影响。 */
+  var S={tool:'none',color:'#C0392B',strokes:[],undoStack:[],redoStack:[],
+         pen:'fountain',width:2.4,press:0.5,flat:0,stab:0.2,
+         hlWidth:11,hlAlpha:0.34,
+         /* 形状 / 文字（照 intercom：形状四选 + 可填充；文字是落在谱上的文本框） */
+         shape:'line',shapeWidth:3,shapeFill:false,fontSize:18,
+         /* 橡皮三态：fine 精细 / std 标准 / stroke 笔画（碰到整根删） */
+         eraseType:'std',eraseSize:1,eraseHlOnly:false,eraseFilter:{pen:true,hl:true},
+         /* 每个工具各自记住自己的颜色（GoodNotes/intercom 都是这样） */
+         colors:{pen:'#C0392B',hl:'#E9C46A',shape:'#1D5FBF',text:'#262626'}};
+  var PEN_W=2.4,HL_W=11,HL_ALPHA=0.34;
+  var ERASE_SIZES=[0.011,0.018,0.034];      /* 橡皮半径三档（归一化到谱宽），中档=原值 */
+  var PEN_TYPES=[{id:'fountain',name:'钢笔'},{id:'ball',name:'圆珠笔'},{id:'brush',name:'画笔'}];
+  var NIB=-Math.PI/4;                       /* 凿头笔尖的朝向 */
+  function eraseR(){return ERASE_SIZES[Math.max(0,Math.min(ERASE_SIZES.length-1,S.eraseSize|0))];}
+  var HOLD_MS=550,HOLD_EPS_PX=3.5;          /* 按住不动 0.55s 拉直 / 3.5 CSS px 内算"没动" */
+  var SNAP_MIN_PTS=3,SNAP_MIN_PX=18;        /* 点太少(点按)或线太短的不拉直 */
+  var FLASH_MS=180;                         /* 变直那一下的粗细脉冲时长 */
   var canvas=null,ctx=null,box={w:1,h:1},drawing=null,raf=0,holdTimer=0;
-  var lastPt=null,lastMoveAt=0,saveTimer=0,ro=null,destroyed=false;
+  var lastPt=null,lastMoveAt=0,holdAnchor=null,flashAt=0,eraseDrag=false,hoverPt=null;
+  var saveTimer=0,ro=null,destroyed=false;
 
   function storeKey(){return 'cecp-score-ink:'+getKey();}
+  /* 笔的设置跨歌通用，单独存一把（墨迹本身是按「歌+调」分桶的，两者别混）。 */
+  var OPTS_KEY='cecp-score-ink-opts';
+  function persistOpts(){
+    try{localStorage.setItem(OPTS_KEY,JSON.stringify(api.getOpts()));}catch(_){}
+  }
+  function loadOpts(){
+    try{
+      var o=JSON.parse(localStorage.getItem(OPTS_KEY)||'null');
+      if(o&&typeof o==='object'){
+        if(o.pen)S.pen=o.pen;
+        if(o.width!=null)S.width=+o.width||PEN_W;
+        if(o.press!=null)S.press=+o.press;
+        if(o.flat!=null)S.flat=+o.flat;
+        if(o.stab!=null)S.stab=+o.stab;
+        if(o.hlWidth!=null)S.hlWidth=+o.hlWidth||HL_W;
+        if(o.hlAlpha!=null)S.hlAlpha=+o.hlAlpha;
+        if(o.eraseSize!=null)S.eraseSize=o.eraseSize|0;
+        if(o.eraseType)S.eraseType=o.eraseType;
+        if(o.eraseHlOnly!=null)S.eraseHlOnly=!!o.eraseHlOnly;
+        if(o.shape)S.shape=o.shape;
+        if(o.shapeWidth!=null)S.shapeWidth=+o.shapeWidth;
+        if(o.shapeFill!=null)S.shapeFill=!!o.shapeFill;
+        if(o.fontSize!=null)S.fontSize=+o.fontSize;
+        if(o.colors){['pen','hl','shape','text'].forEach(function(t){if(o.colors[t])S.colors[t]=o.colors[t];});}
+        if(o.eraseFilter){
+          if(o.eraseFilter.pen!=null)S.eraseFilter.pen=!!o.eraseFilter.pen;
+          if(o.eraseFilter.hl!=null)S.eraseFilter.hl=!!o.eraseFilter.hl;
+        }
+      }
+    }catch(_){}
+  }
   function ensureCanvas(){
     if(canvas&&canvas.isConnected)return;
     if(canvas){try{canvas.remove();}catch(_){}}
@@ -6006,15 +6058,14 @@ function scoreInkCreate(opts){
   }
   function resize(){
     if(!canvas)return;
-    /* ⚠️ 必须用 offsetWidth/offsetHeight(布局尺寸，不含祖先 transform)，
-       不能用 getBoundingClientRect()。谱容器常带 transform:scale(…)(A4 纸适配、
-       fitRows 缩放)，而 canvas 就活在那个被缩放的坐标系里 ——
-       拿含 transform 的尺寸去设 style.width，等于再缩一次：
-       实测 host 视觉 623px 时 canvas 只有 496px(=623×0.7957)，画布盖不满谱、坐标全偏。
-       canvas 用 inset:0 铺满 host 就够了，本来也不该再设 style 尺寸。 */
-    /* 用 clientWidth/Height 而不是 offsetWidth/Height：canvas 是 inset:0 的绝对定位
-       子节点，它的包含块是宿主的 padding box —— clientWidth 正好是这个盒子，
-       offsetWidth 还含 border。今天 .sw-lb 没 border 两者相等，加了就会错。 */
+    /* ⚠️ 必须用「布局尺寸」(clientWidth/Height，transform 之前)，不能用
+       getBoundingClientRect()(transform 之后的视觉尺寸)。谱容器常带 transform:scale(…)
+       (A4 纸适配、fitRows 缩放)，而 canvas 就活在那个被缩放的坐标系里 ——
+       拿视觉尺寸去设 style.width 等于再缩一次：实测 host 视觉 623px 时 canvas 只有
+       496px(=623×0.7957)，画布盖不满谱、归一化坐标整体偏 0.043，橡皮永远擦不中。
+       用 clientWidth 而不是 offsetWidth：canvas 是 inset:0 的绝对定位子节点，
+       包含块是宿主的 padding box —— clientWidth 正好是它，offsetWidth 还含 border。
+       今天 .sw-lb 没 border 两者相等，加了就会错。 */
     var r=host.getBoundingClientRect();
     var w=Math.max(1,host.clientWidth||r.width),h=Math.max(1,host.clientHeight||r.height);
     box={w:w,h:h};
@@ -6038,6 +6089,19 @@ function scoreInkCreate(opts){
   /* 粗细跟着谱宽缩放：手机上和桌面看着一样粗（intercom 的 inkScale 同思路） */
   function scale(){return Math.max(0.5,Math.min(1.6,box.w/900));}
 
+  /* 变直那一下的「啪」：只作用于刚被拉直的这一笔，粗细脉冲 FLASH_MS 后归位。
+     不引任何动画库——脉冲期间靠 scheduleRedraw 自己续帧，t 到 1 自动停。
+     只动 lineWidth，颜色与透明度一律不碰（荧光笔的 alpha 保持 HL_ALPHA）。 */
+  function flashBoost(s){
+    if(s!==drawing||!s.snapped||!flashAt)return 1;
+    var t=(Date.now()-flashAt)/FLASH_MS;
+    if(t>=1){flashAt=0;return 1;}
+    if(t<0)t=0;
+    var e=(1-t)*(1-t);                      /* 起手最粗、快速收回 */
+    scheduleRedraw();
+    return 1+((s.tool==='hl')?0.35:0.85)*e;  /* 荧光笔本来就粗，幅度小一半 */
+  }
+
   function drawStroke(s){
     var pts=s.pts||[];if(!pts.length)return;
     var P=pts.map(function(p){return [p[0]*box.w,p[1]*box.h,p[2]==null?1:p[2]];});
@@ -6045,14 +6109,68 @@ function scoreInkCreate(opts){
     ctx.save();
     ctx.lineCap='round';ctx.lineJoin='round';
     ctx.strokeStyle=s.color;
-    var base=s.width*k;
+    var pen=s.pen||'fountain';
+    var base=s.width*k*flashBoost(s);
+    /* 三种笔型的观感差别（照搬 intercom）：画笔更粗更软、圆珠笔略实、钢笔默认 */
     if(s.tool==='hl'){ctx.globalAlpha=s.alpha||HL_ALPHA;}
-    var varying=(s.tool==='pen');
+    else if(pen==='brush'){ctx.globalAlpha=0.86;base=s.width*1.45*k*flashBoost(s);}
+    else if(pen==='ball'){ctx.globalAlpha=0.97;}
+    var varying=(s.tool==='pen'&&pen!=='ball');   /* 圆珠笔恒定粗细 */
+    var flat=s.flat||0;
+    /* 文字：落在谱上的一段文本（照 intercom，存的是归一化左上角 + 字号） */
+    if(s.tool==='text'){
+      ctx.globalAlpha=1;
+      ctx.fillStyle=s.color;
+      ctx.textBaseline='top';
+      var fs=Math.max(9,(s.fontSize||18)*k);
+      ctx.font='600 '+fs+'px -apple-system,BlinkMacSystemFont,"Noto Sans SC",sans-serif';
+      String(s.text||'').split('\n').forEach(function(line,li){
+        ctx.fillText(line,P[0][0],P[0][1]+li*fs*1.28);
+      });
+      ctx.restore();return;
+    }
+    /* 形状：直线 / 矩形 / 椭圆 / 箭头（起点 P[0] → 终点 P[末]） */
+    if(s.shape&&P.length>=2){
+      var A=P[0],B2=P[P.length-1];
+      ctx.lineWidth=Math.max(0.5,base);
+      ctx.beginPath();
+      if(s.shape==='line'){ctx.moveTo(A[0],A[1]);ctx.lineTo(B2[0],B2[1]);}
+      else if(s.shape==='rect'){ctx.rect(A[0],A[1],B2[0]-A[0],B2[1]-A[1]);}
+      else if(s.shape==='ellipse'){
+        ctx.ellipse((A[0]+B2[0])/2,(A[1]+B2[1])/2,
+          Math.abs(B2[0]-A[0])/2,Math.abs(B2[1]-A[1])/2,0,0,Math.PI*2);
+      }else if(s.shape==='arrow'){
+        ctx.moveTo(A[0],A[1]);ctx.lineTo(B2[0],B2[1]);
+        var ang=Math.atan2(B2[1]-A[1],B2[0]-A[0]),hh=Math.max(9,base*3);
+        ctx.moveTo(B2[0],B2[1]);ctx.lineTo(B2[0]-hh*Math.cos(ang-0.42),B2[1]-hh*Math.sin(ang-0.42));
+        ctx.moveTo(B2[0],B2[1]);ctx.lineTo(B2[0]-hh*Math.cos(ang+0.42),B2[1]-hh*Math.sin(ang+0.42));
+      }
+      /* 闭合图形可填充（GoodNotes 的「填充颜色」），淡一点免得盖住谱 */
+      if(s.fill&&(s.shape==='rect'||s.shape==='ellipse')){
+        ctx.save();ctx.globalAlpha=(ctx.globalAlpha||1)*0.22;
+        ctx.fillStyle=s.color;ctx.fill();ctx.restore();
+      }
+      ctx.stroke();ctx.restore();return;
+    }
     if(P.length<3){
       ctx.lineWidth=base;
       ctx.beginPath();ctx.moveTo(P[0][0],P[0][1]);
       for(var i=1;i<P.length;i++)ctx.lineTo(P[i][0],P[i][1]);
       if(P.length===1)ctx.lineTo(P[0][0]+0.1,P[0][1]+0.1);
+      ctx.stroke();ctx.restore();return;
+    }
+    /* ⚠️ 粗细不变的笔画（荧光笔、圆珠笔）必须「整条一次画完」，不能逐段 stroke。
+       逐段画时每段都是独立的 beginPath+stroke，半透明的荧光笔在每个接头处会被
+       叠加两遍、再配上圆头线帽，看起来就是一串珠子（用户报的「一点一点的」）。
+       这条快速路径是 intercom drawStroke 里就有的，之前漏搬了。 */
+    if(!varying&&!flat){
+      ctx.lineWidth=base;
+      ctx.beginPath();
+      ctx.moveTo(P[0][0],P[0][1]);
+      for(var q=1;q<P.length-1;q++){
+        ctx.quadraticCurveTo(P[q][0],P[q][1],(P[q][0]+P[q+1][0])/2,(P[q][1]+P[q+1][1])/2);
+      }
+      ctx.lineTo(P[P.length-1][0],P[P.length-1][1]);
       ctx.stroke();ctx.restore();return;
     }
     /* 逐段二次贝塞尔取中点：既平滑又支持粗细渐变（照抄 intercom drawStroke） */
@@ -6061,7 +6179,14 @@ function scoreInkCreate(opts){
     ctx.lineWidth=Math.max(0.35,base*(varying?(P[0][2]||1):1));ctx.stroke();
     for(var j=1;j<P.length-1;j++){
       var m1=[(P[j][0]+P[j+1][0])/2,(P[j][1]+P[j+1][1])/2];
-      ctx.lineWidth=Math.max(0.35,base*(varying?(P[j][2]||1):1));
+      var lw=base*(varying?(P[j][2]||1):1);
+      /* 凿头笔尖：线宽随「行笔方向与笔尖朝向的夹角」变化，
+         顺着笔尖方向走最细、垂直最粗 —— 书法笔的观感。 */
+      if(flat){
+        var th=Math.atan2(m1[1]-prevM[1],m1[0]-prevM[0]);
+        lw*=1-flat*0.82*(1-Math.abs(Math.sin(th-NIB)));
+      }
+      ctx.lineWidth=Math.max(0.35,lw);
       ctx.beginPath();ctx.moveTo(prevM[0],prevM[1]);
       ctx.quadraticCurveTo(P[j][0],P[j][1],m1[0],m1[1]);ctx.stroke();
       prevM=m1;
@@ -6076,6 +6201,21 @@ function scoreInkCreate(opts){
     ctx.clearRect(0,0,box.w,box.h);
     for(var i=0;i<S.strokes.length;i++)drawStroke(S.strokes[i]);
     if(drawing)drawStroke(drawing);
+    drawEraseRing();
+  }
+  /* 橡皮光标：画一个跟实际判定半径等大的圈。
+     系统光标(cell/crosshair)完全看不出擦除范围有多大，三档大小也就没了意义；
+     画在画布上还有个好处——触屏和触控笔也看得见，CSS cursor 在触屏上根本不显示。 */
+  function drawEraseRing(){
+    if(S.tool!=='erase'||!hoverPt||!ctx)return;
+    var r=eraseR()*(S.eraseType==='fine'?0.45:1)*box.w;
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(hoverPt[0]*box.w,hoverPt[1]*box.h,r,0,Math.PI*2);
+    /* 双色描边：深浅底上都看得见，不用管主题 */
+    ctx.lineWidth=3;ctx.strokeStyle='rgba(255,255,255,.9)';ctx.stroke();
+    ctx.lineWidth=1.4;ctx.strokeStyle='rgba(0,0,0,.75)';ctx.stroke();
+    ctx.restore();
   }
   function scheduleRedraw(){
     if(raf)return;
@@ -6085,15 +6225,18 @@ function scoreInkCreate(opts){
   /* 每个采样点的粗细系数：真压感优先，退回「快=细、慢=粗」（intercom penWidthFactor） */
   function widthFactor(ev,p,prev){
     if(S.tool!=='pen')return 1;
+    if(S.pen==='ball')return 1;                     /* 圆珠笔恒定 */
     var f;
     var pr=(typeof ev.pressure==='number'&&ev.pressure>0&&ev.pressure!==0.5)?ev.pressure:-1;
-    if(pr>=0){f=0.4+pr*1.25;}
+    if(pr>=0){f=0.4+pr*1.25;}                       /* 真压感（Apple Pencil） */
     else{
       var dx=(p[0]-prev[0])*box.w,dy=(p[1]-prev[1])*box.h;
       var v=Math.sqrt(dx*dx+dy*dy);
-      f=1.3-Math.min(1,v/22)*0.8;
+      f=1.3-Math.min(1,v/22)*0.8;                   /* 没压感就用「划得越快越细」 */
     }
-    return Math.max(0.18,1+(f-1)*0.5);
+    if(S.pen==='brush')f=0.65+(f-0.65)*1.4;         /* 画笔的变化更夸张 */
+    /* 压力灵敏度 = 这个变化生效多少；0 就完全恒定 */
+    return Math.max(0.18,1+(f-1)*(S.press==null?0.5:S.press));
   }
 
   /* 点到线段距离的整笔命中（橡皮=碰到就整根删，GoodNotes 的「笔画橡皮擦」） */
@@ -6113,13 +6256,93 @@ function scoreInkCreate(opts){
     for(var i=0;i<pts.length-1;i++)if(segDist(pts[i],pts[i+1])<r)return true;
     return false;
   }
+  /* 橡皮三态（照 intercom）：
+       fine   精细 —— 判定半径缩到 45%，擦得很准
+       std    标准 —— 局部擦：把碰到的点挖掉，一条拆成若干段
+       stroke 笔画 —— 碰到就整根删
+     「只擦荧光笔」开着时其它笔迹一律跳过；文字和形状没法半截擦，碰到就整个删。 */
   function eraseAt(p){
-    var gone=[];
-    S.strokes=S.strokes.filter(function(st){
-      if(!strokeHit(st,p,ERASE_R))return true;
-      gone.push(st);return false;
+    var et=S.eraseType||'std';
+    var r=eraseR()*(et==='fine'?0.45:1);
+    var hlOnly=!!S.eraseHlOnly;
+    function erasable(st){
+      if(hlOnly)return st.tool==='hl';
+      var kind=(st.tool==='hl')?'hl':'pen';
+      return !(S.eraseFilter&&S.eraseFilter[kind]===false);
+    }
+    function hit(st){return erasable(st)&&strokeHit(st,p,r);}
+    if(et==='stroke'){
+      var gone=[];
+      S.strokes=S.strokes.filter(function(st){
+        if(!hit(st))return true;
+        gone.push(st);return false;
+      });
+      if(gone.length){pushOp({del:gone,add:[]});scheduleRedraw();persist();}
+      return;
+    }
+    /* 局部擦：按点判定，挖掉碰到的点，剩下的连续段各自成为一条新笔画 */
+    var ar=box.w/(box.h||1);
+    function near(q){
+      var dx=q[0]-p[0],dy=(q[1]-p[1])/(ar||1);
+      return Math.sqrt(dx*dx+dy*dy)<r;
+    }
+    var changed=false,out=[],delOld=[],addNew=[];
+    S.strokes.forEach(function(st){
+      if(!hit(st)){out.push(st);return;}
+      changed=true;delOld.push(st);
+      if(st.tool==='text'||st.shape)return;      /* 文字/形状：碰到整个删 */
+      var seg=[];
+      (st.pts||[]).forEach(function(q){
+        if(near(q)){
+          if(seg.length>1){var f=splitStroke(st,seg);out.push(f);addNew.push(f);}
+          seg=[];
+        }else seg.push(q);
+      });
+      if(seg.length>1){var f2=splitStroke(st,seg);out.push(f2);addNew.push(f2);}
     });
-    if(gone.length){pushOp({del:gone,add:[]});scheduleRedraw();persist();}
+    if(changed){
+      S.strokes=out;pushOp({del:delOld,add:addNew});scheduleRedraw();persist();
+    }
+  }
+  function splitStroke(src,pts){
+    return {id:nid(),tool:src.tool,color:src.color,width:src.width,
+      alpha:src.alpha,pen:src.pen,flat:src.flat,pts:pts.slice()};
+  }
+
+  /* 文字工具：在点的位置长出一个 textarea，写完（失焦或 Esc）落成一条 text 笔画。
+     直接用真实 textarea 而不是自绘输入，中文输入法、光标、选中全都免费得到。 */
+  function openTextBox(p){
+    if(!canvas||!canvas.parentNode)return;
+    var k=scale(),fs=Math.max(9,(S.fontSize||18)*k);
+    var ta=document.createElement('textarea');
+    ta.className='cecp-ink-text';
+    ta.setAttribute('aria-label','在谱上写字');
+    ta.style.cssText='position:absolute;z-index:31;margin:0;padding:2px 4px;border:1px dashed '
+      +toolColor('text')+';border-radius:4px;background:transparent;resize:none;overflow:hidden;'
+      +'outline:none;line-height:1.28;white-space:pre;min-width:2em;'
+      +'left:'+(p[0]*box.w)+'px;top:'+(p[1]*box.h)+'px;'
+      +'font:600 '+fs+'px -apple-system,BlinkMacSystemFont,"Noto Sans SC",sans-serif;'
+      +'color:'+toolColor('text')+';';
+    canvas.parentNode.appendChild(ta);
+    var fit=function(){ta.style.height='0px';ta.style.height=ta.scrollHeight+'px';
+      ta.style.width='0px';ta.style.width=(ta.scrollWidth+8)+'px';};
+    ta.addEventListener('input',fit);
+    var done=false;
+    function commit(){
+      if(done)return;done=true;
+      var txt=ta.value.replace(/\s+$/,'');
+      try{ta.remove();}catch(_){}
+      if(!txt)return;
+      var st={id:nid(),tool:'text',color:toolColor('text'),text:txt,
+        fontSize:S.fontSize,width:1,pts:[[p[0],p[1],1]]};
+      S.strokes.push(st);pushOp({del:[],add:[st]});
+      scheduleRedraw();persist();onState(api);
+    }
+    ta.addEventListener('blur',commit);
+    ta.addEventListener('keydown',function(e){
+      if(e.key==='Escape'){e.preventDefault();ta.value='';commit();}
+    });
+    setTimeout(function(){try{ta.focus();fit();}catch(_){}} ,0);
   }
 
   function pushOp(op){
@@ -6161,58 +6384,148 @@ function scoreInkCreate(opts){
     var r=host.getBoundingClientRect();
     return [(ev.clientX-r.left)/(r.width||1),(ev.clientY-r.top)/(r.height||1)];
   }
-  /* 按住不动自动拉直：定时看最后一次「有效移动」离现在多久。
-     拉直后继续拖只更新终点（GoodNotes：变直后还能调线的长短方向）。 */
-  function armHold(){
-    clearInterval(holdTimer);
-    holdTimer=setInterval(function(){
-      if(!drawing||drawing.snapped)return;
-      if(Date.now()-lastMoveAt<HOLD_MS)return;
-      var pts=drawing.pts;
-      if(pts.length<6)return;                       /* 太短的点按不算 */
-      var a=pts[0],b=pts[pts.length-1];
-      var dx=(b[0]-a[0])*box.w,dy=(b[1]-a[1])*box.h;
-      if(Math.sqrt(dx*dx+dy*dy)<18)return;          /* 就是个点/太短，别拉 */
-      drawing.snapped=true;
-      drawing.pts=[[a[0],a[1],1],[b[0],b[1],1]];
-      scheduleRedraw();
-    },110);
+  /* 按住不动自动拉直（GoodNotes）：笔尖不抬、原地停住 HOLD_MS，整笔瞬间换成
+     起点→当前点的直线；之后继续拖只动终点，抬笔落定。
+     用「一个可重置的 setTimeout」而不是轮询：触发时刻精确落在最后一次有效移动
+     + HOLD_MS（轮询是 HOLD_MS+[0,110) 的随机值，手感发飘，GoodNotes 的"准"就来自这个确定性）。
+     ⚠️ setTimeout 和 setInterval 被后台标签降频的规则完全一样，换定时器种类躲不掉，
+     所以 pointermove 里再兜一次时间比对：定时器晚到时只要还有事件进来就立刻补判。
+     真机按笔时页面必在前台，降频不成立；降频只影响自动化测试。 */
+  /* 触控笔的「临时橡皮」判定：笔尾(32) 或 笔杆侧键(2)。
+     只认 pointerType==='pen'，免得鼠标右键/中键被误判成橡皮。 */
+  function penErase(ev){
+    if(!ev||ev.pointerType!=='pen')return false;
+    var b=ev.buttons||0;
+    return !!(b&32)||!!(b&2);
   }
+  /* 每个工具各自记住颜色；老数据里只有单个 color 时回退到它 */
+  function toolColor(t){
+    var c=S.colors&&S.colors[t];
+    return c||S.color;
+  }
+  function holdDue(){
+    return !!drawing&&!drawing.snapped&&(Date.now()-lastMoveAt)>=HOLD_MS;
+  }
+  function snapStraight(){
+    if(!drawing||drawing.snapped)return false;
+    var pts=drawing.pts;
+    if(pts.length<SNAP_MIN_PTS)return false;        /* 就是个点按，不算一笔 */
+    var a=pts[0],b=pts[pts.length-1];
+    var dx=(b[0]-a[0])*box.w,dy=(b[1]-a[1])*box.h;
+    if(Math.sqrt(dx*dx+dy*dy)<SNAP_MIN_PX)return false;   /* 太短，别拉 */
+    drawing.snapped=true;
+    drawing.pts=[[a[0],a[1],1],[b[0],b[1],1]];
+    flashAt=Date.now();                             /* 触发"啪"一下的粗细脉冲 */
+    scheduleRedraw();
+    return true;
+  }
+  function armHold(){
+    clearTimeout(holdTimer);holdTimer=0;
+    if(!drawing||drawing.snapped)return;
+    var wait=HOLD_MS-(Date.now()-lastMoveAt);
+    holdTimer=setTimeout(function(){
+      holdTimer=0;
+      if(!drawing||drawing.snapped)return;
+      if(holdDue())snapStraight();else armHold();    /* 期间又动过：按剩余时间再等 */
+    },wait>0?wait:0);
+  }
+  /* 收一个采样点（普通 pointermove 与 getCoalescedEvents 走同一条路，避免两份逻辑跑偏）。 */
+  function addSample(ev){
+    if(!drawing||drawing.snapped)return;
+    var p=norm(ev);
+    var lastP=drawing.pts[drawing.pts.length-1];
+    /* 画笔稳定性：把落点往上一个点拉回一些，手抖就被磨掉（GoodNotes 的「画笔稳定性」）。
+       必须放在「丢掉过密点」之前 —— 先平滑再抽稀，否则磨出来的点又被当成密点丢了。 */
+    var st=S.stab||0;
+    if(st>0&&S.tool!=='erase'){
+      var k2=1-st*0.8;
+      p=[lastP[0]+(p[0]-lastP[0])*k2,lastP[1]+(p[1]-lastP[1])*k2];
+    }
+    var dx=p[0]-lastP[0],dy=p[1]-lastP[1];
+    if(dx*dx+dy*dy<0.0000045)return;              /* 太密的点丢掉（intercom 同款阈值） */
+    /* 「有没有动」必须按 CSS px 算：归一化的 y 除的是谱高，长谱里 0.006 能到 20+px、
+       手机的 x 却只有 2.2px（box.w≈360），各向异性导致手指按住不动的抖动一直在刷新
+       计时器，拉直因此几乎永远触发不了。
+       而且要跟「停住那一刻的锚点」比、不跟上一个采样点比——否则慢慢匀速画的线
+       每一步都够小，会被误判成没动而强行拉直。 */
+    var ax=(p[0]-holdAnchor[0])*box.w,ay=(p[1]-holdAnchor[1])*box.h;
+    if(Math.sqrt(ax*ax+ay*ay)>HOLD_EPS_PX){
+      lastMoveAt=Date.now();holdAnchor=p;armHold();
+    }
+    drawing.pts.push([p[0],p[1],widthFactor(ev,p,lastP)]);
+    lastPt=p;
+  }
+
   function bindPointer(){
     canvas.addEventListener('pointerdown',function(ev){
-      if(S.tool==='none')return;
+      if(S.tool==='none'&&!penErase(ev))return;
       ev.preventDefault();
       try{canvas.setPointerCapture(ev.pointerId);}catch(_){}
       var p=norm(ev);
+      /* 触控笔的侧键 / 笔尾橡皮：按住期间临时当橡皮用，松开自动回到原工具。
+         这是标准 PointerEvent，S Pen / 小米笔 / Surface Pen / Wacom 都报：
+           buttons & 32 = 笔尾（把笔翻过来擦）
+           buttons & 2  = 笔杆侧键
+         ⚠️ Apple Pencil 的双击/捏握做不到 —— 那是 iPadOS 的 UIPencilInteraction，
+         只给原生 app，Safari 完全不暴露给网页，没有任何绕法。 */
+      if(penErase(ev)){eraseAt(p);eraseDrag=true;return;}
       if(S.tool==='erase'){eraseAt(p);return;}
-      drawing={id:nid(),tool:S.tool,color:S.color,
-        width:S.tool==='hl'?HL_W:PEN_W,
-        alpha:S.tool==='hl'?HL_ALPHA:1,
+      if(S.tool==='text'){openTextBox(p);return;}
+      /* 笔型/扁平度随笔画一起存：改了设置不会把已经画好的笔画一起变样，
+         跟 GoodNotes 一致（每一笔记住自己是用什么笔画的）。 */
+      drawing={id:nid(),tool:S.tool,color:toolColor(S.tool),
+        width:S.tool==='hl'?S.hlWidth:(S.tool==='shape'?S.shapeWidth:S.width),
+        alpha:S.tool==='hl'?S.hlAlpha:1,
+        pen:(S.tool==='hl'||S.tool==='shape')?undefined:S.pen,
+        flat:(S.tool==='hl'||S.tool==='shape')?0:S.flat,
+        shape:S.tool==='shape'?S.shape:undefined,
+        fill:S.tool==='shape'?!!S.shapeFill:undefined,
         pts:[[p[0],p[1],1]]};
-      lastPt=p;lastMoveAt=Date.now();
-      armHold();
+      lastPt=p;lastMoveAt=Date.now();holdAnchor=p;flashAt=0;
+      if(S.tool!=='shape')armHold();      /* 形状本来就是直的，不需要按住拉直 */
     });
     canvas.addEventListener('pointermove',function(ev){
+      /* 橡皮的圈要跟着指针走：不按下也记录位置 */
+      if(S.tool==='erase'){hoverPt=norm(ev);scheduleRedraw();}
+      /* 侧键/笔尾按住期间：一路擦，不管当前选的是什么工具 */
+      if(eraseDrag||penErase(ev)){
+        if(ev.buttons){eraseDrag=true;ev.preventDefault();eraseAt(norm(ev));return;}
+        eraseDrag=false;
+      }
       if(S.tool==='none')return;
       var p=norm(ev);
       if(S.tool==='erase'){if(ev.buttons)eraseAt(p);return;}
       if(!drawing)return;
       ev.preventDefault();
+      /* 形状：起点固定，终点跟着手指走，一直是两点 */
+      if(drawing.shape){
+        drawing.pts[1]=[p[0],p[1],1];
+        scheduleRedraw();return;
+      }
+      if(holdDue())snapStraight();                  /* 定时器被降频/晚到的兜底：有事件就补判 */
+      /* 高频采样：Apple Pencil 采到 240Hz，而 pointermove 只派发 60~120Hz，
+         中间的点被浏览器合并掉了。getCoalescedEvents() 把它们全取回来逐个入笔，
+         快速划线时的折线感明显减少。intercom 没做这一步，这里比它更顺。
+         浏览器不支持时自动退回单点，行为不变。 */
+      if(!drawing.snapped&&!drawing.shape&&ev.getCoalescedEvents){
+        var co=null;
+        try{co=ev.getCoalescedEvents();}catch(_){co=null;}
+        if(co&&co.length>1){
+          for(var ci=0;ci<co.length;ci++)addSample(co[ci]);
+          return;
+        }
+      }
       if(drawing.snapped){                          /* 已拉直：只动终点 */
         drawing.pts[1]=[p[0],p[1],1];
         lastMoveAt=Date.now();
         scheduleRedraw();return;
       }
-      var lastP=drawing.pts[drawing.pts.length-1];
-      var dx=p[0]-lastP[0],dy=p[1]-lastP[1];
-      if(dx*dx+dy*dy<0.0000045)return;              /* 太密的点丢掉（intercom 同款阈值） */
-      if(Math.sqrt(dx*dx+dy*dy)>HOLD_EPS)lastMoveAt=Date.now();
-      drawing.pts.push([p[0],p[1],widthFactor(ev,p,lastP)]);
-      lastPt=p;
+      addSample(ev);
       scheduleRedraw();
     });
     var finish=function(){
-      clearInterval(holdTimer);holdTimer=0;
+      clearTimeout(holdTimer);holdTimer=0;
+      flashAt=0;holdAnchor=null;
       var d=drawing;drawing=null;
       if(!d)return;
       if(d.pts.length<2)d.pts.push([d.pts[0][0]+0.001,d.pts[0][1]+0.001,1]);
@@ -6228,7 +6541,8 @@ function scoreInkCreate(opts){
     if(!canvas)return;
     /* 没选工具时画布完全不吃事件：谱照常滚、和弦照常点 */
     canvas.style.pointerEvents=(S.tool==='none')?'none':'auto';
-    canvas.style.cursor=S.tool==='erase'?'cell':(S.tool==='none'?'':'crosshair');
+    canvas.style.cursor=S.tool==='erase'?'none':(S.tool==='none'?'':'crosshair');
+    if(S.tool!=='erase'){hoverPt=null;scheduleRedraw();}
   }
 
   var api={
@@ -6243,7 +6557,74 @@ function scoreInkCreate(opts){
     },
     setTool:function(t){S.tool=(S.tool===t)?'none':t;syncInteractive();onState(api);},
     getTool:function(){return S.tool;},
-    setColor:function(c){S.color=c;if(S.tool==='none')S.tool='pen';syncInteractive();onState(api);},
+    setColor:function(c){
+      /* 颜色写进「当前工具」的槽位：每个工具各自记住自己的颜色（intercom/GoodNotes 同款）。
+         S.color 仍同步更新，作为老数据/未知工具的回退。 */
+      S.color=c;
+      var t=(S.tool==='none')?'pen':S.tool;
+      if(S.colors[t]!==undefined)S.colors[t]=c;
+      if(S.tool==='none')S.tool='pen';
+      persistOpts();syncInteractive();onState(api);
+    },
+    getToolColor:function(t){return toolColor(t||S.tool);},
+    /* 笔/荧光笔/橡皮的各项设置。只改设置不动已有笔画（每一笔记住自己是用什么笔画的）。 */
+    penTypes:function(){return PEN_TYPES.slice();},
+    eraseSizes:function(){return ERASE_SIZES.length;},
+    getOpts:function(){
+      return {pen:S.pen,width:S.width,press:S.press,flat:S.flat,stab:S.stab,
+              hlWidth:S.hlWidth,hlAlpha:S.hlAlpha,
+              shape:S.shape,shapeWidth:S.shapeWidth,shapeFill:!!S.shapeFill,fontSize:S.fontSize,
+              eraseType:S.eraseType,eraseSize:S.eraseSize,eraseHlOnly:!!S.eraseHlOnly,
+              eraseFilter:{pen:S.eraseFilter.pen!==false,hl:S.eraseFilter.hl!==false},
+              colors:{pen:S.colors.pen,hl:S.colors.hl,shape:S.colors.shape,text:S.colors.text}};
+    },
+    setOpts:function(o){
+      if(!o)return;
+      if(o.pen)S.pen=o.pen;
+      if(o.width!=null)S.width=Math.max(0.6,Math.min(14,+o.width||PEN_W));
+      if(o.press!=null)S.press=Math.max(0,Math.min(1,+o.press));
+      if(o.flat!=null)S.flat=Math.max(0,Math.min(1,+o.flat));
+      if(o.stab!=null)S.stab=Math.max(0,Math.min(1,+o.stab));
+      if(o.hlWidth!=null)S.hlWidth=Math.max(4,Math.min(30,+o.hlWidth||HL_W));
+      if(o.hlAlpha!=null)S.hlAlpha=Math.max(0.1,Math.min(0.9,+o.hlAlpha));
+      if(o.shape)S.shape=o.shape;
+      if(o.shapeWidth!=null)S.shapeWidth=Math.max(0.6,Math.min(14,+o.shapeWidth||3));
+      if(o.shapeFill!=null)S.shapeFill=!!o.shapeFill;
+      if(o.fontSize!=null)S.fontSize=Math.max(10,Math.min(64,+o.fontSize||18));
+      if(o.eraseType)S.eraseType=o.eraseType;
+      if(o.eraseHlOnly!=null)S.eraseHlOnly=!!o.eraseHlOnly;
+      if(o.eraseSize!=null)S.eraseSize=Math.max(0,Math.min(ERASE_SIZES.length-1,o.eraseSize|0));
+      if(o.eraseFilter){
+        if(o.eraseFilter.pen!=null)S.eraseFilter.pen=!!o.eraseFilter.pen;
+        if(o.eraseFilter.hl!=null)S.eraseFilter.hl=!!o.eraseFilter.hl;
+      }
+      if(o.colors){
+        ['pen','hl','shape','text'].forEach(function(t){
+          if(o.colors[t])S.colors[t]=o.colors[t];
+        });
+      }
+      persistOpts();onState(api);
+    },
+    /* 给设置面板画实时预览用：按当前参数在任意 canvas 上画一条示例笔画 */
+    previewTo:function(cv,tool){
+      if(!cv)return;
+      var c2=cv.getContext('2d'),W=cv.width,H=cv.height;
+      c2.clearRect(0,0,W,H);
+      var pts=[],i,n=34;
+      for(i=0;i<=n;i++){
+        var t=i/n;
+        pts.push([0.08+t*0.84,0.5+Math.sin(t*Math.PI*1.9)*0.30,
+          /* 用速度模型造一条有粗细起伏的示例，跟真笔一个公式 */
+          Math.max(0.18,1+((1.3-Math.min(1,(Math.abs(Math.cos(t*Math.PI*1.9))*14)/22)*0.8)-1)*(S.press==null?0.5:S.press))]);
+      }
+      var isHl=(tool==='hl');
+      var s={tool:isHl?'hl':'pen',color:S.color,
+             width:isHl?S.hlWidth:S.width,alpha:isHl?S.hlAlpha:1,
+             pen:isHl?undefined:S.pen,flat:isHl?0:S.flat,pts:pts};
+      var savedBox=box,savedCtx=ctx;
+      box={w:W,h:H};ctx=c2;
+      try{drawStroke(s);}finally{box=savedBox;ctx=savedCtx;}
+    },
     getColor:function(){return S.color;},
     undo:function(){var op=S.undoStack.pop();if(op){S.redoStack.push(op);applyOp(op,true);}},
     redo:function(){var op=S.redoStack.pop();if(op){S.undoStack.push(op);applyOp(op,false);}},
@@ -6256,12 +6637,21 @@ function scoreInkCreate(opts){
     },
     hasStrokes:function(){return S.strokes.length>0;},
     reload:function(){load();scheduleRedraw();},   /* 调变了：换存储桶重读 */
+    /* 只给验证用：控制台里直接看 hold 状态机，不必靠真实计时去猜 */
+    __hold:function(){
+      return {ms:HOLD_MS,epsPx:HOLD_EPS_PX,minPts:SNAP_MIN_PTS,minPx:SNAP_MIN_PX,
+        drawing:!!drawing,snapped:!!(drawing&&drawing.snapped),
+        pts:drawing?drawing.pts.length:0,
+        sinceMove:drawing?(Date.now()-lastMoveAt):-1,
+        armed:!!holdTimer,due:holdDue(),box:{w:box.w,h:box.h}};
+    },
     destroy:function(){
-      destroyed=true;clearInterval(holdTimer);clearTimeout(saveTimer);
+      destroyed=true;clearTimeout(holdTimer);clearTimeout(saveTimer);
       if(ro){try{ro.disconnect();}catch(_){}ro=null;}
       if(canvas){try{canvas.remove();}catch(_){}canvas=null;}
     }
   };
+  loadOpts();          /* 笔的设置跨歌记住，建 api 之后立刻读回 */
   return api;
 }
 
@@ -10083,7 +10473,21 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       share:'<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/><path d="m16 6-4-4-4 4"/><path d="M12 2v13"/>',
       download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m7 10 5 5 5-5"/><path d="M12 15V3"/>',
       youtube:'<rect x="2.6" y="5.6" width="18.8" height="12.8" rx="3.6"/><path d="m10.2 9.2 5 2.8-5 2.8z" fill="currentColor" stroke="none"/>',
-      lrc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/>'
+      lrc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6"/><path d="M9 17h4"/>',
+      sliders:'<path d="M4 6h10"/><path d="M18 6h2"/><circle cx="16" cy="6" r="2"/><path d="M4 12h4"/><path d="M12 12h8"/><circle cx="10" cy="12" r="2"/><path d="M4 18h10"/><path d="M18 18h2"/><circle cx="16" cy="18" r="2"/>',
+      /* 三种笔型的小图标（照 intercom 那套线稿） */
+      penFountain:'<path d="M17.6 3.4a1.9 1.9 0 0 1 2.7 2.7l-9.4 9.4-3.6 1 1-3.6z"/><path d="M13.6 6.4l3.6 3.6"/><path d="M4 20.5c2.6-.4 4-1.6 4.6-3"/>',
+      penBall:'<path d="M16.9 3.9a1.6 1.6 0 0 1 2.3 2.3L9 16.4l-3.1.8.8-3.1z"/><path d="M14.6 6.2l3.2 3.2"/>',
+      penBrush:'<path d="M15.8 4.4a1.7 1.7 0 0 1 2.4 0l1.4 1.4a1.7 1.7 0 0 1 0 2.4l-8.2 8.2-3.8-3.8z"/><path d="M7.6 12.6c-1.9 1-2.4 3.1-3.1 5.4 2.4-.6 4.5-1.1 5.5-3"/>',
+      /* 形状 / 文字 / 重做（照 intercom 的线稿风格） */
+      shape:'<rect x="3.5" y="3.5" width="11" height="11" rx="1.6"/><circle cx="15" cy="15" r="5.5"/>',
+      text:'<path d="M5 6.5V5h14v1.5"/><path d="M12 5v14"/><path d="M9 19h6"/>',
+      redo:'<path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6.7 3L21 13"/>',
+      shape_line:'<path d="M5 19L19 5"/>',
+      shape_rect:'<rect x="4.5" y="6.5" width="15" height="11" rx="1.6"/>',
+      shape_ellipse:'<ellipse cx="12" cy="12" rx="7.5" ry="5.5"/>',
+      shape_arrow:'<path d="M5 19L19 5"/><path d="M12.5 5H19v6.5"/>',
+      chevdown:'<circle cx="12" cy="12" r="9"/><path d="m8.5 10.5 3.5 3.5 3.5-3.5"/>'
     };
     const swIcoSvg=(name)=>'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+SW_ICONS[name]+'</svg>';
     const swIcoBtn=(name,label)=>{
@@ -10097,54 +10501,324 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     };
     const swSep=()=>{const sp=document.createElement('span');sp.className='sw-tools-sep';return sp;};
 
-    /* GoodNotes 式自由笔记（CECP-SCORE-INK）：笔/荧光笔在谱上随便画，
-       不再限于「滑过歌词字」；按住不动自动拉直；橡皮整笔擦；撤销。
-       墨迹按 歌+调 分桶存本地。旧的 lyric-hl 字符荧光笔从工具条退役
-       （共享块保留未删，已存的旧标记数据不受影响）。 */
+    /* ═══ 墨迹工具条（照 cecp-intercom / GoodNotes 那套重做）═══
+       工具：笔 / 荧光笔 / 形状 / 文字 / 橡皮 ｜ 撤销 / 重做 / 清空
+       交互与 intercom 一致：
+         · 激活的工具带 ∨ 与绿点
+         · 点未激活的工具 → 激活并「在它正下方」弹出设置面板（不是旁边再放一个按钮）
+         · 面板开着时再点它 → 关掉工具，回到正常滚谱
+         · 一开始画 → 面板自动收起，工具还在
+         · 面板收起后再点它 → 重新弹面板
+       面板挂在工具条下方而不是 portal 到 body：嵌入模式的显隐 CSS 走
+       #music-library 后代选择器，portal 出去会失效（节拍器弹窗同理）。 */
+    const INK_TOOLS=[
+      {id:'pen',   icon:'pen',    label:'笔'},
+      {id:'hl',    icon:'hl',     label:'荧光笔'},
+      {id:'shape', icon:'shape',  label:'形状'},
+      {id:'text',  icon:'text',   label:'文字'},
+      {id:'erase', icon:'eraser', label:'橡皮擦'}
+    ];
+    /* 色板照 intercom：前两行常用色，第三行中性色 */
+    const INK_PALETTE=[
+      '#E8453C','#F0883E','#F2CF45','#38B44A','#4FC3E8','#2F73E8','#A55CE0','#EE6FA8',
+      '#B03A31','#C2622B','#B99327','#2C7A45','#2A7186','#2350C0','#6D34C4','#9C2B7A',
+      '#FFFFFF','#D8D8D8','#9A9A9A','#5A5A5A','#262626'
+    ];
+    const inkPop=document.createElement('div');
+    inkPop.className='sw-ink-pop';inkPop.hidden=true;
+    const inkBtns={};
+    let inkPopFor='';                       /* 面板当前显示的是哪个工具 */
+
     const inkCtl=scoreInkCreate({
       host:lbDiv,
       getKey:()=>s.id+'@'+curKey,
       onState:(ink)=>{
-        inkPenBtn.classList.toggle('is-on',ink.getTool()==='pen');
-        inkHlBtn.classList.toggle('is-on',ink.getTool()==='hl');
-        inkEraseBtn.classList.toggle('is-on',ink.getTool()==='erase');
-        inkUndoBtn.disabled=!ink.canUndo();
-        inkClearBtn.disabled=!ink.hasStrokes();
-        const active=ink.getTool()==='pen'||ink.getTool()==='hl';
-        inkDots.style.display=active?'inline-flex':'none';
-        inkDots.querySelectorAll('button').forEach(d=>{
-          d.style.boxShadow=(d.dataset.c===ink.getColor())?'0 0 0 2px var(--accent,#C76524)':'none';
-          d.style.transform=(d.dataset.c===ink.getColor())?'scale(1.15)':'none';
+        const cur=ink.getTool();
+        INK_TOOLS.forEach(t=>{
+          const b=inkBtns[t.id];if(!b)return;
+          b.classList.toggle('is-on',cur===t.id);
         });
+        inkUndoBtn.disabled=!ink.canUndo();
+        inkRedoBtn.disabled=!ink.canRedo();
+        inkClearBtn.disabled=!ink.hasStrokes();
+        if(cur==='none'){inkPopHide();}
+        else if(!inkPop.hidden&&inkPopFor!==cur)buildInkPop(cur);
       }
     });
-    const inkPenBtn=swIcoBtn('pen','笔（按住不动可拉直）');
-    inkPenBtn.addEventListener('click',()=>inkCtl.setTool('pen'));
-    const inkHlBtn=swIcoBtn('hl','荧光笔（按住不动可拉直）');
-    inkHlBtn.addEventListener('click',()=>inkCtl.setTool('hl'));
-    const inkEraseBtn=swIcoBtn('eraser','橡皮（整笔擦除）');
-    inkEraseBtn.addEventListener('click',()=>inkCtl.setTool('erase'));
-    const inkDots=document.createElement('span');
-    inkDots.style.cssText='display:none;align-items:center;gap:6px;margin:0 2px;';
-    ['#C0392B','#1D5FBF','#1E8E4E','#E67E22','#262626'].forEach((c)=>{
-      const d=document.createElement('button');
-      d.type='button';d.dataset.c=c;
-      d.setAttribute('aria-label','笔颜色');
-      d.style.cssText='width:17px;height:17px;border-radius:50%;border:1px solid rgba(0,0,0,.18);padding:0;cursor:pointer;background:'+c+';transition:transform .12s ease;';
-      d.addEventListener('click',()=>inkCtl.setColor(c));
-      inkDots.appendChild(d);
+
+    const inkPopHide=()=>{
+      inkPop.hidden=true;inkPopFor='';
+      /* 收起时回到「贴在工具条下方」的默认位置，下次打开不会莫名其妙飘在角落 */
+      inkPopPos=null;inkPop.classList.remove('is-moved');
+      inkPop.style.left='';inkPop.style.top='';
+    };
+    /* 面板定位：① 箭头对准当前工具按钮 ② 上下自动翻转。
+       默认挂在工具条下方；下方装不下而上方装得下时翻到上面（箭头跟着翻），
+       两边都装不下就选空间大的那侧并让面板自己滚动。 */
+    function positionPop(){
+      if(inkPop.hidden||!inkPopFor)return;
+      const b=inkBtns[inkPopFor];if(!b)return;
+      const rowR=toolsRow.getBoundingClientRect();
+      const h=inkPop.offsetHeight||inkPop.getBoundingClientRect().height;
+      const GAP=12;
+      const below=window.innerHeight-rowR.bottom-GAP;
+      const above=rowR.top-GAP;
+      let up=false;
+      if(h>below&&above>below)up=true;          /* 下面塞不下、上面更宽敞 → 往上弹 */
+      inkPop.classList.toggle('is-up',up);
+      /* 两边都不够时给个最大高度让它自己滚，别被视口切掉 */
+      inkPop.style.maxHeight=Math.max(160,(up?above:below))+'px';
+      const br=b.getBoundingClientRect(),pr=inkPop.getBoundingClientRect();
+      if(!pr.width)return;
+      const cx=br.left+br.width/2-pr.left;
+      inkPop.style.setProperty('--arrow-x',Math.max(16,Math.min(pr.width-16,cx))+'px');
+    }
+    /* 视口变化/滚动后重新判断上下 */
+    window.addEventListener('resize',()=>{if(!inkPop.hidden)positionPop();});
+    window.addEventListener('scroll',()=>{if(!inkPop.hidden)positionPop();},true);
+
+    /* ── 面板内的零件 ───────────────────────────── */
+    const inkSlider=(key,label,min,max,step,val,fmt)=>{
+      const row=document.createElement('div');row.className='sw-ink-row';
+      const t=document.createElement('div');t.className='sw-ink-rowtop';
+      const nm=document.createElement('span');nm.textContent=label;
+      const vv=document.createElement('span');vv.className='sw-ink-val';vv.textContent=fmt(val);
+      t.appendChild(nm);t.appendChild(vv);
+      const r=document.createElement('input');
+      r.type='range';r.min=min;r.max=max;r.step=step;r.value=val;r.className='sw-ink-range';
+      r.setAttribute('aria-label',label);
+      r.addEventListener('input',()=>{
+        const v=parseFloat(r.value);vv.textContent=fmt(v);
+        const o={};o[key]=v;inkCtl.setOpts(o);drawInkPreview();
+      });
+      row.appendChild(t);row.appendChild(r);return row;
+    };
+    const inkToggle=(label,on,fn)=>{
+      const row=document.createElement('button');
+      row.type='button';row.className='sw-ink-toggle';
+      row.setAttribute('aria-pressed',on?'true':'false');
+      const sp=document.createElement('span');sp.textContent=label;
+      const sw=document.createElement('span');sw.className='sw-ink-switch';sw.innerHTML='<i></i>';
+      row.appendChild(sp);row.appendChild(sw);
+      row.addEventListener('click',()=>{
+        const next=row.getAttribute('aria-pressed')!=='true';
+        row.setAttribute('aria-pressed',next?'true':'false');fn(next);
+      });
+      return row;
+    };
+    const inkSection=(txt)=>{
+      const d=document.createElement('div');d.className='sw-ink-sub';d.textContent=txt;return d;
+    };
+    const inkCard=(...kids)=>{
+      const g=document.createElement('div');g.className='sw-ink-group';
+      kids.forEach(k=>k&&g.appendChild(k));return g;
+    };
+    const inkPalette=(tool)=>{
+      const wrap=document.createElement('div');wrap.className='sw-ink-colors';
+      const cur=inkCtl.getToolColor(tool);
+      INK_PALETTE.forEach(c=>{
+        const b=document.createElement('button');
+        b.type='button';b.className='sw-ink-swatch'+(c.toLowerCase()===String(cur).toLowerCase()?' on':'');
+        b.style.background=c;b.dataset.c=c;
+        b.setAttribute('aria-label','颜色 '+c);
+        b.addEventListener('click',()=>{
+          inkCtl.setColor(c);
+          wrap.querySelectorAll('.sw-ink-swatch').forEach(x=>x.classList.toggle('on',x.dataset.c===c));
+          drawInkPreview();
+        });
+        wrap.appendChild(b);
+      });
+      return wrap;
+    };
+    const previewCv=document.createElement('canvas');
+    previewCv.className='sw-ink-preview';previewCv.width=560;previewCv.height=150;
+    const drawInkPreview=()=>{
+      const t=inkCtl.getTool();
+      if(t==='pen'||t==='hl')inkCtl.previewTo(previewCv,t);
+    };
+
+    /* ── 五个工具各自的面板 ─────────────────────── */
+    function buildInkPop(tool){
+      const o=inkCtl.getOpts();
+      inkPopFor=tool;
+      inkPop.innerHTML='';
+      const head=document.createElement('div');head.className='sw-ink-head';
+      head.textContent=(INK_TOOLS.find(t=>t.id===tool)||{}).label||'';
+      inkPop.appendChild(head);
+
+      if(tool==='pen'||tool==='hl'){
+        inkPop.appendChild(previewCv);
+      }
+      if(tool==='pen'){
+        const types=document.createElement('div');types.className='sw-ink-types';
+        inkCtl.penTypes().forEach(pt=>{
+          const b=document.createElement('button');b.type='button';
+          b.className='sw-ink-type'+(o.pen===pt.id?' on':'');
+          b.innerHTML=swIcoSvg(pt.id==='fountain'?'penFountain':(pt.id==='ball'?'penBall':'penBrush'))
+            +'<span>'+pt.name+'</span>';
+          b.addEventListener('click',()=>{inkCtl.setOpts({pen:pt.id});buildInkPop(tool);});
+          types.appendChild(b);
+        });
+        inkPop.appendChild(types);
+        inkPop.appendChild(inkCard(
+          inkSlider('width','笔尖',0.6,10,0.2,o.width,v=>Math.round((v-0.6)/9.4*100)+'%'),
+          inkSlider('press','压力灵敏度',0,1,0.05,o.press,v=>Math.round(v*100)+'%'),
+          inkSlider('flat','笔尖扁平度',0,1,0.05,o.flat,v=>v<0.05?'圆头':(v>0.95?'凿头':Math.round(v*100)+'%')),
+          inkSlider('stab','画笔稳定性',0,1,0.05,o.stab,v=>Math.round(v*100)+'%')
+        ));
+      }else if(tool==='hl'){
+        inkPop.appendChild(inkCard(
+          inkSlider('hlWidth','笔尖',4,30,1,o.hlWidth,v=>Math.round((v-4)/26*100)+'%'),
+          inkSlider('hlAlpha','不透明度',0.1,0.9,0.05,o.hlAlpha,v=>Math.round(v*100)+'%'),
+          inkSlider('stab','画笔稳定性',0,1,0.05,o.stab,v=>Math.round(v*100)+'%')
+        ));
+      }else if(tool==='shape'){
+        const row=document.createElement('div');row.className='sw-ink-shapes';
+        [['line','直线'],['rect','矩形'],['ellipse','椭圆'],['arrow','箭头']].forEach(([id,name])=>{
+          const b=document.createElement('button');b.type='button';
+          b.className='sw-ink-shape'+(o.shape===id?' on':'');
+          b.setAttribute('aria-label',name);
+          b.innerHTML=swIcoSvg('shape_'+id);
+          b.addEventListener('click',()=>{inkCtl.setOpts({shape:id});buildInkPop(tool);});
+          row.appendChild(b);
+        });
+        inkPop.appendChild(row);
+        inkPop.appendChild(inkCard(
+          inkSlider('shapeWidth','线宽',0.6,10,0.2,o.shapeWidth,v=>Math.round((v-0.6)/9.4*100)+'%')
+        ));
+        inkPop.appendChild(inkSection('设置'));
+        inkPop.appendChild(inkCard(
+          inkToggle('填充颜色',o.shapeFill,v=>inkCtl.setOpts({shapeFill:v}))
+        ));
+      }else if(tool==='text'){
+        inkPop.appendChild(inkCard(
+          inkSlider('fontSize','字号',10,48,1,o.fontSize,v=>Math.round(v)+'px')
+        ));
+      }else if(tool==='erase'){
+        const row=document.createElement('div');row.className='sw-ink-types';
+        [['fine','精细橡皮擦'],['std','标准橡皮擦'],['stroke','笔画橡皮擦']].forEach(([id,name])=>{
+          const b=document.createElement('button');b.type='button';
+          b.className='sw-ink-type'+(o.eraseType===id?' on':'');
+          b.innerHTML=swIcoSvg('eraser')+'<span>'+name+'</span>';
+          b.addEventListener('click',()=>{inkCtl.setOpts({eraseType:id});buildInkPop(tool);});
+          row.appendChild(b);
+        });
+        inkPop.appendChild(row);
+        const hint=document.createElement('div');hint.className='sw-ink-hint';
+        hint.textContent=o.eraseType==='stroke'?'碰到就整根擦掉。'
+          :(o.eraseType==='fine'?'判定范围更小，擦得更准。':'高效擦除，不留任何痕迹。');
+        inkPop.appendChild(hint);
+        const sizes=document.createElement('div');sizes.className='sw-ink-sizes';
+        for(let i=0;i<inkCtl.eraseSizes();i++){
+          const b=document.createElement('button');b.type='button';
+          b.className='sw-ink-size'+(o.eraseSize===i?' on':'');
+          b.setAttribute('aria-label','橡皮大小 '+(i+1));
+          const dot=document.createElement('span');
+          dot.style.cssText='display:block;border-radius:50%;background:currentColor;width:'+(9+i*8)+'px;height:'+(9+i*8)+'px;';
+          b.appendChild(dot);
+          b.addEventListener('click',()=>{inkCtl.setOpts({eraseSize:i});buildInkPop(tool);});
+          sizes.appendChild(b);
+        }
+        inkPop.appendChild(sizes);
+        inkPop.appendChild(inkSection('设置'));
+        inkPop.appendChild(inkCard(
+          inkToggle('只擦荧光笔',o.eraseHlOnly,v=>inkCtl.setOpts({eraseHlOnly:v}))
+        ));
+      }
+      if(tool!=='erase'){
+        inkPop.appendChild(inkSection('颜色'));
+        inkPop.appendChild(inkPalette(tool));
+      }
+      bindInkPopDrag(head);
+      inkPop.hidden=false;
+      drawInkPreview();
+      requestAnimationFrame(positionPop);
+    }
+
+    /* 面板可拖动（照 intercom）：按住标题栏拖到顺手的位置。
+       一旦拖过就切成 fixed 定位并记住坐标，换工具重建面板时保持在原处；
+       只有关掉工具才回到「贴在工具条下方」的默认位置。
+       ⚠️ 只有 musiclib 做这个 —— youth 那边保持现在的样式，不加拖动。 */
+    let inkPopPos=null;                     /* {x,y} 视口坐标，null=还没拖过 */
+    function bindInkPopDrag(handle){
+      if(inkPopPos){                        /* 重建面板后把位置还原回去 */
+        inkPop.classList.add('is-moved');
+        inkPop.style.left=inkPopPos.x+'px';inkPop.style.top=inkPopPos.y+'px';
+      }
+      let drag=null;
+      handle.addEventListener('pointerdown',(ev)=>{
+        const r=inkPop.getBoundingClientRect();
+        drag={dx:ev.clientX-r.left,dy:ev.clientY-r.top,w:r.width,h:r.height};
+        inkPop.classList.add('is-moved');
+        inkPop.style.left=r.left+'px';inkPop.style.top=r.top+'px';
+        try{handle.setPointerCapture(ev.pointerId);}catch(_){}
+        ev.preventDefault();
+      });
+      handle.addEventListener('pointermove',(ev)=>{
+        if(!drag)return;
+        ev.preventDefault();
+        /* 夹在视口内，别拖出屏幕外找不回来 */
+        const x=Math.max(6,Math.min(window.innerWidth-drag.w-6,ev.clientX-drag.dx));
+        const y=Math.max(6,Math.min(window.innerHeight-drag.h-6,ev.clientY-drag.dy));
+        inkPop.style.left=x+'px';inkPop.style.top=y+'px';
+        inkPopPos={x:x,y:y};
+      });
+      const endDrag=()=>{drag=null;};
+      handle.addEventListener('pointerup',endDrag);
+      handle.addEventListener('pointercancel',endDrag);
+    }
+
+    /* ── 工具按钮 ───────────────────────────────── */
+    INK_TOOLS.forEach(t=>{
+      const b=document.createElement('button');
+      b.type='button';b.className='sw-ico-btn sw-ink-tool';
+      b.setAttribute('aria-label',t.label);
+      b.innerHTML=swIcoSvg(t.icon)+'<i class="sw-ink-chev"></i><i class="sw-ink-dot"></i>';
+      scoreInkTipBind(b,t.label);
+      /* 三段循环（照 GoodNotes：点一下先选中，再点才开设置）：
+           ① 没选中 → 只选中，不弹面板（想马上画就直接画）
+           ② 已选中且面板收着 → 弹出设置面板
+           ③ 已选中且面板开着 → 收面板 + 退出工具，回到正常滚谱 */
+      b.addEventListener('click',()=>{
+        const cur=inkCtl.getTool();
+        if(cur!==t.id){                     /* ① 只选中 */
+          inkCtl.setTool(t.id);
+          inkPopHide();
+        }else if(inkPop.hidden){            /* ② 第二次点：弹面板 */
+          buildInkPop(t.id);
+        }else{                              /* ③ 第三次点：收面板并退出工具 */
+          inkCtl.setTool(t.id);             /* setTool 同值会切回 none */
+          inkPopHide();
+        }
+      });
+      inkBtns[t.id]=b;
     });
-    const inkUndoBtn=swIcoBtn('undo','撤销上一笔');
+    /* 一开始画就把面板收起来（工具还在），免得挡着谱 */
+    lbDiv.addEventListener('pointerdown',()=>{if(!inkPop.hidden)inkPopHide();},true);
+
+    const inkUndoBtn=swIcoBtn('undo','撤销');
     inkUndoBtn.addEventListener('click',()=>inkCtl.undo());
+    const inkRedoBtn=swIcoBtn('redo','重做');
+    inkRedoBtn.addEventListener('click',()=>inkCtl.redo());
     const inkClearBtn=swIcoBtn('trash','清空本页笔记');
     inkClearBtn.addEventListener('click',()=>inkCtl.clearAll());
-    inkUndoBtn.disabled=true;inkClearBtn.disabled=true;
+    inkUndoBtn.disabled=true;inkRedoBtn.disabled=true;inkClearBtn.disabled=true;
 
-    toolsRow.appendChild(inkPenBtn);
-    toolsRow.appendChild(inkHlBtn);
-    toolsRow.appendChild(inkEraseBtn);
-    toolsRow.appendChild(inkDots);
+    /* ── 悬浮工具条（照 intercom 的 .cf-ink-bar）──
+       深色胶囊条浮在谱面上方，左侧一根小竖条是拖动把手，右端一个钮收成小圆球。
+       收起态只显示当前工具的图标，再点展开。位置与收起状态都记在 localStorage。 */
+    const inkGrip=document.createElement('span');
+    inkGrip.className='sw-ink-grip';inkGrip.setAttribute('aria-hidden','true');
+    const inkMini=document.createElement('button');
+    inkMini.type='button';inkMini.className='sw-ink-mini';
+    inkMini.setAttribute('aria-label','展开工具条');
+    const inkFold=swIcoBtn('chevdown','收起工具条');
+
+    toolsRow.appendChild(inkGrip);
+    INK_TOOLS.forEach(t=>toolsRow.appendChild(inkBtns[t.id]));
+    toolsRow.appendChild(swSep());
     toolsRow.appendChild(inkUndoBtn);
+    toolsRow.appendChild(inkRedoBtn);
     toolsRow.appendChild(inkClearBtn);
     toolsRow.appendChild(swSep());
 
@@ -10204,7 +10878,59 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     // 工具排（荧光笔/分享/下载图片）跟移调联动——荧光笔画在当前调的谱上、
     // 下载导出的也是当前调，必须贴着谱放（谱上方）；节拍器没有联动，垫底，
     // 练习行的「节拍器」chip 会滚过来。
-    if(hasRenderedScore&&toolsRow.children.length){tools.appendChild(toolsRow);scoreModeShell.insertBefore(tools,scoreMain);}
+    /* 收起态：整条缩成一个圆钮，只显示当前工具图标（照 intercom 的 .mini） */
+    const INK_BAR_KEY='cecp-ink-bar';
+    let inkBarState=(()=>{try{return JSON.parse(localStorage.getItem(INK_BAR_KEY)||'null')||{};}catch(_){return {};}})();
+    const saveBarState=()=>{try{localStorage.setItem(INK_BAR_KEY,JSON.stringify(inkBarState));}catch(_){}};
+    function syncMini(){
+      const t=inkCtl.getTool();
+      const icon=(INK_TOOLS.find(x=>x.id===t)||INK_TOOLS[0]).icon;
+      inkMini.innerHTML=swIcoSvg(icon);
+    }
+    function setFolded(on){
+      inkBarState.folded=!!on;saveBarState();
+      tools.classList.toggle('is-mini',!!on);
+      if(on){inkPopHide();syncMini();}
+    }
+    inkFold.addEventListener('click',()=>setFolded(true));
+    inkMini.addEventListener('click',(e)=>{if(!barDrag.moved)setFolded(false);});
+    toolsRow.appendChild(inkFold);
+    tools.appendChild(inkMini);
+
+    /* 整条可拖动：把手拖展开态，圆钮本身拖收起态。位置存视口坐标。 */
+    const barDrag={moved:false};
+    function bindBarDrag(handle){
+      let d=null;
+      handle.addEventListener('pointerdown',(ev)=>{
+        const r=tools.getBoundingClientRect();
+        d={dx:ev.clientX-r.left,dy:ev.clientY-r.top,w:r.width,h:r.height};
+        barDrag.moved=false;
+        tools.classList.add('is-moved','dragging');
+        tools.style.left=r.left+'px';tools.style.top=r.top+'px';
+        try{handle.setPointerCapture(ev.pointerId);}catch(_){}
+        ev.preventDefault();
+      });
+      handle.addEventListener('pointermove',(ev)=>{
+        if(!d)return;ev.preventDefault();barDrag.moved=true;
+        const x=Math.max(6,Math.min(window.innerWidth-d.w-6,ev.clientX-d.dx));
+        const y=Math.max(6,Math.min(window.innerHeight-d.h-6,ev.clientY-d.dy));
+        tools.style.left=x+'px';tools.style.top=y+'px';
+        inkBarState.x=x;inkBarState.y=y;
+      });
+      const end=()=>{if(d){d=null;tools.classList.remove('dragging');saveBarState();
+        setTimeout(()=>{barDrag.moved=false;},0);}};
+      handle.addEventListener('pointerup',end);
+      handle.addEventListener('pointercancel',end);
+    }
+    bindBarDrag(inkGrip);bindBarDrag(inkMini);
+    /* 还原上次的位置与收起状态 */
+    if(inkBarState.x!=null&&inkBarState.y!=null){
+      tools.classList.add('is-moved');
+      tools.style.left=inkBarState.x+'px';tools.style.top=inkBarState.y+'px';
+    }
+    setFolded(!!inkBarState.folded);
+
+    if(hasRenderedScore&&toolsRow.children.length){tools.appendChild(toolsRow);tools.appendChild(inkPop);scoreModeShell.insertBefore(tools,scoreMain);}
     // 墨迹层的初次挂载在下方 renderScore() 之后(那里才真正建好谱内容);
     // 移调重渲染后在 setCurrentKey 里再挂。attach 幂等,多挂无害。
 

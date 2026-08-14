@@ -7864,7 +7864,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   min-height:54px!important;
   margin:0 0 14px!important;
   padding:0 16px!important;
-  border:1px solid rgba(255,255,255,.12)!important;
+  border:1px solid var(--ap-line)!important;
   border-radius:16px!important;
   background:var(--ap-card)!important;
   font-size:16px!important;
@@ -7877,7 +7877,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   min-height:0!important;
   margin:0 0 14px!important;
   padding:18px!important;
-  border:1px solid rgba(255,255,255,.11)!important;
+  border:1px solid var(--ap-line)!important;
   border-radius:17px!important;
   background:var(--ap-card)!important;
 }
@@ -7965,7 +7965,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   font-size:25px!important;
 }
 #ml-audio-panel-help{width:100%!important;height:56px!important;border:0!important;}
-#ml-audio-panel-time{margin:10px 0 0!important;text-align:center!important;font-size:13px!important;color:var(--ap-text3)!important;}
+#ml-audio-panel-time{margin:10px 0 0!important;text-align:center!important;font-size:13px!important;color:var(--ap-text2)!important;}
 #ml-audio-panel-status{height:0!important;margin:0!important;overflow:visible!important;background:none!important;color:var(--ap-text3)!important;font-size:11px!important;text-align:center!important;}
 @media(max-width:480px){
   #ml-audio-panel{width:calc(100vw - 16px)!important;max-height:calc(100dvh - 16px)!important;padding:14px!important;border-radius:22px!important;}
@@ -8485,7 +8485,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   min-width:92px !important;
   height:42px !important;
   padding:0 8px 0 12px !important;
-  border:1px solid rgba(255,255,255,.12) !important;
+  border:1px solid var(--ap-line) !important;
   border-radius:999px !important;
   background:var(--ap-card) !important;
   color:var(--ap-text2) !important;
@@ -8495,7 +8495,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   gap:8px !important;
   font:800 13px/1 Inter,"Noto Sans SC",system-ui,sans-serif !important;
   letter-spacing:.04em !important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.04) !important;
+  box-shadow: !important;
   transition:background .18s ease,border-color .18s ease,color .18s ease,box-shadow .18s ease !important;
 }
 #ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle.ml-audio-loop-switch:hover{
@@ -8581,8 +8581,8 @@ body.ml-detail-lock{overflow:hidden !important;}
   flex:0 0 40px !important;
   border-radius:13px !important;
   background:var(--ap-text) !important;
-  border:1px solid rgba(255,255,255,.18) !important;
-  box-shadow:0 7px 18px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.72) !important;
+  border:1px solid var(--ap-line) !important;
+  box-shadow:0 7px 18px rgba(0,0,0,.22) !important;
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
@@ -8604,13 +8604,13 @@ body.ml-detail-lock{overflow:hidden !important;}
   display:inline-flex !important;
   align-items:center !important;
   justify-content:center !important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.045) !important;
+  box-shadow: !important;
 }
 #ml-audio-panel-close:hover{
   background:var(--ap-card-hover) !important;
   color:#fff !important;
   border-color:rgba(242,207,69,.28) !important;
-  box-shadow:0 0 0 4px rgba(242,207,69,.07),inset 0 1px 0 rgba(255,255,255,.06) !important;
+  box-shadow:0 0 0 4px color-mix(in srgb,var(--ap-accent) 14%,transparent) !important;
 }
 .ml-motion-close-btn{
   -webkit-tap-highlight-color:transparent;
@@ -8691,7 +8691,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   height:var(--ml-ap-btn-size) !important;
   min-height:var(--ml-ap-btn-size) !important;
   padding:0 !important;
-  border:1px solid rgba(255,255,255,.10) !important;
+  border:1px solid var(--ap-line) !important;
   border-radius:14px !important;
   background:var(--ap-card) !important;
   color:var(--ap-text2) !important;
@@ -8699,7 +8699,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   align-items:center !important;
   justify-content:center !important;
   line-height:0 !important;
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.045),0 5px 14px rgba(0,0,0,.10) !important;
+  box-shadow:,0 5px 14px rgba(0,0,0,.10) !important;
   -webkit-tap-highlight-color:transparent !important;
   touch-action:manipulation !important;
   transition:transform .17s cubic-bezier(.2,.8,.25,1),background .17s ease,border-color .17s ease,color .17s ease,box-shadow .17s ease !important;
@@ -8718,7 +8718,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   border-color:rgba(242,207,69,.30) !important;
   background:var(--ap-card-hover) !important;
   color:#fff !important;
-  box-shadow:0 8px 18px rgba(0,0,0,.18),0 0 0 3px rgba(242,207,69,.055),inset 0 1px 0 rgba(255,255,255,.06) !important;
+  box-shadow:0 8px 18px rgba(0,0,0,.18),0 0 0 3px color-mix(in srgb,var(--ap-accent) 14%,transparent) !important;
 }
 #ml-audio-panel .ml-ap-icon-btn:active{
   transform:translateY(0) scale(.92) !important;
@@ -8964,7 +8964,7 @@ body.ml-detail-lock{overflow:hidden !important;}
 }
 #ml-audio-panel .ml-loop-action-btn:hover .ml-loop-action-label,
 #ml-audio-panel .ml-loop-action-btn:focus-visible .ml-loop-action-label{
-  color:#f4f1ea !important;
+  color:var(--ap-text) !important;
 }
 #ml-audio-panel .ml-audio-loop-actions .ml-loop-action-btn:hover,
 #ml-audio-panel .ml-audio-loop-actions #ml-audio-loop-toggle:hover{
@@ -9151,7 +9151,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   letter-spacing:-.045em !important;
   font-variant-numeric:tabular-nums !important;
   font-feature-settings:"tnum" 1 !important;
-  color:#f4f1ea !important;
+  color:var(--ap-text) !important;
   background:transparent !important;
   box-sizing:border-box !important;
 }
@@ -10334,4 +10334,298 @@ html[data-resolved-theme="dark"] #music-library .sw-ico-yt{color:#FF6B5E;}
 #music-library .sw-ico-btn.is-on{
   background:var(--accent-soft,#F8E7D8);
   color:var(--accent,#C76524);
+}
+
+
+
+/* ═══ 移调面板改成 youth（崇拜程序单/编辑风）的观感 ═══
+   两个宿主的类名本来就一样（.sw-ks/.sw-slabel/.sw-kg/.sw-kb/.sw-capo），
+   差别只在 CSS，所以这里只覆盖样式，移调逻辑一行不动。
+   取值逐条对齐 youth-engine.js 的 L496-508，变量按对照表换成 musiclib 的：
+     --ym-border→--divider  --ym-ink→--text-primary  --ym-ink2→--text-secondary
+     --ym-ink3→--text-muted  --ym-bg→--bg  --ym-soft→--surface-secondary
+   注意必须带 !important：musiclib.css:968 有一条
+   `.sw-pill,.sw-kb{border-radius:999px !important}` 把调按钮做成了圆形，
+   youth 那边是 7px 圆角矩形。 */
+#music-library .sw-ks{padding:16px 16px 14px;border-bottom:1px solid var(--divider);}
+#music-library .sw-slabel{color:var(--text-muted);}
+#music-library .sw-key-actions{margin-bottom:13px;gap:9px;}
+#music-library .sw-kg{gap:9px 11px;}
+#music-library .sw-kb{
+  border-radius:7px !important;          /* 盖掉 968 行的 999px 圆形 */
+  font-family:'DM Mono',monospace;font-size:12px;
+  padding:0 13px;min-width:42px;min-height:40px;text-align:center;
+  border:1px solid var(--divider);
+  background:transparent;
+  color:var(--text-secondary);
+  box-shadow:none;                        /* 去掉原来的内高光 */
+  transition:border-color .15s,background .15s,color .15s;
+}
+#music-library .sw-kb:hover{
+  border-color:var(--border-md,var(--divider));
+  color:var(--text-primary);
+  background:var(--surface-secondary);
+  transform:none;                         /* youth 不做悬停上浮 */
+  box-shadow:none;
+}
+/* 选中态：youth 是「深墨实心」而不是「橙色圆＋光晕」 */
+#music-library .sw-kb.on{
+  background:var(--text-primary);
+  color:var(--bg);
+  border-color:transparent;
+  font-weight:600;
+  box-shadow:0 12px 24px rgba(0,0,0,.16);
+}
+/* 变调夹提示条：youth 的间距与字号更紧一档 */
+#music-library .sw-capo{padding:13px 16px;}
+#music-library .sw-capo-t{font-size:13px;font-weight:600;}
+#music-library .sw-capo-s{font-size:11px;margin-top:1px;}
+#music-library .sw-capo-n{font-size:21px;}
+
+/* 工具设置面板是工具条的兄弟节点，父级 .sw-tools 是横向 flex —— 不改成纵向的话
+   面板会跟工具条并排挤在一起（实测过）。改成列方向 + 居中对齐即可。 */
+#music-library .sw-tools{flex-direction:column;align-items:center;}
+#music-library .sw-tools>.sw-tools-row{width:auto;}
+
+/* ═══ 墨迹工具面板（照 cecp-intercom / GoodNotes 的样式重做）═══
+   居中标题 + 顶部小箭头指向当前工具 + 分组卡 + 色板网格 + iOS 开关。
+   ⚠️ 配色一律走站点主题变量，不写死深色：面板是 #music-library 的后代，
+   变量拿得到；深色下自然变深、浅色下变浅，跟站里其它面板一致。
+   面板是工具条的兄弟节点（.sw-tools 已改成纵向），不 portal 到 body。 */
+#music-library .sw-ink-pop{
+  /* 面板配色跟随主题。深色主题刻意用「中性黑」(var(--ip-bg) 一族) 而不是站点那套
+     偏绿的 #18201C —— 用户要的是 intercom/GoodNotes 那种黑,不要深蓝绿。 */
+  --ip-bg:#FFFFFF;
+  --ip-card:#F2F2F7;
+  --ip-text:#1C1C1E;
+  --ip-text2:#8E8E93;
+  --ip-line:rgba(0,0,0,.08);
+  --ip-track:#E5E5EA;
+  position:relative;
+  margin:10px auto 0;
+  width:min(296px,calc(100vw - 24px));
+  box-sizing:border-box;
+  padding:12px 12px 12px;
+  border-radius:20px;
+  background:var(--ip-bg);
+  color:var(--ip-text);
+  box-shadow:0 18px 46px rgba(0,0,0,.22);
+  animation:ml-met-pop-in .16s cubic-bezier(.32,.72,0,1);
+  text-align:left;
+}
+html[data-resolved-theme="dark"] #music-library .sw-ink-pop,
+html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
+  --ip-bg:#2C2C2E;
+  --ip-card:#3A3A3C;
+  --ip-text:#F2F2F7;
+  --ip-text2:#AEAEB2;
+  --ip-line:rgba(255,255,255,.09);
+  --ip-track:#48484A;
+  box-shadow:0 18px 46px rgba(0,0,0,.34);
+}
+@media (prefers-color-scheme: light){
+  html:not([data-resolved-theme="dark"]) #music-library .sw-ink-pop{
+    --ip-bg:#FFFFFF;--ip-card:#F2F2F7;--ip-text:#1C1C1E;
+    --ip-text2:#8E8E93;--ip-line:rgba(0,0,0,.08);--ip-track:#E5E5EA;
+  }
+}
+#music-library .sw-ink-pop[hidden]{display:none;}
+/* 拖走之后改成 fixed 定位，箭头就没意义了 */
+#music-library .sw-ink-pop.is-moved{position:fixed;margin:0;z-index:100003;}
+#music-library .sw-ink-pop.is-moved::before{display:none;}
+#music-library .sw-ink-pop::before{
+  content:'';position:absolute;top:-7px;left:var(--arrow-x,50%);
+  width:13px;height:13px;margin-left:-7px;
+  background:var(--ip-bg);transform:rotate(45deg);
+  border-left:1px solid var(--ip-line);border-top:1px solid var(--ip-line);
+  border-radius:3px;
+}
+/* 标题（拖动已去掉：用户反馈不好用；面板固定挂在工具条正下方） */
+#music-library .sw-ink-head{
+  text-align:center;font-weight:600;font-size:14px;
+  color:var(--ip-text);margin:0 0 10px;user-select:none;position:relative;
+}
+#music-library .sw-ink-preview{
+  display:block;width:100%;height:52px;margin:0 0 10px;
+  border-radius:10px;background:var(--ip-card);
+}
+#music-library .sw-ink-types{display:flex;gap:6px;margin:0 0 10px;}
+#music-library .sw-ink-type{
+  flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;
+  padding:9px 3px;border-radius:10px;cursor:pointer;border:0;
+  background:transparent;color:var(--ip-text2);
+  font-size:12px;font-family:inherit;line-height:1.25;
+}
+#music-library .sw-ink-type.on{background:var(--ip-card);color:var(--ip-text);}
+#music-library .sw-ink-type svg{width:24px;height:24px;}
+#music-library .sw-ink-shapes{display:flex;gap:8px;justify-content:center;margin:0 0 14px;}
+#music-library .sw-ink-shape{
+  width:62px;height:44px;border-radius:11px;cursor:pointer;border:0;
+  background:transparent;color:var(--ip-text2);
+  display:flex;align-items:center;justify-content:center;
+}
+#music-library .sw-ink-shape.on{background:var(--ip-card);color:var(--ip-text);}
+#music-library .sw-ink-group{
+  border-radius:12px;background:var(--ip-card);padding:2px 12px;margin:0 0 10px;
+}
+#music-library .sw-ink-row{padding:8px 0;border-bottom:1px solid var(--ip-line);}
+#music-library .sw-ink-row:last-child{border-bottom:0;}
+#music-library .sw-ink-rowtop{
+  display:flex;justify-content:space-between;align-items:baseline;
+  font-size:13px;color:var(--ip-text);margin:0 0 6px;
+}
+#music-library .sw-ink-val{color:var(--ip-text2);font-variant-numeric:tabular-nums;}
+/* iOS 式滑杆：粗轨 + 大白钮 */
+#music-library .sw-ink-range{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:26px;margin:0;background:transparent;cursor:pointer;
+}
+#music-library .sw-ink-range::-webkit-slider-runnable-track{
+  height:26px;border-radius:13px;background:var(--ip-track);
+}
+#music-library .sw-ink-range::-moz-range-track{height:26px;border-radius:13px;background:var(--ip-track);}
+#music-library .sw-ink-range::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;
+  width:30px;height:22px;border-radius:11px;background:#fff;border:0;
+  margin-top:2px;box-shadow:0 1px 3px rgba(0,0,0,.3);
+}
+#music-library .sw-ink-range::-moz-range-thumb{
+  width:30px;height:22px;border-radius:11px;background:#fff;border:0;
+  box-shadow:0 1px 3px rgba(0,0,0,.3);
+}
+#music-library .sw-ink-sizes{display:flex;gap:10px;justify-content:center;margin:0 0 14px;}
+#music-library .sw-ink-size{
+  width:64px;height:56px;border-radius:12px;cursor:pointer;border:0;
+  display:flex;align-items:center;justify-content:center;
+  background:transparent;color:var(--ip-text2);
+}
+#music-library .sw-ink-size.on{background:var(--ip-card);color:var(--ip-text);}
+#music-library .sw-ink-sub{
+  font-size:13px;color:var(--ip-text2);margin:0 0 8px 4px;
+}
+#music-library .sw-ink-toggle{
+  display:flex;align-items:center;justify-content:space-between;width:100%;
+  padding:12px 0;border:0;background:transparent;
+  font-size:15px;color:var(--ip-text);font-family:inherit;text-align:left;cursor:pointer;
+}
+#music-library .sw-ink-switch{
+  flex:0 0 auto;width:48px;height:29px;border-radius:999px;
+  background:var(--bg2,var(--ip-line));position:relative;transition:background .18s ease;
+}
+#music-library .sw-ink-switch i{
+  position:absolute;top:2px;left:2px;width:25px;height:25px;border-radius:50%;
+  background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.3);
+  transition:transform .18s cubic-bezier(.32,.72,0,1);
+}
+#music-library .sw-ink-toggle[aria-pressed="true"] .sw-ink-switch{background:#34C759;}
+#music-library .sw-ink-toggle[aria-pressed="true"] .sw-ink-switch i{transform:translateX(19px);}
+#music-library .sw-ink-hint{
+  font-size:12px;color:var(--ip-text2);margin:0 0 12px 4px;line-height:1.5;
+}
+#music-library .sw-ink-colors{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:7px;
+}
+#music-library .sw-ink-swatch{
+  width:100%;aspect-ratio:1;border-radius:50%;border:0;padding:0;cursor:pointer;
+  box-shadow:inset 0 0 0 1px rgba(128,128,128,.28);
+}
+#music-library .sw-ink-swatch.on{
+  box-shadow:0 0 0 2.5px var(--ip-text),inset 0 0 0 1px rgba(128,128,128,.28);
+}
+/* 工具按钮上的 ∨ 与绿点（照 intercom：激活时才显示） */
+#music-library .sw-ink-tool{position:relative;}
+#music-library .sw-ink-chev,#music-library .sw-ink-dot{display:none;}
+#music-library .sw-ink-tool.is-on .sw-ink-chev{
+  display:block;position:absolute;right:3px;bottom:4px;
+  width:0;height:0;border-left:3.5px solid transparent;border-right:3.5px solid transparent;
+  border-top:4px solid currentColor;opacity:.75;
+}
+#music-library .sw-ink-tool.is-on .sw-ink-dot{
+  display:block;position:absolute;left:50%;bottom:3px;margin-left:-2.5px;
+  width:5px;height:5px;border-radius:50%;background:#34C759;
+}
+
+/* ═══ 悬浮墨迹工具条（照 cecp-intercom 的 .cf-ink-bar）═══
+   深色半透明胶囊 + 毛玻璃，浮在谱面上；左侧一根小竖条是拖动把手，
+   右端一个圆钮收起成小球。取值逐条对齐 intercom cecp.js L634-676。
+   ⚠️ 这条工具条刻意保持深色（不跟主题）—— 它浮在纸白的谱面之上，
+   深色才有「悬浮工具」的层次感，intercom 与 GoodNotes 都是这么做的。 */
+#music-library .sw-tools{
+  position:relative;
+  flex-direction:row;               /* 盖掉前面那条纵向规则：面板改成绝对定位挂在下面 */
+  justify-content:center;
+  z-index:60;
+}
+#music-library .sw-tools.is-moved{position:fixed;margin:0;z-index:100004;}
+#music-library .sw-tools>.sw-tools-row{
+  display:inline-flex;align-items:center;gap:2px;
+  padding:5px 7px;border-radius:16px;
+  background:rgba(38,38,41,.93);
+  -webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);
+  box-shadow:0 6px 24px rgba(0,0,0,.28),0 1px 3px rgba(0,0,0,.2);
+  color:rgba(255,255,255,.92);
+  max-width:calc(100vw - 24px);flex-wrap:nowrap;overflow:visible;
+}
+#music-library .sw-tools.dragging>.sw-tools-row{
+  transition:none;box-shadow:0 12px 34px rgba(0,0,0,.42);
+}
+/* 条里的按钮：透明底、白图标，选中才加高亮底 */
+#music-library .sw-tools>.sw-tools-row .sw-ico-btn{
+  width:38px;height:36px;border-radius:11px;
+  background:transparent;color:inherit;border:0;box-shadow:none;
+  display:inline-flex;align-items:center;justify-content:center;
+  transition:transform .12s,background .15s;
+}
+#music-library .sw-tools>.sw-tools-row .sw-ico-btn:active{transform:scale(.9);}
+@media (hover:hover){
+  #music-library .sw-tools>.sw-tools-row .sw-ico-btn:hover{background:rgba(255,255,255,.1);}
+}
+#music-library .sw-tools>.sw-tools-row .sw-ico-btn.is-on{
+  background:rgba(255,255,255,.18);color:#fff;
+}
+#music-library .sw-tools>.sw-tools-row .sw-ico-btn[disabled]{opacity:.32;}
+#music-library .sw-tools>.sw-tools-row .sw-tools-sep{
+  width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px;flex:none;
+}
+/* 左侧拖动把手 */
+#music-library .sw-ink-grip{
+  flex:none;width:14px;height:26px;margin-right:2px;cursor:grab;touch-action:none;
+  border-radius:6px;background:linear-gradient(var(--g),var(--g));
+  background-size:2px 14px;background-position:center;background-repeat:no-repeat;
+  --g:rgba(255,255,255,.34);
+}
+#music-library .sw-ink-grip:active{cursor:grabbing;--g:rgba(255,255,255,.7);}
+/* 收起态：整条变成一个小圆球，只显示当前工具 */
+#music-library .sw-ink-mini{
+  display:none;flex:none;width:46px;height:46px;border-radius:50%;border:0;
+  background:rgba(38,38,41,.93);color:rgba(255,255,255,.92);
+  -webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);
+  box-shadow:0 6px 24px rgba(0,0,0,.28);
+  align-items:center;justify-content:center;cursor:grab;touch-action:none;
+}
+#music-library .sw-ink-mini:active{cursor:grabbing;}
+#music-library .sw-tools.is-mini>.sw-tools-row{display:none;}
+#music-library .sw-tools.is-mini>.sw-ink-mini{display:flex;}
+#music-library .sw-tools.is-mini>.sw-ink-pop{display:none;}
+/* 面板：挂在工具条正下方（绝对定位，条本身是横向 flex） */
+#music-library .sw-tools>.sw-ink-pop{
+  position:absolute;top:calc(100% + 10px);left:50%;transform:translateX(-50%);margin:0;
+  z-index:100003;
+}
+#music-library .sw-tools>.sw-ink-pop.is-moved{position:fixed;left:auto;transform:none;}
+/* 手机上整条收小（intercom 同款断点） */
+@media (max-width:560px){
+  #music-library .sw-tools>.sw-tools-row{padding:4px 5px;border-radius:14px;}
+  #music-library .sw-tools>.sw-tools-row .sw-ico-btn{width:31px;height:32px;border-radius:9px;}
+  #music-library .sw-tools>.sw-tools-row .sw-ico-btn svg{width:18px;height:18px;}
+  #music-library .sw-ink-grip{width:11px;height:22px;margin-right:0;}
+}
+
+/* 面板往上弹时：整体挪到工具条上方，箭头翻到底边指下 */
+#music-library .sw-ink-pop{overflow-y:auto;-webkit-overflow-scrolling:touch;}
+#music-library .sw-tools>.sw-ink-pop.is-up{
+  top:auto;bottom:calc(100% + 10px);
+}
+#music-library .sw-ink-pop.is-up::before{
+  top:auto;bottom:-7px;
 }
