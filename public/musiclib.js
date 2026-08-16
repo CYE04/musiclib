@@ -5761,9 +5761,12 @@ function justifyScoreRows(rowList,opts){
       零宽之后放大不撑列宽，所以敢放大。
    5. 只有两个和弦真的会撞上时，才在那一处局部加最小间距（写 padding，
       不碰 margin-right —— 那是 justifyScoreRows 的地盘）。
-   6. 歌词空位（@）连续 4 个以上的那一段（前奏/间奏/拖腔），把这几列的横向占位收紧约三成；
-      少于 4 个连续空位不动，避免整篇忽宽忽窄。收紧只改列的 margin/min-width，
-      不改字号、不改和弦、不改这些列上面的和弦位置关系。
+   6. 收紧要**同时**满足两个条件，缺一不收：
+      ① 这一段是连续 >=4 个「歌词空位」（前奏/间奏/拖腔）；
+      ② **这一行确实长** —— 自然宽 >= 全曲最宽行 * CHORD_FIT_LONG_ROW。
+      收紧的意义是「别让这行拖着整首谱缩小」，行本来就不长的话收了白收，
+      只会显得局促（用户 2026-08-16：「一行太长的时候才需要缩紧，位置够就正常对齐」）。
+      收紧只改列的 margin/min-width，不改字号、不改和弦、不改和弦的位置关系。
 
    与既有代码的分工（都不要碰）：
    - .prev-seg 的 marginRight = justifyScoreRows 的
@@ -5772,6 +5775,7 @@ function justifyScoreRows(rowList,opts){
 
 var CHORD_FIT_GAP=4;          /* 两个和弦之间的最小安全间距(px, scale=1) */
 var CHORD_FIT_EMPTY_RUN=4;    /* 连续这么多个「歌词空位」才触发收紧（用户定的：4 个以上 @） */
+var CHORD_FIT_LONG_ROW=0.9;   /* 还要这行确实长：自然宽 >= 最宽行 * 这个比例才收紧，位置够就正常排 */
 var CHORD_FIT_TIGHT=0.3;      /* 收紧强度参考值：列外边距归零 + 最小列宽 1.2em -> 0.9em，约省三成横向占位 */
 
 /* 空白字符：普通空格 / TAB / NBSP / 韩文填充符 ㅤ / 全角空格 */
@@ -5881,8 +5885,9 @@ function layoutStrictChordsClear(scope){
   var n=scope.querySelectorAll('.cf-tight');
   for(i=0;i<n.length;i++)n[i].classList.remove('cf-tight');
 }
-/* 一行：定对中模式 + 只在真会撞时局部加距离。返回是否动过布局。 */
-function layoutStrictChords(row){
+/* 一行：（可选的）空歌词收紧 + 定对中模式 + 只在真会撞时局部加距离。返回是否动过布局。
+   allowTight 省略视为 false —— 收紧要不要做由整首那一层判断，单行调用不擅自收。 */
+function layoutStrictChords(row,allowTight){
   if(!row||!row.querySelectorAll)return false;
   var all=row.querySelectorAll('.prev-seg.p-slot');
   if(!all.length)return false;
@@ -5897,8 +5902,9 @@ function layoutStrictChords(row){
   for(i=0;i<cols.length;i++){
     slotNo.push(cols[i].classList.contains('p-barslot')?-1:sn++);
   }
-  /* 先收紧「连续空歌词」的那几段：它改列宽，必须排在下面的量之前 */
-  chordFitMarkTightRuns(cols);
+  /* 先收紧「连续空歌词」的那几段：它改列宽，必须排在下面的量之前。
+     allowTight 由 layoutStrictChordsAll 按「这行够不够长」给，不长就不收。 */
+  if(allowTight)chordFitMarkTightRuns(cols);
 
   var items=[];
   for(i=0;i<cols.length;i++){
@@ -5969,8 +5975,23 @@ function layoutStrictChordsAll(scope){
   for(i=0;i<list.length;i++){ if(list[i].querySelector('.prev-seg.p-slot'))rows.push(list[i]); }
   if(!rows.length)return false;
   layoutStrictChordsClear(scope);
-  var changed=false;
-  for(i=0;i<rows.length;i++){ if(layoutStrictChords(rows[i]))changed=true; }
+
+  /* 先量各行的自然宽（此时还没加任何收紧/避让），用来判断哪些行「确实长」。
+     只有拖着整首谱缩小的那些行才值得收紧；位置够的行收了白收，只会显得局促。 */
+  var widths=[],maxW=0,prevDisp,w;
+  for(i=0;i<rows.length;i++){
+    prevDisp=rows[i].style.display;
+    rows[i].style.display='inline-flex';
+    w=rows[i].offsetWidth;
+    rows[i].style.display=prevDisp;
+    widths.push(w);
+    if(w>maxW)maxW=w;
+  }
+  var changed=false,longEnough;
+  for(i=0;i<rows.length;i++){
+    longEnough=(maxW>0&&widths[i]>=maxW*CHORD_FIT_LONG_ROW);
+    if(layoutStrictChords(rows[i],longEnough))changed=true;
+  }
   return changed;
 }
 /* 本块要求的 CSS（三个宿主各自带前缀注入，规则文字保持一致）：
