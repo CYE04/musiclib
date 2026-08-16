@@ -1242,7 +1242,7 @@
       '.prev-seg.p-slot .p-chord .p-chord-head{white-space:pre;}',
       '.prev-seg.p-slot .p-chord .p-chord-tail{display:inline-block;width:0;min-width:0;overflow:visible;white-space:pre;}',
       '.prev-seg.p-slot .p-chord.p-chord-mid .p-chord-tail{width:auto;}',
-      '.prev-row.cf-noly .prev-seg.p-slot{margin-left:1px;margin-right:1px;}',
+      '.prev-seg.p-slot.cf-tight{margin-left:0;margin-right:0;min-width:0.9em;}',   /* 连续>=4个空歌词音位:横向占位收紧约三成 */
       '.prev-seg.p-slot .p-chord.p-chord-multi{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;line-height:1.1;}',
       '.prev-seg.p-slot .p-chord-multi .p-chord-stk{display:block;line-height:1.2;}',
       '.prev-seg.p-slot .p-chord-multi .chord-chip{font-size:.85em;}',
@@ -5757,7 +5757,9 @@ function justifyScoreRows(rowList,opts){
    4. 字号一律不变 —— 尾巴与头一样大，短和弦更是一个像素都不改。
    5. 只有两个和弦真的会撞上时，才在那一处局部加最小间距（写 padding，
       不碰 margin-right —— 那是 justifyScoreRows 的地盘）。
-   6. 整行歌词全是 @（前奏/间奏这种）且这行确实长，才把列间距轻微收紧一点。
+   6. 歌词空位（@）连续 4 个以上的那一段（前奏/间奏/拖腔），把这几列的横向占位收紧约三成；
+      少于 4 个连续空位不动，避免整篇忽宽忽窄。收紧只改列的 margin/min-width，
+      不改字号、不改和弦、不改这些列上面的和弦位置关系。
 
    与既有代码的分工（都不要碰）：
    - .prev-seg 的 marginRight = justifyScoreRows 的
@@ -5765,7 +5767,8 @@ function justifyScoreRows(rowList,opts){
    - 本块只写：列的 paddingLeft / paddingRight，以及 .p-chord 上的 p-chord-mid 类。 */
 
 var CHORD_FIT_GAP=4;          /* 两个和弦之间的最小安全间距(px, scale=1) */
-var CHORD_FIT_LONG_ROW=0.9;   /* 行宽 >= 最宽行 * 这个比例，才算「太长的行」 */
+var CHORD_FIT_EMPTY_RUN=4;    /* 连续这么多个「歌词空位」才触发收紧（用户定的：4 个以上 @） */
+var CHORD_FIT_TIGHT=0.3;      /* 收紧强度参考值：列外边距归零 + 最小列宽 1.2em -> 0.9em，约省三成横向占位 */
 
 /* 空白字符：普通空格 / TAB / NBSP / 韩文填充符 ㅤ / 全角空格 */
 var CHORD_FIT_BLANKS=' '+String.fromCharCode(9)+String.fromCharCode(160)+String.fromCharCode(0x3164)+String.fromCharCode(0x3000);
@@ -5836,11 +5839,29 @@ function chordFitInk(el){
   var r=rg.getBoundingClientRect();
   return { L:r.left, R:r.right, w:r.width };
 }
-/* 这一行有没有真正的歌词（不是全 @ / 全空白） */
-function chordFitRowHasLyric(row){
-  var ls=row.querySelectorAll('.p-lyric'),i;
-  for(i=0;i<ls.length;i++){ if(!chordFitIsBlank(ls[i].textContent||''))return true; }
-  return false;
+/* 这一列的歌词是不是空的（所有歌词行都只有 @ / 空白） */
+function chordFitSlotBlank(col){
+  var ls=col.querySelectorAll('.p-lyric'),i;
+  if(!ls.length)return true;
+  for(i=0;i<ls.length;i++){ if(!chordFitIsBlank(ls[i].textContent||''))return false; }
+  return true;
+}
+/* 给一行里「连续 >=CHORD_FIT_EMPTY_RUN 个空歌词音位」的那几段打 cf-tight。
+   小节线列不算音位：既不打断连续，也不参与收紧。 */
+function chordFitMarkTightRuns(cols){
+  var run=[],i,j;
+  function flush(){
+    if(run.length>=CHORD_FIT_EMPTY_RUN){
+      for(j=0;j<run.length;j++)run[j].classList.add('cf-tight');
+    }
+    run=[];
+  }
+  for(i=0;i<cols.length;i++){
+    if(cols[i].classList.contains('p-barslot'))continue;
+    if(chordFitSlotBlank(cols[i]))run.push(cols[i]);
+    else flush();
+  }
+  flush();
 }
 /* 幂等还原：清掉上一轮写的所有东西 */
 function layoutStrictChordsClear(scope){
@@ -5853,8 +5874,8 @@ function layoutStrictChordsClear(scope){
   }
   var m=scope.querySelectorAll('.p-chord-mid');
   for(i=0;i<m.length;i++)m[i].classList.remove('p-chord-mid');
-  var n=scope.querySelectorAll('.prev-row.cf-noly');
-  for(i=0;i<n.length;i++)n[i].classList.remove('cf-noly');
+  var n=scope.querySelectorAll('.cf-tight');
+  for(i=0;i<n.length;i++)n[i].classList.remove('cf-tight');
 }
 /* 一行：定对中模式 + 只在真会撞时局部加距离。返回是否动过布局。 */
 function layoutStrictChords(row){
@@ -5872,6 +5893,9 @@ function layoutStrictChords(row){
   for(i=0;i<cols.length;i++){
     slotNo.push(cols[i].classList.contains('p-barslot')?-1:sn++);
   }
+  /* 先收紧「连续空歌词」的那几段：它改列宽，必须排在下面的量之前 */
+  chordFitMarkTightRuns(cols);
+
   var items=[];
   for(i=0;i<cols.length;i++){
     var ch=cols[i].querySelector('.p-chord');
@@ -5933,7 +5957,7 @@ function layoutStrictChords(row){
   row.style.display=prevDisp;
   return changed;
 }
-/* 整首：先标出「歌词全空又确实长」的行轻微收紧，再逐行做和弦避让。
+/* 整首：逐行做「连续空歌词收紧 + 和弦避让」。
    非严格模式(没有 .p-slot)全程 no-op。 */
 function layoutStrictChordsAll(scope){
   if(!scope||!scope.querySelectorAll)return false;
@@ -5941,22 +5965,6 @@ function layoutStrictChordsAll(scope){
   for(i=0;i<list.length;i++){ if(list[i].querySelector('.prev-seg.p-slot'))rows.push(list[i]); }
   if(!rows.length)return false;
   layoutStrictChordsClear(scope);
-
-  /* 先量各行自然宽（此时还没加任何避让），用来判断哪些行「太长」 */
-  var widths=[],maxW=0,prevDisp,w;
-  for(i=0;i<rows.length;i++){
-    prevDisp=rows[i].style.display;
-    rows[i].style.display='inline-flex';
-    w=rows[i].offsetWidth;
-    rows[i].style.display=prevDisp;
-    widths.push(w);
-    if(w>maxW)maxW=w;
-  }
-  for(i=0;i<rows.length;i++){
-    if(maxW>0&&widths[i]>=maxW*CHORD_FIT_LONG_ROW&&!chordFitRowHasLyric(rows[i])){
-      rows[i].classList.add('cf-noly');
-    }
-  }
   var changed=false;
   for(i=0;i<rows.length;i++){ if(layoutStrictChords(rows[i]))changed=true; }
   return changed;
@@ -5973,7 +5981,8 @@ function layoutStrictChordsAll(scope){
   .prev-seg.p-slot .p-chord .p-chord-head{white-space:pre;}
   .prev-seg.p-slot .p-chord .p-chord-tail{display:inline-block;width:0;min-width:0;overflow:visible;white-space:pre;}
   .prev-seg.p-slot .p-chord.p-chord-mid .p-chord-tail{width:auto;}
-  .prev-row.cf-noly .prev-seg.p-slot{margin-left:1px;margin-right:1px;}
+  .prev-seg.p-slot.cf-tight{margin-left:0;margin-right:0;min-width:0.9em;}
+    -- 连续 >=4 个空歌词音位的那一段：横向占位收紧约三成（外边距 2px->0、最小列宽 1.2em->0.9em）。
 */
 /* ═══════════ CECP-CHORD-FIT v1 END ═══════════ */
 /* justifyRows 开关：行内两端对齐，右端与最宽行对齐（短行除外） */

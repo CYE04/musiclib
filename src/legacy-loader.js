@@ -13,7 +13,7 @@ const LEGACY_SCRIPTS = [
   "./gsap.min.js?v=20260711-justify-rows",
   "./pinyin-pro.js?v=20260725-pypro",
   "./bible-service.js?v=20260711-justify-rows",
-  "./musiclib.js?v=20260814-inkexp",
+  "./musiclib.js?v=20260815-chordfit",
 ];
 
 let started = false;
