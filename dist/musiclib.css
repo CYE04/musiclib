@@ -9554,12 +9554,14 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 /* CECP-CHORD-FIT：和弦零宽，完全不参与列宽（长和弦不再撑开数字间距）。
    前两个字对中(=老版位置)，第三个字起零宽悬挂向右延伸；字号一律不变。
    与 musiclib.js 的 ensureStrictCssML 两处必须同步——投影窗口只加载本文件。 */
-#music-library .prev-seg.p-slot .p-chord{min-width:0;width:0;overflow:visible;white-space:pre;display:flex;flex-direction:row;justify-content:center;align-items:flex-end;}
+#music-library .prev-seg.p-slot .p-chord{min-width:0;width:0;overflow:visible;white-space:pre;display:flex;flex-direction:row;justify-content:center;align-items:flex-end;font-size:16px;min-height:17px;}
 #music-library .prev-seg.p-slot .p-chord > *{flex:0 0 auto;}   /* 全局 reset #music-library *{min-width:0} 会把 chord-chip 压成 0 宽 */
 #music-library .prev-seg.p-slot .p-chord .p-chord-head{white-space:pre;}
 #music-library .prev-seg.p-slot .p-chord .p-chord-tail{display:inline-block;width:0;min-width:0;overflow:visible;white-space:pre;}
 #music-library .prev-seg.p-slot .p-chord.p-chord-mid .p-chord-tail{width:auto;}
 #music-library .prev-seg.p-slot.cf-tight{margin-left:0;margin-right:0;min-width:0.9em;}
+#music-library .prev-seg.p-slot:has(.jp-aug){margin-right:11px;}   /* 附点零宽会贴到下一个音,补出间距 */
+#music-library .prev-seg.p-slot.cf-tight[data-bb]{margin-right:8px;}   /* 收紧不能把断梁的断口压没 */
 #music-library .prev-seg.p-slot .p-chord.p-chord-multi{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;line-height:1.1;}
 #music-library .prev-seg.p-slot .p-chord-multi .p-chord-stk{display:block;line-height:1.2;}
 #music-library .prev-seg.p-slot .p-chord-multi .chord-chip{font-size:.85em;}
