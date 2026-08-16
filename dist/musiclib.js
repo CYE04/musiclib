@@ -9388,6 +9388,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
      那种"歌词"跟 mp3 对不上，滚起来只会误导人。 */
   const MP_NO_LYRIC_TEXT='完咯，被你发现了，这首歌还没有歌词';
   const MP_NO_LYRIC_SHORT='还没有歌词';
+  /* ⚠️ 目前没有调用者：播放器不再拿谱面歌词冒充同步歌词（见 _mpUseFallbackLyrics）。
+     保留是因为「没 LRC 时静态显示谱面歌词」随时可能被要回去，改回来只要一行。 */
   function _mpExtractPlainLyrics(song){
     const lines=[];
     const strict=song&&song.align==='strict';
@@ -9425,8 +9427,13 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     }
     return lines.map(tx=>({t:null,tx}));
   }
+  /* 没有 LRC 时间轴（没配 lrc 字段 / 文件 404 / 解析不出时间戳）= 没有能跟 mp3 对上的歌词。
+     以前这里会退回「谱面歌词」，再由 _mpSyncLrc 按歌曲时长平均分配假装滚动 ——
+     结果永远对不上，唱的人反而被带偏（用户："他不会对齐mp3"）。
+     现在直接走空态，让 _mpRenderLrc 显示"这首歌还没有歌词"。
+     谱面歌词想看就去看谱，不在播放器里冒充同步歌词。 */
   function _mpUseFallbackLyrics(song){
-    _mpLrc=_mpExtractPlainLyrics(song);
+    _mpLrc=[];
     _mpLrcTimed=false;
     _mpLrcIdx=-1;
     _mpRenderLrc();
