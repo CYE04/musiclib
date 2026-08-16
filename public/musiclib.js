@@ -1235,7 +1235,14 @@
     const s=document.createElement('style');s.id='ml-strict-css';
     s.textContent=[
       '.prev-seg.p-slot{align-items:center !important;min-width:1.2em;margin:0 2px;}',
-      '.prev-seg.p-slot .p-chord{text-align:center;white-space:normal;min-width:100%;}',
+      /* CECP-CHORD-FIT：和弦零宽，完全不参与列宽（长和弦不再撑开数字间距）。
+         前两个字对中(=老版位置)，第三个字起零宽悬挂向右延伸；字号一律不变。 */
+      '.prev-seg.p-slot .p-chord{min-width:0;width:0;overflow:visible;white-space:pre;display:flex;flex-direction:row;justify-content:center;align-items:flex-end;}',
+      '.prev-seg.p-slot .p-chord > *{flex:0 0 auto;}',   /* musiclib 有 #music-library *{min-width:0} 全局 reset，不写这条 chord-chip 会被压成 0 宽 */
+      '.prev-seg.p-slot .p-chord .p-chord-head{white-space:pre;}',
+      '.prev-seg.p-slot .p-chord .p-chord-tail{display:inline-block;width:0;min-width:0;overflow:visible;white-space:pre;}',
+      '.prev-seg.p-slot .p-chord.p-chord-mid .p-chord-tail{width:auto;}',
+      '.prev-row.cf-noly .prev-seg.p-slot{margin-left:1px;margin-right:1px;}',
       '.prev-seg.p-slot .p-chord.p-chord-multi{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;line-height:1.1;}',
       '.prev-seg.p-slot .p-chord-multi .p-chord-stk{display:block;line-height:1.2;}',
       '.prev-seg.p-slot .p-chord-multi .chord-chip{font-size:.85em;}',
@@ -1277,6 +1284,7 @@
             if(stack.length<=1){ setChordContentEx(c,trChordEx(chVal,st,useFlat,trChord),setChordContent); chordChipDecorate(c); }
             else { c.classList.add('p-chord-multi'); stack.slice().reverse().forEach(function(sym){const ln=_div('p-chord-stk');setChordContentEx(ln,trChordEx(sym,st,useFlat,trChord),setChordContent);chordChipDecorate(ln);c.appendChild(ln);}); }
           } else { setChordContentEx(c,' ',setChordContent); }
+          chordFitPrepare(c);      // CECP-CHORD-FIT：拆成「前两字(对中) + 尾巴(零宽右延伸)」
           col.appendChild(c);
         }
         const nWrap=_div('p-n'); if(show.jianpu)nWrap.appendChild(parseJpToken(tok)); col.appendChild(nWrap);
@@ -1589,6 +1597,7 @@
         let {raw,songMaxH}=paginate(songMaxW);
         // 两端对齐(分散对齐): 级联重排后各行都是真实单行, 拉伸到统一宽 -> 右边缘整齐(短尾行不拉)
         const songRows=collectSongRows();
+        layoutStrictChordsAll(songStage);   // CECP-CHORD-FIT: 和弦避让要先于两端对齐(非 strict 为 no-op)
         if(typeof justifyScoreRows==='function' && songRows.length){
           justifyScoreRows(songRows,{ratio:0.5});
         }
@@ -3285,6 +3294,7 @@
         .then(()=>waitPaint2())
         .then(()=>{
           // strict: 克隆里的梁/弧是屏幕坐标, 导出按 max-content 重新排版了, 得按新布局重排(非 strict 为 no-op)
+          layoutStrictChordsAll(snap.node);
           snap.node.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
           layoutStrictArcsAll(snap.node);
           const r1=snap.node.getBoundingClientRect();
@@ -3301,6 +3311,7 @@
           }
           exportApplyTwoColumns(snap.node,cw);
           return waitPaint2().then(()=>{
+            layoutStrictChordsAll(snap.node);                                     // 双栏重排后和弦避让也要重算
             snap.node.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);   // 双栏重排后再排一次梁/弧
             layoutStrictArcsAll(snap.node);
             const r2=snap.node.getBoundingClientRect();
@@ -5720,6 +5731,251 @@ function justifyScoreRows(rowList,opts){
   return plans.length;
 }
 /* ═══════════ CECP-JUSTIFY-ROWS v1 END ═══════════ */
+
+/* ═══════════ CECP-CHORD-FIT v1 BEGIN ═══════════
+   共享模块：严格对位（align:"strict"）下的和弦排版。
+   本块在以下三个文件中逐字节相同（权威版本 = shared/chord-fit.js）：
+     musiclib-react-migration/public/musiclib.js / youth-engine.js / musictool/musictool.js
+   修改流程：先改 shared/chord-fit.js，再同步三处，diff 校验一致。
+   注意：本块内禁止出现反斜杠字符、反引号、以及美元号紧跟大括号
+   （musictool.js 的副本位于 jianpuHTML 模板字符串内，
+   经 CMS 部署还会再丢一层反斜杠）。转义一律用 String.fromCharCode 构造。
+
+   只作用于严格模式（.prev-seg.p-slot 结构）；老格式的歌一个像素都不动。
+
+   解决的问题：严格模式下每个音位是一个竖列，和弦 .p-chord 参与列宽计算，
+   于是 F#sus4 这种长和弦会把整列撑宽 → 数字之间的间距被拉大 → 整行自然宽度变大
+   → fitRows 按「可用宽度 / 自然宽度」缩放，行越宽整首谱缩得越小。
+
+   规则（用户 2026-08-15 定的）：
+   1. .p-chord 零宽 + overflow 可见 → 和弦完全不参与列宽，数字位置只由数字/歌词决定。
+   2. 对中核心 = 前两个「字」；斜杠和括号不算字（所以 C/E 是 2 个字、整体对中）。
+      一个字就那个字对中，两个字就两个字对中 —— 与老版逐像素相同。
+      第 3 个字起是「尾巴」，零宽悬挂、只向右延伸，不影响任何人的位置。
+   3. 紧邻的下一个音位马上也有和弦时，这个和弦退回老版「整段整体对中」
+      （左右都伸），否则右延伸会把后面的音位推开，反而比老版更宽。
+   4. 字号一律不变 —— 尾巴与头一样大，短和弦更是一个像素都不改。
+   5. 只有两个和弦真的会撞上时，才在那一处局部加最小间距（写 padding，
+      不碰 margin-right —— 那是 justifyScoreRows 的地盘）。
+   6. 整行歌词全是 @（前奏/间奏这种）且这行确实长，才把列间距轻微收紧一点。
+
+   与既有代码的分工（都不要碰）：
+   - .prev-seg 的 marginRight = justifyScoreRows 的
+   - .p-chord 的 marginBottom = layoutStrictArcsAll / placeSecLabel 的
+   - 本块只写：列的 paddingLeft / paddingRight，以及 .p-chord 上的 p-chord-mid 类。 */
+
+var CHORD_FIT_GAP=4;          /* 两个和弦之间的最小安全间距(px, scale=1) */
+var CHORD_FIT_LONG_ROW=0.9;   /* 行宽 >= 最宽行 * 这个比例，才算「太长的行」 */
+
+/* 空白字符：普通空格 / TAB / NBSP / 韩文填充符 ㅤ / 全角空格 */
+var CHORD_FIT_BLANKS=' '+String.fromCharCode(9)+String.fromCharCode(160)+String.fromCharCode(0x3164)+String.fromCharCode(0x3000);
+function chordFitIsBlank(s){
+  var t=String(s||''),i;
+  for(i=0;i<t.length;i++){ if(CHORD_FIT_BLANKS.indexOf(t.charAt(i))<0)return false; }
+  return true;
+}
+/* 对中核心的长度：数到第 2 个「字」为止；斜杠与括号不算字。
+   C -> 1(整个)、F# -> 2、C/E -> 3(整个,因为 / 不算字)、Gm7 -> 2、F#sus4 -> 2 */
+function chordFitHeadLen(text){
+  var s=String(text||''),n=0,i,c;
+  for(i=0;i<s.length;i++){
+    c=s.charAt(i);
+    if(c!=='/'&&c!=='('&&c!==')')n++;
+    if(n>=2)return i+1;
+  }
+  return s.length;
+}
+/* 把一个和弦元素的文字拆成 头 + 尾 两个 span。幂等。
+   注意：setChordContent 在 Apple 设备上是「一个字符一个文本节点」，
+   所以这里要吃下任意多个连续文本节点；一旦混进元素子节点
+   （{sp} 的 chord-gap 占位块）就原样放过——放过也没关系：
+   零宽 + 整体对中，仍然不撑列宽，只是没有右延伸。 */
+function chordFitSplitOne(host){
+  if(!host||host.nodeType!==1)return;
+  if(host.querySelector&&host.querySelector('.p-chord-head'))return;
+  var nodes=[],txt='',n,i;
+  for(n=host.firstChild;n;n=n.nextSibling){
+    if(n.nodeType!==3)return;
+    nodes.push(n);
+    txt+=(n.nodeValue||'');
+  }
+  if(!nodes.length||!txt||chordFitIsBlank(txt))return;
+  var k=chordFitHeadLen(txt);
+  var head=document.createElement('span');
+  head.className='p-chord-head';
+  head.appendChild(document.createTextNode(txt.slice(0,k)));
+  for(i=0;i<nodes.length;i++)host.removeChild(nodes[i]);
+  host.appendChild(head);
+  if(k<txt.length){
+    var tail=document.createElement('span');
+    tail.className='p-chord-tail';
+    tail.appendChild(document.createTextNode(txt.slice(k)));
+    host.appendChild(tail);
+  }
+}
+/* 建列时调用：setChordContentEx + chordChipDecorate 之后，对一个 .p-chord 生效。
+   叠和弦(逗号)每一层 .p-chord-stk 各自拆。 */
+function chordFitPrepare(el){
+  if(!el||el.nodeType!==1)return;
+  var cls=' '+String(el.className||'')+' ';
+  if(cls.indexOf(' empty ')>=0)return;
+  var stks=el.querySelectorAll?el.querySelectorAll('.p-chord-stk'):null;
+  var hosts=[],i;
+  if(stks&&stks.length){ for(i=0;i<stks.length;i++)hosts.push(stks[i]); }
+  else hosts.push(el);
+  for(i=0;i<hosts.length;i++){
+    var chip=hosts[i].querySelector?hosts[i].querySelector('.chord-chip'):null;
+    chordFitSplitOne(chip||hosts[i]);
+  }
+}
+/* 量一个元素里「真正画出来的墨迹」左右边界。
+   .p-chord 是零宽盒子，量盒子恒为 0，必须用 Range。 */
+function chordFitInk(el){
+  var rg=document.createRange();
+  rg.selectNodeContents(el);
+  var r=rg.getBoundingClientRect();
+  return { L:r.left, R:r.right, w:r.width };
+}
+/* 这一行有没有真正的歌词（不是全 @ / 全空白） */
+function chordFitRowHasLyric(row){
+  var ls=row.querySelectorAll('.p-lyric'),i;
+  for(i=0;i<ls.length;i++){ if(!chordFitIsBlank(ls[i].textContent||''))return true; }
+  return false;
+}
+/* 幂等还原：清掉上一轮写的所有东西 */
+function layoutStrictChordsClear(scope){
+  if(!scope||!scope.querySelectorAll)return;
+  var a=scope.querySelectorAll('[data-cfgap]'),i;
+  for(i=0;i<a.length;i++){
+    a[i].style.paddingLeft='';
+    a[i].style.paddingRight='';
+    a[i].removeAttribute('data-cfgap');
+  }
+  var m=scope.querySelectorAll('.p-chord-mid');
+  for(i=0;i<m.length;i++)m[i].classList.remove('p-chord-mid');
+  var n=scope.querySelectorAll('.prev-row.cf-noly');
+  for(i=0;i<n.length;i++)n[i].classList.remove('cf-noly');
+}
+/* 一行：定对中模式 + 只在真会撞时局部加距离。返回是否动过布局。 */
+function layoutStrictChords(row){
+  if(!row||!row.querySelectorAll)return false;
+  var all=row.querySelectorAll('.prev-seg.p-slot');
+  if(!all.length)return false;
+  var cols=[],i;
+  for(i=0;i<all.length;i++)cols.push(all[i]);
+
+  var prevDisp=row.style.display;
+  row.style.display='inline-flex';        /* 摊到自然宽再量，免得被容器挤扁量歪 */
+
+  /* 音位序号（小节线/拍号列不算音位） */
+  var slotNo=[],sn=0;
+  for(i=0;i<cols.length;i++){
+    slotNo.push(cols[i].classList.contains('p-barslot')?-1:sn++);
+  }
+  var items=[];
+  for(i=0;i<cols.length;i++){
+    var ch=cols[i].querySelector('.p-chord');
+    if(!ch)continue;
+    if((' '+String(ch.className||'')+' ').indexOf(' empty ')>=0)continue;
+    if(chordFitIsBlank(ch.textContent||''))continue;
+    items.push({col:cols[i],slot:slotNo[i],ch:ch});
+  }
+  /* 紧邻下一个音位就有和弦 -> 这个和弦退回老版整段整体对中 */
+  for(i=0;i<items.length-1;i++){
+    if(items[i].slot>=0&&items[i+1].slot-items[i].slot===1){
+      items[i].ch.classList.add('p-chord-mid');
+    }
+  }
+  var changed=false,prevR=null,m,need,host,base;
+  for(i=0;i<items.length;i++){
+    m=chordFitInk(items[i].ch);
+    if(prevR!==null&&m.L<prevR+CHORD_FIT_GAP){
+      need=prevR+CHORD_FIT_GAP-m.L;
+      /* 推前一列的右内边距：本列连同后面所有音位一起右移，音位之间的基础间距不变。
+         没有前一列(行首/volta 首列)就推自己的左内边距，效果一样。 */
+      host=items[i].col.previousElementSibling;
+      if(host&&host.style){
+        base=parseFloat(host.style.paddingRight)||0;
+        host.style.paddingRight=(base+need).toFixed(2)+'px';
+        host.setAttribute('data-cfgap','1');
+      }else{
+        host=items[i].col;
+        base=parseFloat(host.style.paddingLeft)||0;
+        host.style.paddingLeft=(base+need).toFixed(2)+'px';
+        host.setAttribute('data-cfgap','1');
+      }
+      changed=true;
+      m=chordFitInk(items[i].ch);
+    }
+    prevR=m.R;
+  }
+  /* 行首/行尾溢出兜底：让整行的盒子把和弦墨迹整个包住，
+     否则 justify 量不到、导出/投影会被裁掉。 */
+  if(items.length){
+    var rr=row.getBoundingClientRect();
+    var over=chordFitInk(items[items.length-1].ch).R-rr.right;
+    if(over>0.5){
+      host=cols[cols.length-1];
+      base=parseFloat(host.style.paddingRight)||0;
+      host.style.paddingRight=(base+over).toFixed(2)+'px';
+      host.setAttribute('data-cfgap','1');
+      changed=true;
+    }
+    var under=rr.left-chordFitInk(items[0].ch).L;
+    if(under>0.5){
+      host=cols[0];
+      base=parseFloat(host.style.paddingLeft)||0;
+      host.style.paddingLeft=(base+under).toFixed(2)+'px';
+      host.setAttribute('data-cfgap','1');
+      changed=true;
+    }
+  }
+  row.style.display=prevDisp;
+  return changed;
+}
+/* 整首：先标出「歌词全空又确实长」的行轻微收紧，再逐行做和弦避让。
+   非严格模式(没有 .p-slot)全程 no-op。 */
+function layoutStrictChordsAll(scope){
+  if(!scope||!scope.querySelectorAll)return false;
+  var list=scope.querySelectorAll('.prev-row'),rows=[],i;
+  for(i=0;i<list.length;i++){ if(list[i].querySelector('.prev-seg.p-slot'))rows.push(list[i]); }
+  if(!rows.length)return false;
+  layoutStrictChordsClear(scope);
+
+  /* 先量各行自然宽（此时还没加任何避让），用来判断哪些行「太长」 */
+  var widths=[],maxW=0,prevDisp,w;
+  for(i=0;i<rows.length;i++){
+    prevDisp=rows[i].style.display;
+    rows[i].style.display='inline-flex';
+    w=rows[i].offsetWidth;
+    rows[i].style.display=prevDisp;
+    widths.push(w);
+    if(w>maxW)maxW=w;
+  }
+  for(i=0;i<rows.length;i++){
+    if(maxW>0&&widths[i]>=maxW*CHORD_FIT_LONG_ROW&&!chordFitRowHasLyric(rows[i])){
+      rows[i].classList.add('cf-noly');
+    }
+  }
+  var changed=false;
+  for(i=0;i<rows.length;i++){ if(layoutStrictChords(rows[i]))changed=true; }
+  return changed;
+}
+/* 本块要求的 CSS（三个宿主各自带前缀注入，规则文字保持一致）：
+
+  .prev-seg.p-slot .p-chord{min-width:0;width:0;overflow:visible;white-space:pre;
+    display:flex;flex-direction:row;justify-content:center;align-items:flex-end;}
+  .prev-seg.p-slot .p-chord > *{flex:0 0 auto;}
+    -- 这条必须有：musiclib 有全局 reset #music-library *{min-width:0}，
+       零宽 flex 容器里的 .chord-chip 会被 flex-shrink 压成 0 宽，
+       和弦就贴到音符中心右边而不是对中。
+  .prev-seg.p-slot .p-chord.p-chord-multi{flex-direction:column;align-items:center;justify-content:flex-end;}
+  .prev-seg.p-slot .p-chord .p-chord-head{white-space:pre;}
+  .prev-seg.p-slot .p-chord .p-chord-tail{display:inline-block;width:0;min-width:0;overflow:visible;white-space:pre;}
+  .prev-seg.p-slot .p-chord.p-chord-mid .p-chord-tail{width:auto;}
+  .prev-row.cf-noly .prev-seg.p-slot{margin-left:1px;margin-right:1px;}
+*/
+/* ═══════════ CECP-CHORD-FIT v1 END ═══════════ */
 /* justifyRows 开关：行内两端对齐，右端与最宽行对齐（短行除外） */
 const ML_JUSTIFY_ROWS=true;
 
@@ -11142,6 +11398,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       resetScoreFit();
       normalizePreviewRowHeights();
 
+      /* CECP-CHORD-FIT：和弦避让排在 justify 之前 —— 它会给个别列加 padding，
+         justify 与 measureNaturalScore 都得把这些 padding 算进行宽里。
+         它内部逐行临时 display:inline-flex 量自然宽，所以不受容器挤压影响。 */
+      if(s.align==='strict')layoutStrictChordsAll(lbDiv);
       if(ML_JUSTIFY_ROWS)justifyScoreRows(lbDiv.querySelectorAll('.sw-lrow'));
       const natural=measureNaturalScore();
       if(!natural)return;
