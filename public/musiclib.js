@@ -10214,12 +10214,18 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     const panel=detail;
     const overlay=$('ml-detail-overlay');
     let sx=0,sy=0,dx=0,dragging=false,started=false;
-    function canStart(t){
+    /* 内容区里只认「从屏幕左缘起手」的返回手势。
+       以前只要页面在顶部，手指落在任何地方(包括整块谱面)横向拖 10px 就把整首歌划走 ——
+       在谱上想动一下就误触，安卓上尤其明显(iOS 那边浏览器自己的边缘手势先接管了，
+       反而不容易撞上)。顶栏保持整条可拖，那里没有别的内容要抢手势。 */
+    const SWIPE_EDGE=32;
+    function canStart(t,x){
       if(!panel.classList.contains('open')) return false;
       const header=t.closest('#ml-detail-header');
       const body=t.closest('#ml-detail');
       if(header) return true;
       if(!body) return false;
+      if(x>SWIPE_EDGE) return false;
       const scroller=t.closest('#ml-detail-body');
       if(scroller && scroller.scrollTop>0) return false;
       const dialog=t.closest('#ml-detail-dialog');
@@ -10227,8 +10233,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       return (window.innerWidth<=900);
     }
     panel.addEventListener('touchstart',e=>{
-      if(!canStart(e.target)) return;
       const t=e.touches[0];
+      if(!canStart(e.target,t.clientX)) return;
       sx=t.clientX; sy=t.clientY; dx=0; dragging=false; started=true;
       panel.classList.remove('swiping');
     },{passive:true});
