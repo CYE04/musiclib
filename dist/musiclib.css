@@ -1568,6 +1568,20 @@ html,body{
 }
 
 body{overflow-x:hidden;}
+
+/* ── 安卓：往右滑会退到上一页 ──────────────────────────────────
+   Chrome Android 的「横向 overscroll 触发前进/后退」：在任何横向可滚的东西上
+   （首页货架、筛选条、搜索历史、演示台工具条…）已经滑到最左端还继续往右滑，
+   滚动就会「链」到文档层，被浏览器当成后退手势 —— 表现就是莫名其妙跳回上一页。
+   overscroll-behavior-x 一是切断这个链，二是关掉浏览器自带的 overscroll 手势。
+   注意：这条管不了「安卓系统手势导航」从屏幕最边缘往里划的那种后退，
+   那是操作系统层的，网页无权拦；那种情况靠 history 兜底（打开详情/播放器时
+   pushState，popstate 时关闭当前层而不是离开页面）。 */
+html,body{overscroll-behavior-x:none;}
+#music-library .ml-shelf-row,
+#music-library .ml-ps-toolbar,
+#ml-search-history,
+#ml-filter-bar{overscroll-behavior-x:contain;}
 html.ml-fullscreen,
 body.ml-fullscreen{
   width:100%;
