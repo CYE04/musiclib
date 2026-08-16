@@ -9384,6 +9384,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     });
     return arr.sort((a,b)=>a.t-b.t);
   }
+  /* 没歌词时播放器里显示的话。宁可明说，也不要拿副标题之类的东西冒充歌词——
+     那种"歌词"跟 mp3 对不上，滚起来只会误导人。 */
+  const MP_NO_LYRIC_TEXT='完咯，被你发现了，这首歌还没有歌词';
+  const MP_NO_LYRIC_SHORT='还没有歌词';
   function _mpExtractPlainLyrics(song){
     const lines=[];
     const strict=song&&song.align==='strict';
@@ -9414,9 +9418,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       }
     }
     if(!lines.length && song){
+      /* 只回退到真正的歌词字段。以前还会 push(song.sub) —— sub 是副标题/词曲信息，
+         顶上去就成了「凭空多出一段歌词」，而且它跟 mp3 完全对不上。宁可显示"还没有歌词"。 */
       push(song.lyrics);
       push(song.lyric);
-      push(song.sub);
     }
     return lines.map(tx=>({t:null,tx}));
   }
@@ -9433,9 +9438,9 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       if(!inner) return;
       inner.innerHTML='';
       if(!_mpLrc.length){
-        inner.innerHTML=`<div class="${lineClass}">暂无歌词</div>`;
+        inner.innerHTML=`<div class="${lineClass} is-empty">${MP_NO_LYRIC_TEXT}</div>`;
         const nbLyric=$('ml-nowbar-lyric');
-        if(nbLyric) nbLyric.textContent='暂无歌词';
+        if(nbLyric) nbLyric.textContent=MP_NO_LYRIC_SHORT;
         return;
       }
       inner.classList.toggle('is-static',!_mpLrcTimed);
@@ -9454,7 +9459,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     paint('ml-player-lyrics-inner','ml-player-lyrics','ml-player-lrc-line');
     _mpLrcIdx=0;
     const nbLyric=$('ml-nowbar-lyric');
-    if(nbLyric) nbLyric.textContent=_mpLrc[0]?.tx || '歌词将在播放时显示';
+    if(nbLyric) nbLyric.textContent=_mpLrc[0]?.tx || MP_NO_LYRIC_SHORT;
   }
   function _mpSyncLrc(cur,force=false){
     if(!_mpLrc.length) return;

@@ -2386,6 +2386,9 @@ html,body,#music-library{
   font-size: clamp(15px, 4vw, 20px);
   font-weight: 700;
 }
+/* 「这首歌还没有歌词」这句不是歌词：不给点、不加粗、淡一点，别让人以为能跳转 */
+.ml-mp-lrc-line.is-empty { cursor: default; opacity: .8; }
+.ml-mp-lrc-line.is-empty:hover { color: var(--player-lrc-dim); }
 
 /* Song row */
 .pl-song-row { display:flex; align-items:center; gap:12px; }
@@ -3985,6 +3988,13 @@ html,body,#music-library{
   color:#ffffff;
   text-shadow:0 0 22px rgba(255,255,255,.22);
   transform:translateX(2px);
+}
+/* 全屏播放器里这行字号很大(32~66px)，"还没有歌词"这句要收小、别喊 */
+.ml-player-lrc-line.is-empty{
+  font-size:clamp(17px,2.1vw,28px);
+  font-weight:600;
+  color:rgba(210,220,255,.55);
+  cursor:default;
 }
 
 #ml-player-dock{
