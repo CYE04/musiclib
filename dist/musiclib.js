@@ -5696,12 +5696,15 @@ function justifyScoreRows(rowList,opts){
   /* 2. inline-flex 测各行自然宽度（与 measureNaturalScore 同法） */
   var widths=rows.map(function(row){
     var prev=row.style.display;
+    var prevOv=row.style.overflowX;
     row.style.display='inline-flex';
+    row.style.overflowX='visible';
     /* 必须用 offsetWidth：flex 容器的 scrollWidth 不含子项 margin，
        而最终行宽是含 margin 的，两者不是同一个量 -> 严格模式每列都有 margin
        (列间距/悬挂标点间隙)，列数越多误差越大，各行拉不齐(实测差 15px)。 */
     var w=row.offsetWidth;
     row.style.display=prev;
+    row.style.overflowX=prevOv;
     return w;
   });
   var maxW=0;
@@ -5727,13 +5730,38 @@ function justifyScoreRows(rowList,opts){
       };
     });
     if(total<=0)return;
-    plans.push({items:items,extra:extra,total:total});
+    plans.push({row:row,items:items,extra:extra,total:total});
   });
   plans.forEach(function(plan){
     plan.items.forEach(function(item){
       item.seg.style.marginRight=(item.base+plan.extra*item.w/plan.total)+'px';
       item.seg.setAttribute('data-ml-just','1');
     });
+  });
+  /* 收尾校正：写完之后逐行实测，把残差补到最后一个参与分摊的 seg 上。
+     「量」和「写」之间只要有任何东西改过宽度（网页字体晚到、谱图加载、
+     宿主容器重排），一次性按比例分摊就会不准，而且没人再纠正 ——
+     实测老格式歌各行会差十几 px，行尾参差不齐。
+     这一刀让本函数自己保证后置条件：该拉伸的行，右端严格对齐到同一个 maxW。 */
+  plans.forEach(function(plan){
+    if(!plan.items.length)return;
+    /* 只校正老格式行：严格对位行的 p-slot 列宽和弦避让已经由 strict 分支负责，
+       这里保持原来的 strict 水平布局不变。 */
+    if(plan.row.querySelector('.prev-seg.p-slot'))return;
+    var prev=plan.row.style.display;
+    var prevOv=plan.row.style.overflowX;
+    plan.row.style.display='inline-flex';
+    plan.row.style.overflowX='visible';
+    var now=plan.row.offsetWidth;
+    plan.row.style.display=prev;
+    plan.row.style.overflowX=prevOv;
+    var diff=maxW-now;
+    if(diff>0.5||diff<-0.5){
+      var last=plan.items[plan.items.length-1];
+      var v=(parseFloat(last.seg.style.marginRight)||0)+diff;
+      if(v<0)v=0;
+      last.seg.style.marginRight=v+'px';
+    }
   });
   return plans.length;
 }
