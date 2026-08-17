@@ -9574,7 +9574,7 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
    JS 注入的严格样式到不了投影 → 悬挂标点失效、列不居中、实宽>refW 导致整页偏移被裁。
    本块带 #music-library 前缀（优先级压过上方 .prev-seg 的 flex-start），主站+投影同源生效。
    改动须与 ensureStrictCssML 同步。 */
-#music-library .prev-seg.p-slot{align-items:center !important;min-width:1.2em;margin:0 2px;}
+#music-library .prev-seg.p-slot{align-items:center !important;font-size:16px;min-width:19.2px;margin:0 2px;}
 /* CECP-CHORD-FIT：和弦零宽，完全不参与列宽（长和弦不再撑开数字间距）。
    前两个字对中(=老版位置)，第三个字起零宽悬挂向右延伸；字号一律不变。
    与 musiclib.js 的 ensureStrictCssML 两处必须同步——投影窗口只加载本文件。 */
@@ -9583,15 +9583,16 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 #music-library .prev-seg.p-slot .p-chord .p-chord-head{white-space:pre;}
 #music-library .prev-seg.p-slot .p-chord .p-chord-tail{display:inline-block;width:0;min-width:0;overflow:visible;white-space:pre;}
 #music-library .prev-seg.p-slot .p-chord.p-chord-mid .p-chord-tail{width:auto;}
-#music-library .prev-seg.p-slot.cf-tight{margin-left:0;margin-right:0;min-width:0.9em;}
+#music-library .prev-seg.p-slot.cf-tight{margin-left:0;margin-right:0;min-width:14.4px;}
 #music-library .prev-seg.p-slot:has(.jp-aug){margin-right:11px;}   /* 附点零宽会贴到下一个音,补出间距 */
 #music-library .prev-seg.p-slot.cf-tight[data-bb]{margin-right:8px;}   /* 收紧不能把断梁的断口压没 */
 #music-library .prev-seg.p-slot .p-chord.p-chord-multi{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;line-height:1.1;}
 #music-library .prev-seg.p-slot .p-chord-multi .p-chord-stk{display:block;line-height:1.2;}
-#music-library .prev-seg.p-slot .p-chord-multi .chord-chip{font-size:.85em;}
+/* 叠和弦(上下两个)跟单和弦一样大 */
+#music-library .prev-seg.p-slot .p-chord-multi .chord-chip{font-size:1em;}
 #music-library .prev-seg.p-slot .p-lyric{text-align:center;padding:0 1px;}
 #music-library .prev-seg.p-slot .p-lyric .p-punct{display:inline-block;width:0;overflow:visible;white-space:pre;pointer-events:none;}
-#music-library .prev-seg.p-slot.p-punct-gap{margin-right:0.5em;}
+#music-library .prev-seg.p-slot.p-punct-gap{margin-right:8px;}
 #music-library .prev-seg.p-barslot{min-width:0;margin:0 3px;}
 #music-library .strict-label-row{display:block;margin:0 0 2px;line-height:1;}
 

@@ -1234,7 +1234,10 @@
     if(document.getElementById('ml-strict-css'))return;
     const s=document.createElement('style');s.id='ml-strict-css';
     s.textContent=[
-      '.prev-seg.p-slot{align-items:center !important;min-width:1.2em;margin:0 2px;}',
+      /* font-size 必须钉死：严格模式里 .jp-wrap{min-width:1em}、标点间隙等都是 em，
+         而各宿主的环境字号不同(youth 页面 18px / musiclib 16px)，不钉的话同一首歌
+         每列宽差 2.4px，几十个音位累积下来整行差近百 px → 缩放不同 → 段落位置对不上。 */
+      '.prev-seg.p-slot{align-items:center !important;font-size:16px;min-width:19.2px;margin:0 2px;}',
       /* CECP-CHORD-FIT：和弦零宽，完全不参与列宽（长和弦不再撑开数字间距）。
          前两个字对中(=老版位置)，第三个字起零宽悬挂向右延伸；字号一律不变。 */
       '.prev-seg.p-slot .p-chord{min-width:0;width:0;overflow:visible;white-space:pre;display:flex;flex-direction:row;justify-content:center;align-items:flex-end;font-size:16px;min-height:17px;}',
@@ -1242,15 +1245,17 @@
       '.prev-seg.p-slot .p-chord .p-chord-head{white-space:pre;}',
       '.prev-seg.p-slot .p-chord .p-chord-tail{display:inline-block;width:0;min-width:0;overflow:visible;white-space:pre;}',
       '.prev-seg.p-slot .p-chord.p-chord-mid .p-chord-tail{width:auto;}',
-      '.prev-seg.p-slot.cf-tight{margin-left:0;margin-right:0;min-width:0.9em;}',   /* 连续>=4个空歌词音位:横向占位收紧约三成 */
+      '.prev-seg.p-slot.cf-tight{margin-left:0;margin-right:0;min-width:14.4px;}',   /* 连续>=4个空歌词音位:横向占位收紧约三成 */
       '.prev-seg.p-slot:has(.jp-aug){margin-right:11px;}',   /* 附点是零宽绝对定位的,会贴到下一个音;给这一列补出间距,免得看不出点属于哪个音 */
       '.prev-seg.p-slot.cf-tight[data-bb]{margin-right:8px;}',   /* 收紧不能把断梁的断口也压没了 —— 没写歌词时梁缝会变 0，断梁等于白写 */
       '.prev-seg.p-slot .p-chord.p-chord-multi{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:1px;line-height:1.1;}',
       '.prev-seg.p-slot .p-chord-multi .p-chord-stk{display:block;line-height:1.2;}',
-      '.prev-seg.p-slot .p-chord-multi .chord-chip{font-size:.85em;}',
+      /* 叠和弦(上下两个)跟单和弦一样大：以前压到 .85em 是为了塞下两行，
+         零宽之后宽度不成问题，小一号反而像写错了 */
+      '.prev-seg.p-slot .p-chord-multi .chord-chip{font-size:1em;}',
       '.prev-seg.p-slot .p-lyric{text-align:center;padding:0 1px;}',
       '.prev-seg.p-slot .p-lyric .p-punct{display:inline-block;width:0;overflow:visible;white-space:pre;pointer-events:none;}',
-      '.prev-seg.p-slot.p-punct-gap{margin-right:0.5em;}',
+      '.prev-seg.p-slot.p-punct-gap{margin-right:8px;}',
       '.prev-seg.p-barslot{min-width:0;margin:0 3px;}',
       '.strict-label-row{display:block;margin:0 0 2px;line-height:1;}'
     ].join('');
@@ -6010,7 +6015,7 @@ function layoutStrictChordsAll(scope){
   .prev-seg.p-slot .p-chord .p-chord-head{white-space:pre;}
   .prev-seg.p-slot .p-chord .p-chord-tail{display:inline-block;width:0;min-width:0;overflow:visible;white-space:pre;}
   .prev-seg.p-slot .p-chord.p-chord-mid .p-chord-tail{width:auto;}
-  .prev-seg.p-slot.cf-tight{margin-left:0;margin-right:0;min-width:0.9em;}
+  .prev-seg.p-slot.cf-tight{margin-left:0;margin-right:0;min-width:14.4px;}
   .prev-seg.p-slot:has(.jp-aug){margin-right:11px;}
   .prev-seg.p-slot.cf-tight[data-bb]{margin-right:8px;}
     -- 断梁的「断口」就是两列之间的空隙（connectStrictBeams 遇到 data-bb 不连梁）。
