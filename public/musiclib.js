@@ -5696,15 +5696,15 @@ function justifyScoreRows(rowList,opts){
   /* 2. inline-flex 测各行自然宽度（与 measureNaturalScore 同法） */
   var widths=rows.map(function(row){
     var prev=row.style.display;
-    var prevOv=row.style.overflowX;
+    var prevW=row.style.width;
     row.style.display='inline-flex';
-    row.style.overflowX='visible';
+    row.style.width='max-content';
     /* 必须用 offsetWidth：flex 容器的 scrollWidth 不含子项 margin，
        而最终行宽是含 margin 的，两者不是同一个量 -> 严格模式每列都有 margin
        (列间距/悬挂标点间隙)，列数越多误差越大，各行拉不齐(实测差 15px)。 */
     var w=row.offsetWidth;
     row.style.display=prev;
-    row.style.overflowX=prevOv;
+    row.style.width=prevW;
     return w;
   });
   var maxW=0;
@@ -5749,12 +5749,12 @@ function justifyScoreRows(rowList,opts){
        这里保持原来的 strict 水平布局不变。 */
     if(plan.row.querySelector('.prev-seg.p-slot'))return;
     var prev=plan.row.style.display;
-    var prevOv=plan.row.style.overflowX;
+    var prevW=plan.row.style.width;
     plan.row.style.display='inline-flex';
-    plan.row.style.overflowX='visible';
+    plan.row.style.width='max-content';
     var now=plan.row.offsetWidth;
     plan.row.style.display=prev;
-    plan.row.style.overflowX=prevOv;
+    plan.row.style.width=prevW;
     var diff=maxW-now;
     if(diff>0.5||diff<-0.5){
       var last=plan.items[plan.items.length-1];
