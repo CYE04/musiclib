@@ -5727,13 +5727,32 @@ function justifyScoreRows(rowList,opts){
       };
     });
     if(total<=0)return;
-    plans.push({items:items,extra:extra,total:total});
+    plans.push({row:row,items:items,extra:extra,total:total});
   });
   plans.forEach(function(plan){
     plan.items.forEach(function(item){
       item.seg.style.marginRight=(item.base+plan.extra*item.w/plan.total)+'px';
       item.seg.setAttribute('data-ml-just','1');
     });
+  });
+  /* 收尾校正：写完之后逐行实测，把残差补到最后一个参与分摊的 seg 上。
+     「量」和「写」之间只要有任何东西改过宽度（网页字体晚到、谱图加载、
+     宿主容器重排），一次性按比例分摊就会不准，而且没人再纠正 ——
+     实测老格式歌各行会差十几 px，行尾参差不齐。
+     这一刀让本函数自己保证后置条件：该拉伸的行，右端严格对齐到同一个 maxW。 */
+  plans.forEach(function(plan){
+    if(!plan.items.length)return;
+    var prev=plan.row.style.display;
+    plan.row.style.display='inline-flex';
+    var now=plan.row.offsetWidth;
+    plan.row.style.display=prev;
+    var diff=maxW-now;
+    if(diff>0.5||diff<-0.5){
+      var last=plan.items[plan.items.length-1];
+      var v=(parseFloat(last.seg.style.marginRight)||0)+diff;
+      if(v<0)v=0;
+      last.seg.style.marginRight=v+'px';
+    }
   });
   return plans.length;
 }
