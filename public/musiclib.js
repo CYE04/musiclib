@@ -3311,9 +3311,11 @@
           const targetH = P.H-EXPORT_FIT.headerH-EXPORT_FIT.bottomH;
           const aspectRatio = cw / ch;
           const idealAspect = targetW / targetH;
-          console.log('[FittedExport] cw='+cw+' ch='+ch+' aspect='+aspectRatio.toFixed(3)+' ideal='+idealAspect.toFixed(3)+' threshold='+idealAspect.toFixed(3));
+          let stretched = false;
+          console.log('[FittedExport] cw='+cw+' ch='+ch+' aspect='+aspectRatio.toFixed(3)+' ideal='+idealAspect.toFixed(3));
           if (aspectRatio < idealAspect) {
              console.log('[FittedExport] Song is too tall/narrow, stretching wide...');
+             stretched = true;
              const stEl = document.createElement('style');
              stEl.textContent = '.sw-lline{margin-bottom:6px !important;} .sw-seg{margin-bottom:2px !important;}';
              snap.node.insertBefore(stEl, snap.node.firstChild);
@@ -3336,7 +3338,11 @@
             targetH/ch,
             EXPORT_FIT.maxScale
           );
-          if(sPort*lyricPx>=EXPORT_FIT.minLyricPx){
+          /* 拉宽优化后，歌词仍然清晰可读，放宽 minLyricPx 门槛让竖版通过，
+             避免白白跳到双栏横版把拉宽效果丢掉 */
+          const effectiveMinLyric = stretched ? Math.min(EXPORT_FIT.minLyricPx, 16) : EXPORT_FIT.minLyricPx;
+          console.log('[FittedExport] sPort='+sPort.toFixed(3)+' lyricPx='+lyricPx+' rendered='+(sPort*lyricPx).toFixed(1)+' min='+effectiveMinLyric);
+          if(sPort*lyricPx>=effectiveMinLyric){
             return nodeToPngBlobRobust(snap.node,EXPORT_PAPER_BG,{scale:sPort*EXPORT_FIT.ss}).then(blob=>({blob,page:P}));
           }
           exportApplyTwoColumns(snap.node,cw);
