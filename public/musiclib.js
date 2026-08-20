@@ -3309,20 +3309,26 @@
           const P=EXPORT_FIT.portrait;
           const targetW = P.W-EXPORT_FIT.sideM*2;
           const targetH = P.H-EXPORT_FIT.headerH-EXPORT_FIT.bottomH;
-          if (cw / ch < (targetW / targetH) * 0.85) {
+          const aspectRatio = cw / ch;
+          const idealAspect = targetW / targetH;
+          console.log('[FittedExport] cw='+cw+' ch='+ch+' aspect='+aspectRatio.toFixed(3)+' ideal='+idealAspect.toFixed(3)+' threshold='+idealAspect.toFixed(3));
+          if (aspectRatio < idealAspect) {
+             console.log('[FittedExport] Song is too tall/narrow, stretching wide...');
              const stEl = document.createElement('style');
              stEl.textContent = '.sw-lline{margin-bottom:6px !important;} .sw-seg{margin-bottom:2px !important;}';
              snap.node.insertBefore(stEl, snap.node.firstChild);
-             const idealRatio = targetW / targetH;
-             const ch_new = ch * 0.8;
-             const stretchW = Math.min(ch_new * idealRatio, cw * 1.5);
-             if(ML_JUSTIFY_ROWS) justifyScoreRows(snap.node.querySelectorAll('.sw-lrow'), {targetWidth: stretchW, ratio: 0.5});
+             const stretchW = Math.min(ch * idealAspect * 0.9, cw * 1.6);
+             console.log('[FittedExport] stretchW='+stretchW.toFixed(0)+' (natural cw='+cw+')');
+             /* 关键：把 clone 容器宽度撑开，否则 flex 行会被旧宽度压缩 */
+             snap.node.style.width = Math.ceil(stretchW) + 'px';
+             if(ML_JUSTIFY_ROWS) justifyScoreRows(snap.node.querySelectorAll('.sw-lrow'), {targetWidth: stretchW, ratio: 0.4});
              layoutStrictChordsAll(snap.node);
              snap.node.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
              layoutStrictArcsAll(snap.node);
              const r1b=snap.node.getBoundingClientRect();
              cw=Math.max(1,r1b.width);
              ch=Math.max(1,r1b.height);
+             console.log('[FittedExport] after stretch: cw='+cw+' ch='+ch+' newAspect='+(cw/ch).toFixed(3));
           }
           const lyricPx=exportMeasureLyricFont(snap.node);
           const sPort=Math.min(
