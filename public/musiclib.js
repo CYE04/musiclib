@@ -3305,12 +3305,29 @@
           snap.node.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
           layoutStrictArcsAll(snap.node);
           const r1=snap.node.getBoundingClientRect();
-          const cw=Math.max(1,r1.width),ch=Math.max(1,r1.height);
-          const lyricPx=exportMeasureLyricFont(snap.node);
+          let cw=Math.max(1,r1.width),ch=Math.max(1,r1.height);
           const P=EXPORT_FIT.portrait;
+          const targetW = P.W-EXPORT_FIT.sideM*2;
+          const targetH = P.H-EXPORT_FIT.headerH-EXPORT_FIT.bottomH;
+          if (cw / ch < (targetW / targetH) * 0.85) {
+             const stEl = document.createElement('style');
+             stEl.textContent = '.sw-lline{margin-bottom:6px !important;} .sw-seg{margin-bottom:2px !important;}';
+             snap.node.insertBefore(stEl, snap.node.firstChild);
+             const idealRatio = targetW / targetH;
+             const ch_new = ch * 0.8;
+             const stretchW = Math.min(ch_new * idealRatio, cw * 1.5);
+             if(ML_JUSTIFY_ROWS) justifyScoreRows(snap.node.querySelectorAll('.sw-lrow'), {targetWidth: stretchW, ratio: 0.5});
+             layoutStrictChordsAll(snap.node);
+             snap.node.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
+             layoutStrictArcsAll(snap.node);
+             const r1b=snap.node.getBoundingClientRect();
+             cw=Math.max(1,r1b.width);
+             ch=Math.max(1,r1b.height);
+          }
+          const lyricPx=exportMeasureLyricFont(snap.node);
           const sPort=Math.min(
-            (P.W-EXPORT_FIT.sideM*2)/cw,
-            (P.H-EXPORT_FIT.headerH-EXPORT_FIT.bottomH)/ch,
+            targetW/cw,
+            targetH/ch,
             EXPORT_FIT.maxScale
           );
           if(sPort*lyricPx>=EXPORT_FIT.minLyricPx){
