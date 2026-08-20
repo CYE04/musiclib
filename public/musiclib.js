@@ -5709,6 +5709,7 @@ function justifyScoreRows(rowList,opts){
   });
   var maxW=0;
   widths.forEach(function(w){if(w>maxW)maxW=w;});
+  if(opts.targetWidth && opts.targetWidth > maxW) maxW = opts.targetWidth;
   if(!maxW)return 0;
   /* 3. 先集中读（offsetWidth / computed margin），后集中写，避免逐格回流 */
   var plans=[];
