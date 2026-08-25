@@ -10048,7 +10048,15 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 #music-library #ml-nowbar.is-playing #ml-nowbar-playpause{background:var(--accent) !important;}
 
 /* 控件真正居中：时间挂到控件组右侧（绝对定位，不参与居中计算），左侧标题不越界 */
-#music-library #ml-nowbar-main{max-width:calc(50% - 250px);}
+/* ⚠️ 必须留在 min-width:1181px 里。这条原来是裸的，写在上面那句
+   `@media (max-width:1180px){ #ml-nowbar-main{max-width:none} }` 之后，
+   同特异性又更靠后，于是把手机上的解除又盖了回去。
+   375px 手机上 calc(50% - 250px) = 187.5 - 250 = -62.5px，钳成 0 ——
+   播放条上的歌名宽度变 0、整个不显示，封面和播放键之间那段空白就是它。
+   加宽度门槛而不是在后面再叠一条 !important，免得又多一层要猜的覆盖。 */
+@media (min-width:1181px){
+  #music-library #ml-nowbar-main{max-width:calc(50% - 250px);}
+}
 #music-library #ml-nowbar-times{
   position:absolute;left:100%;top:50%;transform:translateY(-50%);
   margin-left:12px;
@@ -10664,3 +10672,453 @@ html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
 #music-library .sw-ink-pop.is-up::before{
   top:auto;bottom:-7px;
 }
+
+/* ═══════════ CECP-WIDE-SCREEN v1 BEGIN ═══════════
+   大屏（≥1500px）三件事。单独成块放文件末尾，是因为上面已经有 125 个 @media、
+   约 30 个断点，插进去只会变成第 126 个谁也找不着的补丁。
+
+   ① 顶部区和列表区宽度不一样。
+      原来 @media(min-width:1500px) 只把 #ml-header 放宽到 1560，
+      #ml-list-stage 还停在 1360 —— 上面那块比下面宽 100px，左右都露一截边。
+      这里让这一组四个容器共用同一个宽度，边缘对齐。
+
+   ② 内容宽度在超宽屏上放开。
+      1360/1560 是按 1080p 定的。27" 2K(2560) 上内容列有 2320px，
+      却只用 1360，左右各空 380px。改成随视口连续变化，不新增断点。
+
+   ③ 歌曲网格改 auto-fill。
+      原来 min-width:1280 之后钉死 repeat(4,...)，2560 上还是 4 列 307px。
+      改成按可用宽度自己长列数；≥1500 才生效，1500 以下(4/3/2/1 列)一律不动。
+      272px 这个下限是照着「1500px 时算出来仍然是 4 列」挑的，保证接缝处不跳变。 */
+
+@media (min-width:1500px){
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-header,
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-list-stage,
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-loading,
+  html.ml-fullscreen body.ml-fullscreen #music-library > #ml-empty{
+    width:min(100%, clamp(1560px, 82vw, 2040px)) !important;
+    margin-left:auto !important;
+    margin-right:auto !important;
+  }
+  /* 第三条选择器不是凑数：分组视图(按作者/专辑折叠)另有一条
+     `#ml-list.is-grouped > .ml-group > .ml-group-grid`，2 个 id + 3 个 class，
+     比前两条高一截。不把它一起写上，大屏上就只有未分组的列表变宽、
+     分组视图仍然钉在 4 列 —— 而分组视图恰好是默认那个。 */
+  #music-library #ml-list,
+  #music-library .ml-group-grid,
+  #music-library #ml-list.is-grouped > .ml-group > .ml-group-grid{
+    grid-template-columns:repeat(auto-fill,minmax(272px,1fr)) !important;
+  }
+}
+/* ═══════════ CECP-WIDE-SCREEN v1 END ═══════════ */
+
+/* ═══════════ 专辑筛选 chip ═══════════
+   点专辑封面后出现在筛选条最前面，点掉即回到全部。
+   借 .ml-filter-chip.active 的深底样式，只改三处：
+   名字过长要截断（专辑名比作者名长得多）、× 不要长得像计数徽章、整体留个可点的手势。 */
+#music-library .ml-album-chip span{
+  max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#music-library .ml-album-chip strong{
+  background:transparent !important;
+  font-size:15px !important;
+  min-width:16px !important;
+  padding:0 !important;
+  opacity:.72;
+}
+#music-library .ml-album-chip:hover strong{opacity:1;}
+
+/* ═══════════ 详情页内嵌播放器：收紧 ═══════════
+   问题不是宽度（1203px 跟 .sw-wrap / .ml-view-mode / .ml-score-stack 是对齐的），
+   是**内部比例**：容器 1203×448，里面却装着一套为紧凑条设计的 36–42px 控件，
+   于是一个 42px 播放键孤零零浮在 1173px 宽的行里，四周全是空的。
+   448px 也比它下面的标题卡(332)、谱面工具条都高，看着就不像同一套东西。
+
+   四处收紧，只动这个内嵌播放器，全屏播放器 #ml-player-view 一律不碰：
+   ① 时间挪到进度条两端 —— 原来 0:00 和 4:08 分列一行两头，相隔 1170px，
+      看一眼播放进度要横扫整个屏幕。用 display:contents 把 .pl-times 的两个
+      span 提成网格项，夹住进度条，不改一行 DOM。
+   ② 音量并进控件行右侧（DOM 那一步在 musiclib.js 里），省掉一整行。
+   ③ 封面 132→104、歌词面板 168→116，行内距收紧。
+   ④ 控件行保持传输键居中，音量绝对定位钉右侧，不参与居中计算。 */
+
+#music-library #ml-miniplayer .pl-progress-wrap{
+  display:grid !important;
+  grid-template-columns:auto minmax(0,1fr) auto;
+  align-items:center;
+  gap:10px;
+  padding:6px 14px !important;
+}
+#music-library #ml-miniplayer .pl-progress-bar{grid-column:2;}
+#music-library #ml-miniplayer .pl-times{display:contents;}
+#music-library #ml-miniplayer #ml-mp-cur{grid-column:1;}
+#music-library #ml-miniplayer #ml-mp-dur{grid-column:3;}
+#music-library #ml-miniplayer .pl-times span{
+  font-variant-numeric:tabular-nums;   /* 秒数跳动时不要左右抖 */
+  white-space:nowrap;
+}
+
+#music-library #ml-miniplayer .pl-controls{
+  position:relative !important;
+  padding:4px 14px 8px !important;
+}
+#music-library #ml-miniplayer .pl-controls > .pl-vol-wrap{
+  position:absolute !important;
+  right:14px;
+  top:50%;
+  transform:translateY(-50%);
+  margin:0 !important;
+  padding:6px 10px !important;
+}
+/* 窄屏放不下就收起音量：手机本来也用系统音量键 */
+@media (max-width:860px){
+  #music-library #ml-miniplayer .pl-controls > .pl-vol-wrap{display:none !important;}
+}
+
+#music-library #ml-miniplayer #ml-mp-cover-wrap{width:104px !important;height:104px !important;}
+#music-library #ml-miniplayer #ml-mp-stage{height:auto !important;}
+#music-library #ml-miniplayer #ml-mp-lrc-inner{padding:44px 0 52px !important;}
+#music-library #ml-miniplayer .pl-song-row{padding:8px 14px !important;}
+
+/* ═══════════ 内嵌播放器：左右两栏 ═══════════
+   歌词面板原来跟封面一起关在 #ml-mp-stage 那一行里（封面 104 / 歌词 1027），
+   而一行歌词也就两百来 px 宽，右边三分之二长期空着。
+   把面板提出来（DOM 那一步在 musiclib.js 的 liftLyricsOutOfStage）之后，
+   整张卡用 grid 分区，宽屏左栏放封面+信息+进度+控件、右栏整块给歌词。
+
+   窄屏保持改动前的样子：第一行「封面 | 歌词」，下面三行通栏。
+   断点用 1024 —— 就是之前说的那 5 个之一，不再多添。 */
+
+#music-library #ml-miniplayer{
+  display:grid !important;
+  grid-template-columns:auto minmax(0,1fr);
+  grid-template-areas:
+    "stage lrc"
+    "info  info"
+    "prog  prog"
+    "ctrl  ctrl";
+  column-gap:14px;
+  align-items:center;
+}
+/* <audio> 也是直接子节点。不显式安置的话它会被自动放进一个格子、把后面的区块挤走。
+   压进 stage 格并归零尺寸：不占布局，节点照常在文档里（不用 display:none —— 
+   媒体元素被整体隐藏在个别 iOS 版本上会影响播放）。 */
+#music-library #ml-miniplayer > #ml-mp-audio{grid-area:stage;width:0;height:0;}
+#music-library #ml-miniplayer > #ml-mp-stage{grid-area:stage;grid-template-columns:auto !important;}
+#music-library #ml-miniplayer > .pl-song-row{grid-area:info;}
+#music-library #ml-miniplayer > .pl-progress-wrap{grid-area:prog;}
+#music-library #ml-miniplayer > .pl-controls{grid-area:ctrl;}
+/* 高度得带 !important：上面几层里已经有 #ml-mp-lrc-panel 的 height:...!important，
+   不带的话窄屏这条压不住，面板会长回 138px。 */
+#music-library #ml-miniplayer > #ml-mp-lrc-panel{grid-area:lrc;height:116px !important;}
+
+@media (min-width:1024px){
+  #music-library #ml-miniplayer{
+    grid-template-columns:auto minmax(0,1fr) minmax(300px,.8fr);
+    grid-template-areas:
+      "stage info lrc"
+      "stage prog lrc"
+      "stage ctrl lrc";
+    column-gap:18px;
+  }
+  #music-library #ml-miniplayer > #ml-mp-stage{align-self:center;}
+  /* 歌词吃满右栏整个高度，并与左栏之间加一道分隔，让两栏读起来是两块东西 */
+  #music-library #ml-miniplayer > #ml-mp-lrc-panel{
+    height:auto;
+    align-self:stretch;
+    min-height:150px;
+    padding-left:18px;
+    border-left:1px solid var(--divider);
+  }
+  #music-library #ml-miniplayer #ml-mp-lrc-inner{padding:52px 0 60px !important;}
+  /* 控件行现在只占左栏，传输键不必再在整张卡里居中；音量回到行内右侧即可 */
+  #music-library #ml-miniplayer .pl-controls{justify-content:flex-start !important;}
+  #music-library #ml-miniplayer .pl-controls > .pl-vol-wrap{position:static !important;transform:none !important;margin-left:auto !important;}
+}
+
+/* ═══════════ 版权声明：从跑马灯改成一行静态说明 ═══════════
+   原样子：整块深色横幅、19px 字、上下 22px 内距，还挂着 58s 无限循环的横向滚动，
+   文案为了接龙复制了两份。首页和详情页各常驻一条。
+   两个毛病：① 详情页那条 margin 14px / width:100%，右边溢出到 1294（视口才 1280），
+   是整页唯一对不齐的元素；② 一直在动的东西会不停抢注意力，而它要说的话是静态的。
+
+   这里只改「呈现」，不动「内容」：
+   - 停掉滚动，隐藏那份为接龙复制的副本
+   - 字号降到 12px、去掉深色底和阴影，收成一行安静的说明
+   - 详情页那条对齐到 3vw，与 #ml-miniplayer / .ml-view-mode / .sw-wrap 同一条边
+   - 点击照旧打开 #ml-notice-modal，完整法律文本一字未动
+
+   ⚠️ 没有直接删掉。这是版权声明，撤不撤是你的法务/产品决定，不是排版决定。
+      真要收进设置页只差一行 display:none —— 但那一行该由你来点头。 */
+
+#music-library #ml-notice,
+#music-library #ml-detail-notice{
+  background:transparent !important;
+  box-shadow:none !important;
+  border-radius:0 !important;
+  border-top:1px solid var(--divider) !important;
+  border-bottom:1px solid var(--divider) !important;
+  /* 这两个是 <button>。表单控件即使 display:block，width:auto 走的仍是
+     shrink-to-fit —— 光写 auto 右边缘会停在文字末尾，左边对齐了右边照样差一截。
+     所以宽度必须显式给出。 */
+  display:block !important;
+}
+#music-library #ml-detail-notice{
+  margin:14px auto 10px !important;   /* 宽度由下面的 --ml-detail-col 统一给 */
+}
+#music-library #ml-notice{
+  margin:14px auto 0 !important;
+  width:min(100%,1360px) !important;
+}
+#music-library #ml-notice:hover,
+#music-library #ml-detail-notice:hover{
+  background:var(--surface-hover) !important;
+}
+/* 停掉跑马灯 */
+#music-library .ml-notice-track{
+  animation:none !important;
+  width:100% !important;
+  min-width:0 !important;
+}
+/* 第二份 .ml-notice-item 只是为了接龙滚动而复制的，静态之后纯属重复 */
+#music-library .ml-notice-item[aria-hidden="true"]{display:none !important;}
+#music-library .ml-notice-item{
+  padding:9px 2px !important;
+  font-size:12px !important;
+  line-height:1.5 !important;
+  white-space:normal !important;
+  color:var(--text-muted) !important;
+  min-width:0 !important;
+}
+#music-library .ml-notice-dot{width:5px !important;height:5px !important;}
+
+/* 手机上这段声明会折成 4 行、占掉 74px。夹到 2 行，完整文本点开弹窗照样能看。 */
+
+/* ═══════════ 详情页：播放器 / 声明栏 / 正文共用一条内容列 ═══════════
+   #ml-miniplayer 原来用 3vw 的左右外边距（= 100vw - 6vw），
+   而 #ml-detail-body 用的是 width:min(1280px,100%) + padding:0 clamp(14px,3vw,44px)。
+   两个算法只在视口正好 1280 附近得数相同 —— 所以在 1280 上量什么都"对齐"，
+   1440 差 80px、1920 差 14px。之前"宽度没问题"的结论就是这么来的。
+
+   --ml-detail-col 把正文那条算式抄成一个变量（源头是上面 #ml-detail-body 那条
+   width/padding，改那条时这里要跟着改），播放器和声明栏都按它算，
+   任何视口宽度下三者边缘一致。注意 padding 是 clamp 到 44px 的，
+   不是纯 3vw —— 漏掉这个上限就会在 1920 及以上重新错开。 */
+#ml-detail-dialog{
+  --ml-detail-col: calc(min(1280px, 100%) - 2 * clamp(14px, 3vw, 44px));
+}
+#music-library #ml-miniplayer,
+#music-library #ml-detail-notice{
+  width:var(--ml-detail-col) !important;
+  max-width:none !important;
+  margin-left:auto !important;
+  margin-right:auto !important;
+}
+
+/* ═══════════ 声明栏：让它看起来可以点 ═══════════
+   上一版把它收得太安静了 —— 灰字、无边框、没有任何可点的暗示，
+   而且长段法律文本被夹成两行、结尾一个「…」，切口很难看。
+   改法不是把字调大，是换个说法：正文只留一句短的（不用截断），
+   右边挂一个明确的入口，整行 hover 有反馈。完整法律文本仍在弹窗里，一字未改。 */
+#music-library .ml-notice-item{
+  display:flex !important;
+  align-items:center !important;
+  gap:10px !important;
+  width:100%;
+}
+#music-library .ml-notice-text{
+  flex:1 1 auto;
+  min-width:0;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+#music-library .ml-notice-more{
+  flex:0 0 auto;
+  display:inline-flex;
+  align-items:center;
+  gap:3px;
+  color:var(--accent,#C76524);
+  font-weight:600;
+}
+#music-library .ml-notice-more svg{display:block;}
+#music-library #ml-notice:hover .ml-notice-more,
+#music-library #ml-detail-notice:hover .ml-notice-more{text-decoration:underline;}
+
+/* 手机：一行放不下就把短句折到上面一行，入口单独一行靠左，不截断任何字 */
+@media (max-width:640px){
+  #music-library .ml-notice-item{
+    flex-wrap:wrap !important;
+    align-items:flex-start !important;
+    row-gap:4px !important;
+  }
+  #music-library .ml-notice-text{
+    flex:1 1 100%;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:clip;
+  }
+  #music-library .ml-notice-dot{margin-top:7px;}
+  #music-library .ml-notice-more{margin-left:15px;}
+}
+
+/* ═══════════ 「全部专辑 / 全部作者」索引页网格 ═══════════
+   复用货架卡片，只把横向滚动的一排改成会换行的网格。 */
+/* #ml-list 本身就是网格（display:grid + grid-template-columns 都带 !important），
+   索引页只需要换一套列宽 —— 卡片比歌曲卡窄得多，用歌曲卡那套 272px 会太空。 */
+/* 专辑索引按作者分组时，网格在每个 .ml-group-grid 上；
+   作者索引是铺平的，网格就在 #ml-list 上。两处都要换列宽 ——
+   专辑/作者卡比歌曲卡窄得多，套用歌曲卡那套 272px 会一行只放下三四张、大片留白。 */
+/* 第二条必须写成 .is-browse.is-grouped > .ml-group > .ml-group-grid：
+   分组列表另有一条 `#ml-list.is-grouped > .ml-group > .ml-group-grid`（2 id + 3 class），
+   比 `#ml-list.is-browse .ml-group-grid`（2 id + 2 class）高，不追平的话
+   专辑卡会套用歌曲卡的 272px 列宽，一行只放四张。 */
+#music-library #ml-list.is-browse:not(.is-grouped),
+#music-library #ml-list.is-browse.is-grouped > .ml-group > .ml-group-grid{
+  grid-template-columns:repeat(auto-fill,minmax(150px,1fr)) !important;
+  gap:22px 18px !important;
+}
+#music-library #ml-list.is-browse .ml-shelf-card{
+  width:auto !important;
+  min-width:0 !important;
+  flex:none !important;
+}
+@media (min-width:1024px){
+  #music-library #ml-list.is-browse:not(.is-grouped),
+  #music-library #ml-list.is-browse.is-grouped > .ml-group > .ml-group-grid{
+    grid-template-columns:repeat(auto-fill,minmax(172px,1fr)) !important;
+  }
+}
+@media (max-width:480px){
+  #music-library #ml-list.is-browse:not(.is-grouped),
+  #music-library #ml-list.is-browse.is-grouped > .ml-group > .ml-group-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr)) !important;gap:18px 14px !important;
+  }
+}
+
+/* ═══════════ 全屏播放器：「看谱」入口 ═══════════
+   队列里点一首歌会直接进歌词页，而那一页原来只有「收起」和「歌词开关」，
+   想看谱得先收起播放器、回列表、再自己找一遍那首歌。
+   这里补一个直达按钮，挨着右上角的歌词开关。
+   做成「图标 + 文字」的胶囊而不是又一个纯图标圆钮：
+   顶栏已经有两个圆形图标钮了，再加一个没人知道是干嘛的。 */
+#music-library #ml-player-view-score{
+  position:absolute;
+  top:50%;
+  right:46px;
+  transform:translateY(-50%);
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  height:38px;
+  padding:0 14px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,.22);
+  background:rgba(255,255,255,.08);
+  color:#fff;
+  cursor:pointer;
+  font:600 13px/1 inherit;
+  white-space:nowrap;
+  transition:background .16s ease,border-color .16s ease;
+}
+#music-library #ml-player-view-score:hover{
+  background:rgba(255,255,255,.16);
+  border-color:rgba(255,255,255,.34);
+}
+#music-library #ml-player-view-score svg{display:block;flex:0 0 auto;}
+/* 窄屏顶栏放不下文字，缩成圆钮（title 属性仍在，长按有提示） */
+@media (max-width:640px){
+  #music-library #ml-player-view-score{
+    right:42px;width:38px;padding:0;justify-content:center;gap:0;
+  }
+  #music-library #ml-player-view-score span{display:none;}
+}
+
+/* ═══════════ 全屏播放器顶栏：两颗胶囊，一颗收起 ═══════════
+   原来右上角那颗是纯图标圆钮、aria 写「关闭歌词」，跟左上角的收起播放器
+   并排一看就是两个"关"。现在右边统一成带文字的胶囊（看谱 / 队列·歌词），
+   顶栏只剩左上角那一颗是关闭语义。 */
+#music-library #ml-player-view-menu{
+  position:absolute;
+  top:50%;
+  right:0;
+  transform:translateY(-50%);
+  display:inline-flex !important;
+  align-items:center;
+  gap:6px;
+  width:auto !important;
+  height:38px;
+  padding:0 14px !important;
+  border-radius:999px !important;
+  border:1px solid rgba(255,255,255,.22);
+  background:rgba(255,255,255,.08);
+  color:#fff;
+  cursor:pointer;
+  font:600 13px/1 inherit;
+  white-space:nowrap;
+  line-height:1 !important;
+  transition:background .16s ease,border-color .16s ease;
+}
+#music-library #ml-player-view-menu:hover{
+  background:rgba(255,255,255,.16);
+  border-color:rgba(255,255,255,.34);
+}
+#music-library #ml-player-view-menu .ml-pv-ico{display:inline-flex;flex:0 0 auto;}
+#music-library #ml-player-view-menu .ml-pv-ico svg{display:block;}
+/* 看谱那颗要给右边这颗让位；两颗都是胶囊，宽度不固定，用 flex 排更稳 */
+#music-library #ml-player-view-top{position:relative;}
+#music-library #ml-player-view-score{right:auto;}
+#music-library .ml-pv-actions{
+  position:absolute;
+  top:50%;
+  right:0;
+  transform:translateY(-50%);
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+#music-library .ml-pv-actions #ml-player-view-score,
+#music-library .ml-pv-actions #ml-player-view-menu{
+  position:static !important;
+  transform:none !important;
+}
+@media (max-width:640px){
+  #music-library #ml-player-view-menu{
+    width:38px !important;padding:0 !important;justify-content:center;gap:0;
+  }
+  #music-library #ml-player-view-menu .ml-pv-label{display:none;}
+}
+
+/* toast 里的动作按钮（移调后「带过来」用） */
+#music-library #ml-toast .ml-toast-action{
+  margin-left:12px;
+  padding:5px 12px;
+  border-radius:999px;
+  border:1px solid currentColor;
+  background:transparent;
+  color:inherit;
+  font:700 12px/1 inherit;
+  cursor:pointer;
+  flex:0 0 auto;
+}
+#music-library #ml-toast .ml-toast-action:hover{background:rgba(255,255,255,.16);}
+#music-library #ml-toast:has(.ml-toast-action){
+  display:inline-flex;
+  align-items:center;
+}
+
+/* 工具条复位钮：只在被拖走后出现，紧挨着把手，用主题色跟其它工具区分开 */
+#music-library .sw-ico-btn.sw-ink-reset{
+  color:var(--accent,#C76524);
+}
+#music-library .sw-ico-btn.sw-ink-reset:hover{
+  background:var(--accent-soft,#F8E7D8);
+  color:var(--accent,#C76524);
+}
+#music-library .sw-ico-btn.sw-ink-reset[hidden]{display:none !important;}
+
+/* 播放条上「封面 / 歌名」是通往谱面的入口，给个可点的暗示 */
+#music-library #ml-nowbar-cover,
+#music-library #ml-nowbar-main{cursor:pointer;}
+#music-library #ml-nowbar-main:hover #ml-nowbar-title{text-decoration:underline;}
+#music-library #ml-nowbar-cover:hover{filter:brightness(1.06);}

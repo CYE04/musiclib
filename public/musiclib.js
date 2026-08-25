@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='20260816-swipe';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20260825-smooth14';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -408,7 +408,26 @@
     return;
   }
 
-  let songs=[],query='',sourceFilter='全部',intentFilter='全部',_activeDetailSongId='',_detailReturnScroll=0;
+  /* 真正在滚的那个元素。
+     这里历史上一律写死 root(#music-library)，那是「容器自己滚」的年代留下的。
+     现在版式改成整页滚，滚动条在 <html> 上，root.scrollTop 恒为 0 ——
+     于是「存位置」存到 0、「还原位置」调了个空 scrollTo、「是否在顶部」永远为真。
+     看完一首歌返回列表跳回顶部、下拉刷新在半中间也能触发，都是这一个根因。
+     两种版式都判一次，将来版式再改也不用回来动它。 */
+  function mlScroller(){
+    return (root.scrollHeight>root.clientHeight+1) ? root : (document.scrollingElement||document.documentElement);
+  }
+
+  /* albumFilter：点专辑封面后「只看这张专辑」。
+     以前点专辑只是把 sourceFilter 设成该专辑的作者（于是看到那位作者全部 51 首），
+     再 scrollIntoView 滚到那一组 —— 看着像筛了，其实没筛。
+     跟 sourceFilter 一样参与 render() 的筛选链，也一样被那几个「重置」入口清掉。 */
+  /* browseMode：诗歌库视图当前在列什么。
+     'songs' 是原来的歌曲列表；'albums' / 'artists' 是「全部」点进来的索引页。
+     以前货架上那两个「全部」都是 data-nav="library"，点专辑的「全部」跳到的是
+     全部诗歌，不是全部专辑 —— 按钮就在「专辑」标题右边，指向却是别处。 */
+  let browseMode='songs';
+  let songs=[],query='',sourceFilter='全部',intentFilter='全部',albumFilter='全部',_activeDetailSongId='',_detailReturnScroll=0;
   let searchHistory=loadSearchHistory(),_searchHistoryTimer=null;
   let _apLoaded=false,_ap=null;
   let _audioCtx=null,_metroTimer=null,_metroNext=0,_metroRunning=false,_metroBpm=72;
@@ -638,7 +657,10 @@
           <div id="ml-player-now-title">正在播放</div>
           <div id="ml-player-now-sub"></div>
         </div>
-        <button id="ml-player-view-menu" type="button" aria-label="歌词" title="歌词"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h8"/><path d="M7 11h10"/><path d="M9 16h6"/></svg></button>
+        <div class="ml-pv-actions">
+          <button id="ml-player-view-score" type="button" aria-label="打开这首歌的谱面" title="看谱 / 练习"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h11"/><path d="M4 10h11"/><path d="M4 15h7"/><circle cx="17" cy="17" r="3"/><path d="M20 17V8l-4 1"/></svg><span>看谱</span></button>
+          <button id="ml-player-view-menu" type="button" aria-label="切换到队列" title="队列"><span class="ml-pv-ico"></span><span class="ml-pv-label"></span></button>
+        </div>
       </div>
       <div id="ml-player-view-grid">
         <aside id="ml-player-rail" aria-hidden="true">
@@ -810,8 +832,8 @@
     </section>
     <div id="ml-nowbar" aria-label="正在播放">
       <div id="ml-nowbar-bg" aria-hidden="true"></div>
-      <div id="ml-nowbar-cover"><span>♪</span></div>
-      <div id="ml-nowbar-main">
+      <div id="ml-nowbar-cover" title="打开谱面"><span>♪</span></div>
+      <div id="ml-nowbar-main" title="打开谱面">
         <div id="ml-nowbar-title">正在播放</div>
         <div id="ml-nowbar-artist"></div>
         <div id="ml-nowbar-lyric">歌词将在播放时显示</div>
@@ -887,8 +909,11 @@
   (function buildNoticeUI(){
     const noticeHTML=`
       <div class="ml-notice-track">
-        <div class="ml-notice-item"><span class="ml-notice-dot"></span><span>本页面所展示之诗歌内容，仅作为学习、练习与敬拜辅助之用；其歌词、曲谱、音频及相关版权均归原权利人所有。若你需要其他歌曲，欢迎联系 <span class="ml-notice-name">YuEn</span>。</span></div>
-        <div class="ml-notice-item" aria-hidden="true"><span class="ml-notice-dot"></span><span>本页面所展示之诗歌内容，仅作为学习、练习与敬拜辅助之用；其歌词、曲谱、音频及相关版权均归原权利人所有。若你需要其他歌曲，欢迎联系 <span class="ml-notice-name">YuEn</span>。</span></div>
+        <div class="ml-notice-item">
+          <span class="ml-notice-dot"></span>
+          <span class="ml-notice-text">诗歌版权归原权利人所有，本站仅供学习、练习与敬拜辅助</span>
+          <span class="ml-notice-more">版权说明与申请新歌 ${icon('chevronRight',14)}</span>
+        </div>
       </div>`;
 
     const listNotice=document.createElement('button');
@@ -967,10 +992,10 @@
     const navEl=$('ml-nav');
     if(navEl && navEl.parentElement!==root) root.insertBefore(navEl,root.firstChild);
 
-    // 滚的是 #music-library 这个容器，不是 window —— 只听 window 的话顶栏分隔线永远不出现
+    // 用 mlScroller() 拿真正在滚的那个元素：版式变过，现在滚的是 <html> 不是这个容器
     let ticking=false;
     const sync=()=>{
-      const y=root.scrollTop||window.scrollY||document.documentElement.scrollTop||0;
+      const y=mlScroller().scrollTop||0;
       root.dataset.scrolled=y>4?'1':'0';
       ticking=false;
     };
@@ -1006,6 +1031,7 @@
       render();
     },120);
   });
+  $('ml-search').addEventListener('input',()=>{ if(browseMode!=='songs') browseMode='songs'; });
   $('ml-search').addEventListener('keydown',e=>{
     if(e.key==='Enter') rememberSearchTerm(query);
   });
@@ -1022,24 +1048,56 @@
   });
   $('ml-back').addEventListener('click',closeDetail);
   $('ml-detail-overlay')?.addEventListener('click',()=>closeDetail());
+  /* ═══════════ ESC 层级 ═══════════
+     以前这里是一张手写的 if 链，谁不在链上谁就被跳过：开着移调面板按 ESC，
+     面板没关、整首歌反而被关掉了（因为掉到最后那条兜底 closeDetail）。
+     每加一个新面板都得回来补一条，补漏了就复现同样的毛病。
+
+     改成一张按「从最上层到最下层」排的表，一次只关最上面那层。
+     跑在**捕获阶段**：musiclib 里 document 上一共挂了 6 个 keydown 监听器
+     (投影/放大器/和弦图/播放器/输入框…)，它们全在冒泡阶段，
+     捕获阶段先跑一步就能在它们之前拿到 ESC 并决定归谁管。
+
+     YIELD 是「不归我管」的清单——共享块(和弦指法图、谱面放大器、投影编排台)
+     自己带 ESC 处理，而且那几个块要跟别的宿主保持逐字节一致，不能改。
+     所以它们开着的时候本处理器直接放行，让事件照常冒泡给它们，行为与改动前完全一致。 */
+  const ESC_YIELD = [
+    'chord-explorer.open',    // 和弦指法图（共享块自带 ESC）
+    '#cecp-scorezoom.open',   // CECP-SCORE-ZOOM 谱面放大器（共享块自带 ESC）
+    '.ml-ps-overlay.open',    // 投影编排台（projStudioKeydown 自带 ESC）
+  ];
+
+  /* 从上到下。嵌套的层要排在容器层前面（音频面板在播放器里、移调面板在详情里）。 */
+  const ESC_LAYERS = [
+    { name:'投影控制台面板', open:()=>projState.panel?.classList.contains('open'), close:()=>projClosePanel() },
+    /* 走 closeNoticeModal 而不是自己摘 class：它还要把 body.overflow 解回去，
+       只摘 class 的话弹窗关了、整页却还锁着滚不动。 */
+    { name:'版权声明弹窗',   open:()=>$('ml-notice-modal')?.classList.contains('open'),
+      close:()=>closeNoticeModal() },
+    { name:'图片灯箱',       open:()=>$('ml-lightbox')?.classList.contains('open'),
+      close:()=>$('ml-lightbox').classList.remove('open') },
+    { name:'变调/变速面板',  open:()=>$('ml-audio-panel')?.classList.contains('open'),
+      close:()=>_mpSetPanelOpen(false) },
+    { name:'播放器全屏',     open:()=>$('ml-player-view')?.classList.contains('open'),
+      close:()=>_mpSetExpanded(false) },
+    { name:'播放列表抽屉',   open:()=>$('ml-playlist-drawer')?.classList.contains('open'),
+      close:()=>_mpSetPlaylistOpen(false) },
+    /* 移调面板：以前整个漏了。这里不去手改 class，而是点回那颗 .sw-tog——
+       开关本来就是同一颗按钮，走它的 click 才能顺带同步按钮高亮和 fitRows 重排。 */
+    { name:'移调面板',       open:()=>!!root.querySelector('.sw-wrap > .sw-panel.open'),
+      close:()=>root.querySelector('.sw-wrap > .sw-panel.open')?.closest('.sw-wrap')?.querySelector('.sw-tog')?.click() },
+    { name:'歌曲详情',       open:()=>detail?.classList.contains('open'), close:()=>closeDetail() },
+  ];
+
   document.addEventListener('keydown',e=>{
     if(e.key!=='Escape') return;
-    if(projState.panel?.classList.contains('open')){
-      projClosePanel();
-      return;
-    }
-    if($('ml-lightbox')?.classList.contains('open')){
-      $('ml-lightbox').classList.remove('open');
-      return;
-    }
-    if($('ml-playlist-drawer')?.classList.contains('open')){
-      _mpSetPlaylistOpen(false);
-      return;
-    }
-    if(detail?.classList.contains('open')){
-      closeDetail();
-    }
-  });
+    if(ESC_YIELD.some(sel=>document.querySelector(sel))) return;   // 归共享块自己管，放行
+    const layer=ESC_LAYERS.find(l=>{ try{ return l.open(); }catch(_){ return false; } });
+    if(!layer) return;                                             // 没有可关的层，别拦
+    e.preventDefault();
+    e.stopImmediatePropagation();   // 只关这一层：拦住后面 5 个冒泡监听器，免得一次关掉两层
+    layer.close();
+  },true);
   $('ml-nav-search')?.addEventListener('click',()=>handleNav('search'));
   $('ml-nav-settings')?.addEventListener('click',cycleMusicTheme);
   $('ml-side-profile')?.addEventListener('click',cycleMusicTheme);
@@ -1075,6 +1133,27 @@
   updateWorshipGreeting();
   setInterval(updateWorshipGreeting,60000);
   $('ml-nav-theme')?.addEventListener('click',cycleMusicTheme);
+
+  /* 带一个动作按钮的 toast。普通 showToast 用 textContent 覆写，
+     所以下一次普通提示会自动把这里塞进去的按钮冲掉，不用额外清理。 */
+  function showToastAction(text,label,fn,ms){
+    const t=$('ml-toast');
+    if(!t) return;
+    t.innerHTML='';
+    const span=document.createElement('span');
+    span.textContent=text;
+    const btn=document.createElement('button');
+    btn.type='button'; btn.className='ml-toast-action'; btn.textContent=label;
+    btn.addEventListener('click',()=>{
+      t.classList.remove('show');
+      clearTimeout(showToast._timer);
+      fn();
+    });
+    t.appendChild(span); t.appendChild(btn);
+    t.classList.add('show');
+    clearTimeout(showToast._timer);
+    showToast._timer=setTimeout(()=>t.classList.remove('show'), ms||7000);
+  }
 
   function showToast(text){
     const t=$('ml-toast');
@@ -2364,7 +2443,7 @@
     }
     root.addEventListener('touchstart',e=>{
       if(isBlockedTarget(e.target)) return;
-      if(root.scrollTop>2) return;
+      if(mlScroller().scrollTop>2) return;
       const t=e.touches&&e.touches[0];
       if(!t) return;
       startY=t.clientY; pull=0; tracking=true; ready=false;
@@ -2375,7 +2454,7 @@
       if(!t) return;
       const dy=t.clientY-startY;
       if(dy<=0){ reset(); return; }
-      if(root.scrollTop>2){ reset(); return; }
+      if(mlScroller().scrollTop>2){ reset(); return; }
       pull=Math.min(maxPull,dy*0.46);
       ready=pull>=threshold;
       indicator.classList.add('pulling');
@@ -3442,9 +3521,18 @@
     _detailStatePushed=false;
     _activeDetailSongId='';
     setSongUrl('', true);
-    requestAnimationFrame(()=>{
-      root.scrollTo({top:_detailReturnScroll||0,left:0,behavior:'auto'});
-    });
+    /* 关详情之后列表要重新布局，内容高度是一帧帧长回来的。
+       只在下一帧还原一次的话，那一刻的最大可滚距离可能还不够，
+       scrollTo 会被浏览器夹小 —— 1440 宽下实测 2600 还原成 2199。
+       所以连着几帧重试，坐标坐稳了就停。 */
+    const wantTop=_detailReturnScroll||0;
+    let restoreTries=0;
+    const restoreScroll=()=>{
+      const el=mlScroller();
+      el.scrollTo({top:wantTop,left:0,behavior:'auto'});
+      if(Math.abs(el.scrollTop-wantTop)>1 && ++restoreTries<12) requestAnimationFrame(restoreScroll);
+    };
+    requestAnimationFrame(restoreScroll);
   }
 
   function tryColor(el, prop){
@@ -4192,9 +4280,25 @@
     if(!item) return 0;
     return songs.filter(s=>item.match(s)).length;
   }
+  /* 打开「全部专辑 / 全部作者」索引页。
+     进索引页要把三个筛选全清掉：它列的是整个库的专辑/作者，
+     留着上一次的筛选会让这一页少东西，而页面上又看不出为什么少。 */
+  function openBrowse(mode){
+    browseMode=(mode==='artists')?'artists':'albums';
+    albumFilter='全部'; sourceFilter='全部'; intentFilter='全部';
+    query=''; const input=$('ml-search'); if(input) input.value='';
+    syncNavActive('library');
+    setView('library');
+    render();
+    mlScroller().scrollTo({top:0,behavior:'smooth'});
+  }
+
   function setIntentFilter(next,opts={}){
+    browseMode='songs';   // 任何一次筛选都意味着回到歌曲列表
     intentFilter=next||'全部';
-    if(opts.resetSource) sourceFilter='全部';
+    /* resetSource 一并清专辑：这个开关的语义是「回到没有归属限定的状态」，
+       只清作者不清专辑的话，点「全部/快歌/慢歌」会莫名其妙还被锁在某张专辑里。 */
+    if(opts.resetSource){ sourceFilter='全部'; albumFilter='全部'; }
     if(opts.clearQuery){
       query='';
       const input=$('ml-search');
@@ -4209,11 +4313,12 @@
   function renderQuickFilters(){
     const bar=$('ml-filter-bar');
     if(!bar) return;
+    ensureAlbumFilterValid();
     const sourceItems=getArtistFilterItems();
     const base=QUICK_FILTERS.filter(item=>item.visible!==false).map(item=>{
       const count=quickFilterCount(item.id);
       const disabled=(item.id!=='全部'&&count===0);
-      const active=item.id===intentFilter&&sourceFilter==='全部';
+      const active=item.id===intentFilter&&sourceFilter==='全部'&&albumFilter==='全部';
       return `<button class="ml-filter-chip${active?' active':''}" type="button" data-filter="${item.id}" ${disabled?'disabled':''}>
         <span>${item.label}</span><strong>${count}</strong>
       </button>`;
@@ -4223,7 +4328,14 @@
         <span>${esc(item.name)}</span><strong>${item.count}</strong>
       </button>
     `).join('');
-    bar.innerHTML=base+(artists?'<span class="ml-filter-divider" aria-hidden="true"></span>'+artists:'');
+    /* 专辑筛选必须有个看得见的出口：不给这枚 chip 的话，
+       用户点进一张专辑就只能靠侧栏「诗歌库」整个重来。 */
+    const albumChip=albumFilter==='全部'?'':
+      `<button class="ml-filter-chip ml-album-chip active" type="button" data-album-clear="1"
+         aria-label="取消专辑筛选：${esc(albumFilter)}" title="点掉，回到全部诗歌">
+        <span>专辑 · ${esc(albumFilter)}</span><strong aria-hidden="true">×</strong>
+      </button><span class="ml-filter-divider" aria-hidden="true"></span>`;
+    bar.innerHTML=albumChip+base+(artists?'<span class="ml-filter-divider" aria-hidden="true"></span>'+artists:'');
     bar.querySelectorAll('[data-filter]').forEach(btn=>{
       btn.addEventListener('click',()=>{
         setIntentFilter(btn.dataset.filter||'全部',{resetSource:true,scrollList:false});
@@ -4232,10 +4344,20 @@
     bar.querySelectorAll('[data-source]').forEach(btn=>{
       btn.addEventListener('click',()=>{
         sourceFilter=btn.dataset.source||'全部';
+        albumFilter='全部';
         intentFilter='全部';
         render();
       });
     });
+    bar.querySelector('[data-album-clear]')?.addEventListener('click',()=>{
+      albumFilter='全部';
+      render();
+    });
+  }
+  /* 歌库重载后专辑可能已不存在（改名、删歌）。不校验的话会卡在一个永远 0 结果的筛选上。 */
+  function ensureAlbumFilterValid(){
+    if(albumFilter==='全部') return;
+    if(!songs.some(s=>getAlbumGroupName(s)===albumFilter)) albumFilter='全部';
   }
   function getArtistFilterItems(){
     const counts=songs.reduce((acc,s)=>{
@@ -4306,6 +4428,104 @@
     renderHomeShelves(states);
   }
 
+  /* 货架卡片的接线：坏图兜底 + 各种 data-* 的点击。
+     抽成函数是因为「全部专辑 / 全部作者」索引页用的是同一批卡片，
+     两处各接一遍的话，以后加一种卡就会漏掉一处。 */
+  function wireShelfCards(box){
+    box.querySelectorAll('img[data-art-initial]').forEach(img=>{
+      const applyFallback=()=>{
+        const next=img.dataset.artFallback;
+        if(next){
+          img.removeAttribute('data-art-fallback');
+          img.src=next;
+          return;
+        }
+        const span=document.createElement('span');
+        span.className='ml-art-fallback';
+        span.textContent=img.dataset.artInitial||'♪';
+        img.replaceWith(span);
+      };
+      img.addEventListener('error',applyFallback);
+      if(img.complete&&img.naturalWidth===0) applyFallback();
+    });
+
+    box.querySelectorAll('[data-shelf-filter]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        setView('library');
+        setIntentFilter(btn.dataset.shelfFilter||'全部',{resetSource:true,scrollList:true});
+      });
+    });
+    box.querySelectorAll('[data-nav]').forEach(btn=>{
+      btn.addEventListener('click',()=>handleNav(btn.dataset.nav||'library'));
+    });
+    box.querySelectorAll('[data-browse]').forEach(btn=>{
+      btn.addEventListener('click',()=>openBrowse(btn.dataset.browse||'albums'));
+    });
+    box.querySelectorAll('[data-source]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        browseMode='songs';
+        sourceFilter=btn.dataset.source||'全部';
+        albumFilter='全部';
+        intentFilter='全部';
+        setView('library');
+        render();
+        $('ml-list-stage')?.scrollIntoView({behavior:'smooth',block:'start'});
+      });
+    });
+    box.querySelectorAll('[data-album]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        /* sourceFilter 归「全部」：专辑本来就锁定了作者，再叠一层作者筛选没有意义，
+           而且会让筛选条上同时亮着两个条件，看不清是哪个在起作用。 */
+        browseMode='songs';
+        albumFilter=btn.dataset.album||'全部';
+        sourceFilter='全部';
+        intentFilter='全部';
+        setView('library');
+        render();
+        $('ml-list-stage')?.scrollIntoView({behavior:'smooth',block:'start'});
+      });
+    });
+    box.querySelectorAll('.ml-shelf-card[data-id]').forEach(btn=>{
+      btn.addEventListener('click',e=>{
+        const song=songs.find(s=>s.id===btn.dataset.id);
+        if(!song) return;
+        if(e.target.closest('[data-play]')){
+          e.preventDefault();
+          playSongNow(song);
+          return;
+        }
+        openDetail(song);
+      });
+    });
+  }
+
+  /* 卡片构造抽出来，首页货架和「全部」网格共用同一份 —— 两处各写一遍的话，
+     改了封面兜底或副标题格式就会有一处漏改。 */
+  function artistCardHTML(item,art,coverSong,logo,initial){
+    return `<button class="ml-shelf-card is-round" type="button" data-source="${esc(item.name)}">
+      <span class="ml-shelf-art">${art?`<img src="${esc(art)}" alt="" data-art-fallback="${coverSong&&coverSong.cover&&logo!==coverSong.cover?esc(coverSong.cover):''}" data-art-initial="${initial}">`:`<span class="ml-art-fallback">${initial}</span>`}</span>
+      <span class="ml-shelf-title">${esc(item.name)}</span>
+      <span class="ml-shelf-sub">${item.count} 首</span>
+    </button>`;
+  }
+  function albumCardHTML(group,first,year){
+    return `<button class="ml-shelf-card" type="button" data-album="${esc(group.name)}" data-album-source="${esc(getArtistGroupName(first))}">
+      <span class="ml-shelf-art">${first.cover?`<img src="${esc(first.cover)}" alt="" loading="lazy">`:'<span class="ml-art-fallback">♪</span>'}</span>
+      <span class="ml-shelf-title">${esc(group.name)}</span>
+      <span class="ml-shelf-sub">${[year,group.songs.length+' 首'].filter(Boolean).join(' · ')}</span>
+    </button>`;
+  }
+  /* 全部专辑（首页货架只取前 14 张，这里不截断）。排序与货架一致：先按年份新→旧，再按曲目多→少。 */
+  function allAlbumGroups(){
+    return groupSongsBy(songs.filter(s=>cleanText(s.album)),getAlbumGroupName)
+      .filter(g=>g.name!=='单曲与其他')
+      .sort((a,b)=>{
+        const ay=Math.max(...a.songs.map(s=>Number(s.albumYear||0)));
+        const by=Math.max(...b.songs.map(s=>Number(s.albumYear||0)));
+        return by-ay||b.songs.length-a.songs.length;
+      });
+  }
+
   // 首页货架：收藏 / 本堂唱过 / 按作者 / 专辑。
   // 全部复用既有的 sourceFilter + intentFilter，点「查看全部」即切到诗歌库视图并带上筛选。
   function renderHomeShelves(states){
@@ -4340,7 +4560,7 @@
       html+=`<section class="ml-shelf" aria-label="按作者">
         <div class="ml-shelf-head">
           <h2>按作者 / 团队</h2>
-          <button class="ml-shelf-more" type="button" data-nav="library">全部 ${icon('chevronRight',15)}</button>
+          <button class="ml-shelf-more" type="button" data-browse="artists">全部作者 ${icon('chevronRight',15)}</button>
         </div>
         <div class="ml-shelf-row">${artists.map(item=>{
           // 头像三级兜底：artist/ 里的图 → 该作者第一首有封面的歌 → 名字首字。
@@ -4349,11 +4569,7 @@
           const coverSong=songs.find(s=>s.cover&&getArtistGroupName(s)===item.name);
           const initial=esc(Array.from(item.name)[0]||'♪');
           const art=logo||(coverSong&&coverSong.cover)||'';
-          return `<button class="ml-shelf-card is-round" type="button" data-source="${esc(item.name)}">
-            <span class="ml-shelf-art">${art?`<img src="${esc(art)}" alt="" data-art-fallback="${coverSong&&coverSong.cover&&logo!==coverSong.cover?esc(coverSong.cover):''}" data-art-initial="${initial}">`:`<span class="ml-art-fallback">${initial}</span>`}</span>
-            <span class="ml-shelf-title">${esc(item.name)}</span>
-            <span class="ml-shelf-sub">${item.count} 首</span>
-          </button>`;
+          return artistCardHTML(item,art,coverSong,logo,initial);
         }).join('')}</div>
       </section>`;
     }
@@ -4370,16 +4586,12 @@
       html+=`<section class="ml-shelf" aria-label="专辑">
         <div class="ml-shelf-head">
           <h2>专辑</h2>
-          <button class="ml-shelf-more" type="button" data-nav="library">全部 ${icon('chevronRight',15)}</button>
+          <button class="ml-shelf-more" type="button" data-browse="albums">全部专辑 ${icon('chevronRight',15)}</button>
         </div>
         <div class="ml-shelf-row">${albums.map(group=>{
           const first=group.songs.find(s=>s.cover)||group.songs[0];
           const year=cleanText(first.albumYear);
-          return `<button class="ml-shelf-card" type="button" data-album="${esc(group.name)}" data-album-source="${esc(getArtistGroupName(first))}">
-            <span class="ml-shelf-art">${first.cover?`<img src="${esc(first.cover)}" alt="" loading="lazy">`:'<span class="ml-art-fallback">♪</span>'}</span>
-            <span class="ml-shelf-title">${esc(group.name)}</span>
-            <span class="ml-shelf-sub">${[year,group.songs.length+' 首'].filter(Boolean).join(' · ')}</span>
-          </button>`;
+          return albumCardHTML(group,first,year);
         }).join('')}</div>
       </section>`;
     }
@@ -4387,63 +4599,7 @@
     box.innerHTML=html;
 
     // 作者头像坏图兜底：换成该作者的歌曲封面，再不行换名字首字
-    box.querySelectorAll('img[data-art-initial]').forEach(img=>{
-      const applyFallback=()=>{
-        const next=img.dataset.artFallback;
-        if(next){
-          img.removeAttribute('data-art-fallback');
-          img.src=next;
-          return;
-        }
-        const span=document.createElement('span');
-        span.className='ml-art-fallback';
-        span.textContent=img.dataset.artInitial||'♪';
-        img.replaceWith(span);
-      };
-      img.addEventListener('error',applyFallback);
-      if(img.complete&&img.naturalWidth===0) applyFallback();
-    });
-
-    box.querySelectorAll('[data-shelf-filter]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        setView('library');
-        setIntentFilter(btn.dataset.shelfFilter||'全部',{resetSource:true,scrollList:true});
-      });
-    });
-    box.querySelectorAll('[data-nav]').forEach(btn=>{
-      btn.addEventListener('click',()=>handleNav(btn.dataset.nav||'library'));
-    });
-    box.querySelectorAll('[data-source]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        sourceFilter=btn.dataset.source||'全部';
-        intentFilter='全部';
-        setView('library');
-        render();
-        $('ml-list-stage')?.scrollIntoView({behavior:'smooth',block:'start'});
-      });
-    });
-    box.querySelectorAll('[data-album]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        sourceFilter=btn.dataset.albumSource||'全部';
-        intentFilter='全部';
-        setView('library');
-        render();
-        const target=root.querySelector(`.ml-group[data-group="${CSS.escape(btn.dataset.album||'')}"]`);
-        (target||$('ml-list-stage'))?.scrollIntoView({behavior:'smooth',block:'start'});
-      });
-    });
-    box.querySelectorAll('.ml-shelf-card[data-id]').forEach(btn=>{
-      btn.addEventListener('click',e=>{
-        const song=songs.find(s=>s.id===btn.dataset.id);
-        if(!song) return;
-        if(e.target.closest('[data-play]')){
-          e.preventDefault();
-          playSongNow(song);
-          return;
-        }
-        openDetail(song);
-      });
-    });
+    wireShelfCards(box);
   }
 
   function songCardHTML(song){
@@ -4513,10 +4669,11 @@
     if(next==='home') renderHomePanels();
   }
   function handleNav(mode){
+    browseMode='songs';   // 走导航就是离开索引页
     if(mode==='search'){
       syncNavActive('search');
       setView('library');
-      root.scrollTo({top:0,behavior:'smooth'});
+      mlScroller().scrollTo({top:0,behavior:'smooth'});
       setTimeout(()=>{$('ml-search')?.focus();},120);
       return;
     }
@@ -4544,7 +4701,7 @@
     const toLibrary=mode==='library';
     syncNavActive(toLibrary?'library':'home');
     setView(toLibrary?'library':'home');
-    if(!toLibrary) root.scrollTo({top:0,behavior:'smooth'});
+    if(!toLibrary) mlScroller().scrollTo({top:0,behavior:'smooth'});
     setIntentFilter('全部',{clearQuery:!toLibrary,resetSource:!toLibrary,scrollList:toLibrary});
   }
   function hi(t,q){
@@ -4558,17 +4715,96 @@
     bar.innerHTML='';
   }
 
+  /* 「全部专辑 / 全部作者」索引页：把货架那排卡片摊成一个换行网格。
+     卡片、点击行为、坏图兜底全部复用货架那一套 —— 点一张专辑照样走 albumFilter。 */
+  function renderBrowseIndex(){
+    const list=$('ml-list'),empty=$('ml-empty');
+    const isAlbums=browseMode==='albums';
+    empty.style.display='none';
+    $('ml-list-stage').style.display='';
+    /* 索引页列的是专辑/作者，不是歌，快慢歌与作者 chip 在这儿没有意义 */
+    const fs=$('ml-filter-section'); if(fs) fs.style.display='none';
+    delete list.dataset.groupMode;
+    list.classList.add('is-browse');
+    list.classList.toggle('is-browse-round',!isAlbums);
+
+    const lbl=root.querySelector('#ml-list-head .ml-section-label');
+
+    if(isAlbums){
+      /* 专辑按作者分组，跟诗歌库列歌的结构完全一致（.ml-group + .ml-group-head + .ml-group-grid），
+         只是格子里装的是专辑卡不是歌曲卡。作者排序也沿用诗歌库那套 sourceSortIndex。 */
+      const byArtist=new Map();
+      allAlbumGroups().forEach(g=>{
+        const first=g.songs.find(x=>x.cover)||g.songs[0];
+        const artist=getArtistGroupName(first);
+        if(!byArtist.has(artist)) byArtist.set(artist,[]);
+        byArtist.get(artist).push(g);
+      });
+      const artists=[...byArtist.keys()].sort((a,b)=>{
+        const ai=sourceSortIndex(a),bi=sourceSortIndex(b);
+        if(ai!==bi) return ai-bi;
+        const an=byArtist.get(a).length,bn=byArtist.get(b).length;
+        if(an!==bn) return bn-an;
+        return a.localeCompare(b,'zh-Hans-CN');
+      });
+      let total=0;
+      const html=artists.map(name=>{
+        const albums=byArtist.get(name);
+        total+=albums.length;
+        const songsOfArtist=songs.filter(x=>getArtistGroupName(x)===name);
+        const cards=albums.map(g=>{
+          const first=g.songs.find(x=>x.cover)||g.songs[0];
+          return albumCardHTML(g,first,cleanText(first.albumYear));
+        }).join('');
+        return `<section class="ml-group ml-group--artist" data-group="${esc(name)}">
+          <div class="ml-group-head">
+            <div class="ml-group-head-main">
+              ${groupCoverHTML({name,songs:songsOfArtist},'artist')}
+              <div class="ml-group-copy">
+                <div class="ml-group-kicker">作者</div>
+                <h3 class="ml-group-title">${esc(name)}</h3>
+                <div class="ml-group-subtitle">作者 / 团队</div>
+              </div>
+            </div>
+            <span class="ml-group-count">${albums.length} 张专辑</span>
+          </div>
+          <div class="ml-group-grid">${cards}</div>
+        </section>`;
+      }).join('');
+      list.classList.add('is-grouped');
+      if(lbl) lbl.textContent='专辑';
+      $('ml-result-count').textContent=`${total} 张专辑 · ${artists.length} 位作者`;
+      list.innerHTML=html;
+    }else{
+      /* 作者索引本身就是按作者列的，再分一层没有意义，铺平即可 */
+      const items=getArtistFilterItems();
+      list.classList.remove('is-grouped');
+      if(lbl) lbl.textContent='作者 / 团队';
+      $('ml-result-count').textContent=`${items.length} 位作者 / 团队`;
+      list.innerHTML=items.map(item=>{
+        const logo=artistLogoUrl(item.name);
+        const coverSong=songs.find(x=>x.cover&&getArtistGroupName(x)===item.name);
+        const initial=esc(Array.from(item.name)[0]||'♪');
+        return artistCardHTML(item,logo||(coverSong&&coverSong.cover)||'',coverSong,logo,initial);
+      }).join('');
+    }
+    wireShelfCards(list);
+  }
+
   function render(){
     const list=$('ml-list'),empty=$('ml-empty'),q=query.toLowerCase();
     renderSourceBar();
     renderQuickFilters();
     renderHomePanels();
     updateSearchControls();
+    if(browseMode!=='songs'){ renderBrowseIndex(); observeRevealItems(); return; }
     const filtered=songs.filter(s=>{
       const artistKey=(s.displayArtist||s.source||s.artist||'').trim();
       const sourceOk=sourceFilter==='全部'||artistKey===sourceFilter;
+      const albumOk=albumFilter==='全部'||getAlbumGroupName(s)===albumFilter;
       const intentOk=filterByIntent(s);
       if(!sourceOk) return false;
+      if(!albumOk) return false;
       if(!intentOk) return false;
       if(!q) return true;
       return (s.title||'').toLowerCase().includes(q)
@@ -4586,20 +4822,32 @@
           ? `${intentFilter==='全部'?'全部':intentFilter} · 0 首`
           : `${sourceFilter} · ${intentFilter==='全部'?'全部':intentFilter} · 0 首`;
       list.innerHTML='';$('ml-query-text').textContent=query;empty.style.display='block';
+      list.classList.remove('is-browse','is-browse-round');
       list.classList.remove('is-grouped');
       $('ml-list-stage').style.display='none';
     }else{
       empty.style.display='none';
       $('ml-list-stage').style.display='';
+      const fsBack=$('ml-filter-section'); if(fsBack) fsBack.style.display='';
+      list.classList.remove('is-browse','is-browse-round');
       list.classList.remove('is-grouped');
       if(q){
         $('ml-result-count').textContent=`找到 ${filtered.length} 首相关诗歌`;
+      }else if(albumFilter!=='全部'){
+        $('ml-result-count').textContent=`${albumFilter} · ${filtered.length} 首`;
+        /* 列表左上那枚静态小标签写死「全部诗歌」，筛到一张专辑时它就成了假话 */
+        const lbl=root.querySelector('#ml-list-head .ml-section-label');
+        if(lbl) lbl.textContent='专辑';
       }else if(sourceFilter!=='全部'){
         $('ml-result-count').textContent=`${sourceFilter}${intentFilter==='全部'?'':' · '+intentFilter} · ${filtered.length} 首`;
       }else{
         $('ml-result-count').textContent=`${intentFilter==='全部'?'全部':intentFilter} ${filtered.length} 首诗歌`;
       }
-      const shouldGroup=!q;
+      if(albumFilter==='全部'){
+        const lbl=root.querySelector('#ml-list-head .ml-section-label');
+        if(lbl) lbl.textContent='全部诗歌';
+      }
+      const shouldGroup=!q&&albumFilter==='全部';   // 只剩一张专辑时分组头纯属重复
       if(shouldGroup){
         list.classList.add('is-grouped');
         list.dataset.groupMode=sourceFilter!=='全部'?'album':'artist';
@@ -9306,12 +9554,22 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       pv.classList.toggle('lyrics-open',_mpLyricsOpen);
       pv.setAttribute('data-player-view',_mpLyricsOpen?'lyrics':'cover');
     }
+    /* 这颗按钮其实是「歌词 ↔ 队列」的二选一，不是关闭。
+       原来它写「关闭歌词」、图标又是三条横线，跟左上角那颗收起播放器的并排放着，
+       两颗读起来都像"关掉这一页" —— 用户原话是「左右都是关闭歌词」。
+       改成按**目的地**命名：点了去哪就显示哪个，永远不出现「关闭」二字。 */
     const btn=$('ml-player-view-menu');
     if(btn){
-      btn.classList.toggle('is-active',_mpLyricsOpen);
-      btn.setAttribute('aria-pressed',String(_mpLyricsOpen));
-      btn.setAttribute('aria-label',_mpLyricsOpen?'关闭歌词':'打开歌词');
-      btn.title=_mpLyricsOpen?'关闭歌词':'打开歌词';
+      const toQueue=_mpLyricsOpen;                  // 歌词开着 -> 这颗按钮通往队列
+      const ico=btn.querySelector('.ml-pv-ico');
+      const lab=btn.querySelector('.ml-pv-label');
+      if(ico) ico.innerHTML=toQueue
+        ? `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><line x1="4" y1="6" x2="14" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/><line x1="18" y1="10" x2="18" y2="20"/><line x1="13" y1="15" x2="23" y2="15"/></svg>`
+        : `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h8"/><path d="M7 11h10"/><path d="M9 16h6"/></svg>`;
+      if(lab) lab.textContent=toQueue?'队列':'歌词';
+      btn.setAttribute('aria-label',toQueue?'切换到队列':'切换到歌词');
+      btn.title=toQueue?'队列':'歌词';
+      btn.classList.remove('is-active');            // 不再用「按下态」表达，文字已经说清楚了
     }
     const railBtns=document.querySelectorAll('#ml-player-rail .ml-player-rail-btn');
     if(railBtns[0]) railBtns[0].classList.toggle('active',_mpLyricsOpen);
@@ -9529,7 +9787,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         : `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
     }
   }
-  function _mpParseLrc(text){
+  function _mpParseLrc(text,song){
     const arr=[];
     String(text||'').split(/\r?\n/).forEach(line=>{
       const m=line.match(/\[(\d+):(\d+(?:\.\d+)?)\](.*)/);
@@ -9537,7 +9795,17 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         arr.push({ t:(+m[1])*60 + parseFloat(m[2]), tx:(m[3]||'').trim() });
       }
     });
-    return arr.sort((a,b)=>a.t-b.t);
+    arr.sort((a,b)=>a.t-b.t);
+    /* 不少 LRC 开头几行是「歌名 / 歌手 / 专辑」这类署名，而且是带时间戳的正常行，
+       所以会被当歌词显示。播放器里紧挨着下面就是同一个歌名和歌手，等于连写两遍。
+       只掐开头连续的、且与本首歌名/歌手/专辑完全相同的行；
+       中间和结尾一律不动 —— 歌词里真唱到同名句子时不会被误删。 */
+    if(song){
+      const credits=new Set([song.title,song.artist,song.displayArtist,song.source,song.album]
+        .map(v=>String(v||'').trim()).filter(Boolean));
+      while(arr.length && credits.has(arr[0].tx)) arr.shift();
+    }
+    return arr;
   }
   /* 没歌词时播放器里显示的话。宁可明说，也不要拿副标题之类的东西冒充歌词——
      那种"歌词"跟 mp3 对不上，滚起来只会误导人。 */
@@ -10050,6 +10318,28 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     $('ml-audio-loop-use-current')?.addEventListener('click',_mpUseCurrentForLoop);
     $('ml-audio-loop-swap')?.addEventListener('click',_mpSwapLoopPoints);
     $('ml-audio-reset-all')?.addEventListener('click',_mpResetAudioPractice);
+    /* 音量原来自己占一整行（37px + 上下间隙 ≈ 55px），而且只有 130px 宽、孤零零贴在左下角。
+       挪进控件行右侧：那一行本来就大片空着（传输键居中，两边全是留白）。
+       只搬 DOM 不改任何监听器 —— 上面那些 $('ml-mp-vol') 拿的还是同一个节点。 */
+    (function moveVolumeIntoControls(){
+      const vol=root.querySelector('#ml-miniplayer > .pl-vol-wrap');
+      const ctl=root.querySelector('#ml-miniplayer > .pl-controls');
+      if(vol&&ctl) ctl.appendChild(vol);
+    })();
+
+    /* 歌词面板从 #ml-mp-stage 里提出来，变成 #ml-miniplayer 的直接子节点。
+       原来它跟封面并排关在 stage 那一行里：封面 104px、它 1027px，
+       而歌词一行也就两百来 px 宽，右边三分之二长期空着。
+       提出来之后就能用 grid 把整张卡分成左右两栏 ——
+       左栏封面+信息+进度+控件，右栏整块给歌词，宽屏下不再有空档。
+       只搬节点不动内部结构：#ml-mp-lrc-inner 和那些 .ml-mp-lrc-line 全都原样，
+       _mpRenderLrc / _mpSyncLrc 拿的还是同一个 id，一行都不用改。 */
+    (function liftLyricsOutOfStage(){
+      const panel=root.querySelector('#ml-mp-stage > #ml-mp-lrc-panel');
+      const mp=root.querySelector('#ml-miniplayer');
+      if(panel&&mp) mp.appendChild(panel);
+    })();
+
     $('ml-mp-vol')?.addEventListener('input',e=>{
       const v=parseFloat(e.target.value||'1');
       _mpAudio.volume=v;
@@ -10083,9 +10373,17 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       _mpSetExpanded(true);
       _mpSetLyricsMode(true);
     });
-    // 点这一栏的任意空白处就打开播放页（Spotify 那样），控制按钮/进度条除外
+    /* 播放条的点击分两块，照 Spotify 的分法：
+         封面 / 歌名歌手  -> 直接进这首歌的谱面（Spotify 点曲名进歌曲页的那个位置）
+         其余空白        -> 展开全屏播放页
+       原来整条都是「展开播放页」，于是播放中想看谱得走两步：
+       先点开全屏播放器，再点右上角看谱。现在点歌名一步到位。 */
     $('ml-nowbar')?.addEventListener('click',e=>{
       if(e.target.closest('.ml-nowbar-btn, #ml-nowbar-progress')) return;
+      if(e.target.closest('#ml-nowbar-cover, #ml-nowbar-main')){
+        const song=_mpCurrentSong||_mpSongs[_mpIdx];
+        if(song){ openDetail(song); return; }
+      }
       _mpSetExpanded(true);
     });
     $('ml-miniplayer')?.addEventListener('click',e=>{
@@ -10108,6 +10406,16 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       });
     });
     $('ml-player-view-close')?.addEventListener('click',()=>_mpSetExpanded(false));
+    /* 从全屏播放器/歌词页直接进这首歌的谱面。
+       原来这里只有「收起播放器」和「歌词开关」—— 队列点一首歌进来就停在歌词页，
+       想看谱只能收起播放器、回列表、再自己找一遍那首歌。
+       先收起再开详情：详情是全屏接管，播放器不收起会压在它上面。 */
+    $('ml-player-view-score')?.addEventListener('click',()=>{
+      const song=_mpCurrentSong||_mpSongs[_mpIdx];
+      if(!song) return;
+      _mpSetExpanded(false);
+      setTimeout(()=>openDetail(song),160);   // 等收起动画走完，避免两层同时在动
+    });
     $('ml-player-view')?.addEventListener('click',e=>{ if(e.target.id==='ml-player-view') _mpSetExpanded(false); });
     $('ml-player-tab-song')?.addEventListener('click',()=>{_mpSideCollapsed=false;_mpSetLyricsMode(false);_mpSetSideMode('song');_mpSetExpanded(true);});
     $('ml-player-tab-queue')?.addEventListener('click',()=>{_mpSideCollapsed=false;_mpSetLyricsMode(false);_mpSetSideMode('queue');_mpSetExpanded(true);});
@@ -10246,7 +10554,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         if(!r.ok) throw new Error('LRC '+r.status);
         return r.text();
       }).then(text=>{
-        const parsed=_mpParseLrc(text);
+        const parsed=_mpParseLrc(text,s);
         if(parsed.length){
           _mpLrc=parsed;
           _mpLrcTimed=true;
@@ -10489,7 +10797,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     stopMetronome();
     syncHaloTheme();
     if(!detail.classList.contains('open')){
-      _detailReturnScroll=root.scrollTop||window.scrollY||0;
+      _detailReturnScroll=mlScroller().scrollTop||0;
     }
     _activeDetailSongId=s.id||'';
     setSongState(s.id,{openedAt:Date.now()});
@@ -10513,7 +10821,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
             if(!r.ok) throw new Error('LRC '+r.status);
             return r.text();
           }).then(text=>{
-            const parsed=_mpParseLrc(text);
+            const parsed=_mpParseLrc(text,s);
             if(parsed.length){
               _mpLrc=parsed;
               _mpLrcTimed=true;
@@ -10933,7 +11241,27 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       scheduleFitRows();
     });
 
+    /* 移调后墨迹会按「歌+调」换到新桶，新调是空的。
+       以前到这儿就没下文了：笔记还在原调的桶里，界面上却没有任何入口把它带过来，
+       用户只能自己再移回去看 —— 也就是「移调完没办法再放回去」。
+       坐标是归一化存的（相对谱面框的 0–1），移调不改行结构，所以搬过去仍然对得上。
+       只在「旧调有、新调没有」时提示一次，不覆盖新调已有的笔记。 */
+    function offerInkCarryOver(prevKey,nextKey){
+      if(!prevKey||prevKey===nextKey) return;
+      if(typeof inkCtl==='undefined'||!inkCtl) return;
+      const bucket=k=>'cecp-score-ink:'+s.id+'@'+k;
+      let from=null,to=null;
+      try{ from=localStorage.getItem(bucket(prevKey)); to=localStorage.getItem(bucket(nextKey)); }catch(_){ return; }
+      if(!from||to) return;
+      showToastAction(`${prevKey} 调的笔记没跟过来`,'带过来',()=>{
+        try{ localStorage.setItem(bucket(nextKey),from); }catch(_){ showToast('存不下了，浏览器存储可能已满'); return; }
+        inkCtl.attach();
+        showToast(`笔记已复制到 ${nextKey} 调`);
+      });
+    }
+
     function setCurrentKey(nextKey,flatMode){
+      const prevInkKey=curKey;
       if(flatMode!==undefined)preferFlat=flatMode;
       curKey=nextKey;
       setSongState(s.id,{lastKey:curKey});
@@ -10942,6 +11270,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       renderScore();
       // 移调重建了谱容器内容:重挂墨迹层并按新调换存储桶(墨迹按 歌+调 分桶)
       if(typeof inkCtl!=='undefined'&&inkCtl)inkCtl.attach();
+      offerInkCarryOver(prevInkKey,curKey);
       // 投影联动: 若面板开着这首歌, 移调后重算分页并推当前页
       if(projState.songId===s.id&&projState.panel&&projState.panel.classList.contains('open')) projRebuild();
       if(fxReady()){
@@ -11336,7 +11665,17 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     inkMini.setAttribute('aria-label','展开工具条');
     const inkFold=swIcoBtn('chevdown','收起工具条');
 
+    /* 复位按钮：只在工具条被拖走之后才出现。
+       原来这条拖到哪就固定在哪（位置还存进 localStorage 跨会话保留），
+       但没有任何把它放回原处的入口 —— 一旦拖到挡住谱子的地方就只能靠再拖，
+       而"原位"具体在哪根本没有参照。所以给一个明确的一键复位。
+       不用双击把手代替：触屏上没有可靠的双击，而这条主要就是在平板上拖。 */
+    const inkReset=swIcoBtn('undo','把工具条放回原位');
+    inkReset.classList.add('sw-ink-reset');
+    inkReset.hidden=true;
+
     toolsRow.appendChild(inkGrip);
+    toolsRow.appendChild(inkReset);
     INK_TOOLS.forEach(t=>toolsRow.appendChild(inkBtns[t.id]));
     toolsRow.appendChild(swSep());
     toolsRow.appendChild(inkUndoBtn);
@@ -11421,6 +11760,28 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
 
     /* 整条可拖动：把手拖展开态，圆钮本身拖收起态。位置存视口坐标。 */
     const barDrag={moved:false};
+    /* 上边界不是视口顶，是详情页那条 fixed 顶栏的下沿。
+       原来上下都按 6px 夹，于是往上一拖就压在「返回 / 歌名 / 本堂 / 投影」上面，
+       两层都还能点，看着就是糊在一起。
+       还有还原那一步以前完全不夹：换个窗口大小、手机转个屏，
+       上次存的坐标可能整条落到屏幕外，工具条就"不见了"。
+       所以夹取单独抽出来，拖动和还原共用同一份。 */
+    /* 回到「跟着谱面走」的默认位置：清掉存的坐标 + 摘掉 is-moved（那个类才是 position:fixed 的来源） */
+    const resetBarPos=()=>{
+      inkBarState.x=null; inkBarState.y=null; saveBarState();
+      tools.classList.remove('is-moved');
+      tools.style.left=''; tools.style.top='';
+      syncResetBtn();
+    };
+    const syncResetBtn=()=>{ inkReset.hidden=!tools.classList.contains('is-moved'); };
+    const clampBarPos=(x,y,w,h)=>{
+      const hd=root.querySelector('#ml-detail-header');
+      const top=(hd&&hd.getBoundingClientRect().bottom>0?hd.getBoundingClientRect().bottom:0)+8;
+      return {
+        x:Math.max(6,Math.min(window.innerWidth-w-6,x)),
+        y:Math.max(top,Math.min(window.innerHeight-h-6,y))
+      };
+    };
     function bindBarDrag(handle){
       let d=null;
       handle.addEventListener('pointerdown',(ev)=>{
@@ -11434,22 +11795,32 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       });
       handle.addEventListener('pointermove',(ev)=>{
         if(!d)return;ev.preventDefault();barDrag.moved=true;
-        const x=Math.max(6,Math.min(window.innerWidth-d.w-6,ev.clientX-d.dx));
-        const y=Math.max(6,Math.min(window.innerHeight-d.h-6,ev.clientY-d.dy));
+        const {x,y}=clampBarPos(ev.clientX-d.dx,ev.clientY-d.dy,d.w,d.h);
         tools.style.left=x+'px';tools.style.top=y+'px';
         inkBarState.x=x;inkBarState.y=y;
       });
-      const end=()=>{if(d){d=null;tools.classList.remove('dragging');saveBarState();
+      const end=()=>{if(d){d=null;tools.classList.remove('dragging');saveBarState();syncResetBtn();
         setTimeout(()=>{barDrag.moved=false;},0);}};
       handle.addEventListener('pointerup',end);
       handle.addEventListener('pointercancel',end);
     }
+    inkReset.addEventListener('click',resetBarPos);
     bindBarDrag(inkGrip);bindBarDrag(inkMini);
     /* 还原上次的位置与收起状态 */
     if(inkBarState.x!=null&&inkBarState.y!=null){
       tools.classList.add('is-moved');
+      /* 还原也要夹一次：这一帧工具条还没量到真实尺寸，先用存的坐标摆上，
+         下一帧拿到 getBoundingClientRect 再纠正回可视范围内。 */
       tools.style.left=inkBarState.x+'px';tools.style.top=inkBarState.y+'px';
+      requestAnimationFrame(()=>{
+        const r=tools.getBoundingClientRect();
+        if(!r.width) return;
+        const {x,y}=clampBarPos(inkBarState.x,inkBarState.y,r.width,r.height);
+        tools.style.left=x+'px';tools.style.top=y+'px';
+        inkBarState.x=x;inkBarState.y=y;saveBarState();
+      });
     }
+    syncResetBtn();
     setFolded(!!inkBarState.folded);
 
     if(hasRenderedScore&&toolsRow.children.length){tools.appendChild(toolsRow);tools.appendChild(inkPop);scoreModeShell.insertBefore(tools,scoreMain);}
