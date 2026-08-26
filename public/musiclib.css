@@ -11122,3 +11122,39 @@ html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
 #music-library #ml-nowbar-main{cursor:pointer;}
 #music-library #ml-nowbar-main:hover #ml-nowbar-title{text-decoration:underline;}
 #music-library #ml-nowbar-cover:hover{filter:brightness(1.06);}
+
+/* 播放条歌名是「进谱面」的主入口，手机上却只有 16px 高（副标题和歌词行在窄屏是隐藏的，
+   容器就缩到只剩标题一行）。撑满整条的高度，给一个正常的点击区。 */
+#music-library #ml-nowbar-main{
+  align-self:stretch;
+  display:flex !important;
+  flex-direction:column;
+  justify-content:center;
+}
+
+/* ═══════════ 墨迹工具条：吸顶，别再从顶栏身上穿过去 ═══════════
+   两个毛病是同一个根因 —— 这条在默认状态下是**跟着内容滚**的普通元素：
+   ① 往下滑经过顶栏那一带时，它 z-index:60、顶栏 sticky 只有 6，
+      于是工具条画在顶栏上面（用户说的「串膜」）；
+   ② 再往下滑它就整条滚出屏幕不见了 —— 正想标注谱子中段的时候工具没了。
+
+   改成吸顶：停在顶栏正下方，滚多远都在，也就永远不会滑进顶栏那一带。
+   偏移量取 --ml-detail-hdr（顶栏实测高度，musiclib.js 的 syncDetailHeaderVar 写入），
+   不写死 62px —— 顶栏在窄屏和安全区下高度不一样。
+
+   顺带把顶栏抬到 70：sticky 的顶栏本来就该压过正文里的任何东西。
+   保持在 nowbar(850) 之下，所以播放条、播放页、灯箱这些照旧盖得住它。
+   被拖走过的工具条（.is-moved）是 fixed + z-index 100004，不受这条影响，
+   它由 clampBarPos 保证不越过顶栏下沿。 */
+#music-library #ml-detail-header{z-index:70 !important;}
+
+#music-library #ml-detail .sw-tools:not(.is-moved){
+  position:sticky !important;
+  top:calc(var(--ml-detail-hdr,62px) + 8px);
+  z-index:60;
+}
+/* 吸顶后它会盖在谱面上，给个底和一点模糊，压着谱子也看得清 */
+#music-library #ml-detail .sw-tools:not(.is-moved) .sw-tools-row{
+  backdrop-filter:blur(10px);
+  -webkit-backdrop-filter:blur(10px);
+}

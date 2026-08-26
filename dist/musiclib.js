@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='20260825-smooth14';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20260825-smooth16';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -3492,6 +3492,21 @@
       return on;
     });
   }
+
+  /* 把详情顶栏的实测高度喂给 --ml-detail-hdr，墨迹工具条按它吸顶。
+     不写死 62px：顶栏在窄屏和安全区下高度不一样，写死了不是压着就是浮着一条缝。 */
+  let _hdrVarRaf=0;
+  function syncDetailHeaderVar(){
+    cancelAnimationFrame(_hdrVarRaf);
+    _hdrVarRaf=requestAnimationFrame(()=>{
+      _hdrVarRaf=0;
+      const hd=root.querySelector('#ml-detail-header');
+      if(!hd||!detail) return;
+      const h=Math.round(hd.getBoundingClientRect().height);
+      if(h>0) detail.style.setProperty('--ml-detail-hdr',h+'px');
+    });
+  }
+  window.addEventListener('resize',()=>{ if(detail&&detail.classList.contains('open')) syncDetailHeaderVar(); });
 
   function closeDetail(fromPop){
     if(ML_EMBED) return;   /* 嵌入模式只有一首歌，详情不给关 */
@@ -12105,6 +12120,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     detail.classList.add('open');
     root.classList.add('ml-has-detail-open');
     document.body.classList.add('ml-detail-lock');
+    syncDetailHeaderVar();
     detail.scrollTop=0;
     $('ml-detail-dialog')?.scrollTo?.({top:0,left:0});
     fxDetailEnter();
