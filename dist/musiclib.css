@@ -86,7 +86,7 @@ html[data-resolved-theme="light"] body{
 }
 html[data-resolved-theme="dark"],
 html[data-resolved-theme="dark"] body{
-  background:#101613 !important;
+  background:#0E0E0E !important;
 }
 
 #music-library{
@@ -163,15 +163,15 @@ html[data-resolved-theme="dark"] body{
 }
 
 html[data-resolved-theme="dark"] #music-library{
-  --bg:#101613;
-  --bg-secondary:#141C18;
-  --surface:#18201C;
-  --surface-secondary:#202A25;
-  --surface-hover:#25312B;
+  --bg:#0E0E0E;
+  --bg-secondary:#161616;
+  --surface:#1B1B1B;
+  --surface-secondary:#242424;
+  --surface-hover:#2C2C2C;
   --surface-active:rgba(215,122,56,.16);
   --text-primary:#F5F1EA;
-  --text-secondary:#BCC4BF;
-  --text-muted:#89948E;
+  --text-secondary:#C4C4C4;
+  --text-muted:#8C8C8C;
   --divider:rgba(255,255,255,.08);
   --accent:#D77A38;
   --accent-hover:#EA8A46;
@@ -1003,7 +1003,7 @@ body.ml-fullscreen #music-library{
   color:#fff !important;
 }
 #music-library #ml-player-view{
-  background:#101613 !important;
+  background:#0E0E0E !important;
   color:#F5F1EA;
   border-radius:8px !important;
 }
@@ -1039,7 +1039,7 @@ html[data-resolved-theme="light"] body.ml-fullscreen{
 html[data-resolved-theme="dark"],
 html[data-resolved-theme="dark"] body,
 html[data-resolved-theme="dark"] body.ml-fullscreen{
-  background:#101613 !important;
+  background:#0E0E0E !important;
 }
 #music-library{
   --bg:#F4EFE7;
@@ -1080,13 +1080,13 @@ html[data-resolved-theme="dark"] body.ml-fullscreen{
   padding-bottom:calc(120px + env(safe-area-inset-bottom,0px)) !important;
 }
 html[data-resolved-theme="dark"] #music-library{
-  --bg:#101613;
-  --bg-secondary:#141C18;
-  --surface:#18201C;
-  --surface-secondary:#202A25;
+  --bg:#0E0E0E;
+  --bg-secondary:#161616;
+  --surface:#1B1B1B;
+  --surface-secondary:#242424;
   --text-primary:#F5F1EA;
-  --text-secondary:#BCC4BF;
-  --text-muted:#89948E;
+  --text-secondary:#C4C4C4;
+  --text-muted:#8C8C8C;
   --divider:rgba(255,255,255,.08);
   --accent:#D77A38;
   --accent-hover:#EA8A46;
@@ -1224,7 +1224,7 @@ html[data-resolved-theme="dark"] #music-library{
 #music-library #ml-nowbar{border-radius:8px !important;background:var(--surface) !important;color:var(--text-primary) !important;border-color:var(--divider) !important;box-shadow:0 20px 60px rgba(42,30,22,.14) !important;}
 #music-library #ml-nowbar-fill{background:var(--accent) !important;}
 #music-library .ml-nowbar-btn.is-main{background:var(--accent) !important;color:#fff !important;}
-#music-library #ml-player-view{background:#101613 !important;color:#F5F1EA !important;border-radius:8px !important;}
+#music-library #ml-player-view{background:#0E0E0E !important;color:#F5F1EA !important;border-radius:8px !important;}
 #music-library button:focus-visible,#music-library a:focus-visible,#music-library input:focus-visible{outline:3px solid color-mix(in srgb,var(--accent) 46%, transparent) !important;outline-offset:2px !important;}
 
 @media (max-width:1180px){
@@ -1501,11 +1501,11 @@ html[data-resolved-theme="dark"] #music-library{
 
 @media(prefers-color-scheme:dark){
   #music-library{
-    --halo-bg:#070b16;
-    --halo-bg2:#0a101f;
-    --halo-bg3:#0b1732;
-    --halo-accent:#e8c765;
-    --halo-accent-light:rgba(232,199,101,.16);
+    --halo-bg:#0E0E0E;
+    --halo-bg2:#161616;
+    --halo-bg3:#202020;
+    --halo-accent:#E8845A;
+    --halo-accent-light:rgba(232,132,90,.16);
     --halo-text:#f7f1ea;
     --halo-text2:rgba(247,241,234,.7);
     --halo-text3:rgba(247,241,234,.38);
@@ -1517,10 +1517,10 @@ html[data-resolved-theme="dark"] #music-library{
     --hero-chip-bg:rgba(45,35,29,.88);
     --card-grad:linear-gradient(180deg,rgba(39,31,26,.9),rgba(28,22,18,.94));
     --card-hover:linear-gradient(180deg,rgba(46,36,30,.96),rgba(34,26,22,.98));
-    --detail-grad:radial-gradient(circle at top, rgba(255,255,255,.05), transparent 26%),linear-gradient(180deg,#1c1714 0%,#070b16 100%);
+    --detail-grad:radial-gradient(circle at top, rgba(255,255,255,.05), transparent 26%),linear-gradient(180deg,#1A1A1A 0%,#0E0E0E 100%);
 
     /* Player card — dark */
-    --player-bg:rgba(27,21,18,0.92);
+    --player-bg:rgba(20,20,20,0.92);
     --player-border:rgba(255,255,255,0.08);
     --player-text:#fff8f2;
     --player-text2:rgba(255,248,242,0.5);
@@ -1529,15 +1529,15 @@ html[data-resolved-theme="dark"] #music-library{
     --player-track:rgba(255,255,255,0.15);
     --player-btn:rgba(255,255,255,0.55);
     --player-btn-hover-bg:rgba(255,255,255,0.09);
-    --player-playpause-bg:#e8c765;
-    --player-playpause-hover:#f3d67a;
+    --player-playpause-bg:#E8845A;
+    --player-playpause-hover:#F09B72;
     --player-lrc-dim:rgba(255,255,255,0.25);
 
     /* Notice bar — dark */
     --notice-bg:#221a15;
     --notice-hover:#2a211b;
     --notice-text:rgba(255,255,255,0.9);
-    --notice-dot:#e8c765;
+    --notice-dot:#E8845A;
 
     /* Modal — dark */
     --modal-bg:#1f1814;
@@ -2064,13 +2064,13 @@ html,body,#music-library{
 #music-library .sw-tog.on svg{transform:rotate(180deg);}
 #music-library .sw-panel{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.4,0,.2,1);}
 #music-library .sw-panel.open{max-height:9999px;}
-#music-library .sw-panel-inner{border-radius:24px;border:1px solid var(--border);background:rgba(255,253,249,.64);box-shadow:0 18px 48px rgba(15,23,42,.12),0 1px 0 rgba(255,255,255,.65) inset;overflow:hidden;margin-bottom:14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
+#music-library .sw-panel-inner{border-radius:24px;border:1px solid var(--border);background:rgba(255,253,249,.64);box-shadow:0 18px 48px rgba(0,0,0,.12),0 1px 0 rgba(255,255,255,.65) inset;overflow:hidden;margin-bottom:14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
 #music-library .sw-ks{padding:20px 20px 18px;border-bottom:1px solid var(--border);}
 #music-library .sw-slabel{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;}
 #music-library .sw-kg{display:flex;flex-wrap:wrap;gap:10px 12px;align-items:center;}
 #music-library .sw-key-actions{margin-bottom:14px;gap:10px;}
 #music-library .sw-kb{font-family:'DM Mono',monospace;font-size:12px;padding:0 14px;border-radius:13px;border:1px solid var(--border);background:rgba(255,255,255,.5);color:var(--text2);cursor:pointer;transition:transform .15s,box-shadow .15s,border-color .15s,background .15s,color .15s;min-width:44px;min-height:42px;text-align:center;box-shadow:0 1px 0 rgba(255,255,255,.65) inset;}
-#music-library .sw-kb:hover{border-color:var(--border-md);color:var(--text);background:var(--bg3);transform:translateY(-1px);box-shadow:0 10px 22px rgba(15,23,42,.08),0 1px 0 rgba(255,255,255,.7) inset;}
+#music-library .sw-kb:hover{border-color:var(--border-md);color:var(--text);background:var(--bg3);transform:translateY(-1px);box-shadow:0 10px 22px rgba(0,0,0,.08),0 1px 0 rgba(255,255,255,.7) inset;}
 #music-library .sw-kb.on{background:var(--accent);color:#fff;border-color:transparent;font-weight:600;box-shadow:0 12px 28px color-mix(in srgb,var(--accent) 32%, transparent);}
 #music-library .sw-capo{display:flex;align-items:center;gap:12px;padding:18px 20px;background:color-mix(in srgb,var(--accent) 12%, transparent);border-bottom:1px solid color-mix(in srgb,var(--accent) 22%, transparent);transition:all .2s;}
 #music-library .sw-capo.plain{background:var(--bg3);border-bottom-color:var(--border);}
@@ -3604,9 +3604,9 @@ html,body,#music-library{
 
 /* ===== Sanctuary Dark UI Override ===== */
 #music-library{
-  --bg:#060a16;
-  --bg2:#0c1220;
-  --bg3:#121a2b;
+  --bg:#0D0D0D;
+  --bg2:#141414;
+  --bg3:#1C1C1C;
   --text:#f4f6fb;
   --text2:#a4adbf;
   --text3:#697185;
@@ -3622,7 +3622,7 @@ html,body,#music-library{
   background:
     radial-gradient(circle at 0% 0%, rgba(114,62,255,.08), transparent 24%),
     radial-gradient(circle at 100% 120%, rgba(255,178,66,.05), transparent 38%),
-    linear-gradient(180deg,#080d1b 0%,#060a16 44%,#050913 100%);
+    linear-gradient(180deg,#111111 0%,#0D0D0D 44%,#0B0B0B 100%);
   color:var(--text);
   border-radius:0;
 }
@@ -3645,7 +3645,7 @@ html,body,#music-library{
 .ml-brand-dot{
   width:66px;height:42px;border-radius:10px;
   background:rgba(248,243,226,.08);
-  border:1px solid rgba(232,199,101,.22);
+  border:1px solid rgba(232,132,90,.22);
   box-shadow:0 0 24px rgba(227,191,66,.14);
   display:inline-flex;
   align-items:center;
@@ -3766,7 +3766,7 @@ html,body,#music-library{
   border-color:rgba(255,255,255,.16);box-shadow:0 12px 30px rgba(2,6,16,.35);
 }
 .ml-card-art{
-  width:100%;height:214px;border-radius:10px;background:#091021;
+  width:100%;height:214px;border-radius:10px;background:#141414;
   display:flex;align-items:center;justify-content:center;overflow:hidden;margin-bottom:12px;
 }
 .ml-cover{border-radius:10px;}
@@ -3797,7 +3797,7 @@ html,body,#music-library{
 #ml-contact{background:var(--accent);color:#131313;}
 
 #ml-detail{
-  background:radial-gradient(circle at 0% 0%,rgba(117,68,255,.12),transparent 22%),#060a16;
+  background:radial-gradient(circle at 0% 0%,rgba(117,68,255,.12),transparent 22%),#0D0D0D;
 }
 #ml-detail-header{
   border-bottom:1px solid rgba(255,255,255,.08);
@@ -3843,7 +3843,7 @@ html,body,#music-library{
   border-radius:999px;
   color:var(--text);
   background:color-mix(in srgb,var(--bg2) 96%, transparent);
-  box-shadow:0 10px 24px rgba(15,23,42,.08);
+  box-shadow:0 10px 24px rgba(0,0,0,.08);
 }
 
 #ml-miniplayer{
@@ -3870,7 +3870,7 @@ html,body,#music-library{
   background:
     radial-gradient(circle at 0% 0%, rgba(114,62,255,.16), transparent 24%),
     radial-gradient(circle at 80% 0%, rgba(227,191,66,.10), transparent 36%),
-    #060a16;
+    #0D0D0D;
   display:none;
   padding:18px 22px 20px;
 }
@@ -3895,7 +3895,7 @@ html,body,#music-library{
   color:#fff;cursor:pointer;font-size:13px;
 }
 #ml-player-view-now{
-  color:#9ca5b8;
+  color:#9A9A9A;
   font-size:11px;
   letter-spacing:.18em;
   font-family:'DM Mono',monospace;
@@ -3956,7 +3956,7 @@ html,body,#music-library{
   aspect-ratio:1/1;
   border-radius:12px;
   border:1px solid rgba(255,255,255,.1);
-  background:#0b1120;
+  background:#0E0E0E;
   overflow:hidden;
   display:flex;
   align-items:center;
@@ -4028,7 +4028,7 @@ html,body,#music-library{
 #ml-player-dock-song{display:flex;align-items:center;gap:10px;min-width:0;}
 #ml-player-dock-cover{
   width:56px;height:56px;border-radius:8px;overflow:hidden;
-  background:#0f1320;border:1px solid rgba(255,255,255,.14);
+  background:#171717;border:1px solid rgba(255,255,255,.14);
   display:flex;align-items:center;justify-content:center;
 }
 #ml-player-dock-cover img{width:100%;height:100%;object-fit:cover;}
@@ -4201,7 +4201,7 @@ html,body,#music-library{
     --bg:#f3f5fb;
     --bg2:#ffffff;
     --bg3:#eef2fb;
-    --text:#111827;
+    --text:#141414;
     --text2:#4b5569;
     --text3:#7f8aa3;
     /* 亮底：三种都要够深 */
@@ -4210,16 +4210,16 @@ html,body,#music-library{
     --ly4:#5C2178;
     --accent:#c58e18;
     --accent-light:rgba(197,142,24,.16);
-    --border:rgba(15,23,42,.12);
-    --border-md:rgba(15,23,42,.18);
+    --border:rgba(0,0,0,.12);
+    --border-md:rgba(0,0,0,.18);
     background:
       radial-gradient(circle at 0% 0%, rgba(129,93,255,.10), transparent 26%),
       radial-gradient(circle at 100% 120%, rgba(255,178,66,.08), transparent 38%),
       linear-gradient(180deg,#f8f9fe 0%,#eff3fb 56%,#e9eef9 100%);
   }
-  #ml-header{border-bottom-color:rgba(15,23,42,.08);}
-  #ml-nav{border-bottom-color:rgba(15,23,42,.08);}
-  .ml-source-chip strong{background:rgba(15,23,42,.08);}
+  #ml-header{border-bottom-color:rgba(0,0,0,.08);}
+  #ml-nav{border-bottom-color:rgba(0,0,0,.08);}
+  .ml-source-chip strong{background:rgba(0,0,0,.08);}
   #ml-hero{
     background:
       linear-gradient(90deg,rgba(250,252,255,.96) 0%,rgba(245,248,255,.9) 48%,rgba(245,247,253,.95) 100%),
@@ -4228,19 +4228,19 @@ html,body,#music-library{
   }
   #ml-search,#ml-count-wrap,.ml-source-chip,.ml-song-card,.ml-group{
     background:rgba(255,255,255,.8);
-    border-color:rgba(15,23,42,.12);
+    border-color:rgba(0,0,0,.12);
     color:var(--text2);
   }
   #ml-detail{background:#edf2fb;}
-  #ml-detail-header{background:rgba(245,248,255,.88);border-bottom-color:rgba(15,23,42,.1);}
-  #ml-back{background:#fff;border-color:rgba(15,23,42,.16);color:var(--text);}
+  #ml-detail-header{background:rgba(245,248,255,.88);border-bottom-color:rgba(0,0,0,.1);}
+  #ml-back{background:#fff;border-color:rgba(0,0,0,.16);color:var(--text);}
   #music-library .sw-wrap,
   #music-library .sw-panel-inner,
   #music-library .sw-score,
   #music-library .ml-met,
   #ml-miniplayer{
     background:#fff;
-    border-color:rgba(15,23,42,.12);
+    border-color:rgba(0,0,0,.12);
   }
   #ml-player-view{
     background:
@@ -4250,43 +4250,43 @@ html,body,#music-library{
   }
   #ml-player-side,#ml-player-lyrics{
     background:#fff;
-    border-color:rgba(15,23,42,.12);
+    border-color:rgba(0,0,0,.12);
   }
   #ml-player-rail{
     background:#fff;
-    border-color:rgba(15,23,42,.12);
+    border-color:rgba(0,0,0,.12);
   }
   .ml-player-rail-btn,.ml-player-rail-dot{
-    border-color:rgba(15,23,42,.16);
+    border-color:rgba(0,0,0,.16);
     background:#fff;
-    color:#1f2937;
+    color:#2A2A2A;
   }
   #ml-player-dock{
     background:rgba(255,255,255,.86);
-    border-color:rgba(15,23,42,.12);
+    border-color:rgba(0,0,0,.12);
   }
   #ml-player-dock-cover{
-    border-color:rgba(15,23,42,.14);
+    border-color:rgba(0,0,0,.14);
     background:#f5f8ff;
   }
-  #ml-player-dock-title{color:#111827;}
+  #ml-player-dock-title{color:#141414;}
   #ml-player-dock-artist,#ml-player-cur,#ml-player-dur,.ml-player-vol-icon{color:#59647d;}
-  #ml-player-dock .ml-player-progress-bar{background:rgba(15,23,42,.16);}
-  #ml-player-dock .ml-player-progress-fill{background:#111827;}
-  #ml-player-dock-vol{background:rgba(15,23,42,.18);}
-  #ml-player-dock-vol::-webkit-slider-thumb{background:#111827;}
-  #ml-player-dock-vol::-moz-range-thumb{background:#111827;}
+  #ml-player-dock .ml-player-progress-bar{background:rgba(0,0,0,.16);}
+  #ml-player-dock .ml-player-progress-fill{background:#141414;}
+  #ml-player-dock-vol{background:rgba(0,0,0,.18);}
+  #ml-player-dock-vol::-webkit-slider-thumb{background:#141414;}
+  #ml-player-dock-vol::-moz-range-thumb{background:#141414;}
   .ml-player-lrc-line{color:rgba(17,24,39,.38);}
-  .ml-player-lrc-line.active{color:#111827;text-shadow:none;}
+  .ml-player-lrc-line.active{color:#141414;text-shadow:none;}
   .ml-player-icon-btn,.ml-player-ctl,#ml-player-view-close{
-    border-color:rgba(15,23,42,.16);
+    border-color:rgba(0,0,0,.16);
     background:#fff;
-    color:#1f2937;
+    color:#2A2A2A;
   }
   #ml-player-view-menu{
-    border-color:rgba(15,23,42,.16);
+    border-color:rgba(0,0,0,.16);
     background:#fff;
-    color:#1f2937;
+    color:#2A2A2A;
   }
 }
 
@@ -4649,7 +4649,7 @@ html,body,#music-library{
 #music-library .ml-player-side-tab{
   border:1px solid rgba(255,255,255,.1);
   background:rgba(255,255,255,.04);
-  color:#b8c0d1;
+  color:#BDBDBD;
   border-radius:999px;
   height:34px;
   font-size:12px;
@@ -4659,7 +4659,7 @@ html,body,#music-library{
 }
 #music-library .ml-player-side-tab.active{
   background:#e6edf9;
-  color:#0b1020;
+  color:#131313;
   border-color:transparent;
 }
 #music-library #ml-player-side-song,
@@ -4796,10 +4796,10 @@ html,body,#music-library{
 /* ---- Light Mode Readability Fixes ---- */
 @media (prefers-color-scheme: light){
   #music-library .ml-nav-icon-btn{
-    border-color:rgba(15,23,42,.14);
+    border-color:rgba(0,0,0,.14);
     background:rgba(255,255,255,.92);
     color:var(--text2);
-    box-shadow:0 1px 2px rgba(15,23,42,.05);
+    box-shadow:0 1px 2px rgba(0,0,0,.05);
   }
   #music-library .ml-nav-icon-btn:hover{
     background:#fff;
@@ -4816,18 +4816,18 @@ html,body,#music-library{
   }
   #music-library #ml-player-cover{
     background:#f5f8ff;
-    border-color:rgba(15,23,42,.12);
+    border-color:rgba(0,0,0,.12);
   }
   #music-library .ml-player-icon-btn{
-    border-color:rgba(15,23,42,.14);
+    border-color:rgba(0,0,0,.14);
     background:rgba(255,255,255,.92);
     color:var(--text);
   }
   #music-library .ml-player-pill,
   #music-library .ml-player-side-tab,
   #music-library .ml-player-queue-item{
-    border-color:rgba(15,23,42,.12);
-    background:rgba(15,23,42,.04);
+    border-color:rgba(0,0,0,.12);
+    background:rgba(0,0,0,.04);
   }
   #music-library .ml-player-pill,
   #music-library .ml-player-side-tab,
@@ -4842,10 +4842,10 @@ html,body,#music-library{
     color:var(--text);
   }
   #music-library .ml-player-queue-item:hover{
-    background:rgba(15,23,42,.07);
+    background:rgba(0,0,0,.07);
   }
   #music-library .ml-player-queue-item.is-active{
-    border-color:color-mix(in srgb,var(--accent) 32%, rgba(15,23,42,.12));
+    border-color:color-mix(in srgb,var(--accent) 32%, rgba(0,0,0,.12));
     background:var(--accent-light);
   }
   #music-library .ml-player-queue-title{
@@ -5032,8 +5032,8 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   --wp-soft:rgba(247,243,232,.46);
   --wp-line:rgba(255,255,255,.14);
   --wp-line-strong:rgba(255,255,255,.24);
-  --wp-gold:#e8c765;
-  --wp-blue:#0a1530;
+  --wp-gold:#E8845A;
+  --wp-blue:#1A1A1A;
   --wp-panel:rgba(10,16,31,.56);
   --wp-panel-strong:rgba(9,14,27,.72);
   --wp-shadow:0 28px 90px rgba(0,0,0,.42),0 1px 0 rgba(255,255,255,.06) inset;
@@ -5049,9 +5049,9 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   margin:0 0 18px;
   color:var(--wp-ink);
   background:
-    radial-gradient(circle at 12% 8%,rgba(232,199,101,.25),transparent 28%),
+    radial-gradient(circle at 12% 8%,rgba(232,132,90,.25),transparent 28%),
     radial-gradient(circle at 84% 22%,rgba(65,108,210,.22),transparent 36%),
-    linear-gradient(135deg,#070b16 0%,#0b1732 48%,#060915 100%);
+    linear-gradient(135deg,#0E0E0E 0%,#202020 48%,#0B0B0B 100%);
   box-shadow:var(--wp-shadow);
 }
 #music-library #ml-worship-picks::before,
@@ -5083,7 +5083,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   z-index:0;
   pointer-events:none;
   background:
-    radial-gradient(circle at var(--wp-mx) var(--wp-my),rgba(232,199,101,.24),transparent 22%),
+    radial-gradient(circle at var(--wp-mx) var(--wp-my),rgba(232,132,90,.24),transparent 22%),
     radial-gradient(circle at calc(var(--wp-mx) + 12%) calc(var(--wp-my) + 8%),rgba(91,123,221,.16),transparent 28%);
   opacity:.82;
   transition:opacity .2s ease;
@@ -5137,9 +5137,9 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   max-width:100%;
   margin-bottom:10px;
   padding:8px 11px;
-  border:1px solid rgba(232,199,101,.34);
+  border:1px solid rgba(232,132,90,.34);
   border-radius:999px;
-  background:rgba(232,199,101,.12);
+  background:rgba(232,132,90,.12);
   color:var(--wp-gold);
   font-size:11px;
   font-weight:700;
@@ -5223,7 +5223,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   border-color:rgba(255,255,255,.32);
 }
 #music-library .ml-wp-action:focus-visible{
-  outline:3px solid rgba(232,199,101,.45);
+  outline:3px solid rgba(232,132,90,.45);
   outline-offset:3px;
 }
 #music-library .ml-wp-action:disabled{
@@ -5232,10 +5232,10 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   transform:none;
 }
 #music-library .ml-wp-action.is-primary{
-  border-color:rgba(232,199,101,.58);
-  background:linear-gradient(135deg,#f3d67a,#c99834);
+  border-color:rgba(232,132,90,.58);
+  background:linear-gradient(135deg,#F09B72,#C76524);
   color:#121111;
-  box-shadow:0 14px 34px rgba(232,199,101,.24);
+  box-shadow:0 14px 34px rgba(232,132,90,.24);
 }
 #music-library .ml-wp-action-icon{
   display:inline-flex;
@@ -5264,7 +5264,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   border-radius:14px;
   padding:17px;
   background:
-    radial-gradient(circle at 0% 0%,rgba(232,199,101,.18),transparent 48%),
+    radial-gradient(circle at 0% 0%,rgba(232,132,90,.18),transparent 48%),
     rgba(255,255,255,.055);
 }
 #music-library #ml-wp-greeting-main{
@@ -5303,12 +5303,12 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
 #music-library .ml-wp-card:hover,
 #music-library .ml-wp-card.active{
   transform:translateY(-3px) scale(1.012);
-  border-color:rgba(232,199,101,.38);
+  border-color:rgba(232,132,90,.38);
   background:rgba(255,255,255,.105);
   box-shadow:0 18px 42px rgba(0,0,0,.26);
 }
 #music-library .ml-wp-card:focus-visible{
-  outline:3px solid rgba(232,199,101,.45);
+  outline:3px solid rgba(232,132,90,.45);
   outline-offset:3px;
 }
 #music-library .ml-wp-card-cover{
@@ -5319,7 +5319,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   height:72px;
   overflow:hidden;
   border-radius:10px;
-  background:linear-gradient(135deg,rgba(232,199,101,.22),rgba(85,114,210,.14));
+  background:linear-gradient(135deg,rgba(232,132,90,.22),rgba(85,114,210,.14));
   color:var(--wp-gold);
   font-weight:800;
 }
@@ -5342,7 +5342,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   white-space:nowrap;
 }
 #music-library .ml-wp-card-kicker{
-  color:rgba(232,199,101,.82);
+  color:rgba(232,132,90,.82);
   font-size:12px;
   font-weight:700;
 }
@@ -5377,7 +5377,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
 
 @media (prefers-color-scheme:light){
   #music-library #ml-worship-picks{
-    --wp-ink:#172033;
+    --wp-ink:#1B1B1B;
     --wp-muted:rgba(23,32,51,.72);
     --wp-soft:rgba(23,32,51,.52);
     --wp-line:rgba(23,32,51,.12);
@@ -5496,7 +5496,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   box-shadow:0 18px 70px rgba(0,0,0,.34),0 1px 0 rgba(255,255,255,.65) inset;
   backdrop-filter:blur(28px) saturate(1.35);
   -webkit-backdrop-filter:blur(28px) saturate(1.35);
-  color:#111827;
+  color:#141414;
   transform:translate(-50%,150%);
   opacity:0;
   pointer-events:none;
@@ -5530,7 +5530,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   justify-content:center;
   color:rgba(17,24,39,.48);
   border:1px solid rgba(255,255,255,.5);
-  box-shadow:0 10px 24px rgba(15,23,42,.18);
+  box-shadow:0 10px 24px rgba(0,0,0,.18);
 }
 #music-library #ml-nowbar-cover img{
   width:100%;
@@ -5582,7 +5582,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   width:0%;
   height:100%;
   border-radius:inherit;
-  background:linear-gradient(90deg,#111827,#d3a52b);
+  background:linear-gradient(90deg,#141414,#d3a52b);
 }
 #music-library #ml-nowbar-controls{
   display:flex;
@@ -5607,17 +5607,17 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
 #music-library .ml-nowbar-btn:hover{
   transform:translateY(-1px);
   background:rgba(255,255,255,.62);
-  color:#111827;
+  color:#141414;
 }
 #music-library .ml-nowbar-btn.is-main{
   width:52px;
   height:52px;
   background:rgba(17,24,39,.88);
   color:#fff;
-  box-shadow:0 10px 24px rgba(15,23,42,.24);
+  box-shadow:0 10px 24px rgba(0,0,0,.24);
 }
 #music-library #ml-nowbar.is-playing .ml-nowbar-btn.is-main{
-  background:#111827;
+  background:#141414;
 }
 #music-library .ml-nowbar-btn svg{display:block;}
 
@@ -5682,10 +5682,18 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
     width:44px;
     height:44px;
   }
+  /* 上/下一首在手机上原来是藏起来的 —— 于是想切歌只能先点开全屏播放器，
+     而「切下一首」恰恰是播放中最高频的动作。放回来，按钮稍微收窄一点腾地方：
+     封面 44 + 上一首 34 + 播放 44 + 下一首 34 + 队列 34，
+     其余宽度归歌名（歌名本来就是省略号截断的，少几十像素不影响可读）。 */
   #music-library #ml-nowbar-prev,
   #music-library #ml-nowbar-next{
-    display:none;
+    display:inline-flex;
   }
+  #music-library .ml-nowbar-btn{width:34px;height:34px;}
+  #music-library .ml-nowbar-btn.is-main{width:44px;height:44px;}
+  #music-library #ml-nowbar-controls{gap:2px;}
+  #music-library #ml-nowbar{gap:8px;}
 }
 
 #music-library #ml-player-view{
@@ -5808,7 +5816,7 @@ body{
   :root,
   html,
   body{
-    background-color:#070b16 !important;
+    background-color:#0E0E0E !important;
   }
 }
 
@@ -5891,7 +5899,7 @@ body{
     background:
       radial-gradient(circle at 0% 0%, rgba(114,62,255,.16), transparent 24%),
       radial-gradient(circle at 80% 0%, rgba(227,191,66,.10), transparent 36%),
-      #060a16 !important;
+      #0D0D0D !important;
   }
 
   #music-library #ml-nowbar{
@@ -5905,16 +5913,16 @@ body{
     html.ml-fullscreen body.ml-fullscreen,
     body.ml-fullscreen,
     body.ml-fullscreen #music-library{
-      background:#070b16 !important;
-      background-color:#070b16 !important;
+      background:#0E0E0E !important;
+      background-color:#0E0E0E !important;
     }
 
     body.ml-fullscreen #music-library::after{
-      background:#070b16;
+      background:#0E0E0E;
     }
 
     #music-library #ml-detail{
-      background:#070b16;
+      background:#0E0E0E;
     }
   }
 }
@@ -5925,13 +5933,13 @@ html[data-resolved-theme="light"] body,
 html[data-resolved-theme="light"] body.ml-fullscreen{background:#F4EFE7 !important;}
 html[data-resolved-theme="dark"],
 html[data-resolved-theme="dark"] body,
-html[data-resolved-theme="dark"] body.ml-fullscreen{background:#101613 !important;}
+html[data-resolved-theme="dark"] body.ml-fullscreen{background:#0E0E0E !important;}
 #music-library{
   --bg:#F4EFE7;--surface:#FFFDF9;--surface-secondary:#F8F1E8;--text-primary:#241C17;--text-secondary:#6F655D;--text-muted:#9A8F85;--divider:#E9E0D8;--accent:#C76524;--accent-hover:#A9501A;--accent-soft:#F8E7D8;--success:#4E7A5C;--danger:#B84D3D;
   --halo-bg:var(--bg);--halo-bg2:var(--surface);--halo-bg3:#EEE6DB;--halo-text:var(--text-primary);--halo-text2:var(--text-secondary);--halo-text3:var(--text-muted);--halo-accent:var(--accent);--halo-accent-light:var(--accent-soft);--halo-border:var(--divider);--text:var(--text-primary);--text2:var(--text-secondary);--text3:var(--text-muted);--border:var(--divider);--accent-light:var(--accent-soft);
   display:grid !important;grid-template-columns:240px minmax(0,1fr) !important;align-content:start !important;background:var(--bg) !important;background-color:var(--bg) !important;color:var(--text-primary) !important;font-family:Inter,"Noto Sans SC",-apple-system,BlinkMacSystemFont,"PingFang SC",system-ui,sans-serif !important;letter-spacing:0 !important;padding-bottom:calc(120px + env(safe-area-inset-bottom,0px)) !important;
 }
-html[data-resolved-theme="dark"] #music-library{--bg:#101613;--surface:#18201C;--surface-secondary:#202A25;--text-primary:#F5F1EA;--text-secondary:#BCC4BF;--text-muted:#89948E;--divider:rgba(255,255,255,.08);--accent:#D77A38;--accent-hover:#EA8A46;--accent-soft:rgba(215,122,56,.16);--success:#76A884;--danger:#E08172;}
+html[data-resolved-theme="dark"] #music-library{--bg:#0E0E0E;--surface:#1B1B1B;--surface-secondary:#242424;--text-primary:#F5F1EA;--text-secondary:#C4C4C4;--text-muted:#8C8C8C;--divider:rgba(255,255,255,.08);--accent:#D77A38;--accent-hover:#EA8A46;--accent-soft:rgba(215,122,56,.16);--success:#76A884;--danger:#E08172;}
 #music-library *,#music-library *::before,#music-library *::after{letter-spacing:0 !important;}
 #music-library::before,#music-library #ml-wp-glow,#music-library #ml-nowbar-bg{display:none !important;}
 #music-library > #ml-sidebar{grid-column:1 !important;grid-row:1 / span 50 !important;}
@@ -6013,7 +6021,7 @@ html[data-resolved-theme="dark"] #music-library{--bg:#101613;--surface:#18201C;-
 #music-library #ml-nowbar{border-radius:8px !important;background:var(--surface) !important;color:var(--text-primary) !important;border-color:var(--divider) !important;box-shadow:0 20px 60px rgba(42,30,22,.14) !important;}
 #music-library #ml-nowbar-fill{background:var(--accent) !important;}
 #music-library .ml-nowbar-btn.is-main{background:var(--accent) !important;color:#fff !important;}
-#music-library #ml-player-view{background:#101613 !important;color:#F5F1EA !important;border-radius:8px !important;}
+#music-library #ml-player-view{background:#0E0E0E !important;color:#F5F1EA !important;border-radius:8px !important;}
 
 /* Detail Dialog + Dual Score */
 body.ml-detail-lock{overflow:hidden !important;}
@@ -6035,7 +6043,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   display:block !important;
   pointer-events:auto !important;
   opacity:1 !important;
-  background:rgba(20,16,13,.36) !important;
+  background:rgba(0,0,0,.36) !important;
   backdrop-filter:blur(10px) saturate(110%) !important;
   -webkit-backdrop-filter:blur(10px) saturate(110%) !important;
 }
@@ -6304,23 +6312,23 @@ html[data-resolved-theme="dark"] .ml-score-image-page{
 @media (max-width:860px) and (orientation:landscape){#ml-worship-picks,#ml-home-grid,#ml-source-section-head{display:none !important;}}
 
 /* Round 2: requested restored warm dark palette, inline artist filters, true queue, and continuous score display. */
-html[data-resolved-theme="dark"] body.ml-fullscreen{background:#070b16 !important;}
+html[data-resolved-theme="dark"] body.ml-fullscreen{background:#0E0E0E !important;}
 html[data-resolved-theme="dark"] #music-library{
-  --bg:#070b16;
-  --surface:#0a101f;
-  --surface-secondary:#0b1732;
+  --bg:#0E0E0E;
+  --surface:#161616;
+  --surface-secondary:#202020;
   --text-primary:#f7f1ea;
   --text-secondary:rgba(247,241,234,.7);
   --text-muted:rgba(247,241,234,.38);
   --divider:rgba(255,255,255,.08);
-  --accent:#e8c765;
-  --accent-hover:#f3d67a;
-  --accent-soft:rgba(232,199,101,.16);
+  --accent:#E8845A;
+  --accent-hover:#F09B72;
+  --accent-soft:rgba(232,132,90,.16);
   --success:#9cc48a;
   --danger:#e49383;
 }
 html[data-resolved-theme="dark"] #music-library{
-  --player-bg:rgba(27,21,18,0.92);
+  --player-bg:rgba(20,20,20,0.92);
   --player-border:rgba(255,255,255,0.08);
   --player-text:#fff8f2;
   --player-text2:rgba(255,248,242,0.5);
@@ -6329,17 +6337,17 @@ html[data-resolved-theme="dark"] #music-library{
   --player-track:rgba(255,255,255,0.15);
   --player-btn:rgba(255,255,255,0.55);
   --player-btn-hover-bg:rgba(255,255,255,0.09);
-  --player-playpause-bg:#e8c765;
-  --player-playpause-hover:#f3d67a;
+  --player-playpause-bg:#E8845A;
+  --player-playpause-hover:#F09B72;
   --player-lrc-dim:rgba(255,255,255,0.25);
 }
 html[data-resolved-theme="dark"] #music-library #ml-player-view{
-  background:#070b16 !important;
+  background:#0E0E0E !important;
   color:#f7f1ea !important;
 }
 html[data-resolved-theme="dark"] #music-library #ml-player-side,
 html[data-resolved-theme="dark"] #music-library #ml-player-dock{
-  background:rgba(33,27,23,.82) !important;
+  background:rgba(26,26,26,.82) !important;
   border-color:rgba(255,255,255,.08) !important;
 }
 #ml-source-section-head{display:none !important;}
@@ -6415,7 +6423,7 @@ html[data-resolved-theme="dark"] #music-library #ml-player-dock{
   position:absolute !important;
   inset:0 !important;
   border:0 !important;
-  background:rgba(20,16,13,.44) !important;
+  background:rgba(0,0,0,.44) !important;
   backdrop-filter:blur(10px) !important;
   -webkit-backdrop-filter:blur(10px) !important;
 }
@@ -6593,34 +6601,34 @@ html[data-resolved-theme="dark"] #ml-playlist-panel{box-shadow:0 28px 90px rgba(
 html[data-resolved-theme="dark"],
 html[data-resolved-theme="dark"] body,
 html[data-resolved-theme="dark"] body.ml-fullscreen{
-  background:#070b16 !important;
+  background:#0E0E0E !important;
 }
 html[data-resolved-theme="dark"] #music-library{
-  --bg:#070b16;
-  --bg-secondary:#0b1732;
-  --surface:#0a101f;
-  --surface-secondary:#101a30;
-  --surface-hover:#14213b;
-  --surface-active:rgba(232,199,101,.14);
+  --bg:#0E0E0E;
+  --bg-secondary:#202020;
+  --surface:#161616;
+  --surface-secondary:#202020;
+  --surface-hover:#242424;
+  --surface-active:rgba(232,132,90,.14);
   --text-primary:#f7f3e8;
   --text-secondary:rgba(247,243,232,.72);
   --text-muted:rgba(247,243,232,.46);
   --divider:rgba(255,255,255,.14);
-  --accent:#e8c765;
-  --accent-hover:#f3d67a;
-  --accent-active:#c99834;
-  --accent-soft:rgba(232,199,101,.16);
+  --accent:#E8845A;
+  --accent-hover:#F09B72;
+  --accent-active:#C76524;
+  --accent-soft:rgba(232,132,90,.16);
   --success:#9bbfa7;
   --danger:#ee9383;
   --shadow-sm:0 1px 0 rgba(255,255,255,.05);
   --shadow-md:0 18px 50px rgba(0,0,0,.28),0 1px 0 rgba(255,255,255,.06) inset;
   --shadow-lg:0 28px 90px rgba(0,0,0,.42),0 1px 0 rgba(255,255,255,.06) inset;
-  --halo-bg:#070b16;
-  --halo-bg2:#0a101f;
-  --halo-bg3:#0b1732;
-  --halo-accent:#e8c765;
-  --halo-accent-hover:#f3d67a;
-  --halo-accent-light:rgba(232,199,101,.16);
+  --halo-bg:#0E0E0E;
+  --halo-bg2:#161616;
+  --halo-bg3:#202020;
+  --halo-accent:#E8845A;
+  --halo-accent-hover:#F09B72;
+  --halo-accent-light:rgba(232,132,90,.16);
   --halo-text:#f7f3e8;
   --halo-text2:rgba(247,243,232,.72);
   --halo-text3:rgba(247,243,232,.46);
@@ -6638,7 +6646,7 @@ html[data-resolved-theme="dark"] #music-library{
   --player-playpause-bg:rgba(255,255,255,.15);
   --player-playpause-hover:rgba(255,255,255,.24);
   --player-lrc-dim:rgba(247,243,232,.25);
-  background:#070b16 !important;
+  background:#0E0E0E !important;
 }
 html[data-resolved-theme="dark"] #ml-sidebar,
 html[data-resolved-theme="dark"] #ml-header,
@@ -6670,14 +6678,14 @@ html[data-resolved-theme="dark"] #music-library #ml-worship-picks{
   --wp-soft:rgba(247,243,232,.46);
   --wp-line:rgba(255,255,255,.14);
   --wp-line-strong:rgba(255,255,255,.24);
-  --wp-gold:#e8c765;
+  --wp-gold:#E8845A;
   --wp-panel:rgba(10,16,31,.56);
   --wp-panel-strong:rgba(9,14,27,.72);
   --wp-shadow:0 28px 90px rgba(0,0,0,.42),0 1px 0 rgba(255,255,255,.06) inset;
   background:
-    radial-gradient(circle at 12% 8%,rgba(232,199,101,.25),transparent 28%),
+    radial-gradient(circle at 12% 8%,rgba(232,132,90,.25),transparent 28%),
     radial-gradient(circle at 84% 22%,rgba(65,108,210,.22),transparent 36%),
-    linear-gradient(135deg,#070b16 0%,#0b1732 48%,#060915 100%) !important;
+    linear-gradient(135deg,#0E0E0E 0%,#202020 48%,#0B0B0B 100%) !important;
 }
 html[data-resolved-theme="dark"] #music-library #ml-wp-hero,
 html[data-resolved-theme="dark"] #music-library #ml-wp-side{
@@ -6685,7 +6693,7 @@ html[data-resolved-theme="dark"] #music-library #ml-wp-side{
   border-color:var(--wp-line) !important;
 }
 html[data-resolved-theme="light"] #music-library #ml-worship-picks{
-  --wp-ink:#172033;
+  --wp-ink:#1B1B1B;
   --wp-muted:rgba(23,32,51,.72);
   --wp-soft:rgba(23,32,51,.52);
   --wp-line:rgba(23,32,51,.12);
@@ -6769,7 +6777,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   border:1px solid var(--player-border) !important;
   backdrop-filter:blur(28px) saturate(180%) !important;
   -webkit-backdrop-filter:blur(28px) saturate(180%) !important;
-  box-shadow:0 28px 88px rgba(15,23,42,.18),0 1px 0 rgba(255,255,255,.10) inset !important;
+  box-shadow:0 28px 88px rgba(0,0,0,.18),0 1px 0 rgba(255,255,255,.10) inset !important;
 }
 #music-library #ml-mp-stage{
   min-height:0 !important;
@@ -6866,7 +6874,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   -webkit-backdrop-filter:blur(28px) saturate(180%) !important;
 }
 #music-library #ml-player-view{
-  background:#070b16 !important;
+  background:#0E0E0E !important;
   color:#f7f3e8 !important;
 }
 #music-library #ml-player-lyrics,
@@ -6926,8 +6934,10 @@ body.ml-detail-lock{overflow:hidden !important;}
 #music-library #ml-player-view:not(.lyrics-open) #ml-player-side{
   display:block !important;
 }
+/* 页签原来在「侧栏显示中」被藏掉了 —— 那正是唯一需要它的时候：
+   不给页签就没法在「歌曲信息」和「队列」之间切，只能干看着当前那一个。 */
 #music-library #ml-player-view:not(.lyrics-open) #ml-player-side-tabs{
-  display:none !important;
+  display:grid !important;
 }
 @media (max-width:1180px){
   #music-library #ml-player-view:not(.lyrics-open) #ml-player-view-grid{
@@ -7626,11 +7636,11 @@ body.ml-detail-lock{overflow:hidden !important;}
   border-radius:20px !important;
   overflow-y:auto !important;
   scroll-padding-block:40vh !important;
-  background:
-    linear-gradient(160deg,var(--player-surface-tint),transparent 58%),
-    rgba(8,14,28,.78) !important;
-  backdrop-filter:blur(24px) saturate(135%) !important;
-  -webkit-backdrop-filter:blur(24px) saturate(135%) !important;
+  /* 底板中性黑；模糊封面由内层 #ml-player-lyrics-bg 负责，
+     backdrop-filter 模糊的是面板「背后」的东西，这里已经用不上了。 */
+  background:#0E0E0E !important;
+  position:relative;
+  isolation:isolate;
 }
 #music-library #ml-player-view.lyrics-open #ml-player-lyrics-inner{
   min-height:100% !important;
@@ -7644,13 +7654,40 @@ body.ml-detail-lock{overflow:hidden !important;}
   text-align:center;
   font-size:clamp(24px,4.2vw,62px) !important;
   line-height:1.35 !important;
-  color:rgba(235,240,252,.42) !important;
+  /* 原来是偏蓝的 rgba(235,240,252,.42)，而且所有非当前行同一个色 —— 整屏没层次。
+     现在：底噪压到 .22 且**轻微失焦**（Apple Music 的做法，景深一出来就有层次感），
+     字重调轻、字距收紧；下面两条把「紧跟着要唱的两行」逐级还原清晰。 */
+  color:rgba(255,255,255,.22) !important;
   opacity:1 !important;
+  font-weight:650 !important;
+  letter-spacing:-.012em;
+  filter:blur(2.4px);
+  text-shadow:0 2px 20px rgba(0,0,0,.5);
+  transition:color .5s cubic-bezier(.22,.9,.28,1),
+             filter .5s cubic-bezier(.22,.9,.28,1),
+             transform .5s cubic-bezier(.22,.9,.28,1) !important;
+}
+#music-library #ml-player-view.lyrics-open .ml-player-lrc-line.active + .ml-player-lrc-line{
+  color:rgba(255,255,255,.52) !important;
+  filter:blur(.9px);
+}
+#music-library #ml-player-view.lyrics-open .ml-player-lrc-line.active + .ml-player-lrc-line + .ml-player-lrc-line{
+  color:rgba(255,255,255,.34) !important;
+  filter:blur(1.6px);
+}
+#music-library #ml-player-view.lyrics-open .ml-player-lrc-line.is-empty{
+  color:rgba(255,255,255,.52) !important;
+  font-size:clamp(16px,2vw,22px) !important;
+  font-weight:600 !important;
 }
 #music-library #ml-player-view.lyrics-open .ml-player-lrc-line.active{
-  color:var(--player-accent) !important;
-  text-shadow:0 0 30px var(--player-accent-soft) !important;
-  transform:scale(1.035) !important;
+  /* 纯饱和主色的大字在黑底上偏"艳"。混进白色调成带主色的暖白，
+     辉光交给 text-shadow，字本身保持克制 —— 这是"高级感"的关键一步。 */
+  color:color-mix(in srgb, var(--player-accent) 38%, #ffffff) !important;
+  text-shadow:0 0 46px var(--player-accent-soft),0 2px 24px rgba(0,0,0,.5) !important;
+  transform:scale(1.03) !important;
+  filter:none !important;               /* 只有当前行是清晰的 */
+  font-weight:800 !important;
 }
 #music-library #ml-player-view.lyrics-open #ml-player-lyrics-inner.is-static{
   justify-content:flex-start;
@@ -7742,14 +7779,19 @@ body.ml-detail-lock{overflow:hidden !important;}
 /* ===== Lyrics auto-follow + active line emphasis (2026-06-14 v5) ===== */
 #music-library #ml-player-view.open.lyrics-open .ml-player-lrc-line.active,
 #music-library #ml-player-view.open.lyrics-open .ml-player-lrc-line.is-static.active {
-  color: var(--player-accent) !important;
+  /* 纯饱和主色的大字在黑底上偏"艳"。混进白色调成带主色的暖白，
+     辉光交给 text-shadow，字本身保持克制。 */
+  color: color-mix(in srgb, var(--player-accent) 38%, #ffffff) !important;
   opacity: 1 !important;
   font-weight: 800 !important;
-  transform: scale(1.045) !important;
-  text-shadow: 0 0 28px var(--player-accent-soft) !important;
+  transform: scale(1.03) !important;
+  filter: none !important;                    /* 只有当前行是清晰的 */
+  text-shadow: 0 0 46px var(--player-accent-soft), 0 2px 24px rgba(0,0,0,.5) !important;
 }
+/* 原来这里是 opacity:.38 一刀切 —— 所有非当前行同一个淡度，
+   把上面按远近做的颜色 + 景深梯度整个拍平了。层次交给 color 和 filter，这里不再统一压。 */
 #music-library #ml-player-view.open.lyrics-open .ml-player-lrc-line:not(.active) {
-  opacity: .38 !important;
+  opacity: 1 !important;
 }
 #music-library #ml-player-view.open.lyrics-open #ml-player-lyrics {
   scroll-behavior: smooth;
@@ -10317,16 +10359,16 @@ html.ml-fullscreen body.ml-fullscreen #music-library > #ml-header,
 html[data-resolved-theme="dark"] #ml-audio-panel,
 html:not([data-resolved-theme="light"]) #ml-audio-panel{
   --ap-accent:#D77A38;
-  --ap-bg:#18201C;
-  --ap-card:#202A25;
+  --ap-bg:#1B1B1B;
+  --ap-card:#242424;
   --ap-card-strong:rgba(215,122,56,.16);
-  --ap-card-hover:#25312B;
+  --ap-card-hover:#2C2C2C;
   --ap-line:rgba(255,255,255,.08);
   --ap-text:#F5F1EA;
-  --ap-text2:#BCC4BF;
-  --ap-text3:#89948E;
+  --ap-text2:#C4C4C4;
+  --ap-text3:#8C8C8C;
   --ap-track:rgba(255,255,255,.14);
-  --ap-track-dim:#202A25;
+  --ap-track-dim:#242424;
 }
 @media (prefers-color-scheme: light){
   html:not([data-resolved-theme="dark"]) #ml-audio-panel{
@@ -10437,7 +10479,7 @@ html[data-resolved-theme="dark"] #music-library .sw-ico-yt{color:#FF6B5E;}
    面板是工具条的兄弟节点（.sw-tools 已改成纵向），不 portal 到 body。 */
 #music-library .sw-ink-pop{
   /* 面板配色跟随主题。深色主题刻意用「中性黑」(var(--ip-bg) 一族) 而不是站点那套
-     偏绿的 #18201C —— 用户要的是 intercom/GoodNotes 那种黑,不要深蓝绿。 */
+     偏绿的 #1B1B1B —— 用户要的是 intercom/GoodNotes 那种黑,不要深蓝绿。 */
   --ip-bg:#FFFFFF;
   --ip-card:#F2F2F7;
   --ip-text:#1C1C1E;
@@ -11117,10 +11159,9 @@ html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
 }
 #music-library .sw-ico-btn.sw-ink-reset[hidden]{display:none !important;}
 
-/* 播放条上「封面 / 歌名」是通往谱面的入口，给个可点的暗示 */
-#music-library #ml-nowbar-cover,
-#music-library #ml-nowbar-main{cursor:pointer;}
-#music-library #ml-nowbar-main:hover #ml-nowbar-title{text-decoration:underline;}
+/* 整条播放条都可点（打开播放页），不再给歌名单独的下划线暗示 —— 
+   那个暗示对应的是「点歌名去别的地方」，现在没有这回事了。 */
+#music-library #ml-nowbar{cursor:pointer;}
 #music-library #ml-nowbar-cover:hover{filter:brightness(1.06);}
 
 /* 播放条歌名是「进谱面」的主入口，手机上却只有 16px 高（副标题和歌词行在窄屏是隐藏的，
@@ -11157,4 +11198,178 @@ html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
 #music-library #ml-detail .sw-tools:not(.is-moved) .sw-tools-row{
   backdrop-filter:blur(10px);
   -webkit-backdrop-filter:blur(10px);
+}
+
+/* ═══════════ 队列行（播放列表抽屉 + 播放页右栏共用） ═══════════
+   照 Spotify 的队列做：封面缩略图、当前行跳动的均衡器条、
+   悬停才露出的操作、拖柄排序、正在播放/接下来分段。
+   两个容器共用同一套类，所以只写一份。 */
+
+#music-library .ml-q-sec{
+  display:flex;align-items:baseline;justify-content:space-between;gap:10px;
+  padding:16px 4px 8px;
+  font:700 12px/1 inherit;
+  letter-spacing:.06em;
+  color:var(--text-muted);
+}
+#music-library .ml-q-sec:first-child{padding-top:4px;}
+#music-library .ml-q-sec small{font-weight:600;opacity:.75;}
+
+#music-library .ml-q-row{
+  display:grid;
+  grid-template-columns:44px minmax(0,1fr) auto;
+  align-items:center;
+  gap:12px;
+  padding:8px 6px;
+  border-radius:10px;
+  cursor:pointer;
+  transition:background .14s ease;
+}
+#music-library .ml-q-row:hover{background:var(--surface-hover);}
+#music-library .ml-q-row.is-active{background:var(--accent-soft,#F8E7D8);}
+#music-library .ml-q-row.is-active .ml-q-title{color:var(--accent,#C76524);}
+
+#music-library .ml-q-art{
+  position:relative;width:44px;height:44px;border-radius:8px;overflow:hidden;
+  background:var(--surface-secondary);
+  display:flex;align-items:center;justify-content:center;
+  flex:0 0 auto;
+}
+#music-library .ml-q-art img{width:100%;height:100%;object-fit:cover;display:block;}
+#music-library .ml-q-art-fb{font-size:17px;color:var(--text-muted);}
+
+/* 当前行：封面上盖一层跳动的条（Spotify 的 now-playing 指示） */
+#music-library .ml-q-eq{display:none;}
+#music-library .ml-q-row.is-active .ml-q-eq{
+  position:absolute;inset:0;
+  display:flex;align-items:flex-end;justify-content:center;gap:2.5px;
+  padding-bottom:12px;
+  background:rgba(0,0,0,.45);
+}
+#music-library .ml-q-eq i{
+  width:3px;border-radius:2px;background:#fff;
+  animation:ml-q-eq 900ms ease-in-out infinite;
+}
+#music-library .ml-q-eq i:nth-child(1){height:8px;animation-delay:0ms;}
+#music-library .ml-q-eq i:nth-child(2){height:15px;animation-delay:180ms;}
+#music-library .ml-q-eq i:nth-child(3){height:11px;animation-delay:360ms;}
+@keyframes ml-q-eq{0%,100%{transform:scaleY(.42);}50%{transform:scaleY(1);}}
+/* 暂停时条子停住，别在没声音的时候还一直跳（标记由 _mpSetPlayUI 挂在根节点上） */
+#music-library.ml-mp-paused .ml-q-eq i{animation-play-state:paused;}
+@media (prefers-reduced-motion:reduce){
+  #music-library .ml-q-eq i{animation:none;}
+}
+
+#music-library .ml-q-meta{min-width:0;display:flex;flex-direction:column;gap:3px;}
+#music-library .ml-q-title{
+  font:650 14px/1.25 inherit;color:var(--text-primary);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#music-library .ml-q-sub{
+  font:500 12px/1.2 inherit;color:var(--text-muted);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+#music-library .ml-q-actions{display:flex;align-items:center;gap:2px;flex:0 0 auto;}
+#music-library .ml-q-btn{
+  width:32px;height:32px;border:0;border-radius:8px;background:transparent;
+  color:var(--text-muted);cursor:pointer;
+  display:inline-flex;align-items:center;justify-content:center;
+  opacity:0;transition:opacity .14s ease,background .14s ease,color .14s ease;
+}
+#music-library .ml-q-btn svg{display:block;}
+#music-library .ml-q-row:hover .ml-q-btn,
+#music-library .ml-q-row:focus-within .ml-q-btn{opacity:1;}
+#music-library .ml-q-btn:hover{background:var(--surface);color:var(--text-primary);}
+#music-library .ml-q-grip{cursor:grab;touch-action:none;}
+#music-library .ml-q-grip:active{cursor:grabbing;}
+/* 触屏没有 hover，操作常驻 */
+@media (hover:none){
+  #music-library .ml-q-btn{opacity:1;}
+}
+
+#music-library .ml-q-row.is-dragging{
+  opacity:.9;
+  background:var(--surface);
+  box-shadow:0 10px 28px rgba(0,0,0,.18);
+}
+#music-library .ml-q-placeholder{
+  border-radius:10px;
+  border:1px dashed var(--divider);
+  margin:2px 6px;
+}
+
+/* 旧的「正在播放」块已被列表里的分段标题取代（内容重复了）。
+   它的 display:grid 会盖掉 [hidden] 的默认 display:none，于是留下一条空的底色条。 */
+#music-library #ml-playlist-now[hidden]{display:none !important;}
+
+/* ═══════════ 播放列表抽屉：滑出动画 ═══════════
+   原来靠 hidden 属性直接切 display，没有任何过渡 —— 抽屉是"啪"地出现的。
+   改成底部上滑 + 背景淡入。hidden 仍然保留（键盘和读屏要它），
+   只是开的时候先脱 hidden 再下一帧加 .open，关的时候等动画走完再上 hidden。 */
+#music-library #ml-playlist-panel{
+  transform:translateY(100%);
+  opacity:0;
+  transition:transform .34s cubic-bezier(.22,.9,.28,1), opacity .2s ease !important;
+  will-change:transform;
+}
+#ml-playlist-drawer.open #ml-playlist-panel{
+  transform:translateY(0);
+  opacity:1;
+}
+#music-library #ml-playlist-backdrop,
+#ml-playlist-backdrop{
+  opacity:0 !important;
+  transition:opacity .28s ease !important;
+}
+#ml-playlist-drawer.open #ml-playlist-backdrop{opacity:1 !important;}
+@media (prefers-reduced-motion:reduce){
+  #music-library #ml-playlist-panel{transition:none !important;transform:none;opacity:1;}
+  #ml-playlist-backdrop{transition:none !important;}
+}
+
+/* ═══════════ 屏幕够高时，内嵌播放器的歌词多显示几行 ═══════════
+   两栏版把歌词固定在 116/150px，也就三行 —— 屏幕再高也不多给。
+   这里让它跟着视口高度长，高屏上能一眼看到一整段。 */
+@media (min-width:1024px){
+  #music-library #ml-miniplayer > #ml-mp-lrc-panel{
+    min-height:clamp(150px, 26vh, 320px);
+  }
+  #music-library #ml-miniplayer #ml-mp-lrc-inner{
+    padding:clamp(52px,9vh,110px) 0 clamp(60px,10vh,120px) !important;
+  }
+}
+
+
+
+/* ═══════════ 歌词页：模糊封面背景板 ═══════════
+   （这块被我上一次清理误删过一次 —— 元素还在 DOM 里但没有尺寸，等于没渲染。）
+   放大模糊的当前封面铺在面板里，上面压一层上下重、中间轻的暗罩：
+   当前行正好落在最亮那一带，既有氛围又不影响读字。 */
+#music-library #ml-player-lyrics-bg{
+  position:absolute;
+  inset:-12%;                        /* 外扩一点，模糊后不会露出灰边 */
+  z-index:0;
+  background-position:center;
+  background-size:cover;
+  filter:blur(64px) saturate(1.6);
+  opacity:.58;
+  transform:scale(1.15);
+  transition:opacity .4s ease;
+  pointer-events:none;
+}
+#music-library #ml-player-lyrics::after{
+  content:'';
+  position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:linear-gradient(180deg,
+    rgba(14,14,14,.90) 0%,
+    rgba(14,14,14,.54) 28%,
+    rgba(14,14,14,.54) 72%,
+    rgba(14,14,14,.90) 100%);
+}
+#music-library #ml-player-lyrics-inner{position:relative;z-index:2;}
+/* 面板不要"盒子感" */
+#music-library #ml-player-view.lyrics-open #ml-player-lyrics{
+  border:0 !important;
+  box-shadow:none !important;
 }

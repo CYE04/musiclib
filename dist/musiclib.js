@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='20260825-smooth16';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20260825-smooth33';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -486,7 +486,7 @@
         <span class="ml-brand-dot"><img src="${LOGO_SRC}" alt="橄榄树团契"></span>
         <span>
           <strong>CECP 诗歌库</strong>
-          <small>Worship Library</small>
+          <small>敬拜练习</small>
         </span>
       </div>
       <nav id="ml-side-nav" aria-label="主要页面">
@@ -658,7 +658,7 @@
           <div id="ml-player-now-sub"></div>
         </div>
         <div class="ml-pv-actions">
-          <button id="ml-player-view-score" type="button" aria-label="打开这首歌的谱面" title="看谱 / 练习"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h11"/><path d="M4 10h11"/><path d="M4 15h7"/><circle cx="17" cy="17" r="3"/><path d="M20 17V8l-4 1"/></svg><span>看谱</span></button>
+          <button id="ml-player-view-score" type="button" aria-label="打开这首歌的谱面练习" title="练习 · 谱面 / 移调 / 节拍器"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h11"/><path d="M4 10h11"/><path d="M4 15h7"/><circle cx="17" cy="17" r="3"/><path d="M20 17V8l-4 1"/></svg><span>练习</span></button>
           <button id="ml-player-view-menu" type="button" aria-label="切换到队列" title="队列"><span class="ml-pv-ico"></span><span class="ml-pv-label"></span></button>
         </div>
       </div>
@@ -671,6 +671,7 @@
           <div class="ml-player-rail-dot"></div>
         </aside>
         <section id="ml-player-lyrics">
+          <div id="ml-player-lyrics-bg" aria-hidden="true"></div>
           <div id="ml-player-lyrics-inner"></div>
         </section>
         <aside id="ml-player-side">
@@ -832,8 +833,8 @@
     </section>
     <div id="ml-nowbar" aria-label="正在播放">
       <div id="ml-nowbar-bg" aria-hidden="true"></div>
-      <div id="ml-nowbar-cover" title="打开谱面"><span>♪</span></div>
-      <div id="ml-nowbar-main" title="打开谱面">
+      <div id="ml-nowbar-cover" title="打开播放页"><span>♪</span></div>
+      <div id="ml-nowbar-main" title="打开播放页">
         <div id="ml-nowbar-title">正在播放</div>
         <div id="ml-nowbar-artist"></div>
         <div id="ml-nowbar-lyric">歌词将在播放时显示</div>
@@ -944,7 +945,7 @@
     modal.innerHTML=`
       <div id="ml-notice-dialog" role="dialog" aria-modal="true" aria-labelledby="ml-notice-modal-title">
         <button id="ml-notice-close" class="ml-motion-close-btn" type="button" aria-label="关闭">${icon('close',20)}</button>
-        <div id="ml-notice-kicker">COPYRIGHT NOTICE</div>
+        <div id="ml-notice-kicker">版权声明</div>
         <h2 id="ml-notice-modal-title">诗歌版权与申请新歌</h2>
         <div id="ml-notice-copy">本站所展示之诗歌、歌词、曲谱、音频及相关资料，其著作权及相关权利均归原权利人所有。本站内容仅用于教会内部诗歌练习、学习与敬拜辅助，不以营利为目的。若相关权利人认为本站任何内容涉及侵权，请与我们联系，我们将在核实后及时处理、修改或下架相关内容。</div>
         <div id="ml-notice-sub">需要申请新歌练习可联系 <strong>YuEn</strong>。制作一首歌通常需要约 <strong>1–2 小时</strong>，请尽量提前说明。</div>
@@ -3584,7 +3585,7 @@
     }
     const meta=document.querySelector('meta[name="theme-color"]:not([media])')||document.createElement('meta');
     meta.setAttribute('name','theme-color');
-    meta.setAttribute('content',resolved==='dark'?'#070b16':'#F4EFE7');
+    meta.setAttribute('content',resolved==='dark'?'#0E0E0E':'#F4EFE7');
     if(!meta.parentNode) document.head.appendChild(meta);
     const btn=$('ml-nav-theme');
     if(btn){
@@ -3613,25 +3614,28 @@
     const mode=html.getAttribute('data-resolved-theme')||getResolvedTheme();
     const dark=mode==='dark';
 
+    /* ⚠️ 这是深色调色板的**第三个**来源：这里直接往 root 写内联变量，会盖过样式表里
+       两处 `html[data-resolved-theme="dark"]` 的定义。只改 CSS 不改这里 = 白改。
+       中性黑灰 + 赤陶橙（与浅色模式 #C76524 同色相的提亮版）。 */
     const palette=dark ? {
-      bg:'#070b16',
-      bg2:'#0a101f',
-      bg3:'#0b1732',
-      accent:'#e8c765',
-      accentHover:'#f3d67a',
-      accentSoft:'rgba(232,199,101,.16)',
+      bg:'#0E0E0E',
+      bg2:'#161616',
+      bg3:'#202020',
+      accent:'#E8845A',
+      accentHover:'#F09B72',
+      accentSoft:'rgba(232,132,90,.16)',
       text:'#f7f3e8',
       text2:'rgba(247,243,232,.72)',
       text3:'rgba(247,243,232,.46)',
       border:'rgba(255,255,255,0.14)',
       borderMd:'rgba(255,255,255,0.24)',
       shadow:'0 18px 48px rgba(0,0,0,.28),0 1px 0 rgba(255,255,255,.04) inset',
-      hero:'radial-gradient(circle at top left, rgba(232,199,101,.2), transparent 28%),linear-gradient(135deg,#070b16 0%,#0b1732 58%,#060915 100%)',
-      panel:'rgba(10,16,31,.72)',
-      chip:'rgba(16,26,48,.92)',
-      card:'linear-gradient(180deg,rgba(16,26,48,.94),rgba(10,16,31,.96))',
-      cardHover:'linear-gradient(180deg,rgba(20,33,59,.98),rgba(12,20,38,.98))',
-      detail:'radial-gradient(circle at top, rgba(232,199,101,.12), transparent 26%),linear-gradient(180deg,#0b1732 0%,#070b16 100%)'
+      hero:'radial-gradient(circle at top left, rgba(232,132,90,.2), transparent 28%),linear-gradient(135deg,#0E0E0E 0%,#202020 58%,#0B0B0B 100%)',
+      panel:'rgba(22,22,22,.72)',
+      chip:'rgba(32,32,32,.92)',
+      card:'linear-gradient(180deg,rgba(32,32,32,.94),rgba(22,22,22,.96))',
+      cardHover:'linear-gradient(180deg,rgba(42,42,42,.98),rgba(26,26,26,.98))',
+      detail:'radial-gradient(circle at top, rgba(232,132,90,.12), transparent 26%),linear-gradient(180deg,#202020 0%,#0E0E0E 100%)'
     } : {
       bg:'#F4EFE7',
       bg2:'#FFFDF9',
@@ -9437,6 +9441,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     const xl=$('ml-player-cover');
     const dl=$('ml-player-dock-cover');
     const nb=$('ml-nowbar-cover');
+    /* 歌词页背后铺一张放大模糊的封面（Apple Music / Spotify 的做法）。
+       原来那里是一块写死的深蓝渐变，跟谁在放没关系，看着像块没做完的占位板。 */
+    const lb=$('ml-player-lyrics-bg');
+    if(lb) lb.style.backgroundImage=src?`url("${src}")`:'none';
     if(!el) return;
     if(src){
       el.innerHTML=`<img src="${src}" alt="">`;
@@ -9673,84 +9681,191 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpRenderQueue();
     showToast('播放列表已清空');
   }
+  let _plCloseTimer=0;
   function _mpSetPlaylistOpen(open){
     const drawer=$('ml-playlist-drawer');
     if(!drawer) return;
-    drawer.hidden=!open;
-    drawer.classList.toggle('open',!!open);
+    clearTimeout(_plCloseTimer);
     root.classList.toggle('ml-playlist-open',!!open);
-    _mpRenderPlaylist();
+    if(open){
+      _mpRenderPlaylist();
+      drawer.hidden=false;
+      /* 先脱掉 hidden、下一帧再加 .open：同一帧里 display 从 none 变过来的话
+         transition 不会跑，抽屉就是"啪"地出现而不是滑上来。 */
+      requestAnimationFrame(()=>requestAnimationFrame(()=>drawer.classList.add('open')));
+    }else{
+      drawer.classList.remove('open');
+      /* 等滑下去的动画走完再 hidden，否则一撤 display 动画就被砍断 */
+      _plCloseTimer=setTimeout(()=>{
+        if(!drawer.classList.contains('open')) drawer.hidden=true;
+      },320);
+    }
   }
+  /* ═══════════ 队列行（播放列表抽屉 + 播放页右栏共用一份） ═══════════
+     以前这两处各写了一遍行标记：一处「序号 + 标题 + 上移/下移/移除」，
+     另一处「序号 + 标题 + 移除」，改一处漏一处。这里合成一份。
+
+     照 Spotify 的队列：封面缩略图、当前行跳动的均衡器条、
+     鼠标悬停才露出的操作、拖柄排序（用指针事件，触屏也能拖）。 */
+
+  /* 从下标 from 挪到 to。不是交换 —— 交换只对相邻位置正确，拖过好几行就乱了。
+     当前曲的下标用「歌曲对象本身」重新定位，不做下标加减，队列里有重复曲目也不会错。 */
+  function _mpMoveQueueTo(from,to){
+    if(from===to) return;
+    if(from<0||to<0||from>=_mpSongs.length||to>=_mpSongs.length) return;
+    const cur=_mpSongs[_mpIdx]||null;
+    const [item]=_mpSongs.splice(from,1);
+    _mpSongs.splice(to,0,item);
+    if(cur) _mpIdx=_mpSongs.indexOf(cur);
+    _mpRenderQueue();
+  }
+
+  function _mpQueueRow(song,i){
+    const row=document.createElement('div');
+    row.className='ml-q-row'+(i===_mpIdx?' is-active':'');
+    row.__song=song;                       // 提交排序时按对象取，不靠 id（队列可能有重复曲目）
+    const sub=[song.artist||song.source||'诗歌', (getSongState(song.id).lastKey||song.origKey||'')]
+      .filter(Boolean).join(' · ');
+    row.innerHTML=`
+      <span class="ml-q-art">
+        ${song.cover?`<img src="${esc(song.cover)}" alt="" loading="lazy">`:'<span class="ml-q-art-fb">♪</span>'}
+        <span class="ml-q-eq" aria-hidden="true"><i></i><i></i><i></i></span>
+      </span>
+      <span class="ml-q-meta">
+        <strong class="ml-q-title">${esc(song.title||'未命名歌曲')}</strong>
+        <small class="ml-q-sub">${esc(sub)}</small>
+      </span>
+      <span class="ml-q-actions">
+        <button class="ml-q-btn ml-q-remove" type="button" aria-label="从队列移除">${icon('close',15)}</button>
+        <button class="ml-q-btn ml-q-grip" type="button" aria-label="拖动排序" title="拖动排序"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button>
+      </span>`;
+    return row;
+  }
+
+  /* 拖动排序：拖的时候只动 DOM，松手时按 DOM 顺序一次性重建队列。
+     每一步都改数组的话，_mpIdx 和正在播放的音频会跟着抖。 */
+  function _mpBindQueueDrag(list){
+    let dragRow=null,ph=null;
+    const commit=()=>{
+      const rows=[...list.querySelectorAll('.ml-q-row')];
+      const cur=_mpSongs[_mpIdx]||null;
+      const next=rows.map(r=>r.__song).filter(Boolean);
+      if(next.length===_mpSongs.length){
+        _mpSongs=next;
+        if(cur) _mpIdx=_mpSongs.indexOf(cur);
+      }
+      _mpRenderQueue();
+    };
+    list.addEventListener('pointerdown',e=>{
+      const grip=e.target.closest('.ml-q-grip');
+      if(!grip) return;
+      dragRow=grip.closest('.ml-q-row');
+      if(!dragRow) return;
+      e.preventDefault();
+      try{grip.setPointerCapture(e.pointerId);}catch(_){}
+      dragRow.classList.add('is-dragging');
+      ph=document.createElement('div');
+      ph.className='ml-q-placeholder';
+      ph.style.height=dragRow.getBoundingClientRect().height+'px';
+      dragRow.after(ph);
+      const move=ev=>{
+        if(!dragRow) return;
+        const rows=[...list.querySelectorAll('.ml-q-row:not(.is-dragging)')];
+        let target=null;
+        for(const r of rows){
+          const b=r.getBoundingClientRect();
+          if(ev.clientY < b.top+b.height/2){ target=r; break; }
+        }
+        if(target) list.insertBefore(dragRow,target);
+        else list.appendChild(dragRow);
+        dragRow.after(ph);
+      };
+      const up=()=>{
+        document.removeEventListener('pointermove',move);
+        document.removeEventListener('pointerup',up);
+        document.removeEventListener('pointercancel',up);
+        if(dragRow) dragRow.classList.remove('is-dragging');
+        if(ph&&ph.parentNode) ph.remove();
+        dragRow=null; ph=null;
+        commit();
+      };
+      document.addEventListener('pointermove',move);
+      document.addEventListener('pointerup',up);
+      document.addEventListener('pointercancel',up);
+    });
+  }
+
+  /* 把队列铺进某个容器。分「正在播放 / 接下来播放」两段 —— Spotify 那样，
+     一眼看得出当前这首在哪、后面还剩几首。 */
+  function _mpRenderQueueInto(list){
+    if(!list) return;
+    list.innerHTML='';
+    const head=(text,count)=>{
+      const h=document.createElement('div');
+      h.className='ml-q-sec';
+      h.innerHTML=`<span>${esc(text)}</span>${count!=null?`<small>${count} 首</small>`:''}`;
+      return h;
+    };
+    const hasCur=_mpIdx>=0&&_mpIdx<_mpSongs.length;
+    if(hasCur){
+      list.appendChild(head('正在播放'));
+      list.appendChild(_mpQueueRow(_mpSongs[_mpIdx],_mpIdx));
+      const rest=_mpSongs.length-_mpIdx-1;
+      if(rest>0){
+        list.appendChild(head('接下来播放',rest));
+        for(let i=_mpIdx+1;i<_mpSongs.length;i++) list.appendChild(_mpQueueRow(_mpSongs[i],i));
+      }
+      if(_mpIdx>0){
+        list.appendChild(head('已播过',_mpIdx));
+        for(let i=0;i<_mpIdx;i++) list.appendChild(_mpQueueRow(_mpSongs[i],i));
+      }
+    }else{
+      list.appendChild(head('队列',_mpSongs.length));
+      _mpSongs.forEach((song,i)=>list.appendChild(_mpQueueRow(song,i)));
+    }
+    if(!list.__queueWired){
+      list.__queueWired=true;
+      _mpBindQueueDrag(list);
+      list.addEventListener('click',e=>{
+        const row=e.target.closest('.ml-q-row');
+        if(!row) return;
+        const idx=_mpSongs.indexOf(row.__song);
+        if(idx<0) return;
+        if(e.target.closest('.ml-q-remove')){ _mpRemoveQueueIndex(idx); return; }
+        if(e.target.closest('.ml-q-grip')) return;   // 拖柄不触发播放
+        _mpPlayIdx(idx,true);
+      });
+    }
+  }
+
   function _mpRenderPlaylist(){
     const list=$('ml-playlist-list');
     const empty=$('ml-playlist-empty');
     const now=$('ml-playlist-now');
     const clear=$('ml-playlist-clear');
     if(!list) return;
-    list.innerHTML='';
     if(clear) clear.disabled=!_mpSongs.length;
-    if(now){
-      const cur=_mpSongs[_mpIdx];
-      now.innerHTML=cur?`<span>正在播放</span><strong>${esc(cur.title||'未命名歌曲')}</strong><small>${esc(cur.artist||cur.source||'诗歌')}</small>`:'';
-      now.hidden=!cur;
-    }
+    if(now) now.hidden=true;            // 「正在播放」已经变成列表里的分段标题，这块不再重复一遍
     if(!_mpSongs.length){
+      list.innerHTML='';
       if(empty) empty.hidden=false;
       return;
     }
     if(empty) empty.hidden=true;
-    _mpSongs.forEach((song,i)=>{
-      const row=document.createElement('div');
-      row.className='ml-playlist-item'+(i===_mpIdx?' is-active':'');
-      row.innerHTML=`
-        <button class="ml-playlist-main" type="button" data-action="play">
-          <span class="ml-playlist-index">${i+1}</span>
-          <span class="ml-playlist-meta">
-            <strong>${esc(song.title||'未命名歌曲')}</strong>
-            <small>${esc(song.artist||song.source||'诗歌')}</small>
-          </span>
-        </button>
-        <div class="ml-playlist-row-actions">
-          <button type="button" data-action="up" ${i===0?'disabled':''}>上移</button>
-          <button type="button" data-action="down" ${i===_mpSongs.length-1?'disabled':''}>下移</button>
-          <button type="button" data-action="remove">移除</button>
-        </div>
-      `;
-      row.querySelector('[data-action="play"]')?.addEventListener('click',()=>_mpPlayIdx(i,true));
-      row.querySelector('[data-action="up"]')?.addEventListener('click',()=>_mpMoveQueueIndex(i,-1));
-      row.querySelector('[data-action="down"]')?.addEventListener('click',()=>_mpMoveQueueIndex(i,1));
-      row.querySelector('[data-action="remove"]')?.addEventListener('click',()=>_mpRemoveQueueIndex(i));
-      list.appendChild(row);
-    });
+    _mpRenderQueueInto(list);
   }
+
   function _mpRenderQueue(){
     const box=$('ml-player-queue-list');
     const empty=$('ml-player-queue-empty');
-    if(box) box.innerHTML='';
     if(!_mpSongs.length){
+      if(box) box.innerHTML='';
       if(empty) empty.hidden=false;
       _mpRenderPlaylist();
       return;
     }
     if(empty) empty.hidden=true;
-    _mpSongs.forEach((song,i)=>{
-      if(!box) return;
-      const row=document.createElement('div');
-      row.className='ml-player-queue-item'+(i===_mpIdx?' is-active':'');
-      row.innerHTML=`
-        <button class="ml-player-queue-main" type="button">
-          <span class="ml-player-queue-index">${i+1}</span>
-          <span>
-            <span class="ml-player-queue-title">${esc(song.title||'未命名歌曲')}</span>
-            <span class="ml-player-queue-artist">${esc(song.artist||song.source||'诗歌')}</span>
-          </span>
-        </button>
-        <button class="ml-player-queue-remove" type="button" aria-label="从播放列表移除">移除</button>
-      `;
-      row.querySelector('.ml-player-queue-main')?.addEventListener('click',()=>_mpPlayIdx(i,true));
-      row.querySelector('.ml-player-queue-remove')?.addEventListener('click',()=>_mpRemoveQueueIndex(i));
-      box.appendChild(row);
-    });
+    _mpRenderQueueInto(box);
     _mpRenderPlaylist();
   }
   function _mpSyncModeUI(){
@@ -9790,6 +9905,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         : `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
     }
     if(stage) stage.classList.toggle('playing', !!isPlaying);
+    /* 队列里那三根跳动的条，暂停时要停住 —— 没声音了还在跳会让人以为还在放。
+       挂在根节点上而不是用兄弟选择器：队列有两个容器（抽屉 + 播放页右栏），
+       而且它们在 DOM 里跟 #ml-nowbar 不是稳定的兄弟关系。 */
+    root.classList.toggle('ml-mp-paused', !isPlaying);
     const nowbar=$('ml-nowbar');
     const nbtn=$('ml-nowbar-playpause');
     if(nowbar){
@@ -10393,12 +10512,14 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
          其余空白        -> 展开全屏播放页
        原来整条都是「展开播放页」，于是播放中想看谱得走两步：
        先点开全屏播放器，再点右上角看谱。现在点歌名一步到位。 */
+    /* 点播放条（按钮和进度条除外）一律打开全屏播放页 —— 所有音乐 App 都是这个规则。
+       上一版按 Spotify 桌面端的分法做成「点歌名进歌曲页 / 点空白展开播放器」，
+       在手机上直接把路堵死了：展开按钮在窄屏是 display:none，
+       而封面 + 歌名占掉了整条里所有非按钮的区域，
+       于是点哪儿都进练习页，歌词页反倒没有入口。
+       进练习页改由播放页右上那颗「练习」负责，一条路一个去处，不猜。 */
     $('ml-nowbar')?.addEventListener('click',e=>{
       if(e.target.closest('.ml-nowbar-btn, #ml-nowbar-progress')) return;
-      if(e.target.closest('#ml-nowbar-cover, #ml-nowbar-main')){
-        const song=_mpCurrentSong||_mpSongs[_mpIdx];
-        if(song){ openDetail(song); return; }
-      }
       _mpSetExpanded(true);
     });
     $('ml-miniplayer')?.addEventListener('click',e=>{
@@ -10439,7 +10560,11 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       const next=!_mpLyricsOpen;
       if(!next){
         _mpSideCollapsed=false;
-        _mpSetSideMode('song');
+        /* 按钮写着「队列」，就得真的打开队列。
+           原来这里写死 'song' —— 于是点「队列」打开的是「歌曲信息」面板，
+           而切到队列的那两个页签在这个状态下又被 CSS 藏了，
+           结果是「点了队列既没看到队列，也不知道怎么回歌词」。 */
+        _mpSetSideMode('queue');
       }
       _mpSetLyricsMode(next);
     });
