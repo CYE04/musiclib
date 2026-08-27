@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='20260825-smooth33';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20260825-smooth42';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -651,6 +651,10 @@
       </section>
     </div>
     <div id="ml-player-view">
+      <!-- 模糊封面背景板：必须挂在 #ml-player-view（fixed，不滚）上。
+           之前放在 #ml-player-lyrics 里 —— 那是个 overflow:auto 的滚动容器，
+           绝对定位的子元素会跟着内容一起滚，滚到哪儿就在哪儿留一条硬边。 -->
+      <div id="ml-player-lyrics-bg" aria-hidden="true"></div>
       <div id="ml-player-view-top">
         <button id="ml-player-view-close" class="ml-motion-close-btn" type="button" aria-label="收起播放器">${icon('collapse',20)}</button>
         <div id="ml-player-view-now">
@@ -671,7 +675,6 @@
           <div class="ml-player-rail-dot"></div>
         </aside>
         <section id="ml-player-lyrics">
-          <div id="ml-player-lyrics-bg" aria-hidden="true"></div>
           <div id="ml-player-lyrics-inner"></div>
         </section>
         <aside id="ml-player-side">
@@ -9443,8 +9446,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     const nb=$('ml-nowbar-cover');
     /* 歌词页背后铺一张放大模糊的封面（Apple Music / Spotify 的做法）。
        原来那里是一块写死的深蓝渐变，跟谁在放没关系，看着像块没做完的占位板。 */
-    const lb=$('ml-player-lyrics-bg');
-    if(lb) lb.style.backgroundImage=src?`url("${src}")`:'none';
+    /* 歌词页背景不再用封面。诗歌封面普遍带大字（专辑名/团名），
+       糊到认不出就只剩一团脏色，糊得轻又跟歌词抢 —— 两头不讨好，
+       而且大面积 blur 在手机上还费 GPU。改成纯色底 + 一点该曲主色的顶部微光，
+       颜色由 --player-accent 驱动（_mpApplyPlayerAccent 已经在设），这里不用管。 */
     if(!el) return;
     if(src){
       el.innerHTML=`<img src="${src}" alt="">`;

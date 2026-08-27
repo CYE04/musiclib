@@ -11346,30 +11346,164 @@ html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
    （这块被我上一次清理误删过一次 —— 元素还在 DOM 里但没有尺寸，等于没渲染。）
    放大模糊的当前封面铺在面板里，上面压一层上下重、中间轻的暗罩：
    当前行正好落在最亮那一带，既有氛围又不影响读字。 */
+/* 歌词页背景：纯色底 + 顶部一层该曲主色的微光。
+   （试过铺模糊封面，撤了：诗歌封面普遍带大字，糊到认不出就是一团脏色，
+     糊得轻又跟歌词抢；而且大面积 blur 在手机上费 GPU。）
+   这一层挂在 #ml-player-view（fixed，不滚）上 —— 早先放在会滚的歌词面板里，
+   会跟着内容一起滚、留下一条硬边。 */
 #music-library #ml-player-lyrics-bg{
   position:absolute;
-  inset:-12%;                        /* 外扩一点，模糊后不会露出灰边 */
+  inset:0;
   z-index:0;
-  background-position:center;
-  background-size:cover;
-  filter:blur(64px) saturate(1.6);
-  opacity:.58;
-  transform:scale(1.15);
-  transition:opacity .4s ease;
+  border-radius:inherit;
   pointer-events:none;
+  background:
+    radial-gradient(115% 70% at 50% -8%,
+      color-mix(in srgb, var(--player-accent,#E8845A) 13%, transparent),
+      transparent 62%),
+    #0E0E0E;
+  transition:background .45s ease;
 }
-#music-library #ml-player-lyrics::after{
-  content:'';
-  position:absolute;inset:0;z-index:1;pointer-events:none;
-  background:linear-gradient(180deg,
-    rgba(14,14,14,.90) 0%,
-    rgba(14,14,14,.54) 28%,
-    rgba(14,14,14,.54) 72%,
-    rgba(14,14,14,.90) 100%);
+/* 播放页里其余内容都压在背景板上面 */
+#music-library #ml-player-view > *:not(#ml-player-lyrics-bg){position:relative;z-index:1;}
+/* 歌词面板自己不再画底色，透出背景板 */
+#music-library #ml-player-view.lyrics-open #ml-player-lyrics,
+#music-library #ml-player-lyrics{
+  background:transparent !important;
 }
 #music-library #ml-player-lyrics-inner{position:relative;z-index:2;}
 /* 面板不要"盒子感" */
 #music-library #ml-player-view.lyrics-open #ml-player-lyrics{
   border:0 !important;
   box-shadow:none !important;
+}
+
+/* ═══════════ ① 歌曲卡骨架恒定 ═══════════
+   实测：同一屏里「播放」按钮停在 149px 和 172px 两个高度，卡片高 198/221 两种。
+   逐项量下来，body 里只有**标题**是变量（1 行 17px / 2 行 33px），
+   overline 13 / meta 15 / 标签 53 全是恒定的。
+   所以只要让标题永远占两行的位，整张卡就恒高，操作行自然对齐 —— 不需要写死卡片高度。 */
+#music-library #ml-list .ml-song-card .ml-song-title{
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+  overflow:hidden;
+  line-height:1.3 !important;
+  min-height:2.6em;            /* 一行也占两行的位 */
+}
+/* meta 只给一行，长经文引用不许换行把卡撑高 */
+#music-library #ml-list .ml-song-card .ml-song-meta{
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+#music-library #ml-list .ml-song-card{align-content:start;}
+#music-library #ml-list .ml-song-card .ml-card-actions{align-self:end;}
+
+
+
+/* ═══════════ 手机歌曲行：紧凑版（权威定义，放文件末尾） ═══════════
+   这个卡片被 40 条规则轮流定义过，最终胜出的是
+   `#music-library #ml-list .ml-group-grid > .ml-song-card`（2 id + 2 class）。
+   前面两次我分别改了 `#music-library .ml-song-card`（1010）和
+   `@media(max-width:479)` 里那块，特异性都比它低 —— 所以「元素删了、布局没排」，也就是那次的丑。
+   这里用**同一个选择器**、放在**文件最后**，同特异性下后来者胜，结果确定。
+
+   改前：封面 58 + 正文（专辑名/标题/歌手/两行标签）+ 操作独占一整行 = 177px，一屏 4 首。
+   改后：封面 48 | 标题 + (歌手·调性·拍号·BPM) | 播放·收藏，一行 ~68px，一屏 9~10 首。
+   专辑名和「音频」标签在这个密度下省掉（详情页里都有）；加入队列/分享同理。 */
+
+#music-library #ml-list .ml-group-grid > .ml-song-card{
+  min-height:0 !important;
+}
+
+@media (max-width:640px){
+  #music-library #ml-list .ml-group-grid > .ml-song-card{
+    display:grid !important;
+    grid-template-columns:48px minmax(0,1fr) auto !important;
+    grid-template-areas:"art body actions" !important;
+    align-items:center !important;
+    gap:0 10px !important;
+    padding:9px 10px !important;
+    min-height:0 !important;
+  }
+  #music-library #ml-list .ml-group-grid > .ml-song-card > .ml-card-art{
+    grid-area:art !important;
+    width:48px !important;height:48px !important;
+    min-width:48px !important;max-height:48px !important;
+    aspect-ratio:auto !important;
+    border-radius:8px !important;
+  }
+
+  /* 正文两行：标题独占第一行；第二行「歌手 + 调性/拍号/BPM」并排 */
+  #music-library #ml-list .ml-group-grid > .ml-song-card > .ml-card-body{
+    grid-area:body !important;
+    display:grid !important;
+    /* meta 放可收缩的 1fr、标签放 auto（拿自然宽）。
+       反过来写的话标签列会被挤成 0 宽，chip 竖着堆起来，行高从 68 变 103。 */
+    grid-template-columns:minmax(0,1fr) auto !important;
+    grid-template-areas:"title title" "meta tags" !important;
+    align-items:center !important;
+    gap:1px 8px !important;
+    min-width:0 !important;
+    overflow:hidden !important;
+  }
+  #music-library #ml-list .ml-group-grid > .ml-song-card .ml-song-overline{display:none !important;}
+  #music-library #ml-list .ml-group-grid > .ml-song-card .ml-song-title{
+    grid-area:title !important;
+    font-size:15px !important;
+    line-height:1.32 !important;
+    min-height:0 !important;
+    -webkit-line-clamp:1 !important;
+    display:-webkit-box !important;
+    -webkit-box-orient:vertical !important;
+    overflow:hidden !important;
+  }
+  #music-library #ml-list .ml-group-grid > .ml-song-card .ml-song-meta{
+    grid-area:meta !important;
+    font-size:12px !important;
+    line-height:1.3 !important;
+    white-space:nowrap !important;
+    overflow:hidden !important;
+    text-overflow:ellipsis !important;
+  }
+  #music-library #ml-list .ml-group-grid > .ml-song-card .ml-song-tags{
+    grid-area:tags !important;
+    display:flex !important;
+    flex-wrap:nowrap !important;
+    align-items:center !important;
+    overflow:hidden !important;
+    gap:4px !important;
+    margin:0 !important;
+    min-height:0 !important;
+    flex:0 0 auto !important;
+  }
+  #music-library #ml-list .ml-group-grid > .ml-song-card .ml-song-tags-secondary{display:none !important;}
+  #music-library #ml-list .ml-group-grid > .ml-song-card .ml-song-tag{
+    height:18px !important;min-height:18px !important;
+    padding:0 6px !important;font-size:10px !important;
+  }
+
+  /* 操作：右侧两个图标钮 */
+  #music-library #ml-list .ml-group-grid > .ml-song-card > .ml-card-actions{
+    grid-area:actions !important;
+    display:flex !important;
+    width:auto !important;
+    justify-self:end !important;
+    align-self:center !important;
+    grid-template-columns:none !important;
+    gap:4px !important;
+  }
+  #music-library #ml-list .ml-group-grid > .ml-song-card > .ml-card-actions > button{
+    width:34px !important;min-width:34px !important;
+    height:34px !important;min-height:34px !important;
+    padding:0 !important;border-radius:50% !important;
+  }
+  #music-library #ml-list .ml-group-grid > .ml-song-card .ml-card-play{
+    width:34px !important;min-width:34px !important;height:34px !important;
+    font-size:0 !important;            /* 只留图标 */
+    justify-content:center !important;
+  }
+  #music-library #ml-list .ml-group-grid > .ml-song-card .ml-card-queue,
+  #music-library #ml-list .ml-group-grid > .ml-song-card .ml-card-share{display:none !important;}
 }
