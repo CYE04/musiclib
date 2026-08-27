@@ -11507,3 +11507,296 @@ html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
   #music-library #ml-list .ml-group-grid > .ml-song-card .ml-card-queue,
   #music-library #ml-list .ml-group-grid > .ml-song-card .ml-card-share{display:none !important;}
 }
+
+/* ═══════════ 列表渲染成本：去掉白花的 backdrop-filter + 屏外跳过渲染 ═══════════
+   量下来桌面滚动是满帧（p99 18.2ms、0 掉帧），所以「虚拟列表」这种改造不值得做。
+   真正的成本在别处：全页 117 个元素挂着 backdrop-filter，其中 87 个是歌曲卡。
+   而卡片背景是 `linear-gradient(…) , var(--surface)`，--surface 是不透明色 ——
+   底下模糊出来的东西被完全盖住，**一个像素都看不见**，纯粹是合成器白干。
+   手机 GPU 上这类快照+模糊是最贵的一档。
+
+   顺带用 content-visibility 做「屏外不渲染」：这是分批渲染的现代写法，
+   浏览器自动跳过视口外卡片的布局和绘制，不用改一行 JS、不动分组结构。
+   contain-intrinsic-size 用 auto ——记住上次真实高度，桌面 223 / 手机 78 都不用写死，
+   滚动条也不会因为估错高度而跳。 */
+#music-library #ml-list .ml-song-card{
+  backdrop-filter:none !important;
+  -webkit-backdrop-filter:none !important;
+  content-visibility:auto;
+  contain-intrinsic-size:auto 223px;
+}
+
+
+
+/* ═══════════ 筛选：一颗按钮 + 抽屉 ═══════════
+   原来「快慢/本堂/收藏」「作者」「调性」三排 chip 平铺在列表上方，
+   光作者就十来个、横向拖一长条，条件越加越多反而更难找。
+   现在外面只留一颗按钮 + 已选中的那几个（可点掉），其余全收进抽屉。 */
+#music-library #ml-filter-toolbar{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:12px 0 2px;
+  min-width:0;
+}
+#music-library #ml-filter-open{
+  flex:0 0 auto;
+  display:inline-flex;align-items:center;gap:7px;
+  height:36px;padding:0 14px;
+  border-radius:999px;
+  border:1px solid var(--divider);
+  background:var(--surface);
+  color:var(--text-primary);
+  font:700 13px/1 inherit;
+  cursor:pointer;
+  transition:border-color .16s ease,background .16s ease;
+}
+#music-library #ml-filter-open:hover{background:var(--surface-hover);}
+#music-library #ml-filter-open.is-on{
+  border-color:var(--accent);
+  color:var(--accent);
+}
+#music-library #ml-filter-open svg{display:block;flex:0 0 auto;}
+#music-library #ml-filter-badge{
+  min-width:19px;height:19px;padding:0 6px;border-radius:999px;
+  background:var(--accent);color:#fff;
+  display:inline-flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:800;
+}
+#music-library #ml-filter-badge[hidden]{display:none !important;}
+/* 已选筛选：横向滚，不换行顶高列表 */
+#music-library #ml-active-filters{
+  display:flex;align-items:center;gap:8px;
+  min-width:0;overflow-x:auto;overflow-y:hidden;
+  scrollbar-width:none;
+}
+#music-library #ml-active-filters::-webkit-scrollbar{display:none;}
+#music-library .ml-active-chip{
+  flex:0 0 auto !important;
+  background:var(--accent-soft) !important;
+  border-color:color-mix(in srgb,var(--accent) 36%, var(--divider)) !important;
+  color:var(--accent) !important;
+}
+#music-library .ml-active-chip strong{
+  background:transparent !important;color:inherit !important;
+  font-size:15px !important;min-width:14px !important;padding:0 !important;
+}
+
+/* ── 抽屉本体：与播放列表抽屉同一套底部上滑 ── */
+#ml-filter-drawer[hidden]{display:none !important;}
+#ml-filter-drawer{
+  position:fixed !important;inset:0 !important;z-index:2400 !important;
+  display:grid !important;place-items:end center !important;
+}
+#ml-filter-backdrop{
+  position:absolute !important;inset:0 !important;border:0 !important;
+  background:rgba(0,0,0,.44) !important;
+  backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  opacity:0;transition:opacity .28s ease;
+}
+#ml-filter-drawer.open #ml-filter-backdrop{opacity:1;}
+#ml-filter-panel{
+  position:relative;z-index:1;
+  width:min(680px,calc(100vw - 28px));
+  max-height:min(80dvh,780px);
+  margin:0 0 calc(18px + env(safe-area-inset-bottom,0px));
+  display:flex;flex-direction:column;
+  border:1px solid var(--divider);
+  border-radius:14px;
+  background:var(--surface);
+  color:var(--text-primary);
+  box-shadow:var(--shadow-lg);
+  transform:translateY(100%);opacity:0;
+  transition:transform .34s cubic-bezier(.22,.9,.28,1),opacity .2s ease;
+  will-change:transform;
+}
+#ml-filter-drawer.open #ml-filter-panel{transform:translateY(0);opacity:1;}
+@media (prefers-reduced-motion:reduce){
+  #ml-filter-panel{transition:none;transform:none;opacity:1;}
+  #ml-filter-backdrop{transition:none;}
+}
+@media (max-width:640px){
+  #ml-filter-panel{width:100vw;margin:0;border-radius:16px 16px 0 0;border-left:0;border-right:0;border-bottom:0;max-height:86dvh;}
+}
+#ml-filter-panel-head{
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+  padding:18px 18px 10px;
+  border-bottom:1px solid var(--divider);
+}
+#ml-filter-panel-head h2{margin:2px 0 0;font-size:20px;font-weight:800;}
+#ml-filter-panel-actions{display:flex;align-items:center;gap:8px;flex:0 0 auto;}
+#ml-filter-reset{
+  height:32px;padding:0 12px;border-radius:999px;
+  border:1px solid var(--divider);background:transparent;
+  color:var(--text-secondary);font:700 12px/1 inherit;cursor:pointer;
+}
+#ml-filter-reset:hover{color:var(--text-primary);background:var(--surface-hover);}
+#ml-filter-panel-body{padding:6px 18px 14px;overflow:auto;flex:1 1 auto;}
+/* 分组之间的分割线：上下等距留白。
+   原来是 padding:12px 0 4px —— 线上面只有 4px（紧贴着上一组的方块），
+   线下面 12px，看着像线粘在上一组身上。现在两边各 18px，
+   而且分割线本身调淡一档：它只是分组提示，不该比方块的描边还抢眼。 */
+/* 选择器要带 #music-library —— 文件开头有条 `#music-library *{margin:0;padding:0}`
+   的全局重置，裸类名的 padding 一律被它清掉（第一版就是这么被吃掉的）。 */
+#music-library .ml-fp-sec{padding:0 0 18px;}
+#music-library .ml-fp-sec:first-child{padding-top:4px;}
+#music-library .ml-fp-sec + .ml-fp-sec{
+  padding-top:18px;
+  border-top:1px solid color-mix(in srgb, var(--divider) 62%, transparent);
+}
+#music-library .ml-fp-sec:last-child{padding-bottom:6px;}
+#music-library .ml-fp-sec-head{
+  display:flex;align-items:baseline;gap:8px;
+  font:700 12px/1 inherit;color:var(--text-muted);
+  letter-spacing:.06em;margin-bottom:12px;
+}
+.ml-fp-sec-head small{font-weight:600;opacity:.8;}
+
+#ml-filter-panel-foot{
+  padding:12px 18px calc(14px + env(safe-area-inset-bottom,0px));
+  border-top:1px solid var(--divider);
+}
+#ml-filter-done{
+  width:100%;height:46px;border:0;border-radius:12px;
+  background:var(--accent);color:#fff;
+  font:800 15px/1 inherit;cursor:pointer;
+}
+#ml-filter-done:hover{background:var(--accent-hover);}
+
+/* ═══════════ 筛选面板：等大方块 ═══════════
+   原来用的是胶囊 chip，宽度跟着文字走 —— 一排里「全部」很窄、「Original Song by
+   Chris Tomlin」很长，看着零散。改成等宽等高的圆角方块，网格排列，
+   标签和计数上下两行居中。列宽用 auto-fill + minmax，窄屏自动少排几个，不会挤。 */
+/* 列宽写死不用 1fr：1fr 会把剩余空间摊给每一列，宽度随容器变
+   （实测抽屉里算出 108px，而外面那排是定宽 —— 两边永远对不齐）。
+   定宽之后两处逐像素一致，右边留一点余量而已。 */
+#music-library .ml-fp-chips{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,var(--ml-chip-w,104px));
+  /* 居中：定宽列必然除不尽容器，余量原来全堆在右边（桌面实测右侧空 149px），
+     看着整块往左偏。均分到两侧就正了。 */
+  justify-content:center;
+  gap:8px;
+}
+#music-library .ml-fp-chip{
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  /* 原来 56px 装不下：10(内距)+19(标签行高)+3(间距)+16(计数行高)+10 = 58，
+     溢出 2px，所以计数看着像贴在底边上。加高到 62 并收紧标签行高，上下就都留出气口。 */
+  height:62px;
+  padding:9px 6px;
+  border:1px solid var(--divider);
+  border-radius:12px;                 /* 方块，不是胶囊 */
+  background:var(--surface-secondary);
+  color:var(--text-primary);
+  cursor:pointer;
+  text-align:center;
+  transition:border-color .14s ease,background .14s ease,color .14s ease;
+}
+#music-library .ml-fp-chip:hover:not(:disabled){
+  background:var(--surface-hover);
+  border-color:color-mix(in srgb,var(--accent) 30%, var(--divider));
+}
+#music-library .ml-fp-chip.active{
+  background:var(--accent-soft);
+  border-color:var(--accent);
+  color:var(--accent);
+}
+#music-library .ml-fp-chip:disabled{opacity:.4;cursor:default;}
+#music-library .ml-fp-chip-t{
+  font:700 13px/1.15 inherit;
+  max-width:100%;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#music-library .ml-fp-chip-n{
+  font:600 11px/1 inherit;
+  color:var(--text-muted);
+  font-variant-numeric:tabular-nums;
+}
+#music-library .ml-fp-chip.active .ml-fp-chip-n{color:inherit;opacity:.75;}
+/* 专辑那一块名字长，单独占满整行 */
+#music-library .ml-fp-chip.is-wide{grid-column:1/-1;}
+@media (max-width:360px){
+  #music-library{--ml-chip-w:94px;}
+  #music-library .ml-fp-chips{gap:7px;}
+  #music-library .ml-fp-chip{height:58px;}
+  #music-library .ml-fp-chip-t{font-size:12px;}
+}
+
+/* 外部那一行「全部 + 作者」：横向滚，不换行顶高列表 */
+#music-library #ml-source-bar-inline{
+  display:flex;
+  align-items:stretch;
+  gap:8px;
+  margin:10px 0 2px;
+  padding:1px;                 /* 让选中态的描边不被滚动容器裁掉 */
+  overflow-x:auto;
+  overflow-y:hidden;
+  scrollbar-width:none;
+  -webkit-overflow-scrolling:touch;
+}
+#music-library #ml-source-bar-inline::-webkit-scrollbar{display:none;}
+#music-library #ml-source-bar-inline[hidden]{display:none !important;}
+/* 外面这一行是横向滚动条不是网格，所以宽度得写死 ——
+   跟抽屉里 auto-fill 算出来的 108px 对齐，两处看上去才是同一套。 */
+#music-library .ml-src-chip{
+  flex:0 0 var(--ml-chip-w,104px) !important;
+  width:var(--ml-chip-w,104px);
+}
+/* 专辑名长，那一组用 auto-fit + 1fr 直接铺满整行 ——
+   定宽的话 2 列 133px 只占 274，右边空 65px，是几组里留白最扎眼的。
+   铺满之后没有余量，组内依然等宽。 */
+#music-library .ml-fp-sec:last-child .ml-fp-chips{
+  /* auto-fill 不是 auto-fit：auto-fit 会把空轨道塌掉，
+     于是「只有一张专辑」的作者那一块被拉成整行宽（实测 339px），很怪。
+     auto-fill 保留空轨道，单张专辑只占一格，多张时仍然铺满。 */
+  grid-template-columns:repeat(auto-fill,minmax(calc(var(--ml-chip-w,104px) * 1.24),1fr));
+  justify-content:stretch;
+}
+
+/* 专辑组里的作者小标题 */
+#music-library .ml-fp-sub{
+  display:flex;
+  align-items:baseline;
+  gap:8px;
+  margin:14px 0 8px;
+  font:700 12px/1 inherit;
+  color:var(--text-secondary);
+}
+#music-library .ml-fp-sub:first-of-type{margin-top:10px;}
+#music-library .ml-fp-sub small{
+  font-weight:600;
+  color:var(--text-muted);
+  font-variant-numeric:tabular-nums;
+}
+
+/* 播放键的箭头偏左 6px：按钮上有 gap，而「播放」二字被 font-size:0 藏了、
+   gap 却还在，于是 flex 行宽 = 图标 + gap，居中后图标整体左移 gap/2。
+   实测 SVG 左 6.5 / 右 12.5。把 gap 归零，图标才真正居中。 */
+#music-library #ml-list .ml-song-card .ml-card-play{
+  gap:0 !important;
+}
+
+/* ═══════════ 「总数 87 首」那块：内容撑破了盒子 ═══════════
+   历史上它是横排的：`display:flex; gap:10px; height:46px`。
+   后来被另一条规则改成 grid 两行堆叠（总数 / 87 首），
+   但那条只改了 display，**10px 的 gap 和 46px 的定高留了下来** ——
+   于是内容 18+10+21=49 要塞进 46（min-height 抬到 52）的盒子里，
+   溢出 13px，标签顶到距顶 2px、数字贴底 2px。
+
+   改法：高度交回给内容（保留 min-height 兜底），行间距收到 2px，
+   行高钉死免得字体变化又把它撑破。 */
+#music-library #ml-count-wrap{
+  height:auto !important;
+  min-height:52px !important;
+  row-gap:2px !important;
+  column-gap:0 !important;
+  align-content:center !important;
+  justify-items:end !important;     /* 它在行末，右对齐读起来更整齐 */
+  padding:9px 14px !important;
+}
+#music-library .ml-count-label{line-height:1.2 !important;}
+#music-library #ml-count{line-height:1.25 !important;}

@@ -15,7 +15,7 @@
 const LEGACY_SCRIPTS = [
   "./gsap.min.js?v=20260711-justify-rows",
   "./bible-service.js?v=20260711-justify-rows",
-  "./musiclib.js?v=20260825-smooth46",
+  "./musiclib.js?v=20260825-smooth61",
 ];
 
 let started = false;

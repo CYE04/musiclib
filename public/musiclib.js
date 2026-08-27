@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='20260825-smooth46';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20260825-smooth61';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -259,13 +259,29 @@
   const THEME_MODES=['system','light','dark'];
   const SLOW_BPM_MAX=99;
   const FAST_BPM_MIN=100;
+  /* 「类型」这一维现在只管**状态**：收藏 / 本堂唱过 / 最近练过。
+     原来混在这里的「快歌 / 慢歌」挪到了独立的「速度」维度 —— 它是曲子的属性，
+     跟「我收藏了没」不是一类东西，混在一排里选了一个就选不了另一个。 */
   const QUICK_FILTERS=[
     {id:'全部',label:'全部',match:()=>true},
-    {id:'快歌',label:'快歌',match:s=>{const bpm=getSongBpm(s);return Number.isFinite(bpm)&&bpm>=FAST_BPM_MIN;}},
-    {id:'慢歌',label:'慢歌',match:s=>{const bpm=getSongBpm(s);return Number.isFinite(bpm)&&bpm<=SLOW_BPM_MAX;}},
-    {id:'本堂',label:'本堂',match:s=>!!getSongState(s.id).serviceUsed},
-    // 收藏直接做成筛选 chip（原来的「按场景找歌」卡片区和 chips 重复，已删）
-    {id:'收藏',label:'收藏',match:s=>!!getSongState(s.id).favorite}
+    {id:'收藏',label:'收藏',match:s=>!!getSongState(s.id).favorite},
+    {id:'本堂',label:'本堂唱过',match:s=>!!getSongState(s.id).serviceUsed},
+    {id:'练过',label:'最近练过',match:s=>!!getSongState(s.id).openedAt}
+  ];
+  /* 速度：库里 BPM 是 51–168，实测分布 ≤69 有 29 首、70–99 有 34 首、≥100 有 24 首。
+     没按等距切 —— 100~129 这一段实际只有 1 首，切出来就是个永远点不动的空档。 */
+  const SPEED_FILTERS=[
+    {id:'全部',label:'全部',match:()=>true},
+    {id:'慢',label:'慢',hint:'≤69',match:s=>{const b=getSongBpm(s);return Number.isFinite(b)&&b<=69;}},
+    {id:'中速',label:'中速',hint:'70–99',match:s=>{const b=getSongBpm(s);return Number.isFinite(b)&&b>=70&&b<=99;}},
+    {id:'快',label:'快',hint:'≥100',match:s=>{const b=getSongBpm(s);return Number.isFinite(b)&&b>=100;}}
+  ];
+  /* 年代：按专辑年份分段。库里跨度 1995–2024，近几年和 2010 年代各占一大块。 */
+  const ERA_FILTERS=[
+    {id:'全部',label:'全部',match:()=>true},
+    {id:'近五年',label:'近五年',hint:'2020–',match:s=>Number(s.albumYear)>=2020},
+    {id:'2010年代',label:'2010 年代',hint:'2010–19',match:s=>{const y=Number(s.albumYear);return y>=2010&&y<=2019;}},
+    {id:'更早',label:'更早',hint:'–2009',match:s=>{const y=Number(s.albumYear);return y>0&&y<=2009;}}
   ];
   const SOURCE_RULES=[
     {name:'赞美之泉',patterns:['赞美之泉','stream of praise']},
@@ -427,6 +443,13 @@
      以前货架上那两个「全部」都是 data-nav="library"，点专辑的「全部」跳到的是
      全部诗歌，不是全部专辑 —— 按钮就在「专辑」标题右边，指向却是别处。 */
   let browseMode='songs';
+  /* 按调性筛选（多选）。空数组 = 不限。
+     敬拜团找歌第一件事就是「这个调我们能不能弹」，而库里 8 个调分布很散
+     （G21 / D17 / F17 / C12 / E10 / A8 / Ab1 / Bb1），值得单独一行。
+     拍号没做成筛选：87 首里 85 首是 4/4，筛了等于没筛。 */
+  let toneFilter=[];
+  let speedFilter='全部';
+  let eraFilter='全部';
   let songs=[],query='',sourceFilter='全部',intentFilter='全部',albumFilter='全部',_activeDetailSongId='',_detailReturnScroll=0;
   let searchHistory=loadSearchHistory(),_searchHistoryTimer=null;
   let _apLoaded=false,_ap=null;
@@ -579,7 +602,14 @@
             <strong id="ml-count"></strong>
           </div>
         </div>
-        <div id="ml-filter-bar" aria-label="快捷筛选"></div>
+        <div id="ml-filter-toolbar">
+          <button id="ml-filter-open" type="button" aria-haspopup="dialog" aria-expanded="false">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
+            <span>筛选</span><strong id="ml-filter-badge" hidden></strong>
+          </button>
+          <div id="ml-active-filters" aria-label="已选筛选"></div>
+        </div>
+        <div id="ml-source-bar-inline" aria-label="按作者筛选"></div>
       </div>
     </div>
     <div id="ml-loading"><div id="ml-spinner"></div>正在载入诗歌…</div>
@@ -876,6 +906,25 @@
       <button class="ml-bottom-link" type="button" data-nav="playlist">${icon('queue')}<span>播放列表</span></button>
       <button class="ml-bottom-link" type="button" data-nav="favorites">${icon('heart')}<span>收藏</span></button>
     </nav>
+    <div id="ml-filter-drawer" hidden>
+      <button id="ml-filter-backdrop" type="button" aria-label="关闭筛选"></button>
+      <section id="ml-filter-panel" role="dialog" aria-label="筛选诗歌">
+        <div id="ml-filter-panel-head">
+          <div>
+            <div class="ml-section-label">筛选</div>
+            <h2>找诗歌</h2>
+          </div>
+          <div id="ml-filter-panel-actions">
+            <button id="ml-filter-reset" type="button">全部清除</button>
+            <button id="ml-filter-close" class="ml-motion-close-btn" type="button" aria-label="关闭筛选">${icon('close',18)}</button>
+          </div>
+        </div>
+        <div id="ml-filter-panel-body"></div>
+        <div id="ml-filter-panel-foot">
+          <button id="ml-filter-done" type="button"><span id="ml-filter-done-count">显示全部</span></button>
+        </div>
+      </section>
+    </div>
     <div id="ml-playlist-drawer" hidden>
       <button id="ml-playlist-backdrop" type="button" aria-label="关闭播放列表"></button>
       <section id="ml-playlist-panel" aria-label="播放列表">
@@ -1087,6 +1136,8 @@
       close:()=>_mpSetExpanded(false) },
     { name:'播放列表抽屉',   open:()=>$('ml-playlist-drawer')?.classList.contains('open'),
       close:()=>_mpSetPlaylistOpen(false) },
+    { name:'筛选抽屉',       open:()=>$('ml-filter-drawer')?.classList.contains('open'),
+      close:()=>setFilterPanelOpen(false) },
     /* 移调面板：以前整个漏了。这里不去手改 class，而是点回那颗 .sw-tog——
        开关本来就是同一颗按钮，走它的 click 才能顺带同步按钮高亮和 fitRows 重排。 */
     { name:'移调面板',       open:()=>!!root.querySelector('.sw-wrap > .sw-panel.open'),
@@ -1103,6 +1154,16 @@
     e.stopImmediatePropagation();   // 只关这一层：拦住后面 5 个冒泡监听器，免得一次关掉两层
     layer.close();
   },true);
+  $('ml-filter-open')?.addEventListener('click',()=>setFilterPanelOpen(true));
+  $('ml-filter-close')?.addEventListener('click',()=>setFilterPanelOpen(false));
+  $('ml-filter-backdrop')?.addEventListener('click',()=>setFilterPanelOpen(false));
+  $('ml-filter-done')?.addEventListener('click',()=>setFilterPanelOpen(false));
+  $('ml-filter-reset')?.addEventListener('click',()=>{
+    intentFilter='全部'; sourceFilter='全部'; albumFilter='全部'; toneFilter=[];
+    speedFilter='全部'; eraFilter='全部';
+    browseMode='songs';
+    render();
+  });
   $('ml-nav-search')?.addEventListener('click',()=>handleNav('search'));
   $('ml-nav-settings')?.addEventListener('click',cycleMusicTheme);
   $('ml-side-profile')?.addEventListener('click',cycleMusicTheme);
@@ -4339,9 +4400,36 @@
     const clear=$('ml-search-clear');
     if(clear) clear.hidden=!query;
   }
+  /* 卡片上显示的调是「移调后的当前调」，筛选也必须按同一个口径，
+     否则会出现「筛 G 调，结果列表里那张卡明明写着 A」。 */
+  function songEffectiveKey(song){
+    const st=getSongState(song.id)||{};
+    return cleanText(st.lastKey||song.origKey||'');
+  }
+  function toneOptions(){
+    const m={};
+    songs.forEach(s=>{ const k=songEffectiveKey(s); if(k) m[k]=(m[k]||0)+1; });
+    const order=['C','C#','Db','D','D#','Eb','E','F','F#','Gb','G','G#','Ab','A','A#','Bb','B'];
+    return Object.keys(m).sort((a,b)=>{
+      const ia=order.indexOf(a), ib=order.indexOf(b);
+      return (ia<0?99:ia)-(ib<0?99:ib) || a.localeCompare(b);
+    }).map(k=>({key:k,count:m[k]}));
+  }
   function filterByIntent(song){
     const item=QUICK_FILTERS.find(x=>x.id===intentFilter);
     return item ? item.match(song) : true;
+  }
+  function filterBySpeed(song){
+    const item=SPEED_FILTERS.find(x=>x.id===speedFilter);
+    return item ? item.match(song) : true;
+  }
+  function filterByEra(song){
+    const item=ERA_FILTERS.find(x=>x.id===eraFilter);
+    return item ? item.match(song) : true;
+  }
+  function dimCount(list,id){
+    const item=list.find(x=>x.id===id);
+    return item ? songs.filter(s=>item.match(s)).length : 0;
   }
   function quickFilterCount(id){
     const item=QUICK_FILTERS.find(x=>x.id===id);
@@ -4353,7 +4441,8 @@
      留着上一次的筛选会让这一页少东西，而页面上又看不出为什么少。 */
   function openBrowse(mode){
     browseMode=(mode==='artists')?'artists':'albums';
-    albumFilter='全部'; sourceFilter='全部'; intentFilter='全部';
+    albumFilter='全部'; sourceFilter='全部'; intentFilter='全部'; toneFilter=[];
+    speedFilter='全部'; eraFilter='全部';
     query=''; const input=$('ml-search'); if(input) input.value='';
     syncNavActive('library');
     setView('library');
@@ -4366,7 +4455,7 @@
     intentFilter=next||'全部';
     /* resetSource 一并清专辑：这个开关的语义是「回到没有归属限定的状态」，
        只清作者不清专辑的话，点「全部/快歌/慢歌」会莫名其妙还被锁在某张专辑里。 */
-    if(opts.resetSource){ sourceFilter='全部'; albumFilter='全部'; }
+    if(opts.resetSource){ sourceFilter='全部'; albumFilter='全部'; toneFilter=[]; speedFilter='全部'; eraFilter='全部'; }
     if(opts.clearQuery){
       query='';
       const input=$('ml-search');
@@ -4378,51 +4467,207 @@
       $('ml-list-stage')?.scrollIntoView({behavior:'smooth',block:'start'});
     }
   }
+  /* ═══════════ 筛选：收进一个按钮 ═══════════
+     原来「快慢/本堂/收藏」「作者」「调性」三排 chip 全平铺在列表上方，
+     光作者就十来个，横向滚一长条 —— 东西越加越多，反而更难找。
+     改成：一颗「筛选」按钮开抽屉，里面分组放全部条件；
+     外面只留**已经选中**的那几个（可点掉），没选就只有一颗按钮。 */
+
+  function activeFilterChips(){
+    const out=[];
+    if(intentFilter&&intentFilter!=='全部') out.push({kind:'intent',label:intentFilter});
+    if(speedFilter&&speedFilter!=='全部') out.push({kind:'speed',label:speedFilter});
+    if(eraFilter&&eraFilter!=='全部') out.push({kind:'era',label:eraFilter});
+    if(sourceFilter&&sourceFilter!=='全部') out.push({kind:'source',label:sourceFilter});
+    if(albumFilter&&albumFilter!=='全部') out.push({kind:'album',label:'专辑 · '+albumFilter});
+    toneFilter.forEach(k=>out.push({kind:'tone',value:k,label:'调 '+k}));
+    return out;
+  }
+
   function renderQuickFilters(){
-    const bar=$('ml-filter-bar');
-    if(!bar) return;
+    const bar=$('ml-active-filters');
+    const badge=$('ml-filter-badge');
     ensureAlbumFilterValid();
-    const sourceItems=getArtistFilterItems();
-    const base=QUICK_FILTERS.filter(item=>item.visible!==false).map(item=>{
-      const count=quickFilterCount(item.id);
-      const disabled=(item.id!=='全部'&&count===0);
-      const active=item.id===intentFilter&&sourceFilter==='全部'&&albumFilter==='全部';
-      return `<button class="ml-filter-chip${active?' active':''}" type="button" data-filter="${item.id}" ${disabled?'disabled':''}>
-        <span>${item.label}</span><strong>${count}</strong>
-      </button>`;
-    }).join('');
-    const artists=sourceItems.map(item=>`
-      <button class="ml-filter-chip ml-artist-chip${item.name===sourceFilter?' active':''}" type="button" data-source="${esc(item.name)}">
-        <span>${esc(item.name)}</span><strong>${item.count}</strong>
-      </button>
-    `).join('');
-    /* 专辑筛选必须有个看得见的出口：不给这枚 chip 的话，
-       用户点进一张专辑就只能靠侧栏「诗歌库」整个重来。 */
-    const albumChip=albumFilter==='全部'?'':
-      `<button class="ml-filter-chip ml-album-chip active" type="button" data-album-clear="1"
-         aria-label="取消专辑筛选：${esc(albumFilter)}" title="点掉，回到全部诗歌">
-        <span>专辑 · ${esc(albumFilter)}</span><strong aria-hidden="true">×</strong>
-      </button><span class="ml-filter-divider" aria-hidden="true"></span>`;
-    bar.innerHTML=albumChip+base+(artists?'<span class="ml-filter-divider" aria-hidden="true"></span>'+artists:'');
-    bar.querySelectorAll('[data-filter]').forEach(btn=>{
+    const chips=activeFilterChips();
+    if(badge){
+      badge.textContent=String(chips.length);
+      badge.hidden=chips.length===0;
+    }
+    $('ml-filter-open')?.classList.toggle('is-on',chips.length>0);
+    if(!bar) return;
+    bar.innerHTML=chips.map(c=>
+      `<button class="ml-filter-chip ml-active-chip" type="button"
+         data-drop-kind="${c.kind}" data-drop-value="${esc(c.value||'')}"
+         aria-label="取消筛选：${esc(c.label)}"><span>${esc(c.label)}</span><strong aria-hidden="true">×</strong></button>`
+    ).join('');
+    bar.querySelectorAll('[data-drop-kind]').forEach(btn=>{
       btn.addEventListener('click',()=>{
-        setIntentFilter(btn.dataset.filter||'全部',{resetSource:true,scrollList:false});
-      });
-    });
-    bar.querySelectorAll('[data-source]').forEach(btn=>{
-      btn.addEventListener('click',()=>{
-        sourceFilter=btn.dataset.source||'全部';
-        albumFilter='全部';
-        intentFilter='全部';
+        const k=btn.dataset.dropKind;
+        if(k==='intent') intentFilter='全部';
+        else if(k==='speed') speedFilter='全部';
+        else if(k==='era') eraFilter='全部';
+        else if(k==='source') sourceFilter='全部';
+        else if(k==='album') albumFilter='全部';
+        else if(k==='tone'){ const i=toneFilter.indexOf(btn.dataset.dropValue); if(i>=0) toneFilter.splice(i,1); }
+        browseMode='songs';
         render();
       });
     });
-    bar.querySelector('[data-album-clear]')?.addEventListener('click',()=>{
-      albumFilter='全部';
-      render();
+    if(!$('ml-filter-drawer')?.hidden) renderFilterPanel();   // 面板开着就同步刷新
+    renderSourceBarInline();
+  }
+
+  /* 「全部 + 作者」留在外面：这两个是最常用的入口，藏进抽屉反而多一次点击。
+     其余条件（状态/速度/调性/年代/专辑）都在抽屉里。 */
+  function renderSourceBarInline(){
+    const bar=$('ml-source-bar-inline');
+    if(!bar) return;
+    const items=[{name:'全部',count:songs.length}].concat(getArtistFilterItems());
+    if(items.length<=1){ bar.innerHTML=''; bar.hidden=true; return; }
+    bar.hidden=false;
+    /* 用和抽屉里同一个 .ml-fp-chip：上行名字、下行条数，等宽等高。
+       外面原来是胶囊、宽度跟着名字走，跟抽屉里的方块对不上，看着是两套东西。 */
+    bar.innerHTML=items.map(it=>{
+      const on=(it.name==='全部'&&sourceFilter==='全部')||it.name===sourceFilter;
+      return `<button class="ml-fp-chip ml-src-chip${on?' active':''}" type="button" data-src="${esc(it.name)}"
+        aria-pressed="${on?'true':'false'}" title="${esc(it.name)}">
+        <span class="ml-fp-chip-t">${esc(it.name)}</span>
+        <span class="ml-fp-chip-n">${it.count}</span></button>`;
+    }).join('');
+    bar.querySelectorAll('[data-src]').forEach(btn=>{
+      btn.addEventListener('click',()=>{
+        const v=btn.dataset.src||'全部';
+        sourceFilter=v;
+        albumFilter='全部';
+        if(v==='全部'){ /* 「全部」= 只清作者，其它条件留着（要全清有抽屉里的「全部清除」） */ }
+        browseMode='songs';
+        render();
+      });
     });
   }
-  /* 歌库重载后专辑可能已不存在（改名、删歌）。不校验的话会卡在一个永远 0 结果的筛选上。 */
+
+  /* 抽屉里的分组。类型和作者保持单选 —— 它们会切换列表的分组方式和标题口径，
+     改成多选要连带改分组逻辑，收益不抵风险；调性做多选，因为「我们能弹 G 或 D」是真实需求。 */
+  function renderFilterPanel(){
+    const body=$('ml-filter-panel-body');
+    if(!body) return;
+    const sec=(title,inner,extra)=>
+      `<div class="ml-fp-sec"><div class="ml-fp-sec-head"><span>${esc(title)}</span>${extra||''}</div>
+        <div class="ml-fp-chips">${inner}</div></div>`;
+    /* 所有 chip 一个模子：上行标签、下行计数，等宽等高居中。
+       原来是胶囊 + 变宽，一排里字多的宽字少的窄，看着零散。 */
+    const chip=(attr,val,label,count,on,hint,disabled)=>
+      `<button class="ml-fp-chip${on?' active':''}" type="button" ${attr}="${esc(val)}"
+        ${disabled?'disabled':''} aria-pressed="${on?'true':'false'}">
+        <span class="ml-fp-chip-t">${esc(label)}</span>
+        <span class="ml-fp-chip-n">${hint?esc(hint)+' · ':''}${count}</span>
+      </button>`;
+
+    const states=QUICK_FILTERS.map(it=>{
+      const n=dimCount(QUICK_FILTERS,it.id);
+      return chip('data-fp-intent',it.id,it.label,n,it.id===intentFilter,'',it.id!=='全部'&&n===0);
+    }).join('');
+
+    const speeds=SPEED_FILTERS.map(it=>{
+      const n=dimCount(SPEED_FILTERS,it.id);
+      return chip('data-fp-speed',it.id,it.label,n,it.id===speedFilter,it.hint,it.id!=='全部'&&n===0);
+    }).join('');
+
+    const tones=toneOptions().map(o=>
+      chip('data-fp-tone',o.key,o.key,o.count,toneFilter.indexOf(o.key)>=0)).join('');
+
+    const eras=ERA_FILTERS.map(it=>{
+      const n=dimCount(ERA_FILTERS,it.id);
+      return chip('data-fp-era',it.id,it.label,n,it.id===eraFilter,it.hint,it.id!=='全部'&&n===0);
+    }).join('');
+
+    /* 专辑：45 张平铺找起来累，所以**按作者分组**（跟「全部专辑」索引页一个逻辑）。
+       已经选了作者的话就只剩那一组，标题里标出来，不再重复一遍小标签。 */
+    const albumChip=g=>chip('data-fp-album',g.name,g.name,g.songs.length,g.name===albumFilter);
+    const allChip=chip('data-fp-album','全部','全部',songs.length,albumFilter==='全部');
+    let albumsHtml='';
+    if(sourceFilter!=='全部'){
+      const mine=allAlbumGroups().filter(g=>{
+        const first=g.songs.find(x=>x.cover)||g.songs[0];
+        return getArtistGroupName(first)===sourceFilter;
+      });
+      albumsHtml=`<div class="ml-fp-chips">${allChip}${mine.map(albumChip).join('')}</div>`;
+    }else{
+      const byArtist=new Map();
+      allAlbumGroups().forEach(g=>{
+        const first=g.songs.find(x=>x.cover)||g.songs[0];
+        const a=getArtistGroupName(first);
+        if(!byArtist.has(a)) byArtist.set(a,[]);
+        byArtist.get(a).push(g);
+      });
+      const artistsSorted=[...byArtist.keys()].sort((x,y)=>{
+        const ix=sourceSortIndex(x), iy=sourceSortIndex(y);
+        return ix-iy || byArtist.get(y).length-byArtist.get(x).length || x.localeCompare(y,'zh-Hans-CN');
+      });
+      albumsHtml=`<div class="ml-fp-chips">${allChip}</div>`+
+        artistsSorted.map(a=>
+          `<div class="ml-fp-sub">${esc(a)}<small>${byArtist.get(a).length} 张</small></div>
+           <div class="ml-fp-chips">${byArtist.get(a).map(albumChip).join('')}</div>`
+        ).join('');
+    }
+
+    body.innerHTML=
+      sec('状态',states)+
+      sec('速度',speeds)+
+      sec('调性',tones,'<small>可多选</small>')+
+      sec('年代',eras)+
+      `<div class="ml-fp-sec"><div class="ml-fp-sec-head"><span>专辑</span>${
+        sourceFilter!=='全部'?`<small>${esc(sourceFilter)}</small>`:'<small>按作者分组</small>'}</div>${albumsHtml}</div>`;
+
+    const bind=(sel,fn)=>body.querySelectorAll(sel).forEach(b=>b.addEventListener('click',()=>{ fn(b); browseMode='songs'; render(); }));
+    bind('[data-fp-intent]',b=>{ intentFilter=b.dataset.fpIntent||'全部'; });
+    bind('[data-fp-speed]', b=>{ speedFilter=b.dataset.fpSpeed||'全部'; });
+    bind('[data-fp-era]',   b=>{ eraFilter=b.dataset.fpEra||'全部'; });
+    bind('[data-fp-album]', b=>{ albumFilter=b.dataset.fpAlbum||'全部'; });
+    bind('[data-fp-tone]',  b=>{ const k=b.dataset.fpTone, i=toneFilter.indexOf(k);
+      if(i>=0) toneFilter.splice(i,1); else toneFilter.push(k); });
+  }
+
+  function filterMatchCount(){
+    const q=String(query||'').toLowerCase();
+    return songs.filter(s=>{
+      const artistKey=(s.displayArtist||s.source||s.artist||'').trim();
+      if(!(sourceFilter==='全部'||artistKey===sourceFilter)) return false;
+      if(!(albumFilter==='全部'||getAlbumGroupName(s)===albumFilter)) return false;
+      if(toneFilter.length&&toneFilter.indexOf(songEffectiveKey(s))<0) return false;
+      if(!filterByIntent(s)) return false;
+      if(!filterBySpeed(s)) return false;
+      if(!filterByEra(s)) return false;
+      if(!q) return true;
+      return (s.title||'').toLowerCase().includes(q)||(s.artist||'').toLowerCase().includes(q);
+    }).length;
+  }
+
+  let _fpCloseTimer=0;
+  function setFilterPanelOpen(open){
+    const dr=$('ml-filter-drawer');
+    if(!dr) return;
+    clearTimeout(_fpCloseTimer);
+    $('ml-filter-open')?.setAttribute('aria-expanded',open?'true':'false');
+    if(open){
+      renderFilterPanel();
+      updateFilterDoneLabel();
+      dr.hidden=false;
+      requestAnimationFrame(()=>requestAnimationFrame(()=>dr.classList.add('open')));
+    }else{
+      dr.classList.remove('open');
+      _fpCloseTimer=setTimeout(()=>{ if(!dr.classList.contains('open')) dr.hidden=true; },320);
+    }
+  }
+  function updateFilterDoneLabel(){
+    const el=$('ml-filter-done-count');
+    if(!el) return;
+    const n=filterMatchCount();
+    el.textContent=(activeFilterChips().length?`查看这 ${n} 首`:'显示全部');
+  }
+
+  /* 歌库重载后专辑可能已不存在（改名、删歌）。不校验的话会卡在一个永远 0 结果的筛选上。
+     （这个函数上一版被我的区块替换误删了 —— renderQuickFilters 每次都在这里抛 ReferenceError。） */
   function ensureAlbumFilterValid(){
     if(albumFilter==='全部') return;
     if(!songs.some(s=>getAlbumGroupName(s)===albumFilter)) albumFilter='全部';
@@ -4810,6 +5055,11 @@
       set('filter', intentFilter);
       set('q', query);
       set('browse', browseMode!=='songs'?browseMode:'');
+      /* 参数名用 tone 不用 key —— key 被入口门禁 (?key=cecp2026) 占着，
+         覆盖它会把人直接踢回 cecp.it。 */
+      set('tone', toneFilter.length?toneFilter.join(','):'');
+      set('speed', speedFilter);
+      set('era', eraFilter);
       const next=u.toString();
       if(next!==location.href) history.replaceState(history.state||null,'',next);
     }catch(_){}
@@ -4825,7 +5075,12 @@
       const filter=p.get('filter')||'全部';
       const browse=p.get('browse')||'';
       const view=p.get('view')||'';
-      if(!q0&&album==='全部'&&artist==='全部'&&filter==='全部'&&!browse&&!view) return false;
+      const tone=(p.get('tone')||'').split(',').map(x=>x.trim()).filter(Boolean);
+      const sp=p.get('speed')||'全部', er=p.get('era')||'全部';
+      if(!q0&&album==='全部'&&artist==='全部'&&filter==='全部'&&!browse&&!view&&!tone.length&&sp==='全部'&&er==='全部') return false;
+      toneFilter=tone;
+      speedFilter=p.get('speed')||'全部';
+      eraFilter=p.get('era')||'全部';
       query=q0;
       const input=$('ml-search'); if(input) input.value=q0;
       albumFilter=album; sourceFilter=artist; intentFilter=filter;
@@ -4922,10 +5177,14 @@
       const artistKey=(s.displayArtist||s.source||s.artist||'').trim();
       const sourceOk=sourceFilter==='全部'||artistKey===sourceFilter;
       const albumOk=albumFilter==='全部'||getAlbumGroupName(s)===albumFilter;
+      const toneOk=!toneFilter.length||toneFilter.indexOf(songEffectiveKey(s))>=0;
       const intentOk=filterByIntent(s);
       if(!sourceOk) return false;
       if(!albumOk) return false;
+      if(!toneOk) return false;
       if(!intentOk) return false;
+      if(!filterBySpeed(s)) return false;
+      if(!filterByEra(s)) return false;
       if(!q) return true;
       return (s.title||'').toLowerCase().includes(q)
         || (s.artist||'').toLowerCase().includes(q)
@@ -5018,6 +5277,7 @@
     }
     observeRevealItems();
     syncBrowseUrl();
+    updateFilterDoneLabel();
   }
 
   function getArtistGroupName(song){
