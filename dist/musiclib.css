@@ -2062,8 +2062,21 @@ html,body,#music-library{
 #music-library .sw-tog.on{background:var(--accent);color:#fff;border-color:transparent;}
 #music-library .sw-tog svg{width:12px;height:12px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s cubic-bezier(.4,0,.2,1);}
 #music-library .sw-tog.on svg{transform:rotate(180deg);}
-#music-library .sw-panel{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.4,0,.2,1);}
+/* 移调面板：max-height 0 -> 9999px 的老骗术保留，只把时长从 .5s 收到 .18s。
+   ⚠️ 别再想着换成 grid-template-rows 的 0fr -> 1fr（试过，不成立）：
+      .sw-panel 有两个子元素 —— .sw-panel-inner(移调控件) 和 .sw-page(整张 A4 谱面)，
+      0fr 只管得到第一行，第二行走 grid-auto-rows:auto，收起时那 800+px 的谱面收不掉；
+      而把 grid-auto-rows 也设成 1fr 会让两行被拉成等高，控件区直接变形。
+   而且真按内容高度做展开动画本身就是错的：这里装的是整份谱子，长歌能到三千像素，
+   每次开谱都推动这么多像素，按「高频 + 功能性内容」两条都该判不做动画。
+   今天唯一的毛病是收起时的空转：max-height 要从 9999 走到内容高度(约 1100)才开始
+   看得见变化，.5s 里有四百多毫秒纹丝不动，像卡住。时长收到 .18s 后这段空转压到
+   ~160ms 以内，整体读作「干脆的开合」—— 这正是这个面板该有的样子。 */
+#music-library .sw-panel{max-height:0;overflow:hidden;transition:max-height .18s cubic-bezier(.32,.72,0,1);}
 #music-library .sw-panel.open{max-height:9999px;}
+@media (prefers-reduced-motion:reduce){
+  #music-library .sw-panel{transition:none;}
+}
 #music-library .sw-panel-inner{border-radius:24px;border:1px solid var(--border);background:rgba(255,253,249,.64);box-shadow:0 18px 48px rgba(0,0,0,.12),0 1px 0 rgba(255,255,255,.65) inset;overflow:hidden;margin-bottom:14px;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);}
 #music-library .sw-ks{padding:20px 20px 18px;border-bottom:1px solid var(--border);}
 #music-library .sw-slabel{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text3);margin-bottom:12px;}
@@ -4362,8 +4375,32 @@ html,body,#music-library{
 #music-library #ml-player-view{
   display:none;
   flex-direction:column;
+  /* 全屏播放页是从贴在底边的播放条点开的，原来直接盖满全屏、零过渡。
+     现在让它从底下升起来，关闭时原路退回去。
+     display 能参与过渡靠 allow-discrete：关闭时元素先滑下去、动画跑完才真的 display:none，
+     所以 JS 一个字都不用改 —— _mpSetExpanded 仍旧只切一个 .open 类。
+     曲线沿用播放条自己升起时用的那条（见 #ml-nowbar 的 transition），
+     两者用同一条曲线，看起来才像「那根条长大了」而不是另开一个面。
+     不认 allow-discrete / @starting-style 的老浏览器自动退回原来的瞬时显隐，不会坏。 */
+  opacity:0;
+  transform:translateY(100%);
+  transition:transform .34s cubic-bezier(.2,.8,.2,1),opacity .24s ease,display .34s allow-discrete;
 }
-#music-library #ml-player-view.open{display:flex;}
+#music-library #ml-player-view.open{
+  display:flex;
+  opacity:1;
+  transform:none;
+}
+@starting-style{
+  #music-library #ml-player-view.open{opacity:0;transform:translateY(100%);}
+}
+@media (prefers-reduced-motion:reduce){
+  /* 减弱而不是取消：位移去掉，只留一层快速淡入 */
+  #music-library #ml-player-view{transform:none;transition:opacity .16s ease,display .16s allow-discrete;}
+  @starting-style{
+    #music-library #ml-player-view.open{opacity:0;transform:none;}
+  }
+}
 #music-library #ml-player-view-top{
   min-height:40px;
   padding:0 2px;
@@ -6042,7 +6079,20 @@ body.ml-detail-lock{overflow:hidden !important;}
   inset:0 !important;
   display:block !important;
   pointer-events:auto !important;
-  opacity:1 !important;
+  /* ⚠️ 这里的 opacity 原本写着 `1 !important`，那个 !important 有两个没人发现的后果：
+     ① !important 的优先级高于 CSS 动画 —— 进场关键帧每一帧都被它压回 1，动画等于没有；
+     ② 行内样式也打不过它 —— 右滑关闭时 JS 写的 overlay.style.opacity（跟手渐隐）同样失效。
+     去掉它是安全的：竞争者只有 L1993 的 `#ml-detail-overlay{opacity:0}`，同特异度，
+     本条在后面，照样赢。 */
+  opacity:1;
+  /* 遮罩在 L1993 本来声明过 transition:opacity .18s ease，但被这条 opacity:1 !important
+     钉死了，那条过渡从来没有跑过 —— 整屏 36% 黑 + 10px 模糊是一帧之内砸下来的，
+     而它盖住的面积是全 app 最大的一处视觉突变。
+     这里用进场关键帧补上，时长/曲线跟兄弟节点 #ml-detail-dialog 的 ml-dialog-in 完全一致，
+     卡片浮起来的同时背景一起暗下去。
+     退场仍然是瞬时的（跟 dialog 现在的行为一致）—— 那需要在 closeDetail 里加一个
+     .closing 类再延时移除，属于动 JS，这次不碰。 */
+  animation:ml-detail-ovl-in .22s ease both !important;
   background:rgba(0,0,0,.36) !important;
   backdrop-filter:blur(10px) saturate(110%) !important;
   -webkit-backdrop-filter:blur(10px) saturate(110%) !important;
@@ -6065,6 +6115,10 @@ html[data-resolved-theme="dark"] #ml-detail-overlay{background:rgba(0,0,0,.54) !
 }
 html[data-resolved-theme="dark"] #ml-detail-dialog{box-shadow:0 28px 90px rgba(0,0,0,.48) !important;}
 @keyframes ml-dialog-in{from{opacity:.01;transform:translateY(12px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes ml-detail-ovl-in{from{opacity:0}to{opacity:1}}
+@media (prefers-reduced-motion:reduce){
+  #ml-detail-overlay{animation-duration:.12s !important;}
+}
 #ml-detail-header{
   position:sticky !important;
   top:0 !important;
@@ -9768,11 +9822,17 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 }
 #music-library .ml-shelf-card:hover .ml-shelf-play{opacity:1;transform:none;}
 #music-library .ml-shelf-card:hover .ml-shelf-art{filter:brightness(.94);}
+/* 这是装成 PWA 在手机上用的，:hover 永远不触发 —— 原来点下去到下一屏出现之间
+   完全没有任何回应。补一层几乎察觉不到的按压反馈（这一档频次只允许这么多）。
+   只缩封面不缩文字：文字跟着缩放会糊。跟已有的 .ml-song-card:active 是同一套手法。 */
+#music-library .ml-shelf-art{transition:transform .16s ease-out;}
+#music-library .ml-shelf-card:active .ml-shelf-art{transform:scale(.97);}
 @media (hover:none){
   #music-library .ml-shelf-play,#music-library .ml-tile-play{opacity:1;transform:none;}
 }
 @media (prefers-reduced-motion:reduce){
   #music-library .ml-shelf-play,#music-library .ml-tile-play{transition:none;}
+  #music-library .ml-shelf-art{transition:none;}
 }
 #music-library .ml-shelf-card:focus-visible,
 #music-library .ml-tile:focus-visible,
@@ -11800,3 +11860,58 @@ html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
 }
 #music-library .ml-count-label{line-height:1.2 !important;}
 #music-library #ml-count{line-height:1.25 !important;}
+
+/* ═══════════ 底部播放条 / 全屏播放页：让位移过渡真的跑起来 ═══════════
+   病根：上面那条共享的主题过渡（#ml-miniplayer, #ml-player-view, #ml-nowbar … 一个列表，
+   transition:background/border-color/box-shadow .24s **!important**）把这两个元素各自
+   声明过的位移过渡整条覆盖掉了 —— transition 是单个属性，后来者是整条替换，不是合并。
+   后果实测：#ml-nowbar 在 L5505 明明写着「从底边升起 .34s cubic-bezier(.2,.8,.2,1)」，
+   而 getComputedStyle 出来的 transitionProperty 只有 background/border-color/box-shadow，
+   那条升起**从来没有跑过**，播放条一直是硬弹出来的。
+   改法按这个文件的老规矩：不新写一条「自以为够高」的规则（那样八次里失败五次），
+   而是用同特异度追加到文件末尾 —— 同特异度下后来者胜，结果确定。
+   不去动那条共享规则本身：它的选择器列表里还挂着 #ml-miniplayer 等元素，
+   那些不需要位移过渡，改共享规则会波及它们。
+   两条都把主题过渡原样带上，所以明暗切换的表现一个字没变。 */
+#music-library #ml-nowbar{
+  transition:transform .34s cubic-bezier(.2,.8,.2,1),
+             opacity .24s ease,
+             background .24s ease,border-color .24s ease,box-shadow .24s ease !important;
+}
+#music-library #ml-player-view{
+  transition:transform .34s cubic-bezier(.2,.8,.2,1),
+             opacity .24s ease,
+             display .34s allow-discrete,
+             background .24s ease,border-color .24s ease,box-shadow .24s ease !important;
+}
+@media (prefers-reduced-motion:reduce){
+  /* 减弱不是取消：去掉位移，留一层快速淡入，主题过渡照旧 */
+  #music-library #ml-nowbar{
+    transition:opacity .16s ease,
+               background .24s ease,border-color .24s ease,box-shadow .24s ease !important;
+  }
+  #music-library #ml-player-view{
+    transition:opacity .16s ease,
+               display .16s allow-discrete,
+               background .24s ease,border-color .24s ease,box-shadow .24s ease !important;
+  }
+}
+
+/* ═══════════ 歌词滚动面板：边缘淡出，别把行齐腰切断 ═══════════
+   用户报的「左下角冒出来一个『爱,』是什么鬼」就是这个：
+   #ml-mp-lrc-panel 是个 116px 高的矮滚动框（grid-area:lrc），overflow-y:auto 硬裁边缘，
+   而 .ml-mp-lrc-line 在详情页这一版被设成 text-align:left —— 于是滚到边界的那一行
+   被从中间切断、只露出行首两个字，左对齐让它看起来像凭空多出来的一个词。
+   当前行本身没问题：_mpSyncLrc 用 offsetTop - panel.clientHeight/2 把它强制居中，
+   永远完整可见；出问题的只有上下相邻的那两行。
+   所以这里不动高度也不动布局（那会牵扯 grid-area 和一堆 !important 的老账），
+   只把裁切边换成渐变遮罩：靠近边缘的行淡出消失，而不是被齐腰砍断。
+   这也是 Apple Music / Spotify 歌词页的做法 —— 边缘本来就该是软的。 */
+#music-library #ml-mp-lrc-panel{
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 20%,#000 80%,transparent 100%) !important;
+          mask-image:linear-gradient(to bottom,transparent 0,#000 20%,#000 80%,transparent 100%) !important;
+}
+#music-library #ml-player-view.lyrics-open #ml-player-lyrics{
+  -webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 12%,#000 86%,transparent 100%) !important;
+          mask-image:linear-gradient(to bottom,transparent 0,#000 12%,#000 86%,transparent 100%) !important;
+}

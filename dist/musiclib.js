@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='20260825-smooth61';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20260827-motion1';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -11180,7 +11180,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
   function attachSwipeBack(){
     const panel=detail;
     const overlay=$('ml-detail-overlay');
-    let sx=0,sy=0,dx=0,dragging=false,started=false;
+    let sx=0,sy=0,dx=0,dragging=false,started=false,t0=0;
     /* 内容区里只认「从屏幕左缘起手」的返回手势。
        以前只要页面在顶部，手指落在任何地方(包括整块谱面)横向拖 10px 就把整首歌划走 ——
        在谱上想动一下就误触，安卓上尤其明显(iOS 那边浏览器自己的边缘手势先接管了，
@@ -11202,7 +11202,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     panel.addEventListener('touchstart',e=>{
       const t=e.touches[0];
       if(!canStart(e.target,t.clientX)) return;
-      sx=t.clientX; sy=t.clientY; dx=0; dragging=false; started=true;
+      sx=t.clientX; sy=t.clientY; dx=0; dragging=false; started=true; t0=Date.now();
       panel.classList.remove('swiping');
     },{passive:true});
     panel.addEventListener('touchmove',e=>{
@@ -11228,7 +11228,14 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         if(overlay) overlay.style.opacity='';
         return;
       }
-      if(dx>Math.min(140,window.innerWidth*0.28)){
+      /* 原来只看拖了多远。快速短甩(比如只走了 100px 但很快)会被判成「没到位」弹回去，
+         手感上像 app 没听懂 —— 明明是个毫不含糊的关闭动作。
+         这里补一条速度通路：距离阈值原样保留，只是多一种也算数的情况，
+         所以以前能关掉的现在一样能关，不会更难关。
+         0.11 px/ms 约等于「一次干脆的轻甩」，比正常拖动快得多，不会误判。 */
+      const _dt=Date.now()-t0;
+      const _flick=_dt>0 && (dx/_dt)>0.11 && dx>24;
+      if(dx>Math.min(140,window.innerWidth*0.28) || _flick){
         panel.style.transition='transform .22s ease, opacity .22s ease';
         panel.style.transform=`translateX(${window.innerWidth}px)`;
         if(overlay) overlay.style.opacity='0';
@@ -11237,10 +11244,12 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
           closeDetail();
         },220);
       }else{
-        panel.style.transition='transform .22s ease, opacity .22s ease';
+        /* 没到阈值就回弹。定时曲线收尾太「硬」，换成这个 app 已有的抽屉曲线、
+           时长放到 320ms —— 回弹是被打断的动作，要比出场更软一点才不像被弹开。 */
+        panel.style.transition='transform .32s cubic-bezier(.32,.72,0,1), opacity .32s cubic-bezier(.32,.72,0,1)';
         panel.style.transform='';
         if(overlay) overlay.style.opacity='';
-        setTimeout(()=>{panel.style.transition='';panel.classList.remove('swiping');},220);
+        setTimeout(()=>{panel.style.transition='';panel.classList.remove('swiping');},320);
       }
       dragging=false; dx=0;
     }
