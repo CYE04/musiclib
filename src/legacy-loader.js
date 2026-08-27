@@ -9,11 +9,13 @@
 
    legacy 文件本身一个字节都没改。 */
 
+/* pinyin-pro 不在这里 —— 它 gzip 138KB，却只服务「拼音搜索」和「投影拼音标注」两处。
+   改由 musiclib.js 的 ensurePinyinPro() 懒加载：首屏不拉，歌单载完趁空闲补，
+   用户点搜索框或进投影则立刻拉。首屏因此少 138KB。 */
 const LEGACY_SCRIPTS = [
   "./gsap.min.js?v=20260711-justify-rows",
-  "./pinyin-pro.js?v=20260725-pypro",
   "./bible-service.js?v=20260711-justify-rows",
-  "./musiclib.js?v=20260825-smooth42",
+  "./musiclib.js?v=20260825-smooth46",
 ];
 
 let started = false;

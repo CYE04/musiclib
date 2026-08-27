@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='20260825-smooth42';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20260825-smooth46';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -1035,7 +1035,8 @@
       render();
     },120);
   });
-  $('ml-search').addEventListener('input',()=>{ if(browseMode!=='songs') browseMode='songs'; });
+  $('ml-search').addEventListener('focus',ensurePinyinPro);
+  $('ml-search').addEventListener('input',()=>{ ensurePinyinPro(); if(browseMode!=='songs') browseMode='songs'; });
   $('ml-search').addEventListener('keydown',e=>{
     if(e.key==='Enter') rememberSearchTerm(query);
   });
@@ -1127,9 +1128,9 @@
     const song=songs.find(s=>s.id===_activeDetailSongId);
     if(song) shareSong(song);
   });
-  $('ml-detail-projection')?.addEventListener('click',()=>projOpenPanel());
-  $('ml-side-projection')?.addEventListener('click',()=>projOpenStudio());
-  $('ml-hero-projection')?.addEventListener('click',()=>projOpenStudio());
+  $('ml-detail-projection')?.addEventListener('click',()=>{ensurePinyinPro();projOpenPanel();});
+  $('ml-side-projection')?.addEventListener('click',()=>{ensurePinyinPro();projOpenStudio();});
+  $('ml-hero-projection')?.addEventListener('click',()=>{ensurePinyinPro();projOpenStudio();});
   document.addEventListener('visibilitychange',()=>{
     if(!document.hidden&&projState.projWin&&projState.projWin.closed) projMarkProjectorGone();
   });
@@ -3713,12 +3714,14 @@
       songs=all.filter(Boolean).map(enrichSong);
       $('ml-loading').style.display='none';
       $('ml-count').textContent=songs.length+' 首';
+      applyUrlState();           // 先按 URL 把筛选/搜索/索引页定好，再画
       renderWorshipPicks();
       renderHomePanels();
       renderQuickFilters();
       render();
       window.dispatchEvent(new CustomEvent('cecp:musiclib-songs-loaded',{detail:{songs:songs.slice()}}));
-      openSongFromUrl();
+      schedulePinyinPreload();   // 首屏画完了，趁空闲把拼音库补上
+      openSongFromUrl();         // ?song= 是最上面一层，最后叠
       if(opts.refresh) showToast('诗歌库已刷新');
     }catch(e){
       if(!opts.refresh) $('ml-loading').innerHTML='<div style="color:#ff3b30;font-size:14px">载入失败，请刷新重试</div>';
@@ -4063,6 +4066,49 @@
     return '今日天气';
   }
   /* ── 拼音搜索(增强,字典加载失败自动降级为原有搜索) ── */
+  /* ═══════════ pinyin-pro 懒加载 ═══════════
+     它只在两处用得到：搜索的拼音索引、投影页的拼音标注。
+     可是一直挂在首屏同步加载 —— gzip 138KB，是首屏最大的单块，
+     而绝大多数人进来是点歌、看谱，根本不打字。
+
+     改成三段式：
+       ① 首屏不加载；
+       ② 歌单载完后趁浏览器空闲在后台补上（用户真去搜时通常早就好了）；
+       ③ 用户提前点了搜索框 / 进投影，立刻拉，不等空闲。
+     加载完回填拼音索引，并按需重绘（作者头像的文件名也是靠拼音猜的）。
+     拉不到就退化成「不支持拼音搜索」，其余功能照常。 */
+  let _pyLoading=null;
+  function ensurePinyinPro(){
+    if(window.pinyinPro&&typeof window.pinyinPro.pinyin==='function') return Promise.resolve(true);
+    if(_pyLoading) return _pyLoading;
+    _pyLoading=new Promise(resolve=>{
+      const el=document.createElement('script');
+      /* 不带 ?v= —— SW 预缓存清单里它是按裸路径 './pinyin-pro.js' 存的，
+         而 Cache API 是精确匹配，带查询串会整个绕过缓存，离线时拼音搜索就废了。
+         版本更新靠 SW 的内容指纹换桶（旧桶 activate 时会删），不需要这个查询串。 */
+      el.src=new URL('./pinyin-pro.js',document.baseURI).href;
+      el.async=true;
+      el.onload=()=>{ backfillPinyinIndex(); resolve(true); };
+      el.onerror=()=>{ _pyLoading=null; resolve(false); };
+      document.head.appendChild(el);
+    });
+    return _pyLoading;
+  }
+  /* 库到位后把之前建不出来的拼音索引补上。
+     作者头像的 URL 也是拼音猜的，所以货架要跟着重绘一次；
+     正在搜索的话再跑一遍 render，让刚补上的索引立刻生效。 */
+  function backfillPinyinIndex(){
+    if(!window.pinyinPro||!songs.length) return;
+    songs.forEach(s=>Object.assign(s,buildPinyinIndex(s)));
+    try{ renderHomePanels(); }catch(_){}
+    if(query) { try{ render(); }catch(_){} }
+  }
+  function schedulePinyinPreload(){
+    const go=()=>ensurePinyinPro();
+    if(typeof requestIdleCallback==='function') requestIdleCallback(go,{timeout:4000});
+    else setTimeout(go,1500);
+  }
+
   function buildPinyinIndex(song){
     try{
       const text=[song.title,song.artist,song.sub].filter(Boolean).join(' ');
@@ -4739,6 +4785,58 @@
 
   /* 「全部专辑 / 全部作者」索引页：把货架那排卡片摊成一个换行网格。
      卡片、点击行为、坏图兜底全部复用货架那一套 —— 点一张专辑照样走 albumFilter。 */
+  /* ═══════════ 浏览状态进 URL ═══════════
+     以前只有 ?song= 能深链：「专辑=我能给你什么」「快歌」「搜了什么」都分享不出去，
+     刷新也全丢。这里把视图/专辑/作者/快捷筛选/搜索词/索引页一并写进查询串。
+
+     用 replaceState 不用 pushState —— 每敲一个字都进历史的话，
+     返回键要按几十下才退得出这一页。歌曲详情仍用 pushState（那是真正"进了一层"）。
+     buildSongUrl 只动 song 这一个参数，两者互不干扰。 */
+  /* 进页面那一刻的查询串快照。
+     必须快照 —— 首屏的 render() 会调 syncBrowseUrl 把当时的（默认）状态写回 URL，
+     等轮到 applyUrlState 去读时，?album=... 早被覆盖没了。
+     _urlStateApplied 这道闸同理：还原完成之前，一律不许回写。 */
+  const _urlAtLoad=(function(){ try{ return new URLSearchParams(location.search); }catch(_){ return new URLSearchParams(); } })();
+  let _urlStateApplied=false;
+
+  function syncBrowseUrl(){
+    if(!_urlStateApplied) return;
+    try{
+      const u=new URL(location.href);
+      const set=(k,v)=>{ if(v&&v!=='全部') u.searchParams.set(k,v); else u.searchParams.delete(k); };
+      set('view', root.dataset.view==='library'?'library':'');
+      set('album', albumFilter);
+      set('artist', sourceFilter);
+      set('filter', intentFilter);
+      set('q', query);
+      set('browse', browseMode!=='songs'?browseMode:'');
+      const next=u.toString();
+      if(next!==location.href) history.replaceState(history.state||null,'',next);
+    }catch(_){}
+  }
+  /* 进来时按 URL 还原。返回 true 表示 URL 里确实带了浏览状态。 */
+  function applyUrlState(){
+    _urlStateApplied=true;          // 无论有没有状态，从这里起允许回写 URL
+    try{
+      const p=_urlAtLoad;
+      const q0=p.get('q')||'';
+      const album=p.get('album')||'全部';
+      const artist=p.get('artist')||'全部';
+      const filter=p.get('filter')||'全部';
+      const browse=p.get('browse')||'';
+      const view=p.get('view')||'';
+      if(!q0&&album==='全部'&&artist==='全部'&&filter==='全部'&&!browse&&!view) return false;
+      query=q0;
+      const input=$('ml-search'); if(input) input.value=q0;
+      albumFilter=album; sourceFilter=artist; intentFilter=filter;
+      browseMode=(browse==='albums'||browse==='artists')?browse:'songs';
+      setView('library');
+      syncNavActive(q0?'search':'library');
+      updateSearchControls();
+      return true;                  // 只定状态，画面交给调用方后面那次 render
+    }catch(_){ return false; }
+  }
+
   function renderBrowseIndex(){
     const list=$('ml-list'),empty=$('ml-empty');
     const isAlbums=browseMode==='albums';
@@ -4819,7 +4917,7 @@
     renderQuickFilters();
     renderHomePanels();
     updateSearchControls();
-    if(browseMode!=='songs'){ renderBrowseIndex(); observeRevealItems(); return; }
+    if(browseMode!=='songs'){ renderBrowseIndex(); observeRevealItems(); syncBrowseUrl(); return; }
     const filtered=songs.filter(s=>{
       const artistKey=(s.displayArtist||s.source||s.artist||'').trim();
       const sourceOk=sourceFilter==='全部'||artistKey===sourceFilter;
@@ -4919,6 +5017,7 @@
       });
     }
     observeRevealItems();
+    syncBrowseUrl();
   }
 
   function getArtistGroupName(song){
