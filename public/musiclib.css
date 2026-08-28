@@ -9400,10 +9400,15 @@ html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
 #music-library .sw-tools>.sw-tools-row{
   display:inline-flex;align-items:center;gap:2px;
   padding:5px 7px;border-radius:16px;
-  background:rgba(38,38,41,.93);
+  /* ⚠️ 这里原来写死 background:rgba(38,38,41,.93) + color:rgba(255,255,255,.92)，
+     是照"深色浮动工具条"设计的，**浅色主题下也是黑的**，不跟主题走（用户报的）。
+     换成主题变量后明暗两态都对；分隔线和选中态在下面一并换掉 ——
+     那两条原来是 rgba(255,255,255,…)，只在黑底上才看得见。 */
+  background:color-mix(in srgb,var(--surface) 94%, transparent);
+  border:1px solid var(--divider);
   -webkit-backdrop-filter:blur(18px) saturate(1.6);backdrop-filter:blur(18px) saturate(1.6);
-  box-shadow:0 6px 24px rgba(0,0,0,.28),0 1px 3px rgba(0,0,0,.2);
-  color:rgba(255,255,255,.92);
+  box-shadow:var(--shadow-lg,0 6px 24px rgba(0,0,0,.18));
+  color:var(--text-primary);
   max-width:calc(100vw - 24px);flex-wrap:nowrap;overflow:visible;
 }
 #music-library .sw-tools.dragging>.sw-tools-row{
@@ -9418,14 +9423,14 @@ html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
 }
 #music-library .sw-tools>.sw-tools-row .sw-ico-btn:active{transform:scale(.9);}
 @media (hover:hover){
-  #music-library .sw-tools>.sw-tools-row .sw-ico-btn:hover{background:rgba(255,255,255,.1);}
+  #music-library .sw-tools>.sw-tools-row .sw-ico-btn:hover{background:var(--surface-hover);}
 }
 #music-library .sw-tools>.sw-tools-row .sw-ico-btn.is-on{
-  background:rgba(255,255,255,.18);color:#fff;
+  background:var(--accent-soft,#F8E7D8);color:var(--accent,#C76524);
 }
 #music-library .sw-tools>.sw-tools-row .sw-ico-btn[disabled]{opacity:.32;}
 #music-library .sw-tools>.sw-tools-row .sw-tools-sep{
-  width:1px;height:20px;background:rgba(255,255,255,.16);margin:0 4px;flex:none;
+  width:1px;height:20px;background:var(--divider);margin:0 4px;flex:none;
 }
 /* 左侧拖动把手 */
 #music-library .sw-ink-grip{
@@ -10772,4 +10777,107 @@ html[data-resolved-theme="dark"] #music-library{
   @media (prefers-reduced-motion:reduce){
     #music-library .sw-panel{transition:none;}
   }
+}
+
+/* ═══════════ 列表卡片进场：去掉「弹出来」的那一下 ═══════════
+   用户原话「每次点击都会有个弹出来…感觉很不舒服，也会觉得是卡出来的」。
+   病根在 L4274：每张 .ml-song-card 都带 .ml-reveal，
+   `opacity:0 + translateY(18px)` 配 **.55s** —— 是这个文件房子风格(.15~.26s)的两倍多。
+   而卡片是 innerHTML 重建的，所以**每次点作者/全部/改筛选，视野内所有卡都重演一遍**：
+   18px 的位移读作「弹」，550ms 的等待读作「卡」。
+   （原来那条 L4595 的关闭规则只在 prefers-reduced-motion 里，普通用户根本吃不到。）
+
+   按「频次越高、动效越短越轻」的原则改：这是全 app 最常看、每次导航都重渲染的一屏，
+   **位移整个去掉**（位移才是「弹」的来源），只留一层很快的淡入。
+   opacity 走合成层，不触发布局，重渲染时也不会卡。 */
+#music-library .ml-reveal{
+  transform:none;
+  transition:opacity .18s ease;
+}
+#music-library .ml-reveal.is-visible{
+  opacity:1;
+  transform:none;
+}
+@media (prefers-reduced-motion:reduce){
+  #music-library .ml-reveal{opacity:1;transform:none;transition:none;}
+}
+
+/* 练习工具行里那两个是 <a>（YouTube / 歌词文件），会继承链接的下划线和颜色，
+   跟旁边的 <button> chip 长得不一样。统一掉。 */
+#music-library .ml-practice-row a.ml-practice-chip{
+  text-decoration:none;
+  color:inherit;
+}
+#music-library .ml-practice-row a.ml-practice-chip:hover{
+  text-decoration:none;
+}
+
+/* ═══════════ 练习行 / 分享行：对齐外面那排 .ml-fp-chip ═══════════
+   ⚠️ 上一轮我照着 .ml-source-chip 改，**对错了参照物** —— 那个类页面上根本没渲染
+      （实测 0 个）。用户说的「外面全部/作者那个款」其实是 .ml-fp-chip.ml-src-chip：
+      12px 圆角矩形（不是胶囊）、--surface-secondary 底、--divider 边；
+      选中态 = --accent-soft 底 + --accent 边和字。这里照它来。
+   移调是主操作，直接用那个"选中态"的配色，一眼区分。 */
+#music-library .ml-practice-row .ml-practice-chip{
+  min-height:36px;
+  padding:0 13px;
+  gap:7px;
+  font-size:13px;
+  border-radius:12px;                /* 圆角矩形，不再是 999px 胶囊 */
+  color:var(--text-primary);
+  background:var(--surface-secondary);
+  border:1px solid var(--divider);
+}
+#music-library .ml-practice-row .ml-practice-chip svg{
+  color:currentColor;                /* 原来强制 var(--accent)，跟外面那排不是一套 */
+  width:15px;height:15px;
+}
+#music-library .ml-practice-row .ml-practice-chip:hover:not(:disabled){
+  border-color:var(--accent);
+  background:var(--accent-soft);
+  color:var(--accent);
+}
+
+/* ── 移调 = 主操作，用 .ml-fp-chip 选中态那套配色 ── */
+#music-library .ml-practice-row .ml-practice-chip.is-primary,
+#music-library .ml-practice-row .ml-practice-chip.is-primary.is-on{
+  background:var(--accent-soft);
+  border-color:var(--accent);
+  color:var(--accent);
+  font-weight:650;
+}
+#music-library .ml-practice-row .ml-practice-chip.is-primary:hover:not(:disabled){
+  background:var(--accent);
+  border-color:var(--accent);
+  color:#fff;
+}
+
+/* ── 分享与下载：只是把这首歌带走，不改动任何东西 —— 权重压到最低 ── */
+#music-library .ml-share-row{ margin-top:-2px; }
+#music-library .ml-share-row .ml-practice-chip{
+  background:transparent;
+  border-color:transparent;
+  color:var(--text-muted);
+  padding:0 10px;
+}
+#music-library .ml-share-row .ml-practice-chip:hover:not(:disabled){
+  background:var(--surface-secondary);
+  border-color:var(--divider);
+  color:var(--text-primary);
+}
+
+/* ═══════════ 切换筛选时的「一闪一闪」═══════════
+   .ml-song-card 带着 .ml-reveal，基态是 opacity:0，靠 IntersectionObserver 加
+   .is-visible 才淡入。可卡片是 innerHTML 重建的 —— 每次切作者/切筛选，
+   视野内所有卡都从 0 淡一遍，整屏一起闪。
+   上一轮我把它从 550ms+18px 位移收到 180ms 纯淡入，「弹」没了但「闪」还在：
+   只要起点是 opacity:0，重渲染就一定会闪。
+   这一屏是全 app 最常看、每次导航都重建的地方，按「频次越高动效越轻」的原则
+   —— 直接不要入场淡入，卡片一渲染就是最终状态。
+   （滚动到视野才淡入的原始意图，在"每次都重建"面前本来就不成立。） */
+#music-library .ml-reveal,
+#music-library .ml-reveal.is-visible{
+  opacity:1;
+  transform:none;
+  transition:none;
 }

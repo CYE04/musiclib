@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='20260827-soft1';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20260828-chips2';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -2633,6 +2633,22 @@
     }
   }
 
+  /* 分享专用的**干净**链接。
+     buildSongUrl 是拿 location.href 加参数的 —— 浏览状态(view/album/artist/filter/q/
+     tone/speed/era)全都会被带上，在筛选状态下分享出去是一长串没人看得懂的东西。
+     这里只保留两样：入口门禁 key（丢了对方会被踢回 cecp.it）和 song。
+     ⚠️ key 必须留，别为了更短把它删掉。 */
+  function buildShareUrl(songId){
+    try{
+      const src=new URL(location.href);
+      const u=new URL(src.origin+src.pathname);
+      const key=src.searchParams.get('key');
+      if(key) u.searchParams.set('key',key);
+      if(songId) u.searchParams.set('song',songId);
+      return u.toString();
+    }catch(_){ return buildSongUrl(songId); }
+  }
+
   function setSongUrl(songId, replaceOnly=true){
     try{
       const nextUrl=buildSongUrl(songId);
@@ -2645,16 +2661,20 @@
   }
 
   function shareSong(song){
-    const urlText=buildSongUrl(song.id);
+    const urlText=buildShareUrl(song.id);
     const title=song.title||'诗歌';
+    /* 复制出去的应该是「歌名 + 链接」，光一条 URL 贴到群里没人知道是哪首。
+       原生分享面板本来就会显示 title，所以那条路径不用重复拼。 */
+    const artist=song.artist||song.source||'';
+    const shareText=artist?`《${title}》 · ${artist}`:`《${title}》`;
     if(navigator.share){
-      navigator.share({ title, url:urlText }).then(()=>{
+      navigator.share({ title, text:shareText, url:urlText }).then(()=>{
         showToast('分享成功');
       }).catch(()=>{
-        copyText(urlText,'链接已复制');
+        copyText(shareText+'\n'+urlText,'已复制歌名和链接');
       });
     }else{
-      copyText(urlText,'链接已复制');
+      copyText(shareText+'\n'+urlText,'已复制歌名和链接');
     }
   }
 
@@ -11426,7 +11446,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     const practiceRow=document.createElement('div');
     practiceRow.className='ml-practice-row';
     practiceRow.innerHTML=`
-      <button type="button" class="ml-practice-chip" data-act="key" aria-label="移调面板">
+      <button type="button" class="ml-practice-chip is-primary" data-act="key" aria-label="移调面板">
         ${icon('arrowLeftRight',15)}<span>移调</span>
       </button>
       <button type="button" class="ml-practice-chip" data-act="tempo" ${hasSongAudio(s)?'':'disabled'} aria-label="变速变调练习">
@@ -11461,6 +11481,14 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       syncMetroChip();
     });
     wrap.appendChild(practiceRow);
+
+    /* 七个 chip 挤成一排太乱（用户原话）。拆两组：
+       上面这行是「练习」——移调 / 变速 / 节拍器，都会改变谱面或播放；
+       下面这行是「分享与下载」——不改动任何东西，只是把这首歌带走。
+       两组视觉权重也不同：练习行是实心 chip，分享行是更轻的幽灵款。 */
+    const shareRow=document.createElement('div');
+    shareRow.className='ml-practice-row ml-share-row';
+    wrap.appendChild(shareRow);
 
     const kg=document.createElement('div');kg.className='sw-kg';
     const capoEl=document.createElement('div');
@@ -11727,18 +11755,31 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       if(!naturalHeight)return null;
       return { width:naturalWidth,height:naturalHeight };
     };
+    let _lastFitAt=0;
+    let _fitAfterOpen=0;
     const scheduleFitRows=()=>{
       cancelAnimationFrame(fitRaf);
       fitRaf=requestAnimationFrame(()=>{
         fitRaf=0;
         fitRows();
+        _lastFitAt=performance.now();
       });
     };
 
     togBtn.addEventListener('click',()=>{
       panel.classList.toggle('open');
-      togBtn.classList.toggle('on',panel.classList.contains('open'));
-      scheduleFitRows();
+      const nowOpen=panel.classList.contains('open');
+      togBtn.classList.toggle('on',nowOpen);
+      /* ⚡ 展开时**不要**立刻排版。
+         一次 fitRows 要 ~230ms（约 5300 次强制布局丈量），塞在这里就正好压在
+         面板 340ms 的滑动上 —— 动画拿不到帧，看起来就是「卡出来的」。
+         改成等面板停稳再排一次：滑动跑在空闲主线程上，排版只做一遍。
+         而且 fillScoreHeight 要用容器高度，动画中途量到的是过渡值，本来就不对。
+         transitionend 兜底用定时器，防止 reduced-motion / 不支持时它不触发。 */
+      clearTimeout(_fitAfterOpen);
+      if(nowOpen){
+        _fitAfterOpen=setTimeout(()=>{ if(lbDiv.isConnected) scheduleFitRows(); },420);
+      }
     });
 
     /* 移调后墨迹会按「歌+调」换到新桶，新调是空的。
@@ -12181,11 +12222,23 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     toolsRow.appendChild(inkUndoBtn);
     toolsRow.appendChild(inkRedoBtn);
     toolsRow.appendChild(inkClearBtn);
-    toolsRow.appendChild(swSep());
+    /* ── 这四个不是笔记功能 ──────────────────────────────────────────
+       分享 / 下载图片 / YouTube / 下载LRC 原本挤在墨迹工具条里，
+       和钢笔、荧光笔、橡皮、撤销混成一排 —— 工具条应该只放"画"的东西。
+       它们其实是「对这首歌做的事」，跟 移调 / 变速练习 / 节拍器 同类，
+       所以归到下面那条练习工具行 practiceRow。
+       仍旧在这个闭包里创建：它们要用 s / curKey / lbDiv / wrap，
+       搬去页头得为此打通作用域，不值得。 */
+    const asPracticeChip=(el,label)=>{
+      el.classList.remove('sw-ico-btn','sw-ico-yt');
+      el.classList.add('ml-practice-chip');
+      const sp=document.createElement('span'); sp.textContent=label;
+      el.appendChild(sp);
+      return el;
+    };
 
     const shareBtn=swIcoBtn('share','分享');
     shareBtn.addEventListener('click',()=>shareSong(s));
-    toolsRow.appendChild(shareBtn);
 
     const exportBtn=swIcoBtn('download','下载图片');
     exportBtn.addEventListener('click',()=>{
@@ -12218,23 +12271,23 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         },1200);
       });
     });
-    toolsRow.appendChild(exportBtn);
+    /* 四个都挂到练习工具行；工具条那边一个都不留 */
+    shareRow.appendChild(asPracticeChip(shareBtn,'分享'));
+    shareRow.appendChild(asPracticeChip(exportBtn,'下载图片'));
 
     if(s.youtube){
       const yt=document.createElement('a');
       yt.className='sw-ico-btn sw-ico-yt';yt.href=s.youtube;yt.target='_blank';
       yt.setAttribute('aria-label','YouTube');
       yt.innerHTML=swIcoSvg('youtube');
-      scoreInkTipBind(yt,'打开 YouTube 视频');
-      toolsRow.appendChild(yt);
+      shareRow.appendChild(asPracticeChip(yt,'YouTube'));
     }
     if(s.lrc){
       const lrc=document.createElement('a');lrc.className='sw-ico-btn';
       lrc.href=s.lrc;lrc.target='_blank';
       lrc.setAttribute('aria-label','LRC 歌词文件');
       lrc.innerHTML=swIcoSvg('lrc');
-      scoreInkTipBind(lrc,'下载 LRC 歌词文件');
-      toolsRow.appendChild(lrc);
+      shareRow.appendChild(asPracticeChip(lrc,'歌词文件'));
     }
     // 工具排（荧光笔/分享/下载图片）跟移调联动——荧光笔画在当前调的谱上、
     // 下载导出的也是当前调，必须贴着谱放（谱上方）；节拍器没有联动，垫底，
@@ -12483,6 +12536,18 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     }
     function fitRows(){
       if(!lbDiv.isConnected||!lbDiv.parentNode)return;
+      /* ⚡ 面板收起时直接不排。
+         详情页默认显示的是上方那张**静态谱面图**，而这份交互式谱面被 .sw-panel
+         裁成 0 高，用户一眼都看不到 —— 可它照样要跑完整条排版流水线。
+         实测开一首歌因此冻结主线程 ~337ms（长任务 226ms + 207ms），
+         期间强制同步布局丈量约 5300 次：
+           getBoundingClientRect 2366 / getComputedStyle 1641 / offsetWidth 1276。
+         更亏的是这活会做两遍 —— 用户真点「移调」时，togBtn 的 click handler
+         里那句 scheduleFitRows() 会原样再算一次。
+         所以收起状态直接跳过：开歌不再卡，展开面板时才排（那时本来就要排）。
+         ⚠️ 依赖 togBtn click handler 里已有的 scheduleFitRows()，改那里要一起看。
+         ⚠️ 导出/投影走的是克隆节点的独立重排路径，不吃这条守卫。 */
+      if(panel && !panel.classList.contains('open')) return;
       const pageEl=ensureScorePage();       // 幂等：把 lbDiv 套进 .sw-page（A4 纸）
       /* 纸要跟下面的原图卡片一样宽：把 .sw-wrap 的左右 padding 吃掉(panel 负 margin)，
          玻璃卡(panelInner)补回同样的正 margin 保持原宽。数值实测取自 computed style，
@@ -12572,10 +12637,21 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(window._mlFitCleanup)window._mlFitCleanup();
     const onViewportChange=()=>scheduleFitRows();
     const onPanelTransitionEnd=e=>{
-      if(e.target===panel&&e.propertyName==='max-height')scheduleFitRows();
+      /* ⚠️ 原来只认 'max-height'。面板改用 interpolate-size 动画 height 之后
+         这条就再也不触发了 —— 两个都认。 */
+      if(e.target===panel&&(e.propertyName==='max-height'||e.propertyName==='height')){
+        clearTimeout(_fitAfterOpen);
+        if(panel.classList.contains('open')) scheduleFitRows();
+      }
     };
     const vv=window.visualViewport;
-    const fitObs=new ResizeObserver(scheduleFitRows);
+    /* fitRows 自己就会改变 panelInner 的尺寸，这个观察者会被自己的结果立刻再触发一次，
+       于是同一份 230ms 的排版白跑第二遍（实测就是 230+229 两个长任务）。
+       刚排完的一小段时间内忽略回调，只放行真正来自外部的尺寸变化（转屏、窗口缩放）。 */
+    const fitObs=new ResizeObserver(()=>{
+      if(performance.now()-_lastFitAt<400) return;
+      scheduleFitRows();
+    });
     fitObs.observe(panelInner);
     panel.addEventListener('transitionend',onPanelTransitionEnd);
     window.addEventListener('resize',onViewportChange,{ passive:true });
