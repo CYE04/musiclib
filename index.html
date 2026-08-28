@@ -39,6 +39,23 @@
         }
       })();
 
+      /* 分享短链：/s/<songId> —— 比 ?key=cecp2026&song=<id> 短一截，发到群里好看得多。
+         做法是**只把它当入口形式**：这里当场换算成原来的查询串形式（replaceState，
+         不产生跳转、不多一次请求），app 内部的取值逻辑一行都不用改。
+         ⚠️ 依赖 Cloudflare 静态资产的 SPA 回退（wrangler.json 的 not_found_handling），
+            否则 /s/xxx 会 404。改那个配置要和这里一起看。
+         ⚠️ 短链不带 key —— 门禁本来就是客户端明文校验，挡的是随手访问，不是安全边界；
+            走 /s/ 这条路视同已授权。 */
+      (function () {
+        var m = window.location.pathname.match(/^\/s\/([A-Za-z0-9_-]+)\/?$/);
+        if (m) {
+          try {
+            var base = window.location.origin + "/";
+            history.replaceState(null, "", base + "?key=cecp2026&song=" + encodeURIComponent(m[1]));
+          } catch (_) {}
+        }
+      })();
+
       const key = new URLSearchParams(window.location.search).get("key");
 
       if (key !== "cecp2026") {
@@ -64,7 +81,7 @@
 
     <!-- musiclib.css 保持 <head> 静态 <link>(与原版同名 id、同 ?v=)：
          id="ml-style" 会让 musiclib.js L320 的自注入分支跳过，避免样式表被加载两次。 -->
-    <link id="ml-style" rel="stylesheet" href="./musiclib.css?v=20260828-chips2">
+    <link id="ml-style" rel="stylesheet" href="./musiclib.css?v=20260828-short1">
   </head>
 
   <body>

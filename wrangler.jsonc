@@ -8,7 +8,10 @@
   // 原版直接把 musiclib/ 整个目录当静态资产发布；React 版的可发布产物是 vite build 的输出。
   // 部署前必须先 npm run build，否则发上去的是空目录。
   "assets": {
-    "directory": "./dist"
+    "directory": "./dist",
+    // /s/<songId> 是分享短链，磁盘上没有对应文件 —— 必须回退到 index.html，
+    // 由它把路径换算成 ?key=&song= 。不加这条，短链一律 404。
+    "not_found_handling": "single-page-application"
   },
   "compatibility_flags": [
     "nodejs_compat"

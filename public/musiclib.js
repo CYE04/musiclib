@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='20260828-chips2';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20260828-short1';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -2641,6 +2641,13 @@
   function buildShareUrl(songId){
     try{
       const src=new URL(location.href);
+      /* 短链形式 /s/<songId>：index.html 里的门禁会把它换算回 ?key=&song=。
+         比带查询串短一截（41 vs 57 字符），发到微信群里是一行干净地址。
+         id 只允许 [A-Za-z0-9_-]（歌库 id 本来就是拼音），出现别的字符就退回长形式，
+         免得拼出一个 /s/ 打不开的链接。 */
+      if(songId && /^[A-Za-z0-9_-]+$/.test(songId)){
+        return src.origin+'/s/'+songId;
+      }
       const u=new URL(src.origin+src.pathname);
       const key=src.searchParams.get('key');
       if(key) u.searchParams.set('key',key);
