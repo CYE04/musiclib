@@ -10881,3 +10881,20 @@ html[data-resolved-theme="dark"] #music-library{
   transform:none;
   transition:none;
 }
+
+/* ═══════════ 专辑网格：封面没撑满格子，整块看起来偏左 ═══════════
+   手机上「全部专辑」按作者分组那一屏，两列封面明显靠左、右边空一条。
+   病根不是网格没居中 —— 网格本身左右各 22px 是平的。
+   是**卡片撑满了格子、封面没有**：
+     .ml-shelf-card / .ml-shelf-art 本来是给横向滚动货架设计的**定宽**卡片
+     （146px / ≤860 是 132px / ≤479.98 是 124px）。
+     L9782 已经有一条 `#ml-list.is-browse .ml-shelf-card{width:auto!important}`
+     让卡片在换行网格里撑满格子，**但漏了里面的 .ml-shelf-art**，
+     封面仍钉在 124px —— 格子 177px，于是每格右边空 53px，两列叠起来就是「偏左」。
+   这里把封面一起放开，并用 aspect-ratio 保持正方形（原来是靠等宽等高写死的）。
+   ⚠️ 只在 .is-browse（换行网格）里放开；横向货架仍要定宽，否则卡片会被拉变形。 */
+#music-library #ml-list.is-browse .ml-shelf-art{
+  width:auto !important;
+  height:auto !important;
+  aspect-ratio:1 / 1;
+}
