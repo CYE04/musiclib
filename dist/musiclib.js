@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='20260827-motion1';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20260827-css1';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -3722,24 +3722,11 @@
       detail:'radial-gradient(circle at top, rgba(255,255,255,.78), transparent 30%),linear-gradient(180deg,#fffdf9 0%,#f4efe7 100%)'
     };
 
-    rb.setProperty('--halo-bg', palette.bg);
-    rb.setProperty('--halo-bg2', palette.bg2);
-    rb.setProperty('--halo-bg3', palette.bg3);
-    rb.setProperty('--halo-text', palette.text);
-    rb.setProperty('--halo-text2', palette.text2);
-    rb.setProperty('--halo-text3', palette.text3);
-    rb.setProperty('--halo-accent', palette.accent);
-    rb.setProperty('--halo-accent-hover', palette.accentHover);
-    rb.setProperty('--halo-border', palette.border);
-    rb.setProperty('--halo-border-md', palette.borderMd);
-    rb.setProperty('--halo-accent-light', palette.accentSoft);
-    rb.setProperty('--halo-shadow', palette.shadow);
-    rb.setProperty('--hero-grad', palette.hero);
-    rb.setProperty('--hero-panel', palette.panel);
-    rb.setProperty('--hero-chip-bg', palette.chip);
-    rb.setProperty('--card-grad', palette.card);
-    rb.setProperty('--card-hover', palette.cardHover);
-    rb.setProperty('--detail-grad', palette.detail);
+    /* 这 18 个调色板变量已于 2026-08-27 收敛到 musiclib.css 的「调色板单一来源」块。
+       原来在这里写行内值，会盖过样式表里的 7 处定义 —— 于是「只改 CSS = 白改」，
+       这个坑吃掉过两轮。现在颜色只由 CSS 决定，明暗两态的值是从改造前运行时逐个量出来的，
+       呈现完全一致。上面那个 palette 对象保留作为**取值出处的记录**（已不再写入 DOM），
+       改配色请改 musiclib.css，别改这里。 */
     root.dataset.theme=mode;
   }
 
