@@ -217,7 +217,7 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
-  const ML_VER='20260828-album1';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20260828-nav1';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
   const HALO_BASE='https://cecp.it';
@@ -903,6 +903,12 @@
     <nav id="ml-bottom-nav" aria-label="手机底部导航">
       <button class="ml-bottom-link active" type="button" data-nav="home">${icon('home')}<span>首页</span></button>
       <button class="ml-bottom-link" type="button" data-nav="search">${icon('search')}<span>搜索</span></button>
+      <!-- 诗歌库：侧栏一直有，手机底栏原来漏了。
+           「搜索」对不熟悉的人不够直白 —— 得先知道要找什么才会去搜；
+           「诗歌库」是"进去随便翻"的入口，两者不能互相替代。
+           data-nav 的点击处理是 #ml-side-nav 与 #ml-bottom-nav 共用的（见 root.querySelectorAll
+           那句），所以这里只加按钮，不用另外接事件。 -->
+      <button class="ml-bottom-link" type="button" data-nav="library">${icon('library')}<span>诗歌库</span></button>
       <button class="ml-bottom-link" type="button" data-nav="playlist">${icon('queue')}<span>播放列表</span></button>
       <button class="ml-bottom-link" type="button" data-nav="favorites">${icon('heart')}<span>收藏</span></button>
     </nav>

@@ -10898,3 +10898,64 @@ html[data-resolved-theme="dark"] #music-library{
   height:auto !important;
   aspect-ratio:1 / 1;
 }
+
+/* ═══════════ 手机：内容被固定底栏盖住最后一截 ═══════════
+   用户原话「版权声明手机上看不见底部那个横线，感觉没滑到底很不舒服」。
+   实测：版权框底边在 y=859，而固定底栏 #ml-bottom-nav 从 y=850 起、占 65px —— 
+   正好压住那条 border-bottom。
+   根因不是版权框，是**滚动容器的底部留白不够**：
+   #music-library 的 padding-bottom 只有 24px，而底栏要占 65px，
+   于是任何页面的最后 41px 都永远看不到 —— 读起来就是"还没到底"。
+   这里按底栏实际高度 + 安全区 + 一点呼吸留白来给，滚到底就能真正见底。
+   ⚠️ 播放条(#ml-nowbar)出现时会浮在底栏之上，所以那种情况再多让一截。 */
+@media (max-width:860px){
+  /* ⚠️ 必须带上 html.ml-fullscreen body.ml-fullscreen 这一串。
+     手机上这个 app 跑在 ml-fullscreen 模式，那条
+     `html.ml-fullscreen body.ml-fullscreen #music-library{padding:10px 8px 24px!important}`
+     特异度是 (1,2,2)，光写 `#music-library`(1,0,0) 就算带 !important 也赢不了 ——
+     「同特异度追加到文件末尾」这招在这里失效，实测被压成 24px。 */
+  html.ml-fullscreen body.ml-fullscreen #music-library,
+  #music-library{
+    padding-bottom:calc(65px + env(safe-area-inset-bottom,0px) + 20px) !important;
+  }
+  /* 播放条露出来时它自己还要占一层，再让 76px */
+  html.ml-fullscreen body.ml-fullscreen #music-library:has(#ml-nowbar.is-visible),
+  #music-library:has(#ml-nowbar.is-visible){
+    padding-bottom:calc(65px + 76px + env(safe-area-inset-bottom,0px) + 20px) !important;
+  }
+}
+
+/* ═══════════ 作者圆头像：撑满格子后太大了 ═══════════
+   上一条修复让 .is-browse 网格里的封面撑满格子（专辑封面这样是对的），
+   但作者页是**圆形**头像，177px 的大圆在手机上过于抢眼（用户：有点太大了）。
+   给圆形单独设上限并在格子里居中 —— 专辑封面不受影响，仍然撑满。 */
+#music-library #ml-list.is-browse .ml-shelf-card.is-round .ml-shelf-art{
+  width:min(100%,116px) !important;
+  margin-left:auto;
+  margin-right:auto;
+}
+#music-library #ml-list.is-browse .ml-shelf-card.is-round{
+  text-align:center;
+}
+
+/* ═══════════ 底栏改 5 列 ═══════════
+   加入「诗歌库」后变成 5 项，但两条规则都写死 `repeat(4,1fr)`（L744 / L5147），
+   第 5 项被挤到第二行，底栏从 65px 涨到 121px，挡住更多内容。
+   文字在窄屏会挤，所以同时把字号收一点、图标与文字间距压紧。 */
+#ml-bottom-nav{
+  grid-template-columns:repeat(5,1fr) !important;
+}
+#music-library #ml-bottom-nav .ml-bottom-link,
+#ml-bottom-nav .ml-bottom-link{
+  min-width:0;
+  padding-left:2px !important;
+  padding-right:2px !important;
+}
+#music-library #ml-bottom-nav .ml-bottom-link span,
+#ml-bottom-nav .ml-bottom-link span{
+  font-size:10.5px;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  max-width:100%;
+}
