@@ -1295,7 +1295,7 @@ html,body,#music-library{
    今天唯一的毛病是收起时的空转：max-height 要从 9999 走到内容高度(约 1100)才开始
    看得见变化，.5s 里有四百多毫秒纹丝不动，像卡住。时长收到 .18s 后这段空转压到
    ~160ms 以内，整体读作「干脆的开合」—— 这正是这个面板该有的样子。 */
-#music-library .sw-panel{max-height:0;overflow:hidden;transition:max-height .18s cubic-bezier(.32,.72,0,1);}
+#music-library .sw-panel{max-height:0;overflow:hidden;transition:max-height .5s cubic-bezier(.32,.72,0,1);}
 #music-library .sw-panel.open{max-height:9999px;}
 @media (prefers-reduced-motion:reduce){
   #music-library .sw-panel{transition:none;}
@@ -10680,4 +10680,96 @@ html[data-resolved-theme="dark"] #music-library{
   --card-grad:linear-gradient(180deg,rgba(32,32,32,.94),rgba(22,22,22,.96));
   --card-hover:linear-gradient(180deg,rgba(42,42,42,.98),rgba(26,26,26,.98));
   --detail-grad:radial-gradient(circle at top, rgba(232,132,90,.12), transparent 26%),linear-gradient(180deg,#202020 0%,#0E0E0E 100%);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   统一柔和进场（2026-08-27）
+   ───────────────────────────────────────────────────────────────────────
+   起因：给播放页/详情页加了动效之后，其余仍然硬切的浮层**对比之下更刺眼**了
+   （用户原话「反而更烂了」）。对比放大了不一致，所以答案是补齐而不是回退。
+   一律沿用这个文件已有的房子风格：ease-out 系曲线 + .18~.26s，
+   幅度极小（scale .985，位移 6px）—— 是「柔和」不是「花哨」。
+   ⚠️ 用 animation 而不是 transition：这些浮层都靠 display 切换，
+      transition 在 display:none -> block 上不会跑，而 CSS 动画会在元素首次渲染时启动。
+      代价是只管进场；退场要动 JS（加 .closing 类再延时移除），本轮不碰。
+   ═══════════════════════════════════════════════════════════════════════ */
+#music-library{
+  --ml-ease-out:cubic-bezier(.2,.8,.2,1);
+  --ml-ease-drawer:cubic-bezier(.32,.72,0,1);
+  --ml-dur-fast:.18s;
+  --ml-dur-base:.26s;
+}
+@keyframes ml-soft-in{from{opacity:0;transform:translateY(6px) scale(.985)}to{opacity:1;transform:none}}
+@keyframes ml-soft-fade{from{opacity:0}to{opacity:1}}
+/* 已经用 translateX(-50%) 居中的元素单独一条，否则 scale 会把定位打飞 */
+@keyframes ml-soft-in-cx{from{opacity:0;transform:translateX(-50%) translateY(6px) scale(.985)}
+                         to{opacity:1;transform:translateX(-50%)}}
+
+/* ── 遮罩层：只淡入，绝不缩放（整块暗幕跟着缩才是真难看）── */
+#music-library #ml-notice-modal.open,
+#ml-notice-modal.open,
+#ml-lightbox.open{
+  animation:ml-soft-fade var(--ml-dur-fast,.18s) ease both;
+}
+/* ── 对话框 / 面板 / 弹出层：淡入 + 极轻微放大 ── */
+/* ⚠️ #ml-playlist-panel 不在这一组：它本来就有 translateY(100%) 的滑入（下面刚修好），
+   而 animation 的优先级高于 transition，套上通用进场会把那条滑入盖掉、两者抢 transform。
+   已经有自己位移动效的元素，一律别再叠通用进场。 */
+#ml-notice-dialog,
+#music-library #ml-miniplayer.active,
+#music-library #ml-miniplayer.has-mp3,
+#music-library .ml-ps-pop:not([hidden]){
+  animation:ml-soft-in var(--ml-dur-base,.26s) var(--ml-ease-out,cubic-bezier(.2,.8,.2,1)) both;
+}
+#music-library #ml-audio-panel{
+  animation:ml-soft-in-cx var(--ml-dur-base,.26s) var(--ml-ease-out,cubic-bezier(.2,.8,.2,1)) both;
+}
+
+/* ── 歌词 ↔ 队列 的切换：用户报「点关闭歌词他是直接没得」──
+   两边都给进场，切过去的那一面浮起来，读起来就像一次交叉过渡，
+   而不是啪一下换掉。（退出那一面仍是瞬时，同上，那要动 JS。）*/
+#music-library #ml-player-view.lyrics-open #ml-player-lyrics,
+#music-library #ml-player-view:not(.lyrics-open) #ml-player-side{
+  animation:ml-soft-in var(--ml-dur-base,.26s) var(--ml-ease-out,cubic-bezier(.2,.8,.2,1)) both;
+}
+
+/* ── 歌单抽屉：它在 L10059 本来就写着 translateY(100%) 的滑入，
+      但被那条共享的主题过渡 !important 整条吃掉了（和播放条同一个病根）。
+      同特异度追加到文件末尾、把主题过渡与位移过渡手写合并回去。 ── */
+#music-library #ml-playlist-panel{
+  transition:transform .34s cubic-bezier(.22,.9,.28,1),
+             opacity .2s ease,
+             background .24s ease,border-color .24s ease,box-shadow .24s ease !important;
+}
+
+@media (prefers-reduced-motion:reduce){
+  /* 减弱而不是取消：去掉位移与缩放，只留一层很快的淡入 */
+  #music-library #ml-notice-modal.open,#ml-notice-modal.open,#ml-lightbox.open,
+  #ml-notice-dialog,
+  #music-library #ml-miniplayer.active,#music-library #ml-miniplayer.has-mp3,
+  #music-library .ml-ps-pop:not([hidden]),#music-library #ml-audio-panel,
+  #music-library #ml-player-view.lyrics-open #ml-player-lyrics,
+  #music-library #ml-player-view:not(.lyrics-open) #ml-player-side{
+    animation:ml-soft-fade .12s ease both !important;
+  }
+}
+
+/* ── 移调面板：真正按内容高度滑开 ──
+   老写法 max-height:0 -> 9999px 是个骗术：面板真实高度约 1100px 时，
+   可见的增长只发生在进度到 11% 之前，剩下都在空转。
+   我一度把时长从 .5s 收到 .18s 想省掉空转，结果**把那段可见的滑动也一起收没了**
+   （用户原话「点击移调他也是直接出来的，之前有个滑出来的感觉」）—— 已回退。
+   支持 interpolate-size 的浏览器直接对 height:auto 做插值，开合两端都是诚实的；
+   不支持的自动落回上面那条 max-height（.5s，就是用户原本熟悉的手感）。 */
+@supports (interpolate-size: allow-keywords){
+  #music-library .sw-panel{
+    interpolate-size:allow-keywords;
+    max-height:none;
+    height:0;
+    transition:height .34s cubic-bezier(.32,.72,0,1);
+  }
+  #music-library .sw-panel.open{max-height:none;height:auto;}
+  @media (prefers-reduced-motion:reduce){
+    #music-library .sw-panel{transition:none;}
+  }
 }
