@@ -10995,6 +10995,20 @@ html[data-resolved-theme="dark"] #music-library .ml-staff-panel{
   background:#f4efe7;box-shadow:0 12px 32px rgba(0,0,0,.24);
 }
 #music-library .ml-staff-panel[hidden]{display:none!important;}
+/* 坏小节角标：绝对定位的覆盖层，不参与 abcjs 布局。
+   谱面永远是浅色纸，所以这里用固定的琥珀色而不是主题变量。 */
+#music-library .ml-staff-panel{position:relative;}
+#music-library .ml-staff-warn-layer{position:absolute;inset:0;pointer-events:none;}
+/* 角标坐标是按未放大的布局算的，放大层里会错位 —— 那里直接不显示。
+   放大是用来看清音符的，警告在原尺寸下看就够了。 */
+#music-library .czoom-content .ml-staff-warn-layer{display:none;}
+#music-library .ml-staff-warn{
+  position:absolute;pointer-events:auto;cursor:help;
+  width:14px;height:14px;line-height:14px;border-radius:50%;
+  background:#b4541f;color:#fff;
+  font:700 10px/14px ui-monospace,Menlo,monospace;text-align:center;
+  box-shadow:0 1px 3px rgba(0,0,0,.28);
+}
 /* 全屏放大层里的五线谱：CECP-SCORE-ZOOM 把 .ml-staff-panel 的类名一起搬到
    .czoom-content 上，而那个节点是 position:absolute + width:auto，会收缩到 82px。
    abcjs 的响应式包裹层是 `width:100%; padding-bottom:<比例>%`，宽度一塌整个 SVG 就没了。

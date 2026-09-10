@@ -13,6 +13,36 @@
     }));
     return loads.get(url);
   }
+  /* 坏小节角标：把「拍数对不上」的小节在谱面上标出来。
+     abcjs 的 add_classes 会给每个元素挂 abcjs-mm<N>（N 是 0 基小节序号，
+     实测个数与 IR 小节数一一对应），据此定位。
+     角标是 absolute 覆盖层，不参与 abcjs 布局，也不改 SVG。 */
+  function markBadMeasures(host,surface,jp,ir){
+    let sum; try{ sum=jp.summarize(ir); }catch(e){ return; }
+    if(!sum||!sum.rows||!sum.rows.length)return;
+    const svg=surface.querySelector('svg'); if(!svg)return;
+    const layer=document.createElement('div');
+    layer.className='ml-staff-warn-layer';
+    const hostRect=host.getBoundingClientRect();
+    let placed=0;
+    sum.rows.forEach(r=>{
+      const els=surface.querySelectorAll('.abcjs-mm'+(r.no-1));
+      if(!els.length)return;
+      let left=Infinity,top=Infinity;
+      els.forEach(e=>{ const b=e.getBoundingClientRect(); if(!b.width&&!b.height)return;
+        if(b.left<left)left=b.left; if(b.top<top)top=b.top; });
+      if(!isFinite(left))return;
+      const dot=document.createElement('span');
+      dot.className='ml-staff-warn';
+      dot.textContent='!';
+      dot.title='第 '+r.no+' 小节：实际 '+r.beats+' 拍，应有 '+r.expected+' 拍（'+r.cat+'）';
+      dot.style.left=Math.round(left-hostRect.left)+'px';
+      dot.style.top=Math.round(top-hostRect.top-14)+'px';
+      layer.appendChild(dot); placed++;
+    });
+    if(placed)host.appendChild(layer);
+  }
+
   root.CecpStaffView={create(host,{base,onError}){
     let token=0,disposed=false,lastSong,lastKey,lastWidth=0,frame=0;
     async function render(song,key){
@@ -44,6 +74,7 @@
           paddingtop:24,paddingbottom:24,paddingleft:24,paddingright:24});
         if(disposed||current!==token)return;
         host.replaceChildren(surface);lastWidth=width;
+        markBadMeasures(host,surface,jp,ir);
       }catch(error){if(!disposed&&current===token){onError(error);console.warn('Staff rendering failed',error);}}
     }
     const observer=new ResizeObserver(()=>{

@@ -106,17 +106,54 @@ function precacheManifest() {
   };
 }
 
-// Keep authoritative converters byte-identical in development and deployments.
+/* 五线谱转换器（jp-ir.js / ir-to-abc.js）的来源。
+   权威版本住在**外层 Cecp 仓库**的 shared/，但 musiclib 是独立仓库、
+   独立部署 —— CI 上只克隆 musiclib，`../shared` 不存在。
+   （2026-09-10 线上构建就是这么挂的：ENOENT copyfile '/opt/buildhome/shared/jp-ir.js'。）
+
+   所以：public/ 里存一份**可部署的副本并入库**；本地有 ../shared 时，
+   构建/开发前自动把权威版刷进 public/，保证不会偷偷分家；CI 上没有 ../shared，
+   就直接用入库的那份。`npm run conformance` 会校验两者一致。 */
 function staffAssets(){
   const files=['jp-ir.js','ir-to-abc.js'];
+  const sharedOf=name=>path.resolve('../shared',name);
+  const publicOf=name=>path.resolve('public',name);
+  /* 有权威版就用权威版，没有就用入库副本 */
+  const srcOf=name=>fs.existsSync(sharedOf(name))?sharedOf(name):publicOf(name);
+  /* 把权威版同步进 public/（仅在本地、且内容确实不同的时候写，避免无谓的文件改动） */
+  function syncFromShared(){
+    for(const name of files){
+      const s=sharedOf(name); if(!fs.existsSync(s))continue;
+      const d=publicOf(name);
+      const a=fs.readFileSync(s);
+      if(fs.existsSync(d)&&Buffer.compare(a,fs.readFileSync(d))===0)continue;
+      fs.writeFileSync(d,a);
+      console.log('  [staff-assets] 已从 ../shared 刷新 public/'+name);
+    }
+  }
   return {name:'cecp-staff-assets',
-    configureServer(server){server.middlewares.use((req,res,next)=>{
-      const name=(req.url||'').split('?')[0].split('/').pop();
-      if(!files.includes(name))return next();
-      res.setHeader('Content-Type','application/javascript');
-      res.end(fs.readFileSync(path.resolve('../shared',name)));
-    });},
-    closeBundle(){for(const name of files)fs.copyFileSync(path.resolve('../shared',name),path.resolve('dist',name));}
+    configureServer(server){
+      syncFromShared();
+      server.middlewares.use((req,res,next)=>{
+        const name=(req.url||'').split('?')[0].split('/').pop();
+        if(!files.includes(name))return next();
+        const src=srcOf(name);
+        if(!fs.existsSync(src))return next();
+        res.setHeader('Content-Type','application/javascript');
+        res.end(fs.readFileSync(src));
+      });
+    },
+    /* buildStart 早于 vite 拷贝 publicDir，所以刷完 public/ 就会被正常带进 dist */
+    buildStart(){ syncFromShared(); },
+    closeBundle(){
+      /* 兜底：万一 publicDir 没带过去（比如文件不在 public/），再补一次 */
+      for(const name of files){
+        const d=path.resolve('dist',name); if(fs.existsSync(d))continue;
+        const src=srcOf(name);
+        if(fs.existsSync(src))fs.copyFileSync(src,d);
+        else this.error('五线谱转换器缺失：'+name+' 既不在 ../shared 也不在 public/');
+      }
+    }
   };
 }
 
