@@ -10,7 +10,7 @@
     "conformance": "node ../shared/strict-align.conformance.js && node ../tools/staff-conformance.js",
     "deploy:preview": "npm run build && npx wrangler@4 versions upload",
     "deploy": "npm run build && npx wrangler@4 deploy",
-    "test:staff": "node ../tools/staff-ir.test.js && node ../tools/staff-abc.test.js"
+    "test:staff": "node ../tools/staff-ir.test.js && node ../tools/staff-abc.test.js && node ../tools/staff-musicxml.test.js"
   },
   "dependencies": {
     "react": "^18.3.1",

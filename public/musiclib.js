@@ -11533,13 +11533,28 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
 
     const canStaff=window.CECP_MUSICLIB_CONFIG?.canStaff!==false && Array.isArray(s.sections) && s.sections.some(section=>Array.isArray(section.lines)&&section.lines.length);
     let staffOn=false,staffController=null,staffToken=0,staffDisposed=false;
-    let staffBar,staffPanel,staffSimple,staffButton;
+    let staffBar,staffPanel,staffSimple,staffButton,staffWarnBtn;
+    /* 坏小节角标：**默认关**。它是修谱用的提示，不是给唱的人看的。
+       选择记在 localStorage，跨歌跨会话保留。 */
+    const STAFF_WARN_KEY='cecp:musiclib:staff-warn:v1';
+    let staffWarnOn=false;
+    try{staffWarnOn=localStorage.getItem(STAFF_WARN_KEY)==='1';}catch(_){}
+
+    function syncStaffWarnBtn(){
+      if(!staffWarnBtn)return;
+      let n=0;
+      try{n=(staffController&&staffController.warnCount&&staffController.warnCount())||0;}catch(_){}
+      staffWarnBtn.hidden=!(staffOn&&n>0);
+      staffWarnBtn.textContent='校对 '+n;
+      staffWarnBtn.setAttribute('aria-pressed',String(staffWarnOn));
+    }
     function syncStaffVisibility(){
       const page=lbDiv.closest('.sw-page');
       (page||lbDiv).hidden=staffOn;
       if(staffPanel)staffPanel.hidden=!staffOn;
       if(staffSimple)staffSimple.setAttribute('aria-pressed',String(!staffOn));
       if(staffButton)staffButton.setAttribute('aria-pressed',String(staffOn));
+      syncStaffWarnBtn();
     }
     function restoreSimple(){
       staffOn=false;staffToken++;staffController?.cancel();syncStaffVisibility();scheduleFitRows();
@@ -11552,6 +11567,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         if(token!==staffToken||staffDisposed||!staffOn)return;
         if(!staffController)staffController=view.create(staffPanel,{base:staffAssetBase,onError:()=>restoreSimple()});
         await staffController.render(s,curKey);
+        try{staffController.setWarnings(staffWarnOn);}catch(_){}
         if(token===staffToken&&!staffDisposed)syncStaffVisibility();
       }catch(error){if(token===staffToken&&!staffDisposed){restoreSimple();console.warn('Staff view unavailable',error);}}
     }
@@ -11565,9 +11581,21 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
          ⚠️ 这条类名原本在隔离契约的禁用清单里（怕被放大器误伤），现改为**显式启用**，
          见 STAFF_MODE_MEMORY.md §4 的 2026-09-10 决策。 */
       staffPanel.className='ml-staff-panel sw-lb-zoomable';staffPanel.hidden=true;
-      staffBar.append(staffSimple,staffButton);panel.append(staffBar,staffPanel);
+      /* 校对开关：只在五线谱模式、且这首歌确实有拍数对不上的小节时才出现。
+         没问题的歌不显示 —— 免得一个永远点不出东西的按钮占位置。 */
+      staffWarnBtn=document.createElement('button');
+      staffWarnBtn.className='ml-staff-button ml-staff-warn-toggle';
+      staffWarnBtn.type='button';staffWarnBtn.hidden=true;
+      staffWarnBtn.title='标出拍数与拍号对不上的小节（修谱用）';
+      staffBar.append(staffSimple,staffButton,staffWarnBtn);panel.append(staffBar,staffPanel);
       staffSimple.addEventListener('click',restoreSimple);
       staffButton.addEventListener('click',()=>{staffOn=true;syncStaffVisibility();renderStaff();});
+      staffWarnBtn.addEventListener('click',()=>{
+        staffWarnOn=!staffWarnOn;
+        try{localStorage.setItem(STAFF_WARN_KEY,staffWarnOn?'1':'0');}catch(_){}
+        try{staffController&&staffController.setWarnings(staffWarnOn);}catch(_){}
+        syncStaffWarnBtn();
+      });
       syncStaffVisibility();
     }
 
@@ -12288,6 +12316,14 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     toolsRow.appendChild(inkUndoBtn);
     toolsRow.appendChild(inkRedoBtn);
     toolsRow.appendChild(inkClearBtn);
+    /* ⚠️ 不要在这里挂 lyricHlCreateController（CECP-LYRIC-HL 的画笔+调色板）。
+       2026-09-10 试挂过：功能本身是好的（能标、刷新后还在、清空也正常），
+       但它自带一套内联样式的 UI —— 红笔 + 彩色椭圆 + 橡皮 + 「清空」文字按钮，
+       与本工具条 2026-08 改成的「GoodNotes 式 24×24 线稿图标」完全不是一个风格，
+       而且墨迹工具条里已经有荧光笔和调色板，并排放像是重复了两套。
+       musiclib 一直没挂它**不是漏了，是风格不兼容**。
+       真要在 musiclib 上歌词标记，得先给它做一套 .sw-ico-btn 风格的入口，
+       那是设计任务，不是接线任务。youth-engine 那边风格不同，照挂无妨（L5731）。 */
     /* ── 这四个不是笔记功能 ──────────────────────────────────────────
        分享 / 下载图片 / YouTube / 下载LRC 原本挤在墨迹工具条里，
        和钢笔、荧光笔、橡皮、撤销混成一排 —— 工具条应该只放"画"的东西。

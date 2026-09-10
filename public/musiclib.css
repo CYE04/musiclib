@@ -10982,6 +10982,14 @@ html[data-resolved-theme="dark"] #music-library{
   color:var(--text-primary);
   background:var(--surface-secondary);
 }
+/* 校对开关是次要动作，不跟「简谱/五线谱」抢视觉重量：更小、更淡 */
+#music-library .ml-staff-button.ml-staff-warn-toggle{
+  font-size:11px;min-height:30px;padding:0 10px;
+  color:var(--text-tertiary,var(--text-secondary));opacity:.75;
+}
+#music-library .ml-staff-button.ml-staff-warn-toggle[aria-pressed="true"]{
+  opacity:1;background:transparent;color:#b4541f;border-color:#b4541f;
+}
 #music-library .ml-staff-button[aria-pressed="true"]{
   background:var(--text-primary);color:var(--bg);border-color:transparent;
 }
