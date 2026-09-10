@@ -10959,3 +10959,48 @@ html[data-resolved-theme="dark"] #music-library{
   text-overflow:ellipsis;
   max-width:100%;
 }
+
+/* Optional staff view; generated SVG never enters the legacy score/export tree. */
+/* ── 五线谱模式 ──────────────────────────────────────────────────────────
+   按钮逐条对齐同一面板里的调号按钮 .sw-kb（见本文件 9194 行）：同样的圆角、
+   同样的 --divider 描边、同样的「深墨实心」选中态。原先写的是硬编码色
+   (#bcc9c3/#294b3e)，跟全站变量体系脱节、也不跟深色模式。
+   谱面「纸」逐条对齐 .ml-score-image-page（4996 行）：深色模式下同样保持浅色纸
+   —— 谱子永远是浅底黑字，这是本站既定规则。
+   ⚠️ 必须带 #music-library 前缀：不带会被站内同名选择器的高优先级规则压过。 */
+#music-library .ml-staff-bar{display:flex;gap:9px;justify-content:center;margin:14px 0 4px;}
+#music-library .ml-staff-button{
+  font-family:'DM Mono',monospace;font-size:12px;
+  padding:0 13px;min-height:36px;text-align:center;
+  border:1px solid var(--divider);border-radius:7px;
+  background:transparent;color:var(--text-secondary);
+  cursor:pointer;box-shadow:none;
+  transition:border-color .15s,background .15s,color .15s;
+}
+#music-library .ml-staff-button:hover{
+  border-color:var(--border-md,var(--divider));
+  color:var(--text-primary);
+  background:var(--surface-secondary);
+}
+#music-library .ml-staff-button[aria-pressed="true"]{
+  background:var(--text-primary);color:var(--bg);border-color:transparent;
+}
+#music-library .ml-staff-panel{
+  min-width:auto;max-width:100%;overflow-x:auto;
+  margin:12px 0;padding:12px;
+  border:1px solid var(--divider);border-radius:8px;
+  background:#f7f4ee;color:#241C17;
+}
+html[data-resolved-theme="dark"] #music-library .ml-staff-panel{
+  background:#f4efe7;box-shadow:0 12px 32px rgba(0,0,0,.24);
+}
+#music-library .ml-staff-panel[hidden]{display:none!important;}
+/* 全屏放大层里的五线谱：CECP-SCORE-ZOOM 把 .ml-staff-panel 的类名一起搬到
+   .czoom-content 上，而那个节点是 position:absolute + width:auto，会收缩到 82px。
+   abcjs 的响应式包裹层是 `width:100%; padding-bottom:<比例>%`，宽度一塌整个 SVG 就没了。
+   所以这里钉死一个宽度（= staff-view 的版面宽），放大器再按视口把它整体缩放。 */
+#music-library .czoom-content.ml-staff-panel{
+  width:1100px;max-width:none;overflow:visible;padding:16px;
+}
+#music-library .ml-staff-surface{min-width:auto;color:inherit;background:transparent;}
+#music-library .ml-staff-surface svg{display:block;color:inherit;fill:currentColor;}

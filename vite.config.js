@@ -106,9 +106,23 @@ function precacheManifest() {
   };
 }
 
+// Keep authoritative converters byte-identical in development and deployments.
+function staffAssets(){
+  const files=['jp-ir.js','ir-to-abc.js'];
+  return {name:'cecp-staff-assets',
+    configureServer(server){server.middlewares.use((req,res,next)=>{
+      const name=(req.url||'').split('?')[0].split('/').pop();
+      if(!files.includes(name))return next();
+      res.setHeader('Content-Type','application/javascript');
+      res.end(fs.readFileSync(path.resolve('../shared',name)));
+    });},
+    closeBundle(){for(const name of files)fs.copyFileSync(path.resolve('../shared',name),path.resolve('dist',name));}
+  };
+}
+
 // base './' 保持原版「部署到任意子路径都能跑」的特性(原 index.html 全部相对引用)。
 export default defineConfig({
   base: "./",
-  plugins: [react(), precacheManifest()],
+  plugins: [react(), staffAssets(), precacheManifest()],
   server: { port: 5176 },
 });

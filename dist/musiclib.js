@@ -217,6 +217,18 @@
 /* ✦ Designed & Built by YuEn © 2025–2026 ✦ */
 /* CECP Music Library v3.3 */
 (function(){
+  // Rollback: set window.CECP_MUSICLIB_CONFIG={canStaff:false} before this script.
+  const staffAssetBase=new URL('.',document.currentScript?.src||location.href).href;
+  let staffViewPromise;
+  function loadStaffView(){
+    if(!staffViewPromise) staffViewPromise=new Promise((resolve,reject)=>{
+      const script=document.createElement('script');script.src=new URL('staff-view.js',staffAssetBase).href;
+      script.onload=()=>resolve(window.CecpStaffView);
+      script.onerror=()=>{script.remove();staffViewPromise=null;reject(new Error('staff-view load failed'));};
+      document.head.appendChild(script);
+    });
+    return staffViewPromise;
+  }
   const ML_VER='20260828-nav1';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
@@ -11519,6 +11531,46 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     panelInner.appendChild(ksDiv);panelInner.appendChild(capoEl);panelInner.appendChild(lbDiv);
     const panel=document.createElement('div');panel.className='sw-panel';panel.appendChild(panelInner);wrap.appendChild(panel);
 
+    const canStaff=window.CECP_MUSICLIB_CONFIG?.canStaff!==false && Array.isArray(s.sections) && s.sections.some(section=>Array.isArray(section.lines)&&section.lines.length);
+    let staffOn=false,staffController=null,staffToken=0,staffDisposed=false;
+    let staffBar,staffPanel,staffSimple,staffButton;
+    function syncStaffVisibility(){
+      const page=lbDiv.closest('.sw-page');
+      (page||lbDiv).hidden=staffOn;
+      if(staffPanel)staffPanel.hidden=!staffOn;
+      if(staffSimple)staffSimple.setAttribute('aria-pressed',String(!staffOn));
+      if(staffButton)staffButton.setAttribute('aria-pressed',String(staffOn));
+    }
+    function restoreSimple(){
+      staffOn=false;staffToken++;staffController?.cancel();syncStaffVisibility();scheduleFitRows();
+    }
+    async function renderStaff(){
+      if(!canStaff||!staffOn||staffDisposed)return;
+      const token=++staffToken;
+      try{
+        const view=await loadStaffView();
+        if(token!==staffToken||staffDisposed||!staffOn)return;
+        if(!staffController)staffController=view.create(staffPanel,{base:staffAssetBase,onError:()=>restoreSimple()});
+        await staffController.render(s,curKey);
+        if(token===staffToken&&!staffDisposed)syncStaffVisibility();
+      }catch(error){if(token===staffToken&&!staffDisposed){restoreSimple();console.warn('Staff view unavailable',error);}}
+    }
+    if(canStaff){
+      staffBar=document.createElement('div');staffBar.className='ml-staff-bar';
+      staffSimple=document.createElement('button');staffSimple.className='ml-staff-button';staffSimple.type='button';staffSimple.textContent='简谱';
+      staffButton=document.createElement('button');staffButton.className='ml-staff-button';staffButton.type='button';staffButton.textContent='五线谱';
+      staffPanel=document.createElement('div');
+      /* sw-lb-zoomable 是白拿的全屏放大：CECP-SCORE-ZOOM 是文档级点击监听 + innerHTML 克隆，
+         SVG 克隆没问题。窄屏上版面 1100px 缩到 ~390px 面板（0.35 倍），不给放大看不清。
+         ⚠️ 这条类名原本在隔离契约的禁用清单里（怕被放大器误伤），现改为**显式启用**，
+         见 STAFF_MODE_MEMORY.md §4 的 2026-09-10 决策。 */
+      staffPanel.className='ml-staff-panel sw-lb-zoomable';staffPanel.hidden=true;
+      staffBar.append(staffSimple,staffButton);panel.append(staffBar,staffPanel);
+      staffSimple.addEventListener('click',restoreSimple);
+      staffButton.addEventListener('click',()=>{staffOn=true;syncStaffVisibility();renderStaff();});
+      syncStaffVisibility();
+    }
+
     const scoreModeShell=document.createElement('section');
     scoreModeShell.className='ml-score-stack';
     const imagePanel=document.createElement('div');
@@ -11782,6 +11834,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     togBtn.addEventListener('click',()=>{
       panel.classList.toggle('open');
       const nowOpen=panel.classList.contains('open');
+      if(nowOpen&&staffOn)renderStaff();
       togBtn.classList.toggle('on',nowOpen);
       /* ⚡ 展开时**不要**立刻排版。
          一次 fitRows 要 ~230ms（约 5300 次强制布局丈量），塞在这里就正好压在
@@ -12545,9 +12598,11 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         lbDiv.appendChild(se);
       }
       lyricHlApply(lbDiv,s.id);
+      try{if(canStaff&&staffOn)renderStaff();}catch(_){restoreSimple();}
       scheduleFitRows();
     }
     function fitRows(){
+      if(canStaff&&staffOn)return;
       if(!lbDiv.isConnected||!lbDiv.parentNode)return;
       /* ⚡ 面板收起时直接不排。
          详情页默认显示的是上方那张**静态谱面图**，而这份交互式谱面被 .sw-panel
@@ -12680,6 +12735,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     }
     window._mlFitObs=fitObs;
     window._mlFitCleanup=()=>{
+      staffDisposed=true;staffToken++;staffController?.destroy();clearTimeout(_fitAfterOpen);
       cancelAnimationFrame(fitRaf);
       fitObs.disconnect();
       panel.removeEventListener('transitionend',onPanelTransitionEnd);
