@@ -53,8 +53,11 @@
     /* 坏小节角标默认**关**：它是修谱用的提示，不是给唱的人看的。
        宿主用 setWarnings(on) 开关，开关时不重渲染谱面，只加/删覆盖层。 */
     let warnOn=false,lastIr=null,lastSurface=null,lastJp=null;
-    async function render(song,key){
-      lastSong=song;lastKey=key;
+    /* opts.chordFlat = 宿主的 preferFlat（移调面板里的 ♭/# 开关）。
+       不传的话 jp-ir 会按目标调推一个默认值，但用户手动切过 ♭/# 就会与简谱对不上。 */
+    let lastOpts={};
+    async function render(song,key,opts){
+      lastSong=song;lastKey=key;lastOpts=opts||{};
       const current=++token;
       try{
         const [jp,abc,renderer]=await Promise.all([
@@ -63,7 +66,7 @@
         if(disposed||current!==token||!host.isConnected||host.hidden)return;
         const width=host.clientWidth;
         if(width<=0)return;
-        const ir=jp.songToIR(song,{key});
+        const ir=jp.songToIR(song,{key,chordFlat:lastOpts.chordFlat});
         const source=abc.irToAbc(ir);
         const surface=document.createElement('div');surface.className='ml-staff-surface';
         /* 断行**跟随简谱**：ir-to-abc 默认按 song JSON 的 lines[] 输出硬换行，
@@ -88,7 +91,7 @@
     }
     const observer=new ResizeObserver(()=>{
       if(disposed||host.hidden||!lastSong||host.clientWidth<=0||host.clientWidth===lastWidth)return;
-      cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>render(lastSong,lastKey));
+      cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>render(lastSong,lastKey,lastOpts));
     });observer.observe(host);
     function setWarnings(on){
       warnOn=!!on;

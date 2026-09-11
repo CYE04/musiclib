@@ -165,6 +165,69 @@
     };
   }
 
+  /* ── 和弦移调 ─────────────────────────────────────────────────────────
+     ⚠️ 以下函数**逐字照抄** musiclib.js 的同名函数（parseKeyName / needFlat /
+     trKeyName / trBass L5887–5910，isChordLikeToken / trChordToken L9424–9445），
+     只把 const/箭头函数改写成 ES5。目的：五线谱上的和弦与简谱**逐字一致**。
+     tools/staff-ir.test.js 的「和弦移调一致性」会从 musiclib.js 抽出原函数，
+     对全曲库每个和弦 × 12 个移调量 × ♭/# 两种写法逐一比对，改了这里必须过那条。 */
+  var CH_NOTE_MAP = { C: 0, 'B#': 0, 'C#': 1, Db: 1, D: 2, 'D#': 3, Eb: 3, E: 4, Fb: 4, 'E#': 5, F: 5,
+    'F#': 6, Gb: 6, G: 7, 'G#': 8, Ab: 8, A: 9, 'A#': 10, Bb: 10, B: 11, Cb: 11 };
+  var CH_NOTES_SHARP = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  var CH_NOTES_FLAT = ['C', 'Db', 'D', 'Eb', 'E', 'F', 'Gb', 'G', 'Ab', 'A', 'Bb', 'B'];
+  var CH_FLAT_KEYS = { F: 1, Bb: 1, Eb: 1, Ab: 1, Db: 1, Gb: 1, Cb: 1 };
+  var CH_USE_FLAT_MINOR_ROOTS = { D: 1, G: 1, C: 1, F: 1, Bb: 1, Eb: 1 };
+  function chParseKeyName(key) {
+    var k = (key || '').trim();
+    if (!k) return { root: 'C', suf: '' };
+    var m = k.match(/^([A-G](?:#|b)?)(.*)$/);
+    if (!m) return { root: k, suf: '' };
+    return { root: m[1], suf: m[2] || '' };
+  }
+  function chNeedFlat(root, suf) {
+    var minor = /m(?!aj)/i.test(suf);
+    if (minor) return !!CH_USE_FLAT_MINOR_ROOTS[root];
+    return !!CH_FLAT_KEYS[root];
+  }
+  function chTrKeyName(key, st, useFlat) {
+    var pk = chParseKeyName(key), root = pk.root, suf = pk.suf;
+    if (CH_NOTE_MAP[root] === undefined) return key;
+    var n = (CH_NOTE_MAP[root] + st + 120) % 12;
+    var flat = (useFlat !== undefined) ? useFlat : chNeedFlat(root, suf);
+    var nr = flat ? CH_NOTES_FLAT[n] : CH_NOTES_SHARP[n];
+    return nr + suf;
+  }
+  function chTrBass(bass, st, useFlat) { return chTrKeyName(bass, st, useFlat); }
+  function chIsChordLikeToken(token) {
+    var s = String(token || '').trim();
+    var i = 0;
+    while (i < s.length && s.charAt(i) === '(') i++;
+    var ch = s.charAt(i);
+    if (ch < 'A' || ch > 'G') return false;
+    var j = i + 1;
+    var nx = s.charAt(j);
+    if (nx === '#' || nx === 'b') j++;
+    var after = s.charAt(j);
+    if (after >= 'a' && after <= 'z' && 'msad'.indexOf(after) < 0) return false;
+    return true;
+  }
+  function trChordToken(ch, st, useFlat) {
+    var raw = String(ch || '');
+    if (!chIsChordLikeToken(raw)) return raw;
+    var m = raw.match(/^([A-G](?:#|b)?)([^A-G]*)(.*)$/);
+    if (m && m[1] && !m[3]) {
+      var rest = m[2] || '';
+      rest = rest.replace(/\/\s*([A-G](?:#|b)?)/g, function (a, b) { return '/' + chTrBass(b, st, useFlat); });
+      return chTrKeyName(m[1], st, useFlat) + rest;
+    }
+    return raw.replace(/(^|[^A-Za-z#b])([A-G](?:#|b)?)(maj|min|dim|aug|sus|add|m(?!aj)|[0-9+\-#b°øº⁰¹²³⁴⁵⁶⁷⁸⁹]*)(\/\s*([A-G](?:#|b)?))?(?=$|[^A-Za-z#b])/g,
+      function (_, lead, root, suf, bassPart, bassRoot) {
+        var out = chTrKeyName(root, st, useFlat) + (suf || '');
+        if (bassPart) out += '/' + chTrBass(bassRoot, st, useFlat);
+        return lead + out;
+      });
+  }
+
   /** 两个事件的音高是否完全相同（延音线成立的前提）。 */
   function samePitchEvents(a, b) {
     if (!a || !b) return false;
@@ -204,7 +267,14 @@
     }
 
     var srcKey = String((song && song.origKey) || 'C');
-    var keyName = String(opts.key || srcKey);
+    var requestedKey = String(opts.key || srcKey);
+    /* 理论调换成等音的实用调 —— **只影响五线谱的调号与音符拼写**，不影响和弦。
+       移调面板在 ♯ 模式下会给出 D# / G# / A#：这三个大调要 9 / 8 / 10 个升号，
+       满篇重升号（A# 调的 3 级是 C##），实测全曲出现 120 个临时记号。
+       打谱惯例一律写成 Eb / Ab / Bb。和弦符号是文字，仍按宿主传来的 chordFlat
+       拼写，保持与简谱逐字一致（那边写 A# 这边也写 A#）。 */
+    var THEORETICAL_KEY = { 'D#': 'Eb', 'G#': 'Ab', 'A#': 'Bb' };
+    var keyName = THEORETICAL_KEY[requestedKey] || requestedKey;
     var keyInfo = normKey(keyName);
     if (!keyInfo) { warn('BAD_KEY', '调名无法解析：' + keyName + '，退回 C', null); keyInfo = normKey('C'); }
     /* 规范化：曲库里有写成小写的（test.json 的 "b"），直接塞进 ABC 的 K: 会被当成参数名 */
@@ -214,6 +284,18 @@
     if (!songTs) { warn('BAD_TIMESIGN', '拍号无法解析，退回 4/4', null); songTs = parseTimeSign('4/4'); }
 
     var isStrict = !!(song && song.align === 'strict');
+
+    /* 和弦移调参数 —— 与 musiclib renderScore 同一口径：
+         st      = (目标调 − 原调 + 12) % 12       （= calcCapo(curKey, origKey).st）
+         useFlat = 宿主的 preferFlat（用户在移调面板切的 ♭/#）
+       宿主可以显式传 {chordShift, chordFlat}；没传时 st 自己算，
+       useFlat 按目标调是否在 FLAT_KEYS 里 —— 这正是 musiclib 里 preferFlat 的**默认值**。 */
+    var srcPc = CH_NOTE_MAP[chParseKeyName(srcKey).root];
+    var dstPc = CH_NOTE_MAP[chParseKeyName(keyName).root];
+    var chordShift = (opts.chordShift != null) ? opts.chordShift
+      : ((srcPc === undefined || dstPc === undefined) ? 0 : (dstPc - srcPc + 12) % 12);
+    var chordFlat = (opts.chordFlat != null) ? !!opts.chordFlat : !!CH_FLAT_KEYS[chParseKeyName(keyName).root];
+    function trSym(sym) { return (sym && chordShift) ? trChordToken(sym, chordShift, chordFlat) : sym; }
 
     /* ── 1. 把整首歌摊平成带出处的 token 流 ───────────────────────────── */
     var flat = [];
@@ -530,7 +612,7 @@
         kind: pitches.length > 1 ? 'chordstack' : (pitches.length ? 'note' : 'rest'),
         pitches: pitches, units: units, dots: dots,
         tieStart: false, tieStop: false, fermata: fermata,
-        chordSymbol: item.chord || null,
+        chordSymbol: trSym(item.chord) || null,
         lyrics: item.lyrics || null,
         src: item.where
       });
@@ -574,10 +656,11 @@
     var ir = {
       meta: {
         id: (song && song.id) || '', title: (song && song.title) || '', artist: (song && song.artist) || '',
-        key: keyName, sourceKey: srcKey, timeSign: songTs.text, bpm: (song && song.bpm) || 72,
+        key: keyName, sourceKey: srcKey, requestedKey: requestedKey, timeSign: songTs.text, bpm: (song && song.bpm) || 72,
         lyricsAvailable: isStrict ? 'strict' : 'loose',       // PLAN §5.5：strict=精确，loose=97.1% 精确
         octaveShift: octaveShift,
         meterChanges: meterChanges,
+        chordShift: chordShift, chordFlat: chordFlat,
         unitsPerQuarter: Q
       },
       stats: stats,
@@ -803,6 +886,7 @@
     songToIR: songToIR,
     summarize: summarize,
     resolveCrossBarSlurs: resolveCrossBarSlurs,
+    trChordToken: trChordToken,
     /* 以下导出供单测与体检脚本使用 */
     parseSlotToken: parseSlotToken,
     pitchOf: pitchOf,

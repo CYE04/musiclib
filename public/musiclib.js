@@ -11566,7 +11566,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         const view=await loadStaffView();
         if(token!==staffToken||staffDisposed||!staffOn)return;
         if(!staffController)staffController=view.create(staffPanel,{base:staffAssetBase,onError:()=>restoreSimple()});
-        await staffController.render(s,curKey);
+        /* preferFlat 必须传：五线谱和弦要与简谱逐字一致，而简谱用的就是它（renderScore 里 useFlat=preferFlat） */
+        await staffController.render(s,curKey,{chordFlat:preferFlat});
         try{staffController.setWarnings(staffWarnOn);}catch(_){}
         if(token===staffToken&&!staffDisposed)syncStaffVisibility();
       }catch(error){if(token===staffToken&&!staffDisposed){restoreSimple();console.warn('Staff view unavailable',error);}}
