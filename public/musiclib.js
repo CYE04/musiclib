@@ -1671,6 +1671,28 @@
   }
   /* 跟移调页 normalizePreviewRowHeights 一样: 每行把所有简谱音格(.p-n)统一到该行最高音格高度, 底对齐 ->
      和弦/连音弧/房子线(volta)在整行内高度一致、整整齐齐(离屏算好 --row-note-height 烘进 outerHTML)。 */
+  /* Keep the ending rail between chords and notes, in unscaled layout coordinates. */
+  function positionVoltaRails(scope){
+    scope.querySelectorAll('.prev-volta').forEach(function(volta){
+      var top=Infinity;
+      volta.querySelectorAll('.p-n').forEach(function(note){
+        var y=0, node=note;
+        while(node && node!==volta){y+=node.offsetTop;node=node.offsetParent;}
+        if(node===volta)top=Math.min(top,y);
+      });
+      var chordBottom=-Infinity;
+      volta.querySelectorAll('.p-chord').forEach(function(chord){
+        if(!chord.textContent.trim() || !chord.offsetHeight)return;
+        var y=chord.offsetHeight, node=chord;
+        while(node && node!==volta){y+=node.offsetTop;node=node.offsetParent;}
+        if(node===volta)chordBottom=Math.max(chordBottom,y);
+      });
+      // Chord line-height can be smaller than its ink; leave six pixels below it.
+      // Anchor above the slur reservation, so ending numbers do not cross arcs.
+      if(isFinite(chordBottom))top=chordBottom+6+(parseFloat(getComputedStyle(volta).getPropertyValue('--volta-rail'))||0);
+      if(isFinite(top))volta.style.setProperty('--volta-top',top+'px');
+    });
+  }
   function projNormalizeRowHeights(scope){
     if(!scope)return;
     scope.querySelectorAll('.prev-row').forEach(row=>{
@@ -1776,6 +1798,7 @@
         // connectStrictBeams/layoutStrictArcsAll 对非 strict 行(无 .p-slot 列)是 no-op, 故整台跑无副作用。
         songStage.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
         layoutStrictArcsAll(songStage);
+        positionVoltaRails(songStage);
         projState.pages=raw.map(p=>Object.assign({
           html:p.b.map(x=>x.outerHTML).join(''), refW:p.refW, refH:p.scripture?p.gMaxH:songMaxH
         },p.meta));
@@ -3506,6 +3529,7 @@
           layoutStrictChordsAll(snap.node);
           snap.node.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
           layoutStrictArcsAll(snap.node);
+          positionVoltaRails(snap.node);
           const r1=snap.node.getBoundingClientRect();
           let cw=Math.max(1,r1.width),ch=Math.max(1,r1.height);
           const P=EXPORT_FIT.portrait;
@@ -3530,6 +3554,7 @@
              layoutStrictChordsAll(snap.node);
              snap.node.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
              layoutStrictArcsAll(snap.node);
+             positionVoltaRails(snap.node);
              const r1b=snap.node.getBoundingClientRect();
              cw=Math.max(1,r1b.width);
              ch=Math.max(1,r1b.height);
@@ -3554,6 +3579,7 @@
             layoutStrictChordsAll(snap.node);                                     // 双栏重排后和弦避让也要重算
             snap.node.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);   // 双栏重排后再排一次梁/弧
             layoutStrictArcsAll(snap.node);
+            positionVoltaRails(snap.node);
             const r2=snap.node.getBoundingClientRect();
             const cw2=Math.max(1,r2.width),ch2=Math.max(1,r2.height);
             const L=EXPORT_FIT.landscape;
@@ -11806,6 +11832,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       }else{
         lbDiv.querySelectorAll('.sec-label-holder').forEach(h=>{ if(h.cecpPlaceSecLabel)h.cecpPlaceSecLabel(); });
       }
+      positionVoltaRails(lbDiv);
       return lbDiv.scrollHeight||0;
     };
     /* ═══════════ CECP-A4-PAGE v1 END ═══════════ */

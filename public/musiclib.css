@@ -1341,9 +1341,10 @@ html,body,#music-library{
 #music-library .sw-lyric2{display:block;font-size:22px;opacity:0.6;margin-top:1px;}
 #music-library .sw-lyric3{display:block;font-size:22px;opacity:0.6;margin-top:1px;}
 #music-library .sw-lyric4{display:block;font-size:22px;opacity:0.6;margin-top:1px;}
-#music-library .prev-row{--volta-rail:0px;--volta-top:2px;--row-note-height:0px;display:flex;flex-wrap:nowrap;align-items:flex-end;margin-bottom:calc(10px * var(--pl-gap,1));overflow:visible;padding-top:var(--volta-rail);padding-bottom:2px;}
+#music-library .prev-row{--volta-rail:0px;--volta-top:2px;--row-note-height:0px;display:flex;flex-wrap:nowrap;align-items:flex-end;margin-bottom:calc(10px * var(--pl-gap,1));overflow:visible;padding-top:0;padding-bottom:2px;}
 /* 自动折行(宽歌铺满): 太长的简谱行折成多行, 整列(和弦+简谱+歌词+拼音)一起折, 不拆散 */
 #music-library .prev-row.has-volta{--volta-rail:18px;}
+#music-library .prev-row.has-volta .p-n{margin-top:var(--volta-rail)}
 #music-library .prev-seg{display:inline-flex;flex-direction:column;align-items:flex-start;margin-right:4px;flex-shrink:0;}
 #music-library .p-chord{font-family:'Space Mono',monospace;font-size:calc(12px * var(--pl-chord,1));font-weight:700;color:var(--accent);margin-bottom:2px;min-height:13px;white-space:pre;}
 #music-library .p-chord.empty{visibility:hidden;}
