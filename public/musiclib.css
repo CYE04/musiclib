@@ -78,6 +78,7 @@ html[data-resolved-theme="dark"] body{
   /* 和弦浏览器语义色：根音复用 --accent；三音 / 五音-延伸音各一色 */
   --chord-third:#3E6E9E;
   --chord-tension:#5E8A55;
+  --chord-ink:#C76524;
   --shadow-sm:0 1px 2px rgba(58,39,28,.05);
   --shadow-md:0 12px 32px rgba(83,54,35,.08);
   --shadow-lg:0 20px 60px rgba(42,30,22,.14);
@@ -110,6 +111,7 @@ html[data-resolved-theme="dark"] #music-library{
   /* 和弦浏览器语义色（深色模式提亮） */
   --chord-third:#82AFD6;
   --chord-tension:#96BE8C;
+  --chord-ink:#F4A67E;
 }
 
 body.ml-fullscreen #music-library{
@@ -486,7 +488,7 @@ body.ml-fullscreen #music-library{
 }
 #music-library .p-chord,
 #music-library .sw-chord{
-  color:var(--accent) !important;
+  color:var(--chord-ink) !important;
 }
 
 
@@ -645,7 +647,7 @@ html[data-resolved-theme="light"] body.ml-fullscreen{
 .ml-detail-action.is-active{color:var(--accent) !important;background:var(--accent-soft) !important;border-color:transparent !important;}
 
 
-#music-library .p-chord,#music-library .sw-chord{color:var(--accent) !important;}
+#music-library .p-chord,#music-library .sw-chord{color:var(--chord-ink) !important;}
 
 
 
@@ -1334,7 +1336,7 @@ html,body,#music-library{
 #music-library .sw-lline:last-child{margin-bottom:0;}
 #music-library .sw-lrow{display:flex;flex-wrap:nowrap;align-items:flex-end;overflow:visible;}
 #music-library .sw-seg{display:inline-flex;flex-direction:column;align-items:flex-start;margin-right:4px;margin-bottom:5px;}
-#music-library .sw-chord{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--accent);margin-bottom:3px;min-height:15px;white-space:pre;}
+#music-library .sw-chord{font-family:'DM Mono',monospace;font-size:14px;font-weight:700;color:var(--chord-ink);margin-bottom:3px;min-height:15px;white-space:pre;}
 #music-library .sw-chord.empty{visibility:hidden;}
 #music-library .sw-jianpu{font-family:'DM Mono',monospace;color:var(--text);margin-bottom:2px;display:flex;align-items:flex-end;line-height:1;}
 #music-library .sw-lyric{font-size:22px;color:var(--text2);white-space:pre;letter-spacing:.5px;}
@@ -1346,7 +1348,7 @@ html,body,#music-library{
 #music-library .prev-row.has-volta{--volta-rail:18px;}
 #music-library .prev-row.has-volta .p-n{margin-top:var(--volta-rail)}
 #music-library .prev-seg{display:inline-flex;flex-direction:column;align-items:flex-start;margin-right:4px;flex-shrink:0;}
-#music-library .p-chord{font-family:'Space Mono',monospace;font-size:calc(12px * var(--pl-chord,1));font-weight:700;color:var(--accent);margin-bottom:2px;min-height:13px;white-space:pre;}
+#music-library .p-chord{font-family:'Space Mono',monospace;font-size:calc(12px * var(--pl-chord,1));font-weight:700;color:var(--chord-ink);margin-bottom:2px;min-height:13px;white-space:pre;}
 #music-library .p-chord.empty{visibility:hidden;}
 #music-library .p-n{font-family:'Space Mono',monospace;font-size:calc(1em * var(--pl-n,1));color:var(--text);margin-bottom:1px;line-height:1.2;display:flex;align-items:flex-end;min-height:var(--row-note-height);}
 #music-library .p-lyric{font-family:'Noto Serif SC',serif;font-size:calc(18px * var(--pl-lyric,1));font-weight:600;color:var(--text);white-space:pre-wrap;}
@@ -5452,6 +5454,7 @@ html[data-resolved-theme="dark"] #music-library{
   --accent-hover:#F09B72;
   --accent-active:#C76524;
   --accent-soft:rgba(232,132,90,.16);
+  --chord-ink:#F4A67E;
   --success:#9bbfa7;
   --danger:#ee9383;
   --shadow-sm:0 1px 0 rgba(255,255,255,.05);
@@ -10679,6 +10682,7 @@ html[data-resolved-theme="dark"] #music-library{
   --halo-border:rgba(255,255,255,0.14);
   --halo-border-md:rgba(255,255,255,0.24);
   --halo-accent-light:rgba(232,132,90,.16);
+  --chord-ink:#F4A67E;
   --halo-shadow:0 18px 48px rgba(0,0,0,.28),0 1px 0 rgba(255,255,255,.04) inset;
   --hero-grad:radial-gradient(circle at top left, rgba(232,132,90,.2), transparent 28%),linear-gradient(135deg,#0E0E0E 0%,#202020 58%,#0B0B0B 100%);
   --hero-panel:rgba(22,22,22,.72);
@@ -11001,7 +11005,7 @@ html[data-resolved-theme="dark"] #music-library{
   background:#f7f4ee;color:#241C17;
 }
 html[data-resolved-theme="dark"] #music-library .ml-staff-panel{
-  background:#f4efe7;box-shadow:0 12px 32px rgba(0,0,0,.24);
+  background:#f4efe7;box-shadow:0 12px 32px rgba(0,0,0,.24);--chord-ink:#C76524;
 }
 #music-library .ml-staff-panel[hidden]{display:none!important;}
 /* 坏小节角标：绝对定位的覆盖层，不参与 abcjs 布局。
