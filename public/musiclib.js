@@ -6371,11 +6371,13 @@ function chordStyleEnsureCss(){
     light+='.chord-chip.chord-pc'+i+'{color:hsl('+h+',90%,20%);}';
     dark+='.chord-chip.chord-pc'+i+'{color:hsl('+h+',72%,84%);}';
   }
-  var darkAttr=dark.split('.chord-chip.').join('html[data-resolved-theme="dark"] .chord-chip.');
-  var darkAuto=dark.split('.chord-chip.').join('html:not([data-resolved-theme="light"]) .chord-chip.');
+  // Theme context must not outrank the light paper's local chord palette.
+  var darkAttr=dark.split('.chord-chip.').join(':where(html[data-resolved-theme="dark"]:not([data-sheet-theme="light"])) .chord-chip.');
+  var darkAuto=dark.split('.chord-chip.').join(':where(html:not([data-resolved-theme="light"]):not([data-sheet-theme="light"])) .chord-chip.');
   st.textContent=
     light+darkAttr+
-    '@media (prefers-color-scheme: dark){'+darkAuto+'}';
+    '@media (prefers-color-scheme: dark){'+darkAuto+'}'+
+    '.sw-score .chord-chip, .sw-page .chord-chip, .cf-jianpu .chord-chip { font-weight:700; }';
   document.head.appendChild(st);
 }
 /* 把一个文本节点按 gap 字符切成若干节点，返回 [{gap,node}...]；
@@ -11755,7 +11757,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       st.textContent=[
         '#music-library .sw-page{position:relative;box-sizing:border-box;margin:0 0 14px;overflow:hidden;',
         'background:#f7f4ee;color:#241C17;border:1px solid #E9E0D8;border-radius:8px;',
-        '--text:#241C17;--text2:#6F655D;--text3:#9A8F85;--border:#E9E0D8;--accent:#C76524;}',
+        '--text:#241C17;--text2:#6F655D;--text3:#9A8F85;--border:#E9E0D8;--accent:#C76524;--chord-ink:#934A1B;}',
         'html[data-resolved-theme="dark"] #music-library .sw-page{background:#f4efe7;',
         'box-shadow:0 12px 32px rgba(0,0,0,.24);}',
         '@media (prefers-color-scheme:dark){html:not([data-resolved-theme="light"]) #music-library .sw-page{',
