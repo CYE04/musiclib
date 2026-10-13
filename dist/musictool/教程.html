@@ -1,0 +1,298 @@
+<!doctype html>
+<html lang="zh-CN" class="cecp-editor-tutorial">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>简谱记号图鉴 · 带实时预览</title>
+<script src="./theme-init.js"></script>
+<style>
+  :root{
+    --bg:#f6f7f9; --card:#fff; --ink:#1c2430; --ink2:#6b7686; --line:#e6e9ef;
+    --accent:#3b6cf6; --accent-soft:#eaf0ff; --code:#334; --codebg:#f2f4f8; --green:#0a7d40;
+  }
+  @media (prefers-color-scheme: dark){
+    :root{ --bg:#14171c; --card:#1c2027; --ink:#e9edf3; --ink2:#9aa5b4; --line:#2a2f38;
+      --accent:#6f9bff; --accent-soft:#232b3d; --code:#cdd6e2; --codebg:#232830; --green:#63e6a0; }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans SC",system-ui,sans-serif;line-height:1.6;}
+  .wrap{max-width:920px;margin:0 auto;padding:24px 18px 80px;}
+  header.top{margin:8px 0 22px;}
+  header.top h1{font-size:26px;margin:0 0 6px;letter-spacing:.5px;}
+  header.top p{margin:0;color:var(--ink2);font-size:14px;}
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 8px;}
+  .toc a{font-size:13px;color:var(--accent);text-decoration:none;background:var(--accent-soft);padding:4px 10px;border-radius:99px;border:1px solid var(--line);}
+  h2{font-size:20px;margin:34px 0 4px;padding-top:10px;border-top:2px solid var(--line);}
+  h2 .en{color:var(--ink2);font-size:13px;font-weight:400;margin-left:8px;}
+  h3{font-size:16px;margin:22px 0 8px;color:var(--accent);}
+  .lead{color:var(--ink2);font-size:14px;margin:4px 0 12px;}
+  .lead code, p code, li code, td code{background:var(--codebg);color:var(--code);padding:1px 6px;border-radius:5px;font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:.92em;}
+  .grid{display:grid;grid-template-columns:1fr;gap:12px;margin:12px 0;}
+  @media(min-width:680px){ .grid.two{grid-template-columns:1fr 1fr;} }
+  .ex{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;}
+  .ex .head{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;margin-bottom:2px;}
+  .ex .title{font-weight:600;font-size:14.5px;}
+  .ex .syntax{font-family:"SF Mono",ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;color:var(--code);background:var(--codebg);padding:2px 8px;border-radius:6px;white-space:pre-wrap;word-break:break-all;}
+  .ex .note{font-size:12.5px;color:var(--ink2);margin-top:6px;}
+  .preview{margin-top:10px;padding:12px 8px;background:linear-gradient(0deg,rgba(120,140,180,.05),rgba(120,140,180,.05));border-radius:10px;overflow-x:auto;min-height:44px;}
+  .preview .sw-lrow{margin:0 !important;}
+  .preview.loading{color:var(--ink2);font-size:13px;display:flex;align-items:center;}
+  table.tok{border-collapse:collapse;width:100%;font-size:13.5px;margin:8px 0;}
+  table.tok th,table.tok td{border:1px solid var(--line);padding:6px 9px;text-align:left;vertical-align:top;}
+  table.tok th{background:var(--codebg);}
+  .try{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0;}
+  .try h3{margin-top:0;}
+  .try .row{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;}
+  .try .field{flex:1 1 200px;min-width:150px;}
+  .try label{display:block;font-size:12px;color:var(--ink2);margin-bottom:3px;}
+  .try input,.try textarea{width:100%;font-family:"SF Mono",ui-monospace,Menlo,monospace;font-size:14px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);}
+  .try textarea{resize:vertical;min-height:44px;}
+  .try .opts{display:flex;align-items:center;gap:16px;font-size:13px;color:var(--ink2);margin-bottom:10px;flex-wrap:wrap;}
+  .try .opts label{display:flex;align-items:center;gap:5px;}
+  .callout{background:var(--accent-soft);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:10px 14px;font-size:13.5px;margin:12px 0;}
+  .warn{border-left-color:#e0a030;background:rgba(224,160,48,.10);}
+  footer{margin-top:40px;color:var(--ink2);font-size:12.5px;text-align:center;}
+  .err{color:#d33;font-size:12px;}
+</style>
+<link rel="stylesheet" href="./editor-adapter.css">
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <a class="cecp-tutorial-return" href="./index.html?tool=jf">← 返回简谱编辑器</a>
+    <h1>简谱记号图鉴 <span style="color:var(--ink2);font-size:15px;">· 带实时预览</span></h1>
+    <p>每个记号旁边就是它真正渲染出来的样子 —— 用的是 musiclib / 青年页 / 简谱编辑器同一套渲染器，所见即所得。</p>
+    <div class="toc" id="toc"></div>
+  </header>
+  <div id="content"></div>
+  <footer>
+    预览由项目渲染器 <code>youth-engine.js</code> 实时生成，与简谱编辑器导出的 <code>n</code> 字段一一对应。<br>
+    配套文字版：<code>musictool/使用说明.md</code>
+  </footer>
+</div>
+
+<!-- 离屏渲染台：迷你歌在这里渲染，再把每行 .sw-lrow 提取到上面的预览盒 -->
+<div id="stage" style="position:absolute;left:-99999px;top:0;width:900px;"></div>
+
+<script src="./youth-engine.js?v=20260822-a4wide"></script>
+<script>
+/* ══════════════════════════════════════════════════════════════
+   教程内容 —— 数据驱动。block 类型：
+     h2/h3/p/table/callout  → 直接渲染文字
+     ex {title,syntax,n,chord,lyric,lyric2,strict,bold,note}
+         → 渲染一个带实时预览的例子盒
+   所有 ex 收集起来，按 strict 分成两首迷你歌，一次渲染、提取 .sw-lrow。
+════════════════════════════════════════════════════════════════ */
+var C = [
+  {h2:'一、音符本身', en:'notes'},
+  {p:'一个音符 token 的写法顺序：<code>[升降号]数字[八度][·附点][_下划线][^延长号]</code>。数字是主体，其余都是装饰。'},
+
+  {ex:{title:'音符 1–7 与休止 0', syntax:'n: 1 2 3 4 5 6 7 0', n:'1 2 3 4 5 6 7 0', note:'1–7 = Do 到 Si（首调）；0 = 休止符。'}},
+  {ex:{title:'八度：低 / 中 / 高', syntax:"n: 1, 1 1'  （逗号=低，撇号=高）", n:"1, 1 1' 1''", note:'撇号 ' + "'" + ' 在数字后 → 高八度，点画在上；逗号 , → 低八度，点画在下。最多两点。'}},
+  {ex:{title:'音值：四分 / 八分 / 十六分', syntax:'n: 1 1_ 1__', n:'1 1_ 1__', note:'无下划线=四分（1拍）；一条 _ =八分；两条 __ =十六分。'}},
+  {ex:{title:'附点', syntax:'n: 1· 1·_  （· 是中点，不是句号）', n:'1· 1·_ 5', note:'附点让时值 ×1.5。务必用中点 · (U+00B7)，别用英文句号。'}},
+  {ex:{title:'升 / 降 / 还原', syntax:'n: #4 b7 =5', n:'#4 b7 =5', note:'前缀写在数字前。实际歌里基本只用 # 升号。'}},
+  {ex:{title:'延长号（音符后缀 ^）', syntax:'n: 3^ 5', n:'3^ 5', note:'写在数字后面，如 3^。挂在音符上方的延长记号。注意它跟断梁 ! 是两回事。'}},
+  {ex:{title:'增时线 —（延音）', syntax:'n: 5 - - -', n:'5 - - -', note:'每个 - 自成一个 token，延长一拍。5 - = 二分音符，5 - - - = 全音符。'}},
+  {ex:{title:'占位空格 sp（不发声）', syntax:'n: 1 sp sp 2', n:'1 sp sp 2', note:'占一个数字宽的空白，不发声，用来把音符拉开、让歌词对到正确的音下面。'}},
+
+  {h2:'二、小节线 & 反复', en:'barlines'},
+  {callout:'记法：<b>粗线永远在外侧</b>。反复开的粗线在左、反复结的粗线在右，两点靠近音符那一侧。'},
+  {ex:{title:'小节线 |', syntax:'n: 1 2 | 3 4 |', n:'1 2 | 3 4 |', note:'一条细线，分小节。'}},
+  {ex:{title:'双小节 ||', syntax:'n: 1 2 || 3 4', n:'1 2 || 3 4', note:'细+细，段落分隔。'}},
+  {ex:{title:'终止线 ||/（=|]）', syntax:'n: 1 2 3 ||/', n:'1 2 3 ||/', note:'细+粗，全曲结束。'}},
+  {ex:{title:'反复开 |: · 反复结 :|', syntax:'n: |: 1 2 3 :|', n:'|: 1 2 3 :|', note:'反复开=粗·细·两点；反复结=两点·细·粗。'}},
+  {ex:{title:'反复段 |:|（既结又开）', syntax:'n: 1 2 |:| 3 4', n:'1 2 |:| 3 4', note:'点·细·粗 · 粗·细·点。'}},
+
+  {h2:'三、导航记号', en:'navigation'},
+  {p:'点按钮就自动插入、渲染，都放在小节线的位置。'},
+  {ex:{title:'Fine（终止）', syntax:'n: 1 2 3 fine', n:'1 2 3 fine', note:'终止线 + 下方斜体 Fine。'}},
+  {ex:{title:'D.C.（从头反复）', syntax:'n: 1 2 3 dc', n:'1 2 3 dc', note:'双线 + 下方 D.C.（da capo）。'}},
+  {ex:{title:'D.S.（从记号反复）', syntax:'n: 1 2 3 ds', n:'1 2 3 ds', note:'双线 + 下方 D.S.（dal segno）。'}},
+  {ex:{title:'Coda（尾声 ⊕）', syntax:'n: coda 1 2 3', n:'coda 1 2 3', note:'竖椭圆 + 十字穿出的 ⊕ 记号。'}},
+  {ex:{title:'Segno（反复记号 𝄋）', syntax:'n: segno 1 2 3', n:'segno 1 2 3', note:'官方 𝄋 字形。'}},
+  {ex:{title:'导航记号 + 任意小节线（连写）', syntax:'n: 1 2 ||coda 3', n:'1 2 ||coda 3', note:'把小节线和记号名连写就能自由组合：||coda 双小节线+尾声、:|fine 反复结+Fine、|:|segno 反复段+记号。单写 coda/fine 等仍用各自默认小节线。'}},
+
+  {p:'除了挂在小节线上，记号也可以直接<b>挂在某个音符的正上方</b>：在记号名前面加一个星号 <code>*</code>，写在那个音的<b>后面</b>。这一档<b>不画小节线</b>。'},
+  {ex:{title:'Coda 挂在音符上 *coda', syntax:'n: 1 *coda 2 3', n:'1 *coda 2 3', note:'⊕ 画在 1 的正上方，不画小节线。键盘面板「导航记号」右边那一列就是这五个。'}},
+  {ex:{title:'Segno 挂在音符上 *segno', syntax:'n: 1 2 *segno 3', n:'1 2 *segno 3', note:'𝄋 画在 2 的正上方。'}},
+  {ex:{title:'Fine / D.C. / D.S. 挂在音符上', syntax:'n: 1 *fine 2 *dc 3 *ds', n:'1 *fine 2 *dc 3 *ds', note:'斜体文字画在各自音符的正上方。'}},
+  {ex:{title:'挂音记号不占音位（严格模式）', strict:true, syntax:'n: 1 *coda 2 3', chord:'C @ @', n:'1 *coda 2 3', lyric:'一二三', note:'三个音位对三个和弦、三个字 —— *coda 跟断梁 ! 一样不算音位，chord/歌词都不用给它补 @。'}},
+  {ex:{title:'有高音点时会自动让位', syntax:"n: 1 *coda 2' *segno", n:"1 *coda 2' *segno", note:"记号紧贴音符上方；碰到带高音点的音（如 2'）会自动往上让一点，不会压住八度点。"}},
+
+  {h2:'四、连音 · 连音符 · 拍号 · 房子线', en:'groups'},
+  {ex:{title:'圆滑线（连音） ( )', syntax:'n: 1 ( 3_ 4_ ) 5', n:'1 ( 3_ 4_ ) 5', note:'把括号里的一串音连起来（乐句/连梁）。( 和 ) 各自是一个 token。'}},
+  {ex:{title:'三连音 {3 }', syntax:'n: {3 3_ 2_ 1_ } 5', n:'{3 3_ 2_ 1_ } 5', note:'括号上方标 3。五连音用 {5。'}},
+  {ex:{title:'谱中变拍号 [ts:3/4]', syntax:'n: [ts:3/4] 1 2 3', n:'[ts:3/4] 1 2 3', note:'在谱中途插入新拍号。也可以用格子的 timeSign 键。'}},
+  {ex:{title:'房子线（1./2. 括号） [v1 … ]v', syntax:'n: [v1 1 2 3 ]v', n:'[v1 1 2 3 ]v', note:'第 1 房子线。第 2 用 [v2，自定义用 [v:1.3。]v 收尾。'}},
+  {ex:{title:'跨行/跨小节连线 ([ … ])', syntax:'一格末尾 ([ ，下一格开头 ])', line:[{chord:'',n:'1 2 ([ 3'},{chord:'',n:']) 3 2 | 1'}], note:'半弧跨过小节线，两个半弧读作一条连线。'}},
+
+  {h2:'五、双行简谱', en:'dual voice'},
+  {ex:{title:'上下叠音 1/5', syntax:'n: 1/5 2/6 3/7', n:'1/5 2/6 3/7', note:'斜杠上=上行、下=下行，两个音同时发声算一个位置。空的一边默认补 sp。'}},
+
+  {h2:'六、严格对位（align:"strict"）', en:'strict'},
+  {p:'勾选左上角 <b>☑ 严格对位</b> 进入。和弦、歌词按「音位」跟音符一一对齐，好写好控。下面的例子都是严格模式渲染。'},
+  {callout:'<b>音位</b> = 简谱里真正占位置的单元：音符 1–7 / 休止 0 / 增时线 - / 占位 sp / 双音 1/5。小节线、连音括号、连音符、断梁 !、导航记号（含挂音符的 *coda 这类）都<b>不算</b>音位。'},
+
+  {ex:{title:'音位对齐 + @ 占空位', strict:true, syntax:'chord: C @ @ @ G @\nn:     1 2 3 3 5 6\nlyric: 我爱你@主啊', chord:'C @ @ @ G @', n:'1 2 3 3 5 6', lyric:'我爱你@主啊', note:'和弦/歌词第 i 个对第 i 个音位。没内容写 @，渲染成透明空白（第4个音是拖腔）。和弦的 @ 也能内联写 C@@@G@（免空格），真和弦间仍用空格。'}},
+  {ex:{title:'中文直接连写（不用每字空格）', strict:true, syntax:"lyric: 耶稣是我主  → 每字一个音位", chord:'@ @ @ @ @', n:'1 2 3 4 5', lyric:'耶稣是我主', note:'中文连着写，自动每字一个音位。老的「每字空格」写法结果一样。'}},
+  {ex:{title:'@ 拖腔（没词的音）', strict:true, syntax:'lyric: 我爱@你  （第3个音拖腔）', chord:'@ @ @ @', n:'1 2 3 4', lyric:'我爱@你', note:'@ 那个音下面空着（透明），字唱在前一个音上拖过来。'}},
+  {ex:{title:'标点自动粘字、悬挂不占位', strict:true, syntax:'lyric: 主啊，你真好！', chord:'@ @ @ @ @', n:'1 2 3 4 5', lyric:'主啊，你真好！', note:'逗号、叹号自动贴到前一个字上，永不占音位；渲染时挂在字右边悬挂，标点后自动留一点空间不撞后字。'}},
+  {ex:{title:'英文 / 拼音按空格断音节', strict:true, syntax:'lyric: Je sus loves me', chord:'@ @ @ @', n:'1 2 3 4', lyric:'Je sus loves me', note:'英文一个音节对一个音，靠空格分。整词不分则占一个音（Jesus=1位）。'}},
+  {ex:{title:'断梁 !（让梁断开）', strict:true, syntax:'n: 1_ 1_ ! 1_ 1_', chord:'@ @ @ @', n:'1_ 1_ ! 1_ 1_', lyric:'一二三四', note:'本来四个八分连成一梁，中间放 ! 就断成两梁。! 不占音位、不用写 @。'}},
+  {ex:{title:'一个音位叠两个和弦（逗号）', strict:true, syntax:'chord: C,G @ @', n:'1 2 3', chord:'C,G @ @', lyric:'我爱你', note:'逗号分隔，第一个（C）在下、第二个（G）在上。'}},
+
+  {try:true},
+
+  {h2:'七、token 速查表', en:'cheat sheet'},
+  {tableCheat:true},
+];
+
+/* ── token 速查表数据 ── */
+var CHEAT = [
+  ["1–7 / 0","音符 Do–Si / 休止"],
+  ["1' 1'' / 1, 1,,","高 / 低八度（点在上 / 下）"],
+  ["1_ 1__","八分 / 十六分（下划线）"],
+  ["#5 b5 =5","升 / 降 / 还原"],
+  ["1·","附点（中点 U+00B7）"],
+  ["3^","延长号（音符后缀 ^）"],
+  ["-","增时线（延长一拍）"],
+  ["sp sp_ sp__","占位空格（0 拍；带下划线续梁）"],
+  ["| || ||/(=|])","小节线 / 双小节 / 终止线"],
+  ["|: :| |:|","反复开 / 结 / 段"],
+  ["fine dc ds coda segno","导航：Fine/D.C./D.S./Coda⊕/Segno𝄋"],
+  ["!","断梁（严格模式，不占音位）"],
+  ["*coda *segno *fine *dc *ds","导航记号挂在前一个音符正上方（不画小节线、不占音位）"],
+  ["( … )","圆滑线（连音）"],
+  ["([ … ])","跨行/跨小节连线"],
+  ["~ ~2 ~3","双连音 / 跨1 / 跨2 音"],
+  ["{3 … } {5 … }","三连音 / 五连音"],
+  ["[v1 … ]v","房子线（[v2 第2，[v:1.3 自定义）"],
+  ["[ts:4/4]","谱中变拍号"],
+  ["1/5","双行简谱（上1 / 下5）"],
+  ["@","严格模式空位（渲染成透明）"],
+  ["ㅤ / {sp}","不可见对齐符（一般模式微调用）"],
+];
+
+/* ══════════════ 渲染引擎 ══════════════ */
+(function(){
+  var content=document.getElementById('content');
+  var toc=document.getElementById('toc');
+  var exRegistry=[]; // {id, ex}
+
+  function el(tag,cls,html){var e=document.createElement(tag);if(cls)e.className=cls;if(html!=null)e.innerHTML=html;return e;}
+
+  var exN=0;
+  C.forEach(function(b){
+    if(b.h2){
+      var id='sec'+(toc.children.length);
+      var h=el('h2',null,b.h2+(b.en?' <span class="en">'+b.en+'</span>':''));h.id=id;content.appendChild(h);
+      var a=el('a',null,b.h2.replace(/^[一二三四五六七、]+/,''));a.href='#'+id;toc.appendChild(a);
+    }
+    else if(b.h3){content.appendChild(el('h3',null,b.h3));}
+    else if(b.p){content.appendChild(el('p','lead',b.p));}
+    else if(b.callout){content.appendChild(el('div','callout'+(b.warn?' warn':''),b.callout));}
+    else if(b.tableCheat){
+      var t=el('table','tok','<tr><th>写法</th><th>含义</th></tr>'+CHEAT.map(function(r){return '<tr><td><code>'+r[0]+'</code></td><td>'+r[1]+'</td></tr>';}).join(''));
+      content.appendChild(t);
+    }
+    else if(b.try){ content.appendChild(buildTry()); }
+    else if(b.ex){
+      var id='ex'+(exN++);
+      var box=el('div','ex');
+      var head=el('div','head');
+      head.appendChild(el('span','title',b.ex.title));
+      head.appendChild(el('span','syntax',b.ex.syntax||''));
+      box.appendChild(head);
+      var pv=el('div','preview loading','渲染中…');pv.id=id;box.appendChild(pv);
+      if(b.ex.note)box.appendChild(el('div','note',b.ex.note));
+      content.appendChild(box);
+      exRegistry.push({id:id,ex:b.ex});
+    }
+  });
+
+  /* 把一组例子（同 strict 与否）合成一首歌，每个例子一行 */
+  function makeSong(list,strict){
+    var song={version:"1",id:"tut",title:"t",artist:"a",origKey:"C",timeSign:"4/4",
+      sections:[{name:"s",lines:list.map(function(item){
+        var cells;
+        if(item.ex.line){ cells=item.ex.line.map(function(c){return Object.assign({chord:'',lyric:''},c);}); }
+        else { cells=[{chord:item.ex.chord||'', n:item.ex.n||'', lyric:item.ex.lyric||'', }];
+               if(item.ex.lyric2)cells[0].lyric2=item.ex.lyric2; }
+        return item.ex.bold?{b:true,line:cells}:{line:cells};
+      })}]};
+    if(strict)song.align='strict';
+    return song;
+  }
+
+  var stage=document.getElementById('stage');
+  function renderGroup(strict){
+    var list=exRegistry.filter(function(r){return !!r.ex.strict===strict;});
+    if(!list.length)return Promise.resolve();
+    return Promise.resolve(YouthEngine.renderSongObjects([makeSong(list,strict)])).then(function(card){
+      stage.appendChild(card);
+      return new Promise(function(res){ setTimeout(function(){
+        var rows=[].slice.call(card.querySelectorAll('.sw-lrow'));
+        list.forEach(function(r,i){
+          var pv=document.getElementById(r.id); if(!pv)return;
+          pv.classList.remove('loading'); pv.innerHTML='';
+          if(rows[i]) pv.appendChild(rows[i].cloneNode(true));
+          else pv.innerHTML='<span class="err">（此例暂无预览）</span>';
+        });
+        res();
+      },350); });
+    }).catch(function(e){
+      list.forEach(function(r){var pv=document.getElementById(r.id);if(pv){pv.classList.remove('loading');pv.innerHTML='<span class="err">预览失败：'+e.message+'</span>';}});
+    });
+  }
+
+  /* ── 交互「试一试」框 ── */
+  function buildTry(){
+    var box=el('div','try');
+    box.innerHTML=''
+      +'<h3>✍️ 自己试一试</h3>'
+      +'<div class="opts"><label><input type="checkbox" id="t-strict"> 严格对位</label>'
+      +'<label><input type="checkbox" id="t-bold"> 副歌加粗</label></div>'
+      +'<div class="row">'
+      +'<div class="field"><label>和弦 chord</label><input id="t-chord" value="C @ @ Am @"></div>'
+      +'</div>'
+      +'<div class="row"><div class="field"><label>简谱 n</label><textarea id="t-n">1 2 3 3 5</textarea></div></div>'
+      +'<div class="row"><div class="field"><label>歌词 lyric</label><input id="t-lyric" value="我心属于你"></div></div>'
+      +'<div class="preview" id="t-preview" style="min-height:56px">渲染中…</div>';
+    return box;
+  }
+  var tTimer=null;
+  function renderTry(){
+    var pv=document.getElementById('t-preview'); if(!pv)return;
+    var strict=document.getElementById('t-strict').checked;
+    var bold=document.getElementById('t-bold').checked;
+    var cells=[{chord:document.getElementById('t-chord').value, n:document.getElementById('t-n').value, lyric:document.getElementById('t-lyric').value}];
+    var song={version:"1",id:"try",title:"t",artist:"a",origKey:"C",timeSign:"4/4",
+      sections:[{name:"s",lines:[ bold?{b:true,line:cells}:{line:cells} ]}]};
+    if(strict)song.align='strict';
+    Promise.resolve(YouthEngine.renderSongObjects([song])).then(function(card){
+      var st=document.getElementById('stage'); st.appendChild(card);
+      setTimeout(function(){
+        var row=card.querySelector('.sw-lrow');
+        pv.innerHTML=''; if(row)pv.appendChild(row.cloneNode(true)); else pv.textContent='(空)';
+        st.removeChild(card);
+      },300);
+    }).catch(function(e){pv.innerHTML='<span class="err">'+e.message+'</span>';});
+  }
+  function bindTry(){
+    ['t-chord','t-n','t-lyric'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('input',function(){clearTimeout(tTimer);tTimer=setTimeout(renderTry,350);});});
+    ['t-strict','t-bold'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('change',renderTry);});
+  }
+
+  function boot(){
+    if(typeof YouthEngine==='undefined'||!YouthEngine.renderSongObjects){
+      content.insertAdjacentHTML('afterbegin','<div class="callout warn">没能加载渲染器 <code>youth-engine.js</code>。请确认它跟本页在同一处可访问（本页默认从 <code>./youth-engine.js</code> 加载）。</div>');
+      return;
+    }
+    renderGroup(false).then(function(){return renderGroup(true);}).then(function(){ bindTry(); renderTry(); });
+  }
+  if(document.readyState==='complete')boot(); else window.addEventListener('load',boot);
+})();
+</script>
+</body>
+</html>

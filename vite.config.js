@@ -69,7 +69,7 @@ function precacheManifest() {
 
       const scanned = all
         .filter((f) => f.startsWith("assets/") || f.startsWith("icons/"))
-        .concat(["index.html", "musiclib.css", "musiclib.js", "gsap.min.js", "pinyin-pro.js",
+        .concat(["index.html", "musiclib.css", "musiclib.js", "musiclib-tools.js", "musiclib-tools.css", "gsap.min.js", "pinyin-pro.js",
                  "bible-service.js", "pinyin-kai.woff2", "manifest.webmanifest"])
         .filter((f) => all.includes(f))
         .map(asRequested);
@@ -157,9 +157,74 @@ function staffAssets(){
   };
 }
 
+/* 独立编辑器沿用外层仓库的工作区版本；CI 只克隆 musiclib 时用入库副本。
+   包装页与适配层留在 public/musictool，避免同步时覆盖歌库专属的导航和主题。 */
+function editorAssets() {
+  const assets = [
+    { name: 'musictool.js', source: '../musictool/musictool.js' },
+    { name: 'musictool.css', source: '../musictool/musictool.css' },
+    { name: '教程.html', source: '../musictool/教程.html' },
+    { name: 'youth-engine.js', source: '../youth-engine.js' },
+  ];
+  const packageFiles = ['index.html', 'theme-init.js', 'editor-adapter.js', 'editor-adapter.css', ...assets.map((asset) => asset.name)];
+  const publicDirectory = path.resolve('public/musictool');
+  const contentOf = (asset) => {
+    const source = path.resolve(asset.source);
+    if (!fs.existsSync(source)) return null;
+    const content = fs.readFileSync(source);
+    if (asset.name !== '教程.html') return content;
+    const tutorial = content.toString('utf8')
+      .replaceAll('../youth-engine.js', './youth-engine.js')
+      .replace('<html lang="zh-CN">', '<html lang="zh-CN" class="cecp-editor-tutorial">')
+      .replace('<style>', '<script src="./theme-init.js"></script>\n<style>')
+      .replace('</style>', '</style>\n<link rel="stylesheet" href="./editor-adapter.css">')
+      .replace('<header class="top">', '<header class="top">\n    <a class="cecp-tutorial-return" href="./index.html?tool=jf">← 返回简谱编辑器</a>');
+    return Buffer.from(tutorial);
+  };
+  function syncFromSource() {
+    fs.mkdirSync(publicDirectory, { recursive: true });
+    for (const asset of assets) {
+      const content = contentOf(asset);
+      if (!content) continue;
+      const destination = path.join(publicDirectory, asset.name);
+      if (fs.existsSync(destination) && Buffer.compare(content, fs.readFileSync(destination)) === 0) continue;
+      fs.writeFileSync(destination, content);
+      console.log('  [editor-assets] 已刷新 public/musictool/' + asset.name);
+    }
+  }
+  return {
+    name: 'cecp-editor-assets',
+    configureServer(server) {
+      syncFromSource();
+      server.middlewares.use((req, res, next) => {
+        let pathname;
+        try { pathname = decodeURIComponent((req.url || '').split('?')[0]); }
+        catch { return next(); }
+        const asset = assets.find((item) => pathname.endsWith('/musictool/' + item.name));
+        if (!asset) return next();
+        const content = contentOf(asset);
+        if (!content) return next();
+        res.setHeader('Content-Type', asset.name.endsWith('.html') ? 'text/html; charset=utf-8' : asset.name.endsWith('.css') ? 'text/css; charset=utf-8' : 'application/javascript; charset=utf-8');
+        res.end(content);
+      });
+    },
+    buildStart() { syncFromSource(); },
+    closeBundle() {
+      for (const name of packageFiles) {
+        const destination = path.resolve('dist/musictool', name);
+        if (fs.existsSync(destination)) continue;
+        const source = path.join(publicDirectory, name);
+        if (!fs.existsSync(source)) this.error('独立编辑器资源缺失：public/musictool/' + name);
+        fs.mkdirSync(path.dirname(destination), { recursive: true });
+        fs.copyFileSync(source, destination);
+      }
+    },
+  };
+}
+
 // base './' 保持原版「部署到任意子路径都能跑」的特性(原 index.html 全部相对引用)。
 export default defineConfig({
   base: "./",
-  plugins: [react(), staffAssets(), precacheManifest()],
+  plugins: [react(), staffAssets(), editorAssets(), precacheManifest()],
   server: { port: 5176 },
 });

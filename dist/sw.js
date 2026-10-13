@@ -3,10 +3,10 @@
    桶名带内容指纹 —— 任何资源变化都会换桶，activate 里的清理逻辑随即删掉旧桶，
    老用户不会卡在旧壳上，也不用再记得手动 bump 版本号。 */
 /* CECP-PRECACHE-BEGIN */
-const CACHE_NAME = "cecp-musiclib-pwa-7aaa13576a";
+const CACHE_NAME = "cecp-musiclib-pwa-ba34a60bd4";
 const APP_SHELL = [
   "./?key=cecp2026",
-  "./assets/index-DU6_hRLA.js",
+  "./assets/index-DnjSVVAR.js",
   "./bible-service.js?v=20260711-justify-rows",
   "./cecp-olive-logo.svg",
   "./gsap.min.js?v=20260711-justify-rows",
@@ -18,8 +18,10 @@ const APP_SHELL = [
   "./icons/icon-512.png",
   "./index.html",
   "./manifest.webmanifest",
-  "./musiclib.css?v=20260828-nav1",
-  "./musiclib.js?v=20260828-nav1",
+  "./musiclib-tools.css?v=20261013-tools3",
+  "./musiclib-tools.js?v=20261013-tools3",
+  "./musiclib.css?v=20261013-tools3",
+  "./musiclib.js?v=20261013-tools3",
   "./olive-fellowship-logo.png",
   "./pinyin-kai.woff2",
   "./pinyin-pro.js",
@@ -28,6 +30,8 @@ const APP_SHELL = [
 ];
 /* CECP-PRECACHE-END */
 const DATA_CACHE = "cecp-musiclib-data-v1";
+// 编辑器只在使用时缓存；升级歌库壳时保留已准备的编辑器和图鉴。
+const EDITOR_CACHE = "cecp-musiclib-editor-v1";
 
 /* ignoreVary：预缓存是用 cache.addAll(路径字符串) 存的，请求里没有 Origin/Accept 这些头；
    而真实请求带（Vite 的模块脚本有 crossorigin 属性会发 Origin，GitHub API 响应带 Vary）。
@@ -46,7 +50,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME && key !== DATA_CACHE)
+          .filter((key) => key !== CACHE_NAME && key !== DATA_CACHE && key !== EDITOR_CACHE)
           .map((key) => caches.delete(key))
       )
     )
@@ -97,6 +101,36 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (url.origin !== location.origin) return;
+
+  const editorBase = new URL('musictool/', self.registration.scope);
+  if (url.pathname.startsWith(editorBase.pathname)) {
+    const cacheUrl = new URL(url.pathname === editorBase.pathname ? 'index.html' : url.pathname, editorBase);
+    // 去掉 tool 查询串和图鉴渲染器版本串，两个编辑器共享同一份离线页面。
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.ok) {
+            const copy = response.clone();
+            // 缓存失败不应挡住在线编辑器；离线准备状态由包装页单独反馈。
+            event.waitUntil(caches.open(EDITOR_CACHE)
+              .then((cache) => cache.put(cacheUrl.href, copy)).catch(() => {}));
+          }
+          return response;
+        })
+        .catch(async () => {
+          let hit;
+          try {
+            const cache = await caches.open(EDITOR_CACHE);
+            hit = await cache.match(cacheUrl.href, MATCH_OPTS);
+          } catch (_) { /* 存储不可用时仍给出明确的离线准备说明。 */ }
+          if (hit) return hit;
+          if (request.mode !== 'navigate') return Response.error();
+          const libraryUrl = new URL('?key=cecp2026', self.registration.scope).href;
+          return new Response(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>编辑器尚未准备离线使用</title><style>body{margin:0;padding:40px 24px;background:#F4EFE7;color:#241C17;font:16px/1.7 system-ui,sans-serif}main{max-width:560px;margin:10vh auto}h1{font-size:24px}a{display:inline-flex;align-items:center;min-height:44px;color:#A9501A}p{color:#6F655D}</style><main><h1>此编辑器尚未准备离线使用</h1><p>请联网打开一次编辑器后，再离线使用。记号图鉴也需要先联网打开一次。</p><a href="${libraryUrl}">← 返回歌库</a></main></html>`, { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        })
+    );
+    return;
+  }
 
   if (request.mode === "navigate") {
     // 先按请求本身找缓存，找不到才回退到首页。

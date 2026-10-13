@@ -17,6 +17,11 @@
      abcjs 的 add_classes 会给每个元素挂 abcjs-mm<N>（N 是 0 基小节序号，
      实测个数与 IR 小节数一一对应），据此定位。
      角标是 absolute 覆盖层，不参与 abcjs 布局，也不改 SVG。 */
+  function countBadMeasures(jp,ir){
+    if(!jp||!ir)return 0;
+    try{ const s=jp.summarize(ir); return (s&&s.rows)?s.rows.length:0; }catch(e){ return 0; }
+  }
+
   function markBadMeasures(host,surface,jp,ir){
     let sum; try{ sum=jp.summarize(ir); }catch(e){ return; }
     if(!sum||!sum.rows||!sum.rows.length)return;
@@ -45,8 +50,14 @@
 
   root.CecpStaffView={create(host,{base,onError}){
     let token=0,disposed=false,lastSong,lastKey,lastWidth=0,frame=0;
-    async function render(song,key){
-      lastSong=song;lastKey=key;
+    /* 坏小节角标默认**关**：它是修谱用的提示，不是给唱的人看的。
+       宿主用 setWarnings(on) 开关，开关时不重渲染谱面，只加/删覆盖层。 */
+    let warnOn=false,lastIr=null,lastSurface=null,lastJp=null;
+    /* opts.chordFlat = 宿主的 preferFlat（移调面板里的 ♭/# 开关）。
+       不传的话 jp-ir 会按目标调推一个默认值，但用户手动切过 ♭/# 就会与简谱对不上。 */
+    let lastOpts={};
+    async function render(song,key,opts){
+      lastSong=song;lastKey=key;lastOpts=opts||{};
       const current=++token;
       try{
         const [jp,abc,renderer]=await Promise.all([
@@ -55,7 +66,7 @@
         if(disposed||current!==token||!host.isConnected||host.hidden)return;
         const width=host.clientWidth;
         if(width<=0)return;
-        const ir=jp.songToIR(song,{key});
+        const ir=jp.songToIR(song,{key,chordFlat:lastOpts.chordFlat});
         const source=abc.irToAbc(ir);
         const surface=document.createElement('div');surface.className='ml-staff-surface';
         /* 断行**跟随简谱**：ir-to-abc 默认按 song JSON 的 lines[] 输出硬换行，
@@ -74,13 +85,23 @@
           paddingtop:24,paddingbottom:24,paddingleft:24,paddingright:24});
         if(disposed||current!==token)return;
         host.replaceChildren(surface);lastWidth=width;
-        markBadMeasures(host,surface,jp,ir);
+        lastIr=ir;lastSurface=surface;lastJp=jp;
+        if(warnOn)markBadMeasures(host,surface,jp,ir);
       }catch(error){if(!disposed&&current===token){onError(error);console.warn('Staff rendering failed',error);}}
     }
     const observer=new ResizeObserver(()=>{
       if(disposed||host.hidden||!lastSong||host.clientWidth<=0||host.clientWidth===lastWidth)return;
-      cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>render(lastSong,lastKey));
+      cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>render(lastSong,lastKey,lastOpts));
     });observer.observe(host);
-    return {render,cancel(){token++;cancelAnimationFrame(frame);},destroy(){disposed=true;token++;cancelAnimationFrame(frame);observer.disconnect();}};
+    function setWarnings(on){
+      warnOn=!!on;
+      const old=host.querySelector('.ml-staff-warn-layer');
+      if(old)old.remove();
+      if(warnOn&&lastIr&&lastSurface&&lastJp)markBadMeasures(host,lastSurface,lastJp,lastIr);
+      return countBadMeasures(lastJp,lastIr);
+    }
+    /* 给宿主用来决定「有没有必要显示这个开关」 */
+    function warnCount(){ return countBadMeasures(lastJp,lastIr); }
+    return {render,setWarnings,warnCount,cancel(){token++;cancelAnimationFrame(frame);},destroy(){disposed=true;token++;cancelAnimationFrame(frame);observer.disconnect();}};
   }};
 })(window);

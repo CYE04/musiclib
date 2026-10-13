@@ -10,6 +10,8 @@ const APP_SHELL = [
 ];
 /* CECP-PRECACHE-END */
 const DATA_CACHE = "cecp-musiclib-data-v1";
+// 编辑器只在使用时缓存；升级歌库壳时保留已准备的编辑器和图鉴。
+const EDITOR_CACHE = "cecp-musiclib-editor-v1";
 
 /* ignoreVary：预缓存是用 cache.addAll(路径字符串) 存的，请求里没有 Origin/Accept 这些头；
    而真实请求带（Vite 的模块脚本有 crossorigin 属性会发 Origin，GitHub API 响应带 Vary）。
@@ -28,7 +30,7 @@ self.addEventListener("activate", (event) => {
     caches.keys().then((keys) =>
       Promise.all(
         keys
-          .filter((key) => key !== CACHE_NAME && key !== DATA_CACHE)
+          .filter((key) => key !== CACHE_NAME && key !== DATA_CACHE && key !== EDITOR_CACHE)
           .map((key) => caches.delete(key))
       )
     )
@@ -79,6 +81,36 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (url.origin !== location.origin) return;
+
+  const editorBase = new URL('musictool/', self.registration.scope);
+  if (url.pathname.startsWith(editorBase.pathname)) {
+    const cacheUrl = new URL(url.pathname === editorBase.pathname ? 'index.html' : url.pathname, editorBase);
+    // 去掉 tool 查询串和图鉴渲染器版本串，两个编辑器共享同一份离线页面。
+    event.respondWith(
+      fetch(request)
+        .then((response) => {
+          if (response && response.ok) {
+            const copy = response.clone();
+            // 缓存失败不应挡住在线编辑器；离线准备状态由包装页单独反馈。
+            event.waitUntil(caches.open(EDITOR_CACHE)
+              .then((cache) => cache.put(cacheUrl.href, copy)).catch(() => {}));
+          }
+          return response;
+        })
+        .catch(async () => {
+          let hit;
+          try {
+            const cache = await caches.open(EDITOR_CACHE);
+            hit = await cache.match(cacheUrl.href, MATCH_OPTS);
+          } catch (_) { /* 存储不可用时仍给出明确的离线准备说明。 */ }
+          if (hit) return hit;
+          if (request.mode !== 'navigate') return Response.error();
+          const libraryUrl = new URL('?key=cecp2026', self.registration.scope).href;
+          return new Response(`<!doctype html><html lang="zh-CN"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>编辑器尚未准备离线使用</title><style>body{margin:0;padding:40px 24px;background:#F4EFE7;color:#241C17;font:16px/1.7 system-ui,sans-serif}main{max-width:560px;margin:10vh auto}h1{font-size:24px}a{display:inline-flex;align-items:center;min-height:44px;color:#A9501A}p{color:#6F655D}</style><main><h1>此编辑器尚未准备离线使用</h1><p>请联网打开一次编辑器后，再离线使用。记号图鉴也需要先联网打开一次。</p><a href="${libraryUrl}">← 返回歌库</a></main></html>`, { status: 503, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
+        })
+    );
+    return;
+  }
 
   if (request.mode === "navigate") {
     // 先按请求本身找缓存，找不到才回退到首页。
