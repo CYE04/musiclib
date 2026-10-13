@@ -7,7 +7,7 @@
    注入的是同样的 URL、同样的顺序、同样的 ?v= 查询串,所以脚本内部的 document.currentScript
    相对定位(LOGO_SRC / TRANSPOSE_LOGO_SRC / SOUNDTOUCH_PROCESSOR_URL,L230-253)结果与原版逐字节一致。
 
-   legacy 文件本身一个字节都没改。 */
+   工具箱脚本在主引擎之前装载，由主引擎传入已有的音乐工具 API。 */
 
 /* pinyin-pro 不在这里 —— 它 gzip 138KB，却只服务「拼音搜索」和「投影拼音标注」两处。
    改由 musiclib.js 的 ensurePinyinPro() 懒加载：首屏不拉，歌单载完趁空闲补，
@@ -15,7 +15,8 @@
 const LEGACY_SCRIPTS = [
   "./gsap.min.js?v=20260711-justify-rows",
   "./bible-service.js?v=20260711-justify-rows",
-  "./musiclib.js?v=20260828-nav1",
+  "./musiclib-tools.js?v=20261013-tools3",
+  "./musiclib.js?v=20261013-tools3",
 ];
 
 let started = false;
