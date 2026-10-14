@@ -2075,7 +2075,10 @@ function scoreNormalizeNotes(scope){
   });
 }
 function scoreResetChordHeight(scope){
-  scoreHeightRows(scope).forEach(function(row){[].forEach.call(row.querySelectorAll('.p-chord'),function(chord){chord.style.marginBottom='';});});
+  scoreHeightRows(scope).forEach(function(row){
+    if(row.cecpChordPaddingTop!=null){row.style.paddingTop=row.cecpChordPaddingTop;delete row.cecpChordPaddingTop;}
+    [].forEach.call(row.querySelectorAll('.p-chord'),function(chord){chord.style.marginBottom='';});
+  });
 }
 function scoreHeightObstacles(row){
   var rects=[];
@@ -2136,6 +2139,13 @@ function scoreLayoutChordRows(scope){
       changes.push({chord:item.chord,margin:margin+(item.ink.baseline-target)/s});
     });
     changes.forEach(function(change){change.chord.style.marginBottom=change.margin.toFixed(3)+'px';});
+    if(!chords.length){
+      var inset=(row.getBoundingClientRect().top-ceiling)/s+2;
+      if(inset>0){
+        if(row.cecpChordPaddingTop==null)row.cecpChordPaddingTop=row.style.paddingTop;
+        row.style.paddingTop=((parseFloat(getComputedStyle(row).paddingTop)||0)+inset).toFixed(3)+'px';
+      }
+    }
     var delta=anchor?(anchor.getBoundingClientRect().top-row.getBoundingClientRect().top-oldTop)/s:0;
     if(Math.abs(delta)>.01){[].forEach.call(row.querySelectorAll('.strict-arc-svg'),function(host){host.style.top=((parseFloat(host.style.top)||0)+delta).toFixed(3)+'px';});}
     scoreHeightHouses(row,scoreHeightObstacles(row));

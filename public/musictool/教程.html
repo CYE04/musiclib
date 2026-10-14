@@ -49,6 +49,9 @@
   .try textarea{resize:vertical;min-height:44px;}
   .try .opts{display:flex;align-items:center;gap:16px;font-size:13px;color:var(--ink2);margin-bottom:10px;flex-wrap:wrap;}
   .try .opts label{display:flex;align-items:center;gap:5px;}
+  .try-preset{border:1px solid var(--line);border-radius:7px;background:var(--accent-soft);color:var(--accent);font:inherit;font-size:12px;padding:5px 9px;cursor:pointer;}
+  .try-preset:hover{border-color:var(--accent);}
+  .try-preset:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}
   .callout{background:var(--accent-soft);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:10px 14px;font-size:13.5px;margin:12px 0;}
   .warn{border-left-color:#e0a030;background:rgba(224,160,48,.10);}
   footer{margin-top:40px;color:var(--ink2);font-size:12.5px;text-align:center;}
@@ -74,7 +77,7 @@
 <!-- 离屏渲染台：迷你歌在这里渲染，再把每行 .sw-lrow 提取到上面的预览盒 -->
 <div id="stage" style="position:absolute;left:-99999px;top:0;width:900px;"></div>
 
-<script src="./youth-engine.js?v=20260822-a4wide"></script>
+<script src="./youth-engine.js?v=20261014-chord2"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════
    教程内容 —— 数据驱动。block 类型：
@@ -121,7 +124,11 @@ var C = [
   {ex:{title:'有高音点时会自动让位', syntax:"n: 1 *coda 2' *segno", n:"1 *coda 2' *segno", note:"记号紧贴音符上方；碰到带高音点的音（如 2'）会自动往上让一点，不会压住八度点。"}},
 
   {h2:'四、连音 · 连音符 · 拍号 · 房子线', en:'groups'},
+  {p:'<b>先选你需要的连线：</b>相邻两个音用 <code>N</code>；跨多个音位时，在编辑器「跨音连」旁改「往前」数字，再点按钮或按 <code>Shift+N</code>。连接一整句乐句用 <code>( … )</code>。'},
   {ex:{title:'圆滑线（连音） ( )', syntax:'n: 1 ( 3_ 4_ ) 5', n:'1 ( 3_ 4_ ) 5', note:'把括号里的一串音连起来（乐句/连梁）。( 和 ) 各自是一个 token。'}},
+  {ex:{title:'可调跨音连 ~N', syntax:'n: 1 2 3 ~3 4', n:'1 2 3 ~3 4', note:'连接左侧第 3 个音位（1）到右侧下一个音（4）。跨音连按钮旁可改「往前」数字，Shift+N 也用这个数；~12 同样有效，普通 N 仍是相邻连音。'}},
+  {ex:{title:'多段连线无缝衔接', strict:true, syntax:'n: 1 - - ~3 1 - - - ~4 1', n:'1 - - ~3 1 - - - ~4 1', note:'两条弧在中间的 1 上衔接。延音横线 - 也算音位；sp、小节线和导航记号不计。不要用 ( 1 ) 套中间的音，那会额外画一条小弧。'}},
+  {callout:'<b>数字怎么算？</b><br><code>~</code> = 左边第 1 个音位 + 右边下一个音，共 2 个；<code>~2</code>（或 <code>~~</code>）共 3 个；<code>~3</code> 共 4 个。数字不是「总共连接几个音」，也不是音高。<br>例如 <code>1 - - ~3 1</code>，从 ~ 往左数：横线、横线、1，所以选 3。<code>~12</code> 同理。每个音和记号之间保留空格。'},
   {ex:{title:'三连音 {3 }', syntax:'n: {3 3_ 2_ 1_ } 5', n:'{3 3_ 2_ 1_ } 5', note:'括号上方标 3。五连音用 {5。'}},
   {ex:{title:'谱中变拍号 [ts:3/4]', syntax:'n: [ts:3/4] 1 2 3', n:'[ts:3/4] 1 2 3', note:'在谱中途插入新拍号。也可以用格子的 timeSign 键。'}},
   {ex:{title:'房子线（1./2. 括号） [v1 … ]v', syntax:'n: [v1 1 2 3 ]v', n:'[v1 1 2 3 ]v', note:'第 1 房子线。第 2 用 [v2，自定义用 [v:1.3。]v 收尾。'}},
@@ -165,7 +172,7 @@ var CHEAT = [
   ["*coda *segno *fine *dc *ds","导航记号挂在前一个音符正上方（不画小节线、不占音位）"],
   ["( … )","圆滑线（连音）"],
   ["([ … ])","跨行/跨小节连线"],
-  ["~ ~2 ~3","双连音 / 跨1 / 跨2 音"],
+  ["~ / ~N","相邻连音 / 向前 N 个音位连接"],
   ["{3 … } {5 … }","三连音 / 五连音"],
   ["[v1 … ]v","房子线（[v2 第2，[v:1.3 自定义）"],
   ["[ts:4/4]","谱中变拍号"],
@@ -251,6 +258,7 @@ var CHEAT = [
     var box=el('div','try');
     box.innerHTML=''
       +'<h3>✍️ 自己试一试</h3>'
+      +'<div class="opts"><span>连音示例：</span><button type="button" class="try-preset" data-tie-example="1 ~ 1 ~ 1">相邻衔接</button><button type="button" class="try-preset" data-tie-example="1 2 3 ~3 4">往前 3 音位</button><button type="button" class="try-preset" data-tie-example="1 - - ~3 1 - - - ~4 1">延音衔接</button></div>'
       +'<div class="opts"><label><input type="checkbox" id="t-strict"> 严格对位</label>'
       +'<label><input type="checkbox" id="t-bold"> 副歌加粗</label></div>'
       +'<div class="row">'
@@ -280,6 +288,12 @@ var CHEAT = [
     }).catch(function(e){pv.innerHTML='<span class="err">'+e.message+'</span>';});
   }
   function bindTry(){
+    document.querySelectorAll('[data-tie-example]').forEach(function(button){button.addEventListener('click',function(){
+      clearTimeout(tTimer);
+      document.getElementById('t-n').value=button.getAttribute('data-tie-example');
+      document.getElementById('t-chord').value='';document.getElementById('t-lyric').value='';
+      document.getElementById('t-strict').checked=true;renderTry();
+    });});
     ['t-chord','t-n','t-lyric'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('input',function(){clearTimeout(tTimer);tTimer=setTimeout(renderTry,350);});});
     ['t-strict','t-bold'].forEach(function(id){var e=document.getElementById(id);if(e)e.addEventListener('change',renderTry);});
   }

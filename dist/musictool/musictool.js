@@ -392,6 +392,12 @@ body.mt-resizing,body.mt-resizing *{user-select:none !important;}
 .kbd-btn.slur-btn{color:var(--green);border-color:rgba(106,242,168,0.25);}
 .kbd-btn.slur-btn:hover{background:rgba(106,242,168,0.08);}
 .kbd-btn.slur-btn.on{background:var(--green);color:#000;border-color:var(--green);}
+.tie-span-control{display:inline-flex;align-items:stretch;gap:4px;flex-wrap:wrap;max-width:100%;}
+.tie-span-picker{display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--ink2);white-space:nowrap;}
+.tie-span-input{width:48px;min-width:0;box-sizing:border-box;padding:6px 4px;border:1px solid var(--border2);border-radius:5px;background:var(--panel2);color:var(--ink);font:inherit;text-align:center;}
+.tie-span-input:focus{outline:1px solid var(--accent);border-color:var(--accent);}
+.tie-span-input:invalid{border-color:var(--red);}
+.tie-span-hint{font-size:9px;color:var(--ink3);line-height:1.6;margin-top:5px;}
 .shortcut{font-size:7px;opacity:0.4;display:block;margin-top:1px;}
 
 /* 九宫格 */
@@ -1003,12 +1009,16 @@ body.mt-resizing,body.mt-resizing *{user-select:none !important;}
               <button class="kbd-btn" onclick="appendInlineTimeSignToken()" style="padding:6px 8px;">拍号记号</button>
               <button class="kbd-btn slur-btn" id="slur-btn" onclick="toggleSlur()" style="padding:6px 8px;">( ) 连音<span class="shortcut">[ / S</span></button>
               <button class="kbd-btn slur-btn" onclick="appendTok('~')" title="双连音线：插在两个音之间，弧线连接左右相邻两音" style="padding:6px 8px;">⌒ 双连音<span class="shortcut">N</span></button>
-              <button class="kbd-btn slur-btn" onclick="appendTok('~2')" title="跨音连线：越过中间 1 个音，连接前第 2 个音与后一个音（~3 跨 2 个音）" style="padding:6px 8px;">⌒² 跨音连<span class="shortcut">⇧N</span></button>
+              <span class="tie-span-control">
+                <button class="kbd-btn slur-btn" onclick="appendSpanTie()" title="按右侧数字向前连接音位；Shift+N 使用相同数字" style="padding:6px 8px;">⌒ 跨音连<span class="shortcut">⇧N</span></button>
+                <label class="tie-span-picker">往前 <input id="tie-span" class="tie-span-input" type="number" min="1" step="1" required value="2" inputmode="numeric" aria-label="往前连接音位数" aria-describedby="tie-span-hint" oninput="setTieSpan()"> 音位</label>
+              </span>
               <button class="kbd-btn slur-btn" id="xslur-btn" onclick="toggleXSlur()" style="padding:6px 8px;">跨线开<span class="shortcut">D</span></button>
               <button class="kbd-btn slur-btn" onclick="closeXSlur()" style="padding:6px 8px;">跨线结<span class="shortcut">X</span></button>
               <button class="kbd-btn slur-btn" id="t3-btn" onclick="toggleTuplet(3)" style="padding:6px 8px;">3连</button>
               <button class="kbd-btn slur-btn" id="t5-btn" onclick="toggleTuplet(5)" style="padding:6px 8px;">5连</button>
             </div>
+            <div class="tie-span-hint" id="tie-span-hint">延音横线也算音位；空格、小节线不计。连线在下一个音上收口。</div>
           </div>
         </div>
         <div class="kbd-group">
@@ -1134,6 +1144,8 @@ var curTok=-1;
 var selA=-1, selB=-1;
 
 var oct='mid', dur='quarter', dotOn=false, fermataOn=false, slurOn=false, xslurOn=false, tupletOn=0;
+var tieSpanChoice=2;
+var MT_TIE_SPAN_KEY='mt_tie_span_v1';
 var dualDur='quarter', dualDot=false, dualFermata=false;
 var inlineDualTop='1', inlineDualBot='5';
 var accidental='';
@@ -2193,6 +2205,20 @@ function clickEnd(shiftKey){
    插入 / 覆盖
 ════════════════════════════════════════ */
 function appendTok(tok){ insertToks([tok]); }
+function setTieSpan(report){
+  var input=document.getElementById('tie-span'),raw=input.value,n=Number(raw);
+  var valid=/^[0-9]+$/.test(raw)&&Number.isSafeInteger(n)&&n>0;
+  input.setCustomValidity(valid?'':'请输入大于 0 的整数');
+  if(!valid){if(report){input.reportValidity();input.focus();}return false;}
+  tieSpanChoice=n;
+  try{localStorage.setItem(MT_TIE_SPAN_KEY,String(n));}catch(e){}
+  return true;
+}
+function appendSpanTie(){if(setTieSpan(true))appendTok(tieSpanChoice===1?'~':'~'+tieSpanChoice);}
+function initTieSpan(){
+  try{var saved=localStorage.getItem(MT_TIE_SPAN_KEY);if(saved){var n=Number(saved);if(/^[0-9]+$/.test(saved)&&Number.isSafeInteger(n)&&n>0)tieSpanChoice=n;}}catch(e){}
+  document.getElementById('tie-span').value=String(tieSpanChoice);
+}
 /* 导航记号按钮：若插入点前一个 token 是小节线，就合并成「小节线+记号」(如 ||coda)，
    这样任意小节线都能配任意导航记号；否则按老样子单独插入(用各自默认小节线)。 */
 function appendNavTok(nav){
@@ -3424,7 +3450,10 @@ function scoreNormalizeNotes(scope){
   });
 }
 function scoreResetChordHeight(scope){
-  scoreHeightRows(scope).forEach(function(row){[].forEach.call(row.querySelectorAll('.p-chord'),function(chord){chord.style.marginBottom='';});});
+  scoreHeightRows(scope).forEach(function(row){
+    if(row.cecpChordPaddingTop!=null){row.style.paddingTop=row.cecpChordPaddingTop;delete row.cecpChordPaddingTop;}
+    [].forEach.call(row.querySelectorAll('.p-chord'),function(chord){chord.style.marginBottom='';});
+  });
 }
 function scoreHeightObstacles(row){
   var rects=[];
@@ -3485,6 +3514,13 @@ function scoreLayoutChordRows(scope){
       changes.push({chord:item.chord,margin:margin+(item.ink.baseline-target)/s});
     });
     changes.forEach(function(change){change.chord.style.marginBottom=change.margin.toFixed(3)+'px';});
+    if(!chords.length){
+      var inset=(row.getBoundingClientRect().top-ceiling)/s+2;
+      if(inset>0){
+        if(row.cecpChordPaddingTop==null)row.cecpChordPaddingTop=row.style.paddingTop;
+        row.style.paddingTop=((parseFloat(getComputedStyle(row).paddingTop)||0)+inset).toFixed(3)+'px';
+      }
+    }
     var delta=anchor?(anchor.getBoundingClientRect().top-row.getBoundingClientRect().top-oldTop)/s:0;
     if(Math.abs(delta)>.01){[].forEach.call(row.querySelectorAll('.strict-arc-svg'),function(host){host.style.top=((parseFloat(host.style.top)||0)+delta).toFixed(3)+'px';});}
     scoreHeightHouses(row,scoreHeightObstacles(row));
@@ -4571,7 +4607,7 @@ document.addEventListener('keydown',function(e){
   if(k==='m' || k==='M'){e.preventDefault();appendTok('||');return;}
   if(k==='!'){e.preventDefault();appendTok('!');return;}  // 断梁
   if(k==='n'){e.preventDefault();appendTok('~');return;}
-  if(k==='N'){e.preventDefault();appendTok('~2');return;}
+  if(k==='N'){e.preventDefault();appendSpanTie();return;}
   if(k==='i'||k==='I'){e.preventDefault();setInputMode('insert');return;}
   if(k==='o'||k==='O'){e.preventDefault();setInputMode('overwrite');return;}
   if(k==='q'||k==='Q'){e.preventDefault();setDur('whole');return;}
@@ -4932,6 +4968,8 @@ Object.assign(window, {
   inputNote: inputNote,
   inputSpecial: inputSpecial,
   appendTok: appendTok,
+  setTieSpan: setTieSpan,
+  appendSpanTie: appendSpanTie,
   appendNavTok: appendNavTok,
   appendInlineTimeSignToken: appendInlineTimeSignToken,
   appendCustomVolta: appendCustomVolta,
@@ -5066,6 +5104,7 @@ window.addEventListener('pagehide',mtDraftSave);
 bindTopbarActions();
 bindToolActions();
 refreshTupletBtns();
+initTieSpan();
 initSegSearch();
 renderEditor();
 updateInputState();
@@ -5621,8 +5660,19 @@ const tutStepsJF = [
     ]
   },
   {
+    icon: '⌒',
+    title: '步骤 3：连音与衔接',
+    desc: '在「连音 · 连音符 · 拍号」里选择连接方式',
+    items: [
+      '普通 N 连接相邻两音；Shift+N 使用「往前」数字，默认 2，可改成 3、12 等',
+      '~3 表示从记号向前数 3 个音位，连接到右侧下一个音；延音横线也算，空格和小节线不算',
+      '多段无缝衔接：1 - - ~3 1 - - - ~4 1，中间的 1 不需要再套括号',
+      '想看实际谱面和更多例子，可以打开「记号图鉴」'
+    ]
+  },
+  {
     icon: '💾',
-    title: '步骤 3：保存与导出',
+    title: '步骤 4：保存与导出',
     desc: '完成编辑后保存你的简谱',
     items: [
       '点「导出 JSON」保存为文件',

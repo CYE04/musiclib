@@ -1773,7 +1773,6 @@
           return {raw,songMaxH:smh};
         };
         let songMaxW=measureAll();
-        let {raw,songMaxH}=paginate(songMaxW);
         // 两端对齐(分散对齐): 级联重排后各行都是真实单行, 拉伸到统一宽 -> 右边缘整齐(短尾行不拉)
         const songRows=collectSongRows();
         layoutStrictChordsAll(songStage);   // CECP-CHORD-FIT: 和弦避让要先于两端对齐(非 strict 为 no-op)
@@ -1786,6 +1785,9 @@
         songStage.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
         layoutStrictArcsAll(songStage);
         positionVoltaRails(songStage);
+        // 房子与连音布局可能增加行高；用最终尺寸分页和缩放，避免投影底部被裁。
+        songMaxW=measureAll();
+        const {raw,songMaxH}=paginate(songMaxW);
         projState.pages=raw.map(p=>Object.assign({
           html:p.b.map(x=>x.outerHTML).join(''), refW:p.refW, refH:p.scripture?p.gMaxH:songMaxH
         },p.meta));
@@ -5547,7 +5549,10 @@ function scoreNormalizeNotes(scope){
   });
 }
 function scoreResetChordHeight(scope){
-  scoreHeightRows(scope).forEach(function(row){[].forEach.call(row.querySelectorAll('.p-chord'),function(chord){chord.style.marginBottom='';});});
+  scoreHeightRows(scope).forEach(function(row){
+    if(row.cecpChordPaddingTop!=null){row.style.paddingTop=row.cecpChordPaddingTop;delete row.cecpChordPaddingTop;}
+    [].forEach.call(row.querySelectorAll('.p-chord'),function(chord){chord.style.marginBottom='';});
+  });
 }
 function scoreHeightObstacles(row){
   var rects=[];
@@ -5608,6 +5613,13 @@ function scoreLayoutChordRows(scope){
       changes.push({chord:item.chord,margin:margin+(item.ink.baseline-target)/s});
     });
     changes.forEach(function(change){change.chord.style.marginBottom=change.margin.toFixed(3)+'px';});
+    if(!chords.length){
+      var inset=(row.getBoundingClientRect().top-ceiling)/s+2;
+      if(inset>0){
+        if(row.cecpChordPaddingTop==null)row.cecpChordPaddingTop=row.style.paddingTop;
+        row.style.paddingTop=((parseFloat(getComputedStyle(row).paddingTop)||0)+inset).toFixed(3)+'px';
+      }
+    }
     var delta=anchor?(anchor.getBoundingClientRect().top-row.getBoundingClientRect().top-oldTop)/s:0;
     if(Math.abs(delta)>.01){[].forEach.call(row.querySelectorAll('.strict-arc-svg'),function(host){host.style.top=((parseFloat(host.style.top)||0)+delta).toFixed(3)+'px';});}
     scoreHeightHouses(row,scoreHeightObstacles(row));
