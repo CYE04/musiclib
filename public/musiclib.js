@@ -1678,26 +1678,7 @@
   /* 跟移调页 normalizePreviewRowHeights 一样: 每行把所有简谱音格(.p-n)统一到该行最高音格高度, 底对齐 ->
      和弦/连音弧/房子线(volta)在整行内高度一致、整整齐齐(离屏算好 --row-note-height 烘进 outerHTML)。 */
   /* Keep the ending rail between chords and notes, in unscaled layout coordinates. */
-  function positionVoltaRails(scope){
-    scope.querySelectorAll('.prev-volta').forEach(function(volta){
-      var top=Infinity;
-      volta.querySelectorAll('.p-n').forEach(function(note){
-        var y=0, node=note;
-        while(node && node!==volta){y+=node.offsetTop;node=node.offsetParent;}
-        if(node===volta)top=Math.min(top,y);
-      });
-      var chordBottom=-Infinity;
-      volta.querySelectorAll('.p-chord').forEach(function(chord){
-        if(!chord.textContent.trim() || !chord.offsetHeight)return;
-        var y=chord.offsetHeight, node=chord;
-        while(node && node!==volta){y+=node.offsetTop;node=node.offsetParent;}
-        if(node===volta)chordBottom=Math.max(chordBottom,y);
-      });
-      // Chord line-height can be smaller than its ink; leave six pixels below it.
-      // Anchor above the slur reservation, so ending numbers do not cross arcs.
-      if(isFinite(chordBottom))top=chordBottom+6+(parseFloat(getComputedStyle(volta).getPropertyValue('--volta-rail'))||0);
-      if(isFinite(top))volta.style.setProperty('--volta-top',top+'px');
-    });
+  function positionVoltaRails(scope){scoreLayoutChordRows(scope);
   }
   function projNormalizeRowHeights(scope){
     if(!scope)return;
@@ -5542,6 +5523,98 @@
     if(nav){o.setAttribute('data-jp-nav-base-height',top.style.height||'22px');o.setAttribute('data-jp-nav',nav);o.setAttribute('data-jp-nav-above',(nav==='coda'||nav==='segno')?'1':'0');}
     return o;
   }
+/* CECP-CHORD-HEIGHT-BEGIN
+   三个渲染器使用同一条和弦高度线，只按实际音符、弧线、导航记号和房子避让。
+   编辑器 srcdoc 内联块，禁止反斜杠及反引号。 */
+function scoreHeightRows(scope){
+  if(!scope)return [];
+  var rows=[].slice.call(scope.querySelectorAll('.prev-row'));
+  if(scope.matches&&scope.matches('.prev-row'))rows.unshift(scope);
+  return rows;
+}
+function scoreHeightScale(el){var r=el.getBoundingClientRect();return el.offsetWidth?r.width/el.offsetWidth:1;}
+function scoreNormalizeNotes(scope){
+  scoreHeightRows(scope).forEach(function(row){
+    row.style.setProperty('--volta-rail','0px');
+    row.style.setProperty('--row-lyric-height','0px');
+    var lyricHeight=0;
+    [].forEach.call(row.querySelectorAll('.p-lyric'),function(lyric){lyricHeight=Math.max(lyricHeight,lyric.offsetHeight);});
+    if(lyricHeight)row.style.setProperty('--row-lyric-height',lyricHeight+'px');
+    row.style.setProperty('--row-note-height','0px');
+    var height=0;
+    [].forEach.call(row.querySelectorAll('.p-n'),function(lane){height=Math.max(height,lane.offsetHeight);});
+    if(height)row.style.setProperty('--row-note-height',height+'px');
+  });
+}
+function scoreResetChordHeight(scope){
+  scoreHeightRows(scope).forEach(function(row){[].forEach.call(row.querySelectorAll('.p-chord'),function(chord){chord.style.marginBottom='';});});
+}
+function scoreHeightObstacles(row){
+  var rects=[];
+  [].forEach.call(row.querySelectorAll('.jp-num,.jp-plain-sym,.jp-dot-top > span,.jp-navmark svg,[data-jp-nav-above="1"] .jp-bar-top svg,.strict-arc-svg > div,.strict-arc-svg path,.strict-arc-svg text,.strict-arc-tup text'),function(el){var r=el.getBoundingClientRect();if(r.width&&r.height)rects.push(r);});
+  [].forEach.call(row.querySelectorAll('.jp-slur,.jp-slur-open,.jp-slur-close,.jp-tie'),function(group){
+    var r=group.getBoundingClientRect(),s=scoreHeightScale(group),ps=getComputedStyle(group,'::before');
+    if(ps.content==='none')return;
+    function length(value){return String(value).indexOf('%')>=0?(parseFloat(value)||0)*group.offsetWidth/100:parseFloat(value)||0;}
+    var left=r.left+length(ps.left)*s,right=group.classList.contains('jp-tie')?left+length(ps.width)*s:r.right-length(ps.right)*s;
+    if(right>left)rects.push({left:left,right:right,top:r.top+length(ps.top)*s});
+  });
+  return rects;
+}
+function scoreHeightHouses(row,obstacles){
+  var rails=[];
+  [].slice.call(row.querySelectorAll('.prev-volta,.jp-volta')).reverse().forEach(function(house){
+    var r=house.getBoundingClientRect(),s=scoreHeightScale(house),ceiling=Infinity;
+    obstacles.concat(rails).forEach(function(o){if(o.left<r.right&&o.right>r.left)ceiling=Math.min(ceiling,o.top);});
+    if(!isFinite(ceiling)||!s)return;
+    var top=ceiling-12*s;
+    house.style.setProperty(house.classList.contains('jp-volta')?'--jp-volta-top':'--volta-top',((top-r.top)/s).toFixed(3)+'px');
+    rails.push({left:r.left,right:r.right,top:top});
+  });
+  return rails;
+}
+var scoreChordMeasureContext;
+function scoreChordInk(chord,scale){
+  var range=document.createRange();range.selectNodeContents(chord);
+  var r=range.getBoundingClientRect();if(!r.height)r=chord.getBoundingClientRect();
+  var stacks=chord.querySelectorAll('.p-chord-stk'),last=stacks.length?stacks[stacks.length-1]:chord;
+  var text=last.querySelector('.chord-chip')||last,cs=getComputedStyle(text),descent=0,inkDescent=0;
+  if(!scoreChordMeasureContext)scoreChordMeasureContext=document.createElement('canvas').getContext('2d');
+  if(scoreChordMeasureContext){
+    scoreChordMeasureContext.font=cs.font||cs.fontWeight+' '+cs.fontSize+' '+cs.fontFamily;
+    var metrics=scoreChordMeasureContext.measureText(text.textContent||'');
+    if(isFinite(metrics.fontBoundingBoxDescent)&&isFinite(metrics.actualBoundingBoxDescent)){
+      descent=metrics.fontBoundingBoxDescent;inkDescent=Math.max(0,metrics.actualBoundingBoxDescent);
+    }
+  }
+  return {baseline:r.bottom-descent*scale,descent:inkDescent};
+}
+function scoreLayoutChordRows(scope){
+  scoreHeightRows(scope).forEach(function(row){
+    if(!row.isConnected||!row.querySelector('.p-n'))return;
+    var s=scoreHeightScale(row);if(!s)return;
+    var obstacles=scoreHeightObstacles(row),rails=scoreHeightHouses(row,obstacles),ceiling=Infinity;
+    obstacles.concat(rails).forEach(function(o){ceiling=Math.min(ceiling,o.top);});
+    if(!isFinite(ceiling))return;
+    var labelBand=0;
+    [].forEach.call(row.querySelectorAll('.sec-label-holder .sec-label'),function(tag){labelBand=Math.max(labelBand,tag.offsetHeight+6);});
+    var chords=[],inkDescent=0;
+    [].forEach.call(row.querySelectorAll('.p-chord'),function(chord){var ink=scoreChordInk(chord,s);inkDescent=Math.max(inkDescent,ink.descent);chords.push({chord:chord,ink:ink});});
+    var target=ceiling-(3+labelBand+inkDescent)*s;
+    var anchor=row.querySelector('.jp-num,.jp-plain-sym'),oldTop=anchor?anchor.getBoundingClientRect().top-row.getBoundingClientRect().top:0;
+    var changes=[];
+    chords.forEach(function(item){
+      var margin=parseFloat(getComputedStyle(item.chord).marginBottom)||0;
+      changes.push({chord:item.chord,margin:margin+(item.ink.baseline-target)/s});
+    });
+    changes.forEach(function(change){change.chord.style.marginBottom=change.margin.toFixed(3)+'px';});
+    var delta=anchor?(anchor.getBoundingClientRect().top-row.getBoundingClientRect().top-oldTop)/s:0;
+    if(Math.abs(delta)>.01){[].forEach.call(row.querySelectorAll('.strict-arc-svg'),function(host){host.style.top=((parseFloat(host.style.top)||0)+delta).toFixed(3)+'px';});}
+    scoreHeightHouses(row,scoreHeightObstacles(row));
+    [].forEach.call(row.querySelectorAll('.sec-label-holder'),function(holder){if(holder.cecpPlaceSecLabel)holder.cecpPlaceSecLabel(true);});
+  });
+}
+/* CECP-CHORD-HEIGHT-END */
 /* CECP-JP-NAVIGATION-BEGIN
    与 youth / musictool / musiclib 同步。此块在编辑器 srcdoc 中，禁止反斜杠及反引号。
    反复圆点不参与导航记号的中心计算；上方记号为经过它的连音线留出空间。 */
@@ -5582,7 +5655,6 @@ function jpPrepareLegacyNavigation(scope){
 }
 function jpLayoutNavigation(scope){
   if(!scope)return false;
-  var changed=false;
   [].forEach.call(scope.querySelectorAll('[data-jp-nav],.jp-navmark'),function(el){
     var attached=el.classList.contains('jp-navmark');
     var above=attached||el.getAttribute('data-jp-nav-above')==='1';
@@ -5617,21 +5689,21 @@ function jpLayoutNavigation(scope){
       var arcRight=group.classList.contains('jp-tie')?gr.left+(left+width)*gs:gr.right-right*gs;
       if((gr.width||width)&&isFinite(top)&&gr.left+left*gs<mr.right&&arcRight>mr.left)ceiling=Math.min(ceiling,gr.top+top*gs);
     });
+    var anchors=attached?el.parentElement.querySelectorAll('.jp-num,.jp-plain-sym,.jp-dot-top > span'):el.querySelectorAll('.jp-bar-stroke');
+    [].forEach.call(anchors,function(anchor){var r=anchor.getBoundingClientRect();if(r.width&&r.height)ceiling=Math.min(ceiling,r.top);});
     if(ceiling===Infinity)return;
-    var lift=Math.max(0,(mr.bottom-ceiling)/scale+4);
-    if(lift<0.25)return;
-    mark.style.paddingBottom=lift.toFixed(3)+'px';
-    if(!attached){mark.style.boxSizing='border-box';mark.style.height=((parseFloat(getComputedStyle(mark).height)||22)+lift).toFixed(3)+'px';}
-    changed=true;
+    var move=(ceiling-mr.bottom)/scale-4;
+    if(Math.abs(move)<.25)return;
+    mark.style.transform=(mark.style.transform||'')+' translateY('+move.toFixed(3)+'px)';
   });
-  return changed;
+  // 只移动记号墨迹，不再次增高音格或累加预留空间。
 }
 var jpBaseLayoutArcs=layoutStrictArcs;
-layoutStrictArcs=function(row){jpResetNavigation(row);jpBaseLayoutArcs(row);jpPrepareLegacyNavigation(row);if(jpLayoutNavigation(row)){jpBaseLayoutArcs(row);jpPrepareLegacyNavigation(row);}};
+layoutStrictArcs=function(row){jpResetNavigation(row);scoreResetChordHeight(row);scoreNormalizeNotes(row);jpBaseLayoutArcs(row);jpPrepareLegacyNavigation(row);jpLayoutNavigation(row);scoreLayoutChordRows(row);};
 var jpBaseLayoutArcsAll=layoutStrictArcsAll;
-layoutStrictArcsAll=function(scope){jpResetNavigation(scope);jpBaseLayoutArcsAll(scope);jpPrepareLegacyNavigation(scope);if(jpLayoutNavigation(scope)){jpBaseLayoutArcsAll(scope);jpPrepareLegacyNavigation(scope);}};
+layoutStrictArcsAll=function(scope){jpResetNavigation(scope);scoreResetChordHeight(scope);scoreNormalizeNotes(scope);jpBaseLayoutArcsAll(scope);jpPrepareLegacyNavigation(scope);jpLayoutNavigation(scope);scoreLayoutChordRows(scope);};
 var jpBaseLayoutNoteArcs=layoutJpArcs;
-layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);jpPrepareLegacyNavigation(lane);if(jpLayoutNavigation(lane)){jpBaseLayoutNoteArcs(lane);jpPrepareLegacyNavigation(lane);}};
+layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);jpPrepareLegacyNavigation(lane);jpLayoutNavigation(lane);var row=lane&&lane.closest('.prev-row');if(row)scoreLayoutChordRows(row);};
 /* CECP-JP-NAVIGATION-END */
 
   /* ── 导航记号挂在音符正上方：写法 = `*` + 记号名，如 `1 *coda`、`3_ *segno` ──
@@ -6369,14 +6441,14 @@ function segRenderLabelBlock(seg,row){
      老代码是一次性 rAF + 直接 return，于是回调永远没跑成 —— 徽章停在初始 top:16px、
      和弦也没让位，两者就撞在一起（严格模式因为 layoutStrictArcsAll 每次都会重设
      .p-chord 的 marginBottom，所以看不出问题）。 */
-  function placeSecLabel(){
+  function placeSecLabel(keepChordHeight){
     if(!holder.isConnected)return false;
     var scope=holder.closest?holder.closest('.prev-row'):null;
     if(!scope)return false;
     var pillH=tag.offsetHeight||13;
     var band=pillH+SEC_LABEL_TOP_GAP_PX*2;
     var chords=scope.querySelectorAll('.p-chord');
-    for(var i=0;i<chords.length;i++){
+    for(var i=0;!keepChordHeight&&i<chords.length;i++){
       chords[i].style.marginBottom=(2+band)+'px';
     }
     var ref=holder.nextElementSibling;

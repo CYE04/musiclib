@@ -1249,10 +1249,10 @@ html,body,#music-library{
 #music-library .jp-timesig-top,#music-library .jp-timesig-bot{display:flex;align-items:center;justify-content:center;min-width:1.42em;text-align:center;font-size:calc(18px * var(--pl-n,1));font-weight:700;line-height:1;}
 #music-library .jp-timesig-top{padding:0 1px 2px;border-bottom:1.6px solid currentColor;margin-bottom:1px;}
 #music-library .jp-timesig-bot{padding-top:0;}
-#music-library .jp-volta{display:inline-flex;align-items:flex-end;position:relative;padding-top:20px;}
-#music-library .jp-volta::before{content:'';position:absolute;top:3px;left:0;right:0;height:13px;border-top:1.5px solid var(--text);border-left:1.5px solid var(--text);pointer-events:none;box-sizing:border-box;opacity:0.5;}
+#music-library .jp-volta{display:inline-flex;align-items:flex-end;position:relative;padding-top:0;}
+#music-library .jp-volta::before{content:'';position:absolute;top:var(--jp-volta-top,3px);left:0;right:0;height:10px;border-top:1.5px solid var(--text);border-left:1.5px solid var(--text);pointer-events:none;box-sizing:border-box;opacity:0.5;}
 #music-library .jp-volta.v-close::before{border-right:1.5px solid var(--text);}
-#music-library .jp-volta::after{content:attr(data-v);position:absolute;top:4px;left:3px;font-size:calc(8px * var(--pl-n,1));line-height:1;color:var(--text);opacity:0.65;pointer-events:none;}
+#music-library .jp-volta::after{content:attr(data-v);position:absolute;top:calc(var(--jp-volta-top,3px) + 1px);left:3px;font-size:calc(8px * var(--pl-n,1));line-height:1;color:var(--text);opacity:0.65;pointer-events:none;}
 
 #ml-lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.88);align-items:center;justify-content:center;cursor:zoom-out;}
 #ml-lightbox.open{display:flex;}
@@ -1345,13 +1345,13 @@ html,body,#music-library{
 #music-library .sw-lyric4{display:block;font-size:22px;opacity:0.6;margin-top:1px;}
 #music-library .prev-row{--volta-rail:0px;--volta-top:2px;--row-note-height:0px;display:flex;flex-wrap:nowrap;align-items:flex-end;margin-bottom:calc(10px * var(--pl-gap,1));overflow:visible;padding-top:0;padding-bottom:2px;}
 /* 自动折行(宽歌铺满): 太长的简谱行折成多行, 整列(和弦+简谱+歌词+拼音)一起折, 不拆散 */
-#music-library .prev-row.has-volta{--volta-rail:18px;}
+#music-library .prev-row.has-volta{--volta-rail:0px;}
 #music-library .prev-row.has-volta .p-n{margin-top:var(--volta-rail)}
 #music-library .prev-seg{display:inline-flex;flex-direction:column;align-items:flex-start;margin-right:4px;flex-shrink:0;}
 #music-library .p-chord{font-family:'Space Mono',monospace;font-size:calc(12px * var(--pl-chord,1));font-weight:700;color:var(--chord-ink);margin-bottom:2px;min-height:13px;white-space:pre;}
 #music-library .p-chord.empty{visibility:hidden;}
 #music-library .p-n{font-family:'Space Mono',monospace;font-size:calc(1em * var(--pl-n,1));color:var(--text);margin-bottom:1px;line-height:1.2;display:flex;align-items:flex-end;min-height:var(--row-note-height);}
-#music-library .p-lyric{font-family:'Noto Serif SC',serif;font-size:calc(18px * var(--pl-lyric,1));font-weight:600;color:var(--text);white-space:pre-wrap;}
+#music-library .p-lyric{min-height:var(--row-lyric-height,0px);font-family:'Noto Serif SC',serif;font-size:calc(18px * var(--pl-lyric,1));font-weight:600;color:var(--text);white-space:pre-wrap;}
 /* 加粗＝真的更重一档。字体常只有 400/700，700→800 可能毫无变化，再叠一层极细横向 text-shadow 兜底。 */
 #music-library .p-lyric.bold{font-weight:800;text-shadow:.32px 0 0 currentColor,-.32px 0 0 currentColor;}
 #music-library .p-lyric2,#music-library .p-lyric3,#music-library .p-lyric4{margin-top:1px;}
@@ -1361,7 +1361,7 @@ html,body,#music-library{
 #music-library .chord-gap,
 #music-library .lyric-gap{display:inline-block;white-space:pre;visibility:hidden;pointer-events:none;font:inherit;line-height:inherit;}
 #music-library .prev-volta{display:inline-flex;align-items:flex-end;position:relative;}
-#music-library .prev-volta::before{content:'';position:absolute;top:calc(var(--volta-top,2px) - var(--volta-rail,0px));left:0;right:0;height:13px;border-top:1.5px solid var(--text);border-left:1.5px solid var(--text);pointer-events:none;box-sizing:border-box;opacity:0.5;}
+#music-library .prev-volta::before{content:'';position:absolute;top:calc(var(--volta-top,2px) - var(--volta-rail,0px));left:0;right:0;height:10px;border-top:1.5px solid var(--text);border-left:1.5px solid var(--text);pointer-events:none;box-sizing:border-box;opacity:0.5;}
 #music-library .prev-volta.closed::before{border-right:1.5px solid var(--text);}
 #music-library .prev-volta::after{content:attr(data-v);position:absolute;top:calc(var(--volta-top,2px) + 1px - var(--volta-rail,0px));left:3px;font-size:8px;line-height:1;color:var(--text);opacity:0.65;pointer-events:none;font-family:'DM Mono',monospace;}
 #music-library .jp-wrap{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom;min-width:1em;}
@@ -2648,7 +2648,7 @@ html,body,#music-library{
 
 
 #music-library .sw-volta{display:inline-flex;align-items:flex-end;position:relative;padding-top:20px;}
-#music-library .sw-volta::before{content:'';position:absolute;top:3px;left:0;right:0;height:13px;border-top:1.5px solid var(--text);border-left:1.5px solid var(--text);pointer-events:none;box-sizing:border-box;opacity:0.5;}
+#music-library .sw-volta::before{content:'';position:absolute;top:3px;left:0;right:0;height:10px;border-top:1.5px solid var(--text);border-left:1.5px solid var(--text);pointer-events:none;box-sizing:border-box;opacity:0.5;}
 #music-library .sw-volta.closed::before{border-right:1.5px solid var(--text);}
 #music-library .sw-volta::after{content:attr(data-v);position:absolute;top:4px;left:3px;font-size:8px;color:var(--text);opacity:0.65;pointer-events:none;}
 
@@ -8390,7 +8390,7 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
 #music-library .prev-seg.p-slot .p-chord-multi .p-chord-stk{display:block;line-height:1.2;}
 /* 叠和弦(上下两个)跟单和弦一样大 */
 #music-library .prev-seg.p-slot .p-chord-multi .chord-chip{font-size:1em;}
-#music-library .prev-seg.p-slot .p-lyric{text-align:center;padding:0 1px;}
+#music-library .prev-seg.p-slot .p-lyric{min-height:var(--row-lyric-height,0px);text-align:center;padding:0 1px;}
 #music-library .prev-seg.p-slot .p-lyric .p-punct{display:inline-block;width:0;overflow:visible;white-space:pre;pointer-events:none;}
 #music-library .prev-seg.p-slot.p-punct-gap{margin-right:8px;}
 #music-library .prev-seg.p-barslot{min-width:0;margin:0 3px;}
