@@ -472,50 +472,65 @@
   let _revealObserver=null,_weatherCache=null;
   let _pullRefreshing=false;
 
+  // StudioLive-inspired console glyphs: one grid, square joins, 1.5px strokes.
+  const CONSOLE_ICONS = {
+  "home": "<path d=\"M3 10 12 3l9 7M5 9v12h14V9M9 21v-7h6v7\"/>",
+  "search": "<circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"m15 15 6 6\"/>",
+  "library": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\"/><path d=\"M7 4v16M11 8h6M11 12h6M11 16h4\"/>",
+  "queue": "<path d=\"M3 5h14M3 10h14M3 15h8M16 14v7M12.5 17.5h7\"/>",
+  "heart": "<path d=\"m12 20-9-9V6l3-3h3l3 3 3-3h3l3 3v5l-9 9Z\"/>",
+  "heartFill": "<path d=\"m12 20-9-9V6l3-3h3l3 3 3-3h3l3 3v5l-9 9Z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "check": "<path d=\"m4 12 5 5L20 6\"/>",
+  "settings": "<path d=\"M3 6h18M3 12h18M3 18h18\"/><path d=\"M7 3v6M16 9v6M10 15v6\"/>",
+  "user": "<circle cx=\"12\" cy=\"7\" r=\"4\"/><path d=\"M4 21v-3l4-4h8l4 4v3\"/>",
+  "play": "<path d=\"m7 4 13 8-13 8Z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "score": "<path d=\"M3 6h9M3 11h9M3 16h5M16 4v13\"/><path d=\"m16 4 5 2v4l-5-2\"/><circle cx=\"13\" cy=\"18\" r=\"3\" fill=\"currentColor\" stroke=\"none\"/>",
+  "close": "<path class=\"ml-motion-line ml-motion-line-a\" d=\"m6 6 12 12\"/><path class=\"ml-motion-line ml-motion-line-b\" d=\"m18 6-12 12\"/>",
+  "theme": "<path d=\"M15 3a9 9 0 1 0 6 12A9 9 0 0 1 15 3Z\"/>",
+  "more": "<path d=\"M4 11h2v2H4zm7 0h2v2h-2zm7 0h2v2h-2z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "sun": "<circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M5 19l2-2M17 7l2-2\"/>",
+  "system": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"13\"/><path d=\"M8 21h8M12 17v4\"/>",
+  "listMusic": "<path d=\"M3 5h10M3 10h10M3 15h7M17 4v13l4-1V7l-4 1\"/><circle cx=\"14.5\" cy=\"18\" r=\"2.5\" fill=\"currentColor\" stroke=\"none\"/>",
+  "rotateCcw": "<path d=\"M3 9h6M3 9V3M3 9a9 9 0 1 1 0 6\"/>",
+  "refreshCcw": "<path d=\"M21 3v6h-6M3 21v-6h6M21 9a9 9 0 0 0-16-3M3 15a9 9 0 0 0 16 3\"/>",
+  "minus": "<path d=\"M5 12h14\"/>",
+  "plus": "<path d=\"M12 5v14M5 12h14\"/>",
+  "timerReset": "<path d=\"M9 2h6M12 2v3M12 9v6l4 2\"/><circle cx=\"12\" cy=\"14\" r=\"8\"/>",
+  "crosshair": "<circle cx=\"12\" cy=\"12\" r=\"5\"/><path d=\"M12 2v6M12 16v6M2 12h6M16 12h6\"/>",
+  "flag": "<path d=\"M5 21V3h14l-3 5 3 5H5\"/>",
+  "arrowLeftRight": "<path d=\"m7 3-4 4 4 4M3 7h18m-4 6 4 4-4 4M21 17H3\"/>",
+  "skipBack": "<path d=\"M4 5h2v14H4zm15 0L8 12l11 7Z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "skipForward": "<path d=\"M18 5h2v14h-2zM5 5l11 7-11 7Z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "rewind": "<path d=\"m12 5-10 7 10 7Zm10 0-10 7 10 7Z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "pause": "<path d=\"M6 4h4v16H6zm8 0h4v16h-4z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "fastForward": "<path d=\"m2 5 10 7-10 7Zm10 0 10 7-10 7Z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "circleHelp": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M9 9V7h6v4l-3 2v2M12 17v1\"/>",
+  "tools": "<path d=\"M14.7 6.3a5 5 0 0 0-6.4 6.4l-5.1 5.1a2.1 2.1 0 0 0 3 3l5.1-5.1a5 5 0 0 0 6.4-6.4l-3 3-3-3 3-3Z\"/>",
+  "circlePlay": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"m10 7 7 5-7 5Z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "projection": "<path d=\"M2 3h20M4 3v12h16V3M12 15v6m-5 1 5-3 5 3\"/><path d=\"m10 6 5 3-5 3Z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "filter": "<path d=\"M3 6h18M6 12h12M9 18h6\"/>",
+  "expand": "<path d=\"M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6\"/>",
+  "shuffle": "<path d=\"M3 5h3l12 14h3M3 19h3L18 5h3M17 2l4 3-4 3M17 16l4 3-4 3\"/>",
+  "repeat": "<path d=\"M3 11V5h18m-4-4 4 4-4 4M21 13v6H3m4-4-4 4 4 4\"/>",
+  "volume": "<path d=\"M3 9h4l5-5v16l-5-5H3ZM16 8v8M20 5v14\"/>",
+  "mic": "<rect x=\"9\" y=\"2\" width=\"6\" height=\"12\"/><path d=\"M5 9v4l4 5h6l4-5V9M12 18v4M8 22h8\"/>",
+  "share": "<path d=\"M4 12v9h16v-9M12 16V2m-5 5 5-5 5 5\"/>",
+  "download": "<path d=\"M4 15v6h16v-6M12 2v14m-5-5 5 5 5-5\"/>",
+  "lrc": "<path d=\"M5 2h10l4 4v16H5ZM15 2v5h4M8 11h8M8 15h8M8 19h5\"/>",
+  "keyboard": "<rect x=\"2\" y=\"4\" width=\"20\" height=\"16\"/><path d=\"M7 4v16M12 4v16M17 4v16\"/><path d=\"M5 4h3v9H5zm5 0h3v9h-3zm5 0h3v9h-3z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "metro": "<path d=\"M8 3h8l5 18H3ZM7 18h10M12 16 17 5M8 8h4M7 12h4\"/>",
+  "youtube": "<rect x=\"2\" y=\"5\" width=\"20\" height=\"14\"/><path d=\"m10 8 6 4-6 4Z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "chat": "<path d=\"M3 4h18v12H9l-6 5Z\"/><path d=\"M7 8h10M7 12h7\"/>",
+  "camera": "<rect x=\"3\" y=\"3\" width=\"18\" height=\"18\"/><circle cx=\"12\" cy=\"12\" r=\"4\"/><path d=\"M17 6h1\"/>",
+  "mail": "<rect x=\"3\" y=\"5\" width=\"18\" height=\"14\"/><path d=\"m3 5 9 8 9-8\"/>",
+  "grip": "<path d=\"M7 4h2v2H7zm8 0h2v2h-2zM7 11h2v2H7zm8 0h2v2h-2zM7 18h2v2H7zm8 0h2v2h-2z\" fill=\"currentColor\" stroke=\"none\"/>",
+  "eraser": "<path d=\"m4 14 9-11 8 7-9 11H8Zm4-5 8 7M12 21h9\"/>"
+};
   function icon(name,size=18){
-    const common=`width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"`;
-    const filled=`width="${size}" height="${size}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"`;
-    const arrow=`width="${size}" height="${size}" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"`;
-    const map={
-      home:`<svg ${common}><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>`,
-      search:`<svg ${common}><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>`,
-      library:`<svg ${common}><path d="M4 19.5V5a2 2 0 0 1 2-2h12v18H6a2 2 0 0 1-2-1.5Z"/><path d="M8 7h6"/><path d="M8 11h7"/></svg>`,
-      queue:`<svg ${common}><path d="M4 6h12"/><path d="M4 12h10"/><path d="M4 18h8"/><path d="M18 14v6"/><path d="M15 17h6"/></svg>`,
-      heart:`<svg ${common}><path d="M20.8 8.6c0 5.2-8.8 11.4-8.8 11.4S3.2 13.8 3.2 8.6a4.8 4.8 0 0 1 8.8-2.6 4.8 4.8 0 0 1 8.8 2.6Z"/></svg>`,
-      heartFill:`<svg ${filled}><path d="M12 21s-8.8-6.2-8.8-12.4A4.8 4.8 0 0 1 12 6a4.8 4.8 0 0 1 8.8 2.6C20.8 14.8 12 21 12 21Z"/></svg>`,
-      check:`<svg ${common}><path d="M20 6 9 17l-5-5"/></svg>`,
-      settings:`<svg ${common}><path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.05.05a2 2 0 1 1-2.83 2.83l-.05-.05a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V21a2 2 0 1 1-4 0v-.07A1.7 1.7 0 0 0 9 19.37a1.7 1.7 0 0 0-1.88.34l-.05.05a2 2 0 1 1-2.83-2.83l.05-.05A1.7 1.7 0 0 0 4.63 15 1.7 1.7 0 0 0 3.07 14H3a2 2 0 1 1 0-4h.07A1.7 1.7 0 0 0 4.63 9a1.7 1.7 0 0 0-.34-1.88l-.05-.05a2 2 0 1 1 2.83-2.83l.05.05A1.7 1.7 0 0 0 9 4.63 1.7 1.7 0 0 0 10 3.07V3a2 2 0 1 1 4 0v.07A1.7 1.7 0 0 0 15 4.63a1.7 1.7 0 0 0 1.88-.34l.05-.05a2 2 0 1 1 2.83 2.83l-.05.05A1.7 1.7 0 0 0 19.37 9c.25.61.84 1 1.56 1H21a2 2 0 1 1 0 4h-.07A1.7 1.7 0 0 0 19.4 15Z"/></svg>`,
-      user:`<svg ${common}><path d="M20 21a8 8 0 0 0-16 0"/><circle cx="12" cy="7" r="4"/></svg>`,
-      play:`<svg ${filled}><path d="M8 5.14v14l11-7-11-7Z"/></svg>`,
-      score:`<svg ${common}><path d="M9 18V5l10-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="16" cy="16" r="3"/></svg>`,
-      close:`<svg class="ml-motion-icon ml-motion-icon-close" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path class="ml-motion-line ml-motion-line-a" d="M6 6 18 18"/><path class="ml-motion-line ml-motion-line-b" d="M18 6 6 18"/></svg>`,
-      collapse:`<svg class="ml-motion-icon ml-motion-icon-collapse" ${arrow}><path d="m4 6 4 4 4-4"/></svg>`,
-      theme:`<svg ${common}><path d="M12 3a9 9 0 1 0 9 9 7 7 0 0 1-9-9Z"/></svg>`,
-      more:`<svg ${common}><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></svg>`,
-      chevronLeft:`<svg ${arrow}><path d="m10 4-4 4 4 4"/></svg>`,
-      chevronRight:`<svg ${arrow}><path d="m6 4 4 4-4 4"/></svg>`,
-      sun:`<svg ${common}><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>`,
-      system:`<svg ${common}><rect x="3" y="4" width="18" height="13" rx="2"/><path d="M8 21h8"/><path d="M12 17v4"/></svg>`,
-      listMusic:`<svg ${common}><path d="M4 6h10"/><path d="M4 10h10"/><path d="M4 14h7"/><path d="M16 5v11"/><path d="m16 8 4-1v8"/><circle cx="14" cy="18" r="2"/><circle cx="18" cy="16" r="2"/></svg>`,
-      chevronDown:`<svg ${arrow}><path d="m4 6 4 4 4-4"/></svg>`,
-      rotateCcw:`<svg ${common}><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>`,
-      refreshCcw:`<svg ${common}><path d="M20 6v5h-5"/><path d="M4 18v-5h5"/><path d="M6.1 9a7 7 0 0 1 11.4-2.6L20 11"/><path d="M17.9 15a7 7 0 0 1-11.4 2.6L4 13"/></svg>`,
-      minus:`<svg ${common}><path d="M5 12h14"/></svg>`,
-      plus:`<svg ${common}><path d="M12 5v14"/><path d="M5 12h14"/></svg>`,
-      timerReset:`<svg ${common}><path d="M10 2h4"/><path d="M12 14v-4"/><circle cx="12" cy="14" r="8"/><path d="m4 4 2.5 2.5"/><path d="M3 9V4h5"/></svg>`,
-      crosshair:`<svg ${common}><circle cx="12" cy="12" r="3"/><path d="M12 2v3"/><path d="M12 19v3"/><path d="M2 12h3"/><path d="M19 12h3"/></svg>`,
-      flag:`<svg ${common}><path d="M5 21V4"/><path d="M5 4h11l-1 4 1 4H5"/></svg>`,
-      arrowLeftRight:`<svg ${common}><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg>`,
-      skipBack:`<svg ${common}><path d="M19 20 9 12l10-8v16Z"/><path d="M5 19V5"/></svg>`,
-      rewind:`<svg ${common}><path d="m11 19-9-7 9-7v14Z"/><path d="m22 19-9-7 9-7v14Z"/></svg>`,
-      pause:`<svg ${filled}><rect x="6" y="4" width="4" height="16" rx="1"/><rect x="14" y="4" width="4" height="16" rx="1"/></svg>`,
-      fastForward:`<svg ${common}><path d="m13 5 9 7-9 7V5Z"/><path d="m2 5 9 7-9 7V5Z"/></svg>`,
-      circleHelp:`<svg ${common}><circle cx="12" cy="12" r="9"/><path d="M9.8 9a2.3 2.3 0 1 1 3.7 1.8c-.9.6-1.5 1.1-1.5 2.2"/><path d="M12 17h.01"/></svg>`,
-      tools:`<svg ${common}><path d="M14.7 6.3a5 5 0 0 0-6.4 6.4l-5.1 5.1a2.1 2.1 0 0 0 3 3l5.1-5.1a5 5 0 0 0 6.4-6.4l-3 3-3-3 3-3Z"/></svg>`,
-      circlePlay:`<svg ${common}><circle cx="12" cy="12" r="9"/><path d="m10 8 6 4-6 4V8Z"/></svg>`,
-      projection:`<svg ${common}><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M7 20h10"/><path d="M12 16v4"/><path d="M8 10h5"/></svg>`
-    };
-    return map[name]||map.more;
+    const arrows={chevronLeft:'m10 4-4 4 4 4',chevronRight:'m6 4 4 4-4 4',chevronDown:'m4 6 4 4 4-4',collapse:'m4 6 4 4 4-4'};
+    const motion=name==='close'?' ml-motion-icon ml-motion-icon-close':name==='collapse'?' ml-motion-icon ml-motion-icon-collapse':'';
+    const shape=arrows[name]?'<path d="'+arrows[name]+'"/>':CONSOLE_ICONS[name]||CONSOLE_ICONS.more;
+    return `<svg class="ml-console-icon${motion}" width="${size}" height="${size}" viewBox="0 0 ${arrows[name]?16:24} ${arrows[name]?16:24}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" focusable="false">${shape}</svg>`;
   }
 
   root.innerHTML=`
@@ -531,9 +546,9 @@
         <button class="ml-side-link active" type="button" data-nav="home">${icon('home')}<span>首页</span></button>
         <button class="ml-side-link" type="button" data-nav="search">${icon('search')}<span>搜索</span></button>
         <button class="ml-side-link" type="button" data-nav="library">${icon('library')}<span>诗歌库</span></button>
+        <button class="ml-side-link" id="ml-side-tools" type="button" data-nav="tools" aria-haspopup="dialog" aria-expanded="false" aria-controls="ml-tools-dialog">${icon('tools')}<span>工具箱</span></button>
         <button class="ml-side-link" type="button" data-nav="playlist">${icon('queue')}<span>播放列表</span></button>
         <button class="ml-side-link" type="button" data-nav="favorites">${icon('heart')}<span>收藏</span></button>
-        <button class="ml-side-link" id="ml-side-tools" type="button" data-nav="tools" aria-haspopup="dialog" aria-expanded="false" aria-controls="ml-tools-dialog">${icon('tools')}<span>工具箱</span></button>
         <button class="ml-side-link ml-side-link-proj" id="ml-side-projection" type="button">${icon('projection')}<span>投影模式</span></button>
       </nav>
       <button id="ml-side-profile" type="button" aria-label="切换主题">
@@ -557,7 +572,6 @@
         </div>
         <div id="ml-nav-actions">
           <button class="ml-weather-pill" id="ml-weather-pill" type="button" aria-label="今日天气">--°C</button>
-          <button class="ml-nav-icon-btn" id="ml-nav-tools" type="button" data-nav="tools" aria-label="打开工具箱" title="工具箱" aria-haspopup="dialog" aria-expanded="false" aria-controls="ml-tools-dialog">${icon('tools')}</button>
           <button id="ml-hero-projection" class="ml-nav-icon-btn" type="button" aria-label="进入投影模式" title="进入投影模式">${icon('projection')}</button>
           <button class="ml-nav-icon-btn" id="ml-nav-search" type="button" aria-label="聚焦搜索">${icon('search')}</button>
           <button class="ml-nav-icon-btn" id="ml-nav-theme" type="button" aria-label="切换深浅主题">${icon('system')}</button>
@@ -621,7 +635,7 @@
         </div>
         <div id="ml-filter-toolbar">
           <button id="ml-filter-open" type="button" aria-haspopup="dialog" aria-expanded="false">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="7" x2="20" y2="7"/><line x1="7" y1="12" x2="17" y2="12"/><line x1="10" y1="17" x2="14" y2="17"/></svg>
+            ${icon('filter',15)}
             <span>筛选</span><strong id="ml-filter-badge" hidden></strong>
           </button>
           <div id="ml-active-filters" aria-label="已选筛选"></div>
@@ -672,25 +686,25 @@
           <div id="ml-mp-title" class="pl-title"></div>
           <div id="ml-mp-artist" class="pl-artist"></div>
         </div>
-        <button class="pl-btn" id="ml-mp-expand" type="button" aria-label="全屏查看歌词" title="全屏查看歌词"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M21 3l-7 7"/><path d="M9 21H3v-6"/><path d="M3 21l7-7"/></svg></button>
+        <button class="pl-btn" id="ml-mp-expand" type="button" aria-label="全屏查看歌词" title="全屏查看歌词">${icon('expand',16)}</button>
       </div>
       <div class="pl-progress-wrap">
         <div class="pl-progress-bar"><div class="pl-progress-fill" id="ml-mp-fill"></div></div>
         <div class="pl-times"><span id="ml-mp-cur">0:00</span><span id="ml-mp-dur">0:00</span></div>
       </div>
       <div class="pl-controls">
-        <button class="pl-btn" id="ml-mp-seek-back" aria-label="后退15秒"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/><text x="12" y="15.5" text-anchor="middle" font-size="5.5" fill="currentColor" font-family="system-ui,sans-serif" font-weight="600">15</text></svg></button>
-        <button class="pl-btn" id="ml-mp-prev" aria-label="上一首"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6a1 1 0 0 1 1 1v10a1 1 0 1 1-2 0V7a1 1 0 0 1 1-1zm3.2 5.65 7.1-4.8A.43.43 0 0 1 17 7.2v9.6a.43.43 0 0 1-.7.35L9.2 12.35a.43.43 0 0 1 0-.7z"/></svg></button>
-        <button class="pl-btn pl-playpause" id="ml-mp-playpause" aria-label="播放"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg></button>
-        <button class="pl-btn" id="ml-mp-next" aria-label="下一首"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M18 6a1 1 0 0 0-1 1v10a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1zm-3.2 5.65-7.1-4.8A.43.43 0 0 0 7 7.2v9.6a.43.43 0 0 0 .7.35l7.1-4.8a.43.43 0 0 0 0-.7z"/></svg></button>
-        <button class="pl-btn" id="ml-mp-seek-fwd" aria-label="前进15秒"><svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M12 5V1l5 5-5 5V7c-3.31 0-6 2.69-6 6s2.69 6 6 6 6-2.69 6-6h2c0 4.42-3.58 8-8 8s-8-3.58-8-8 3.58-8 8-8z"/><text x="12" y="15.5" text-anchor="middle" font-size="5.5" fill="currentColor" font-family="system-ui,sans-serif" font-weight="600">15</text></svg></button>
-        <button class="pl-btn pl-repeat" id="ml-mp-repeat" aria-label="循环"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
-        <button class="ml-audio-tool" id="ml-mp-pitch-open" type="button" aria-label="打开 MP3 变调面板"><svg class="ml-audio-tool-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg><span class="ml-audio-tool-k">MP3</span><span class="ml-audio-tool-v">练习</span><span class="ml-audio-tool-mode">OFF</span></button>
+        <button class="pl-btn" id="ml-mp-seek-back" aria-label="后退15秒">${icon('rewind',17)}</button>
+        <button class="pl-btn" id="ml-mp-prev" aria-label="上一首">${icon('skipBack',16)}</button>
+        <button class="pl-btn pl-playpause" id="ml-mp-playpause" aria-label="播放">${icon('play',18)}</button>
+        <button class="pl-btn" id="ml-mp-next" aria-label="下一首">${icon('skipForward',16)}</button>
+        <button class="pl-btn" id="ml-mp-seek-fwd" aria-label="前进15秒">${icon('fastForward',17)}</button>
+        <button class="pl-btn pl-repeat" id="ml-mp-repeat" aria-label="循环">${icon('repeat',16)}</button>
+        <button class="ml-audio-tool" id="ml-mp-pitch-open" type="button" aria-label="打开 MP3 变调面板">${icon('settings',15)}<span class="ml-audio-tool-k">MP3</span><span class="ml-audio-tool-v">练习</span><span class="ml-audio-tool-mode">OFF</span></button>
       </div>
       <div class="pl-vol-wrap">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg>
+        ${icon('volume',13)}
         <input class="pl-vol" id="ml-mp-vol" type="range" min="0" max="1" step="0.02" value="1">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02zM18.5 12c0-2.77-1.5-5.15-3.75-6.45v12.9C16.99 17.14 18.5 14.77 18.5 12z"/></svg>
+        ${icon('volume',13)}
       </div>
     </div>
 
@@ -709,14 +723,14 @@
           <div id="ml-player-now-sub"></div>
         </div>
         <div class="ml-pv-actions">
-          <button id="ml-player-view-score" type="button" aria-label="打开这首歌的谱面练习" title="练习 · 谱面 / 移调 / 节拍器"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h11"/><path d="M4 10h11"/><path d="M4 15h7"/><circle cx="17" cy="17" r="3"/><path d="M20 17V8l-4 1"/></svg><span>练习</span></button>
+          <button id="ml-player-view-score" type="button" aria-label="打开这首歌的谱面练习" title="练习 · 谱面 / 移调 / 节拍器">${icon('score',18)}<span>练习</span></button>
           <button id="ml-player-view-menu" type="button" aria-label="切换到队列" title="队列"><span class="ml-pv-ico"></span><span class="ml-pv-label"></span></button>
         </div>
       </div>
       <div id="ml-player-view-grid">
         <aside id="ml-player-rail" aria-hidden="true">
-          <button class="ml-player-rail-btn active" type="button" aria-label="歌词"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h8"/><path d="M7 11h10"/><path d="M9 16h6"/></svg></button>
-          <button class="ml-player-rail-btn" type="button" aria-label="队列面板"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="6" x2="14" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/><line x1="18" y1="10" x2="18" y2="20"/><line x1="13" y1="15" x2="23" y2="15"/></svg></button>
+          <button class="ml-player-rail-btn active" type="button" aria-label="歌词">${icon('lrc',16)}</button>
+          <button class="ml-player-rail-btn" type="button" aria-label="队列面板">${icon('queue',16)}</button>
           <div class="ml-player-rail-dot"></div>
           <div class="ml-player-rail-dot"></div>
           <div class="ml-player-rail-dot"></div>
@@ -734,8 +748,8 @@
             <div id="ml-player-title"></div>
             <div id="ml-player-artist"></div>
             <div id="ml-player-actions">
-              <button class="ml-player-icon-btn" type="button" aria-label="收藏"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 8.6c0 5.2-8.8 11.4-8.8 11.4S3.2 13.8 3.2 8.6a4.8 4.8 0 0 1 8.8-2.6 4.8 4.8 0 0 1 8.8 2.6z"/></svg></button>
-              <button class="ml-player-icon-btn" type="button" aria-label="分享"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.6" y1="13.5" x2="15.4" y2="17.5"/><line x1="15.4" y1="6.5" x2="8.6" y2="10.5"/></svg></button>
+              <button class="ml-player-icon-btn" type="button" aria-label="收藏">${icon('heart',16)}</button>
+              <button class="ml-player-icon-btn" type="button" aria-label="分享">${icon('share',16)}</button>
             </div>
             <div id="ml-player-pills">
               <span id="ml-player-key" class="ml-player-pill"></span>
@@ -758,11 +772,11 @@
         </div>
         <div id="ml-player-dock-center">
           <div id="ml-player-controls">
-            <button class="ml-player-ctl is-ghost" id="ml-player-shuffle" type="button" aria-label="随机播放"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/><line x1="4" y1="4" x2="9" y2="9"/></svg></button>
-            <button class="ml-player-ctl" id="ml-player-prev" type="button" aria-label="上一首"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6a1 1 0 0 1 1 1v10a1 1 0 1 1-2 0V7a1 1 0 0 1 1-1zm3.2 5.65 7.1-4.8A.43.43 0 0 1 17 7.2v9.6a.43.43 0 0 1-.7.35L9.2 12.35a.43.43 0 0 1 0-.7z"/></svg></button>
-            <button class="ml-player-ctl is-main" id="ml-player-playpause" type="button" aria-label="播放"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg></button>
-            <button class="ml-player-ctl" id="ml-player-next" type="button" aria-label="下一首"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 6a1 1 0 0 0-1 1v10a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1zm-3.2 5.65-7.1-4.8A.43.43 0 0 0 7 7.2v9.6a.43.43 0 0 0 .7.35l7.1-4.8a.43.43 0 0 0 0-.7z"/></svg></button>
-            <button class="ml-player-ctl is-ghost" id="ml-player-repeat-toggle" type="button" aria-label="循环"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></button>
+            <button class="ml-player-ctl is-ghost" id="ml-player-shuffle" type="button" aria-label="随机播放">${icon('shuffle',16)}</button>
+            <button class="ml-player-ctl" id="ml-player-prev" type="button" aria-label="上一首">${icon('skipBack',18)}</button>
+            <button class="ml-player-ctl is-main" id="ml-player-playpause" type="button" aria-label="播放">${icon('play',18)}</button>
+            <button class="ml-player-ctl" id="ml-player-next" type="button" aria-label="下一首">${icon('skipForward',18)}</button>
+            <button class="ml-player-ctl is-ghost" id="ml-player-repeat-toggle" type="button" aria-label="循环">${icon('repeat',16)}</button>
           </div>
           <div class="ml-player-progress-wrap">
             <span id="ml-player-cur">0:00</span>
@@ -771,8 +785,8 @@
           </div>
         </div>
         <div id="ml-player-dock-right">
-          <button class="ml-audio-tool ml-audio-tool-dock" id="ml-player-pitch-open" type="button" aria-label="打开 MP3 变调面板"><svg class="ml-audio-tool-ico" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg><span class="ml-audio-tool-k">MP3</span><span class="ml-audio-tool-v">练习</span><span class="ml-audio-tool-mode">OFF</span></button>
-          <span class="ml-player-vol-icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3A4.5 4.5 0 0 0 14 7.97v8.05c1.48-.73 2.5-2.25 2.5-4.02z"/></svg></span>
+          <button class="ml-audio-tool ml-audio-tool-dock" id="ml-player-pitch-open" type="button" aria-label="打开 MP3 变调面板">${icon('settings',15)}<span class="ml-audio-tool-k">MP3</span><span class="ml-audio-tool-v">练习</span><span class="ml-audio-tool-mode">OFF</span></button>
+          <span class="ml-player-vol-icon" aria-hidden="true">${icon('volume',14)}</span>
           <input id="ml-player-dock-vol" type="range" min="0" max="1" step="0.02" value="1">
         </div>
       </div>
@@ -892,42 +906,38 @@
       </div>
       <div id="ml-nowbar-controls">
         <button class="ml-nowbar-btn" id="ml-nowbar-shuffle" type="button" aria-label="随机播放">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 3h5v5"/><path d="M4 20 21 3"/><path d="M21 16v5h-5"/><path d="m15 15 6 6"/><path d="M4 4l5 5"/></svg>
+          ${icon('shuffle',17)}
         </button>
         <button class="ml-nowbar-btn" id="ml-nowbar-prev" type="button" aria-label="上一首">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6a1 1 0 0 1 1 1v10a1 1 0 1 1-2 0V7a1 1 0 0 1 1-1zm3.2 5.65 7.1-4.8A.43.43 0 0 1 17 7.2v9.6a.43.43 0 0 1-.7.35L9.2 12.35a.43.43 0 0 1 0-.7z"/></svg>
+          ${icon('skipBack',18)}
         </button>
         <button class="ml-nowbar-btn is-main" id="ml-nowbar-playpause" type="button" aria-label="播放或暂停">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>
+          ${icon('play',18)}
         </button>
         <button class="ml-nowbar-btn" id="ml-nowbar-next" type="button" aria-label="下一首">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 6a1 1 0 0 0-1 1v10a1 1 0 1 0 2 0V7a1 1 0 0 0-1-1zm-3.2 5.65-7.1-4.8A.43.43 0 0 0 7 7.2v9.6a.43.43 0 0 0 .7.35l7.1-4.8a.43.43 0 0 0 0-.7z"/></svg>
+          ${icon('skipForward',18)}
         </button>
         <button class="ml-nowbar-btn" id="ml-nowbar-repeat" type="button" aria-label="单曲循环">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>
+          ${icon('repeat',17)}
         </button>
         <div id="ml-nowbar-times"><span id="ml-nowbar-cur">0:00</span><span id="ml-nowbar-dur">0:00</span></div>
       </div>
       <div id="ml-nowbar-extra">
         <button class="ml-nowbar-btn" id="ml-nowbar-expand" type="button" aria-label="打开歌词" title="歌词">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="11" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><path d="M12 18v4"/><path d="M8 22h8"/></svg>
+          ${icon('lrc',17)}
         </button>
         <button class="ml-nowbar-btn" id="ml-nowbar-queue" type="button" aria-label="播放队列" title="播放队列">
-          <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h13"/><path d="M3 12h13"/><path d="M3 18h9"/><path d="m16 15 5 3-5 3Z"/></svg>
+          ${icon('queue',17)}
         </button>
       </div>
     </div>
     <nav id="ml-bottom-nav" aria-label="手机底部导航">
       <button class="ml-bottom-link active" type="button" data-nav="home">${icon('home')}<span>首页</span></button>
-      <button class="ml-bottom-link" type="button" data-nav="search">${icon('search')}<span>搜索</span></button>
-      <!-- 诗歌库：侧栏一直有，手机底栏原来漏了。
-           「搜索」对不熟悉的人不够直白 —— 得先知道要找什么才会去搜；
-           「诗歌库」是"进去随便翻"的入口，两者不能互相替代。
-           data-nav 的点击处理是 #ml-side-nav 与 #ml-bottom-nav 共用的（见 root.querySelectorAll
-           那句），所以这里只加按钮，不用另外接事件。 -->
+
       <button class="ml-bottom-link" type="button" data-nav="library">${icon('library')}<span>诗歌库</span></button>
       <button class="ml-bottom-link" type="button" data-nav="playlist">${icon('queue')}<span>播放列表</span></button>
       <button class="ml-bottom-link" type="button" data-nav="favorites">${icon('heart')}<span>收藏</span></button>
+      <button class="ml-bottom-link" id="ml-nav-tools" type="button" data-nav="tools" aria-label="打开工具箱" title="工具箱" aria-haspopup="dialog" aria-expanded="false" aria-controls="ml-tools-dialog">${icon('tools',20)}<span>工具</span></button>
     </nav>
     <div id="ml-filter-drawer" hidden>
       <button id="ml-filter-backdrop" type="button" aria-label="关闭筛选"></button>
@@ -1026,15 +1036,15 @@
         <div id="ml-notice-sub">需要申请新歌练习可联系 <strong>YuEn</strong>。制作一首歌通常需要约 <strong>1–2 小时</strong>，请尽量提前说明。</div>
         <div id="ml-notice-actions">
           <button class="ml-notice-action is-copy" id="ml-copy-wechat" type="button">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M9.5 4C5.36 4 2 6.92 2 10.5c0 2.04 1.06 3.86 2.72 5.08L4 18l2.5-1.25A8.6 8.6 0 0 0 9.5 17c.17 0 .34 0 .5-.01A5.7 5.7 0 0 1 9.5 15c0-3.04 2.69-5.5 6-5.5.17 0 .34 0 .5.01C15.41 6.67 12.73 4 9.5 4zm8 7c-2.76 0-5 1.79-5 4s2.24 4 5 4c.72 0 1.4-.14 2-.38L22 20l-.62-1.86A3.93 3.93 0 0 0 22.5 15c0-2.21-2.24-4-5-4z"/></svg>
+            ${icon('chat',17)}
             <span class="ml-notice-action-title">复制微信号 YuEn</span>
           </button>
           <button class="ml-notice-action" id="ml-open-ins" type="button">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+            ${icon('camera',17)}
             <span class="ml-notice-action-title">打开 YuEn 的 Instagram</span>
           </button>
           <button class="ml-notice-action" id="ml-open-church-ins" type="button">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/></svg>
+            ${icon('camera',17)}
             <span class="ml-notice-action-title">教会青年 Instagram</span>
           </button>
         </div>
@@ -3710,7 +3720,7 @@
     }
     const meta=document.querySelector('meta[name="theme-color"]:not([media])')||document.createElement('meta');
     meta.setAttribute('name','theme-color');
-    meta.setAttribute('content',resolved==='dark'?'#0E0E0E':'#F4EFE7');
+    meta.setAttribute('content',resolved==='dark'?'#000000':'#F4EFE7');
     if(!meta.parentNode) document.head.appendChild(meta);
     const btn=$('ml-nav-theme');
     if(btn){
@@ -3743,7 +3753,7 @@
        两处 `html[data-resolved-theme="dark"]` 的定义。只改 CSS 不改这里 = 白改。
        中性黑灰 + 赤陶橙（与浅色模式 #C76524 同色相的提亮版）。 */
     const palette=dark ? {
-      bg:'#0E0E0E',
+      bg:'#000000',
       bg2:'#161616',
       bg3:'#202020',
       accent:'#E8845A',
@@ -4018,6 +4028,10 @@
     const section=$('ml-worship-picks');
     if(!section||!song) return;
     section.dataset.activeId=song.id;
+    section.style.setProperty('--ml-cover-color',_mpSongAccent(song));
+    if(song.cover) readCoverColor(song.cover).then(color=>{
+      if(section.dataset.activeId===String(song.id)) section.style.setProperty('--ml-cover-color',color);
+    });
     section.style.setProperty('--wp-cover',song.cover?`url("${String(song.cover).replace(/"/g,'\\"')}")`:'none');
     $('ml-wp-title').textContent=song.title||'今日敬拜推荐';
     $('ml-wp-artist').textContent=song.displayArtist||song.artist||song.source||'诗歌';
@@ -4209,7 +4223,7 @@
     if(!window.pinyinPro||!songs.length) return;
     songs.forEach(s=>Object.assign(s,buildPinyinIndex(s)));
     try{ renderHomePanels(); }catch(_){}
-    if(query) { try{ render(); }catch(_){} }
+    if(query||root.dataset.view==='library') { try{ render(); }catch(_){} }
   }
   function schedulePinyinPreload(){
     const go=()=>ensurePinyinPro();
@@ -4792,8 +4806,9 @@
      抽成函数是因为「全部专辑 / 全部作者」索引页用的是同一批卡片，
      两处各接一遍的话，以后加一种卡就会漏掉一处。 */
   function wireShelfCards(box){
-    box.querySelectorAll('img[data-art-initial]').forEach(img=>{
+    box.querySelectorAll('.ml-shelf-art img[data-art-initial]').forEach(img=>{
       const applyFallback=()=>{
+        if(!img.parentElement) return;
         const next=img.dataset.artFallback;
         if(next){
           img.removeAttribute('data-art-fallback');
@@ -4803,6 +4818,7 @@
         const span=document.createElement('span');
         span.className='ml-art-fallback';
         span.textContent=img.dataset.artInitial||'♪';
+        img.parentElement.classList.remove('is-artist-logo');
         img.replaceWith(span);
       };
       img.addEventListener('error',applyFallback);
@@ -4861,9 +4877,9 @@
 
   /* 卡片构造抽出来，首页货架和「全部」网格共用同一份 —— 两处各写一遍的话，
      改了封面兜底或副标题格式就会有一处漏改。 */
-  function artistCardHTML(item,art,coverSong,logo,initial){
+  function artistCardHTML(item,logo,initial){
     return `<button class="ml-shelf-card is-round" type="button" data-source="${esc(item.name)}">
-      <span class="ml-shelf-art">${art?`<img src="${esc(art)}" alt="" data-art-fallback="${coverSong&&coverSong.cover&&logo!==coverSong.cover?esc(coverSong.cover):''}" data-art-initial="${initial}">`:`<span class="ml-art-fallback">${initial}</span>`}</span>
+      <span class="ml-shelf-art${logo?' is-artist-logo':''}">${logo?`<img src="${esc(logo)}" alt="" data-art-initial="${initial}" loading="lazy">`:`<span class="ml-art-fallback">${initial}</span>`}</span>
       <span class="ml-shelf-title">${esc(item.name)}</span>
       <span class="ml-shelf-sub">${item.count} 首</span>
     </button>`;
@@ -4923,13 +4939,11 @@
           <button class="ml-shelf-more" type="button" data-browse="artists">全部作者 ${icon('chevronRight',15)}</button>
         </div>
         <div class="ml-shelf-row">${artists.map(item=>{
-          // 头像三级兜底：artist/ 里的图 → 该作者第一首有封面的歌 → 名字首字。
+          // 作者头像：artist/ 的 logo；缺图时保留名字首字。
           // 兜底逻辑在下面统一挂 error 监听（inline onerror + loading=lazy 不可靠）。
           const logo=artistLogoUrl(item.name);
-          const coverSong=songs.find(s=>s.cover&&getArtistGroupName(s)===item.name);
           const initial=esc(Array.from(item.name)[0]||'♪');
-          const art=logo||(coverSong&&coverSong.cover)||'';
-          return artistCardHTML(item,art,coverSong,logo,initial);
+          return artistCardHTML(item,logo,initial);
         }).join('')}</div>
       </section>`;
     }
@@ -5209,9 +5223,8 @@
       $('ml-result-count').textContent=`${items.length} 位作者 / 团队`;
       list.innerHTML=items.map(item=>{
         const logo=artistLogoUrl(item.name);
-        const coverSong=songs.find(x=>x.cover&&getArtistGroupName(x)===item.name);
         const initial=esc(Array.from(item.name)[0]||'♪');
-        return artistCardHTML(item,logo||(coverSong&&coverSong.cover)||'',coverSong,logo,initial);
+        return artistCardHTML(item,logo,initial);
       }).join('');
     }
     wireShelfCards(list);
@@ -5364,6 +5377,10 @@
     }
     const label=cleanText(group.name);
     const initial=(label&&label!=='单曲与其他')?Array.from(label)[0]:'♪';
+    const logo=mode==='artist'?artistLogoUrl(label):'';
+    if(logo){
+      return `<div class="ml-group-cover is-artist-logo" aria-hidden="true"><img src="${esc(logo)}" alt="" loading="lazy" data-art-initial="${esc(initial)}" onerror="if(this.parentElement){this.parentElement.classList.replace('is-artist-logo','is-letter');this.parentElement.textContent=this.dataset.artInitial}"></div>`;
+    }
     return `<div class="ml-group-cover is-letter" aria-hidden="true">${esc(initial)}</div>`;
   }
   function renderGroupedSongList(items,q){
@@ -8085,14 +8102,7 @@ function lyricHlCreateController(root,getSongId){
   eraserDot.type='button';
   eraserDot.setAttribute('aria-label','橡皮擦');
   eraserDot.style.cssText='cursor:pointer;width:20px;height:20px;border-radius:5px;border:none;padding:0;background:transparent;display:inline-flex;align-items:center;justify-content:center;transition:transform .12s ease;';
-  eraserDot.innerHTML=
-    '<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">'+
-      '<g transform="rotate(-28 12 12)">'+
-        '<rect x="4" y="8" width="16" height="10" rx="2.2" fill="#F0899E" stroke="#B84D63" stroke-width="1.1"/>'+
-        '<path d="M4.6 12h14.8" stroke="#B84D63" stroke-width="1.1"/>'+
-        '<rect x="4" y="8" width="16" height="4" rx="2" fill="#FBD3DC"/>'+
-      '</g>'+
-    '</svg>';
+  eraserDot.innerHTML=icon('eraser',16);
   eraserDot.addEventListener('click',function(ev){
     ev.stopPropagation();
     colorIdx=-1;
@@ -10161,12 +10171,70 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       b:parseInt(h.slice(4,6),16)
     };
   }
+  const _coverColorCache=new Map();
+  function coverDominantColor(image){
+    const canvas=document.createElement('canvas');canvas.width=canvas.height=16;
+    const ctx=canvas.getContext('2d',{willReadFrequently:true});
+    if(!ctx) throw new Error('canvas unavailable');
+    ctx.drawImage(image,0,0,16,16);
+    const pixels=ctx.getImageData(0,0,16,16).data,buckets=new Map();
+    let total=0,red=0,green=0,blue=0;
+    for(let i=0;i<pixels.length;i+=4){
+      if(pixels[i+3]<128) continue;
+      const r=pixels[i],g=pixels[i+1],b=pixels[i+2],max=Math.max(r,g,b),min=Math.min(r,g,b);
+      total++;red+=r;green+=g;blue+=b;
+      const saturation=max?(max-min)/max:0;
+      if(max<30||min>235||saturation<.15) continue;
+      const key=(r>>5)+','+(g>>5)+','+(b>>5);
+      const bin=buckets.get(key)||{weight:0,count:0,r:0,g:0,b:0};
+      bin.weight+=.4+saturation;bin.count++;bin.r+=r;bin.g+=g;bin.b+=b;buckets.set(key,bin);
+    }
+    const winner=[...buckets.values()].sort((a,b)=>b.weight-a.weight)[0];
+    const rgb=winner?[winner.r/winner.count,winner.g/winner.count,winner.b/winner.count]:total?[red/total,green/total,blue/total]:[242,163,107];
+    return '#'+rgb.map(n=>Math.round(n).toString(16).padStart(2,'0')).join('').toUpperCase();
+  }
+  function coverColorSource(src){
+    if(!src) return '';
+    try{return new URL(src,document.baseURI).href;}catch(_){return String(src);}
+  }
+  function readCoverColor(src){
+    src=coverColorSource(src);
+    if(_coverColorCache.has(src)) return _coverColorCache.get(src).promise;
+    const entry={color:'',promise:null};_coverColorCache.set(src,entry);
+    entry.promise=new Promise(resolve=>{
+      const image=new Image();image.crossOrigin='anonymous';image.decoding='async';
+      const finish=color=>{entry.color=color;resolve(color);};
+      image.onload=()=>{try{finish(coverDominantColor(image));}catch(_){finish(_mpHashColor(src));}};
+      image.onerror=()=>finish(_mpHashColor(src));image.src=src;
+    });
+    return entry.promise;
+  }
+  function applyCoverTint(image){
+    if(image?.tagName!=='IMG'||!image.complete||!image.naturalWidth) return;
+    const host=image.closest('.ml-tile,.ml-song-card,.ml-shelf-card[data-id],.ml-shelf-card[data-album],.ml-q-row,.ml-wp-card,#ml-wp-hero,#ml-nowbar,#ml-player-view,#ml-miniplayer');
+    if(!host) return;
+    const src=image.currentSrc||image.src;
+    host.dataset.coverTintSource=src;
+    host.style.setProperty('--ml-cover-color',_coverColorCache.get(src)?.color||_mpHashColor(src));
+    host.classList.add('has-cover-tint');
+    readCoverColor(src).then(color=>{
+      if(!host.isConnected||host.dataset.coverTintSource!==src) return;
+      host.style.setProperty('--ml-cover-color',color);
+      if(coverColorSource(_mpCurrentSong?.cover)===src) _mpApplyPlayerAccent(_mpCurrentSong);
+    });
+  }
+  function initCoverTints(){
+    root.addEventListener('load',event=>applyCoverTint(event.target),true);
+    root.querySelectorAll('img').forEach(applyCoverTint);
+  }
   function _mpSongAccent(song){
     const fields=['scoreColor','scoreBg','scoreBackground','backgroundColor','themeColor','dominantColor','coverColor','color'];
     for(const key of fields){
       const normalized=_mpNormalizeHexColor(song&&song[key]);
       if(normalized) return normalized;
     }
+    const cover=coverColorSource(song?.cover);
+    if(cover&&_coverColorCache.get(cover)?.color) return _coverColorCache.get(cover).color;
     return _mpHashColor((song&&song.cover)||(song&&song.scoreIMG)||(song&&song.title)||(song&&song.id));
   }
   function _mpApplyPlayerAccent(song){
@@ -10199,8 +10267,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       const ico=btn.querySelector('.ml-pv-ico');
       const lab=btn.querySelector('.ml-pv-label');
       if(ico) ico.innerHTML=toQueue
-        ? `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round"><line x1="4" y1="6" x2="14" y2="6"/><line x1="4" y1="12" x2="14" y2="12"/><line x1="4" y1="18" x2="14" y2="18"/><line x1="18" y1="10" x2="18" y2="20"/><line x1="13" y1="15" x2="23" y2="15"/></svg>`
-        : `<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"><path d="M8 6h8"/><path d="M7 11h10"/><path d="M9 16h6"/></svg>`;
+        ? icon('queue',17) : icon('lrc',17);
       if(lab) lab.textContent=toQueue?'队列':'歌词';
       btn.setAttribute('aria-label',toQueue?'切换到队列':'切换到歌词');
       btn.title=toQueue?'队列':'歌词';
@@ -10349,7 +10416,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       </span>
       <span class="ml-q-actions">
         <button class="ml-q-btn ml-q-remove" type="button" aria-label="从队列移除">${icon('close',15)}</button>
-        <button class="ml-q-btn ml-q-grip" type="button" aria-label="拖动排序" title="拖动排序"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button>
+        <button class="ml-q-btn ml-q-grip" type="button" aria-label="拖动排序" title="拖动排序">${icon('grip',15)}</button>
       </span>`;
     return row;
   }
@@ -10508,13 +10575,13 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     const stage=$('ml-mp-stage');
     if(btn){
       btn.innerHTML=isPlaying
-        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5h3v14H8zm5 0h3v14h-3z"/></svg>`
-        : `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
+        ? icon('pause',18)
+        : icon('play',18);
     }
     if(xbtn){
       xbtn.innerHTML=isPlaying
-        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5h3v14H8zm5 0h3v14h-3z"/></svg>`
-        : `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
+        ? icon('pause',18)
+        : icon('play',18);
     }
     if(stage) stage.classList.toggle('playing', !!isPlaying);
     /* 队列里那三根跳动的条，暂停时要停住 —— 没声音了还在跳会让人以为还在放。
@@ -10529,8 +10596,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     }
     if(nbtn){
       nbtn.innerHTML=isPlaying
-        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5h3v14H8zm5 0h3v14h-3z"/></svg>`
-        : `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5.14v14l11-7-11-7z"/></svg>`;
+        ? icon('pause',18)
+        : icon('play',18);
     }
   }
   function _mpParseLrc(text,song){
@@ -11415,7 +11482,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     minusBtn.setAttribute('aria-label','速度减一');plusBtn.setAttribute('aria-label','速度加一');
     const resetBtn=document.createElement('button');resetBtn.className='ml-met-btn';resetBtn.type='button';resetBtn.title='重置';
     resetBtn.setAttribute('aria-label','重置节拍器速度');
-    resetBtn.innerHTML='<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>';
+    resetBtn.innerHTML=icon('rotateCcw',15);
     const range=document.createElement('input');
     range.className='ml-met-range';range.type='range';
     range.min='30';range.max='240';range.step='1';range.value=String(initialBpm);
@@ -11712,7 +11779,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     titleRow.appendChild(coverThumb);titleRow.appendChild(infoDiv);
 
     const togBtn=document.createElement('button');togBtn.className='sw-tog';
-    togBtn.innerHTML='<svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"></polyline></svg> 移调';
+    togBtn.innerHTML=icon('chevronDown',18)+' 移调';
     const hd=document.createElement('div');hd.className='sw-hd';
     hd.appendChild(titleRow);hd.appendChild(togBtn);wrap.appendChild(hd);
 
@@ -11724,7 +11791,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         ${icon('arrowLeftRight',15)}<span>移调</span>
       </button>
       <button type="button" class="ml-practice-chip" data-act="tempo" ${hasSongAudio(s)?'':'disabled'} aria-label="变速变调练习">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>
+        ${icon('settings',15)}
         <span>变速</span>
       </button>
       <button type="button" class="ml-practice-chip" data-act="metro" aria-label="节拍器">
@@ -12232,7 +12299,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       shape_arrow:'<path d="M5 19L19 5"/><path d="M12.5 5H19v6.5"/>',
       chevdown:'<circle cx="12" cy="12" r="9"/><path d="m8.5 10.5 3.5 3.5 3.5-3.5"/>'
     };
-    const swIcoSvg=(name)=>'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+SW_ICONS[name]+'</svg>';
+    const swIcoSvg=(name)=>CONSOLE_ICONS[name]?icon(name,22):'<svg class="ml-console-icon" viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="square" stroke-linejoin="miter" aria-hidden="true" focusable="false">'+SW_ICONS[name]+'</svg>';
     const swIcoBtn=(name,label)=>{
       const b=document.createElement('button');
       b.type='button';b.className='sw-ico-btn';
@@ -13118,5 +13185,6 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     enrichSong
   };
   window.dispatchEvent(new CustomEvent('cecp:musiclib-engine-ready',{detail:window.__CECP_MUSICLIB_ENGINE__}));
+  initCoverTints();
   loadSongs();
 })();

@@ -66,7 +66,7 @@ html[data-resolved-theme="light"] body{
 }
 html[data-resolved-theme="dark"],
 html[data-resolved-theme="dark"] body{
-  background:#0E0E0E !important;
+  background:#000000 !important;
 }
 
 #music-library{
@@ -859,11 +859,11 @@ html[data-resolved-theme="light"] body.ml-fullscreen{
 
 @media(prefers-color-scheme:dark){
   #music-library{
-    --halo-bg:#0E0E0E;
-    --halo-bg2:#161616;
-    --halo-bg3:#202020;
-    --halo-accent:#E8845A;
-    --halo-accent-light:rgba(232,132,90,.16);
+    --halo-bg:#000000;
+    --halo-bg2:rgba(12,12,12,.88);
+    --halo-bg3:rgba(22,22,22,.88);
+    --halo-accent:#F2A36B;
+    --halo-accent-light:rgba(242,163,107,.20);
     --halo-text:#f7f1ea;
     --halo-text2:rgba(247,241,234,.7);
     --halo-text3:rgba(247,241,234,.38);
@@ -875,7 +875,7 @@ html[data-resolved-theme="light"] body.ml-fullscreen{
     --hero-chip-bg:rgba(45,35,29,.88);
     --card-grad:linear-gradient(180deg,rgba(39,31,26,.9),rgba(28,22,18,.94));
     --card-hover:linear-gradient(180deg,rgba(46,36,30,.96),rgba(34,26,22,.98));
-    --detail-grad:radial-gradient(circle at top, rgba(255,255,255,.05), transparent 26%),linear-gradient(180deg,#1A1A1A 0%,#0E0E0E 100%);
+    --detail-grad:radial-gradient(circle at top, rgba(255,255,255,.05), transparent 26%),linear-gradient(180deg,#1A1A1A 0%,#000000 100%);
 
     /* Player card — dark */
     --player-bg:rgba(20,20,20,0.92);
@@ -2947,7 +2947,7 @@ html,body,#music-library{
   aspect-ratio:1/1;
   border-radius:12px;
   border:1px solid rgba(255,255,255,.1);
-  background:#0E0E0E;
+  background:#000000;
   overflow:hidden;
   display:flex;
   align-items:center;
@@ -4035,9 +4035,9 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
 
 /* ===== Daily Worship Picks ===== */
 #music-library #ml-worship-picks{
-  --wp-ink:#f7f3e8;
-  --wp-muted:rgba(247,243,232,.72);
-  --wp-soft:rgba(247,243,232,.46);
+  --wp-ink:#ffffff;
+  --wp-muted:rgba(255,255,255,.72);
+  --wp-soft:rgba(255,255,255,.46);
   --wp-line:rgba(255,255,255,.14);
   --wp-line-strong:rgba(255,255,255,.24);
   --wp-gold:#E8845A;
@@ -4059,7 +4059,7 @@ html.ml-fullscreen body.ml-fullscreen #music-library .ml-group-grid{
   background:
     radial-gradient(circle at 12% 8%,rgba(232,132,90,.25),transparent 28%),
     radial-gradient(circle at 84% 22%,rgba(65,108,210,.22),transparent 36%),
-    linear-gradient(135deg,#0E0E0E 0%,#202020 48%,#0B0B0B 100%);
+    linear-gradient(135deg,#000000 0%,#202020 48%,#0B0B0B 100%);
   box-shadow:var(--wp-shadow);
 }
 #music-library #ml-worship-picks::before,
@@ -4688,7 +4688,7 @@ body{
   :root,
   html,
   body{
-    background-color:#0E0E0E !important;
+    background-color:#000000 !important;
   }
 }
 
@@ -4785,16 +4785,16 @@ body{
     html.ml-fullscreen body.ml-fullscreen,
     body.ml-fullscreen,
     body.ml-fullscreen #music-library{
-      background:#0E0E0E !important;
-      background-color:#0E0E0E !important;
+      background:#000000 !important;
+      background-color:#000000 !important;
     }
 
     body.ml-fullscreen #music-library::after{
-      background:#0E0E0E;
+      background:#000000;
     }
 
     #music-library #ml-detail{
-      background:#0E0E0E;
+      background:#000000;
     }
   }
 }
@@ -5174,11 +5174,11 @@ html[data-resolved-theme="dark"] .ml-score-image-page{
 @media (max-width:860px) and (orientation:landscape){#ml-worship-picks,#ml-home-grid,#ml-source-section-head{display:none !important;}}
 
 /* Round 2: requested restored warm dark palette, inline artist filters, true queue, and continuous score display. */
-html[data-resolved-theme="dark"] body.ml-fullscreen{background:#0E0E0E !important;}
+html[data-resolved-theme="dark"] body.ml-fullscreen{background:#000000 !important;}
 
 
 html[data-resolved-theme="dark"] #music-library #ml-player-view{
-  background:#0E0E0E !important;
+  background:#000000 !important;
   color:#f7f1ea !important;
 }
 html[data-resolved-theme="dark"] #music-library #ml-player-side,
@@ -5437,23 +5437,23 @@ html[data-resolved-theme="dark"] #ml-playlist-panel{box-shadow:0 28px 90px rgba(
 html[data-resolved-theme="dark"],
 html[data-resolved-theme="dark"] body,
 html[data-resolved-theme="dark"] body.ml-fullscreen{
-  background:#0E0E0E !important;
+  background:#000000 !important;
 }
 html[data-resolved-theme="dark"] #music-library{
-  --bg:#0E0E0E;
-  --bg-secondary:#202020;
-  --surface:#161616;
-  --surface-secondary:#202020;
-  --surface-hover:#242424;
-  --surface-active:rgba(232,132,90,.14);
-  --text-primary:#f7f3e8;
-  --text-secondary:rgba(247,243,232,.72);
-  --text-muted:rgba(247,243,232,.46);
+  --bg:#000000;
+  --bg-secondary:#101010;
+  --surface:rgba(12,12,12,.88);
+  --surface-secondary:rgba(22,22,22,.88);
+  --surface-hover:#202020;
+  --surface-active:rgba(255,255,255,.14);
+  --text-primary:#ffffff;
+  --text-secondary:rgba(255,255,255,.72);
+  --text-muted:rgba(255,255,255,.46);
   --divider:rgba(255,255,255,.14);
-  --accent:#E8845A;
-  --accent-hover:#F09B72;
-  --accent-active:#C76524;
-  --accent-soft:rgba(232,132,90,.16);
+  --accent:#F2A36B;
+  --accent-hover:#F9BC8B;
+  --accent-active:#E78B48;
+  --accent-soft:rgba(242,163,107,.20);
   --chord-ink:#F4A67E;
   --success:#9bbfa7;
   --danger:#ee9383;
@@ -5462,17 +5462,17 @@ html[data-resolved-theme="dark"] #music-library{
   --shadow-lg:0 28px 90px rgba(0,0,0,.42),0 1px 0 rgba(255,255,255,.06) inset;
   --player-bg:rgba(10,16,31,.72);
   --player-border:rgba(255,255,255,.14);
-  --player-text:#f7f3e8;
-  --player-text2:rgba(247,243,232,.62);
-  --player-text3:rgba(247,243,232,.38);
-  --player-fill:#f7f3e8;
+  --player-text:#ffffff;
+  --player-text2:rgba(255,255,255,.62);
+  --player-text3:rgba(255,255,255,.38);
+  --player-fill:#ffffff;
   --player-track:rgba(255,255,255,.15);
-  --player-btn:rgba(247,243,232,.62);
+  --player-btn:rgba(255,255,255,.62);
   --player-btn-hover-bg:rgba(255,255,255,.09);
   --player-playpause-bg:rgba(255,255,255,.15);
   --player-playpause-hover:rgba(255,255,255,.24);
-  --player-lrc-dim:rgba(247,243,232,.25);
-  background:#0E0E0E !important;
+  --player-lrc-dim:rgba(255,255,255,.25);
+  background:#000000 !important;
 }
 html[data-resolved-theme="dark"] #ml-sidebar,
 html[data-resolved-theme="dark"] #ml-header,
@@ -5499,9 +5499,9 @@ html[data-resolved-theme="dark"] #ml-back{
 }
 
 html[data-resolved-theme="dark"] #music-library #ml-worship-picks{
-  --wp-ink:#f7f3e8;
-  --wp-muted:rgba(247,243,232,.72);
-  --wp-soft:rgba(247,243,232,.46);
+  --wp-ink:#ffffff;
+  --wp-muted:rgba(255,255,255,.72);
+  --wp-soft:rgba(255,255,255,.46);
   --wp-line:rgba(255,255,255,.14);
   --wp-line-strong:rgba(255,255,255,.24);
   --wp-gold:#E8845A;
@@ -5511,7 +5511,7 @@ html[data-resolved-theme="dark"] #music-library #ml-worship-picks{
   background:
     radial-gradient(circle at 12% 8%,rgba(232,132,90,.25),transparent 28%),
     radial-gradient(circle at 84% 22%,rgba(65,108,210,.22),transparent 36%),
-    linear-gradient(135deg,#0E0E0E 0%,#202020 48%,#0B0B0B 100%) !important;
+    linear-gradient(135deg,#000000 0%,#202020 48%,#0B0B0B 100%) !important;
 }
 html[data-resolved-theme="dark"] #music-library #ml-wp-hero,
 html[data-resolved-theme="dark"] #music-library #ml-wp-side{
@@ -5700,8 +5700,8 @@ body.ml-detail-lock{overflow:hidden !important;}
   -webkit-backdrop-filter:blur(28px) saturate(180%) !important;
 }
 #music-library #ml-player-view{
-  background:#0E0E0E !important;
-  color:#f7f3e8 !important;
+  background:#000000 !important;
+  color:#ffffff !important;
 }
 #music-library #ml-player-lyrics,
 #music-library #ml-player-side,
@@ -6450,7 +6450,7 @@ body.ml-detail-lock{overflow:hidden !important;}
   scroll-padding-block:40vh !important;
   /* 底板中性黑；模糊封面由内层 #ml-player-lyrics-bg 负责，
      backdrop-filter 模糊的是面板「背后」的东西，这里已经用不上了。 */
-  background:#0E0E0E !important;
+  background:#000000 !important;
   position:relative;
   isolation:isolate;
 }
@@ -10125,7 +10125,7 @@ html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
     radial-gradient(115% 70% at 50% -8%,
       color-mix(in srgb, var(--player-accent,#E8845A) 13%, transparent),
       transparent 62%),
-    #0E0E0E;
+    #000000;
   transition:background .45s ease;
 }
 /* 播放页里其余内容都压在背景板上面 */
@@ -10650,46 +10650,46 @@ html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
 }
 @media (prefers-color-scheme:dark){
   html:not([data-resolved-theme="light"]) #music-library{
-    --halo-bg:#0E0E0E;
-    --halo-bg2:#161616;
-    --halo-bg3:#202020;
-    --halo-text:#f7f3e8;
-    --halo-text2:rgba(247,243,232,.72);
-    --halo-text3:rgba(247,243,232,.46);
-    --halo-accent:#E8845A;
-    --halo-accent-hover:#F09B72;
+    --halo-bg:#000000;
+    --halo-bg2:rgba(12,12,12,.88);
+    --halo-bg3:rgba(22,22,22,.88);
+    --halo-text:#ffffff;
+    --halo-text2:rgba(255,255,255,.72);
+    --halo-text3:rgba(255,255,255,.46);
+    --halo-accent:#F2A36B;
+    --halo-accent-hover:#F9BC8B;
     --halo-border:rgba(255,255,255,0.14);
     --halo-border-md:rgba(255,255,255,0.24);
-    --halo-accent-light:rgba(232,132,90,.16);
+    --halo-accent-light:rgba(242,163,107,.20);
     --halo-shadow:0 18px 48px rgba(0,0,0,.28),0 1px 0 rgba(255,255,255,.04) inset;
-    --hero-grad:radial-gradient(circle at top left, rgba(232,132,90,.2), transparent 28%),linear-gradient(135deg,#0E0E0E 0%,#202020 58%,#0B0B0B 100%);
-    --hero-panel:rgba(22,22,22,.72);
-    --hero-chip-bg:rgba(32,32,32,.92);
-    --card-grad:linear-gradient(180deg,rgba(32,32,32,.94),rgba(22,22,22,.96));
-    --card-hover:linear-gradient(180deg,rgba(42,42,42,.98),rgba(26,26,26,.98));
-    --detail-grad:radial-gradient(circle at top, rgba(232,132,90,.12), transparent 26%),linear-gradient(180deg,#202020 0%,#0E0E0E 100%);
+    --hero-grad:linear-gradient(135deg,#111111,#000000);
+    --hero-panel:rgba(12,12,12,.82);
+    --hero-chip-bg:rgba(24,24,24,.88);
+    --card-grad:linear-gradient(180deg,rgba(20,20,20,.88),rgba(8,8,8,.92));
+    --card-hover:linear-gradient(180deg,rgba(30,30,30,.94),rgba(16,16,16,.96));
+    --detail-grad:linear-gradient(180deg,#111111,#000000);
   }
 }
 html[data-resolved-theme="dark"] #music-library{
-  --halo-bg:#0E0E0E;
-  --halo-bg2:#161616;
-  --halo-bg3:#202020;
-  --halo-text:#f7f3e8;
-  --halo-text2:rgba(247,243,232,.72);
-  --halo-text3:rgba(247,243,232,.46);
-  --halo-accent:#E8845A;
-  --halo-accent-hover:#F09B72;
+  --halo-bg:#000000;
+  --halo-bg2:rgba(12,12,12,.88);
+  --halo-bg3:rgba(22,22,22,.88);
+  --halo-text:#ffffff;
+  --halo-text2:rgba(255,255,255,.72);
+  --halo-text3:rgba(255,255,255,.46);
+  --halo-accent:#F2A36B;
+  --halo-accent-hover:#F9BC8B;
   --halo-border:rgba(255,255,255,0.14);
   --halo-border-md:rgba(255,255,255,0.24);
-  --halo-accent-light:rgba(232,132,90,.16);
+  --halo-accent-light:rgba(242,163,107,.20);
   --chord-ink:#F4A67E;
   --halo-shadow:0 18px 48px rgba(0,0,0,.28),0 1px 0 rgba(255,255,255,.04) inset;
-  --hero-grad:radial-gradient(circle at top left, rgba(232,132,90,.2), transparent 28%),linear-gradient(135deg,#0E0E0E 0%,#202020 58%,#0B0B0B 100%);
-  --hero-panel:rgba(22,22,22,.72);
-  --hero-chip-bg:rgba(32,32,32,.92);
-  --card-grad:linear-gradient(180deg,rgba(32,32,32,.94),rgba(22,22,22,.96));
-  --card-hover:linear-gradient(180deg,rgba(42,42,42,.98),rgba(26,26,26,.98));
-  --detail-grad:radial-gradient(circle at top, rgba(232,132,90,.12), transparent 26%),linear-gradient(180deg,#202020 0%,#0E0E0E 100%);
+  --hero-grad:linear-gradient(135deg,#111111,#000000);
+  --hero-panel:rgba(12,12,12,.82);
+  --hero-chip-bg:rgba(24,24,24,.88);
+  --card-grad:linear-gradient(180deg,rgba(20,20,20,.88),rgba(8,8,8,.92));
+  --card-hover:linear-gradient(180deg,rgba(30,30,30,.94),rgba(16,16,16,.96));
+  --detail-grad:linear-gradient(180deg,#111111,#000000);
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
@@ -11031,3 +11031,114 @@ html[data-resolved-theme="dark"] #music-library .ml-staff-panel{
 }
 #music-library .ml-staff-surface{min-width:auto;color:inherit;background:transparent;}
 #music-library .ml-staff-surface svg{display:block;color:inherit;fill:currentColor;}
+
+/* StudioLive console finish: neutral glass surfaces and shared optical alignment. */
+html[data-resolved-theme="dark"]{
+  color-scheme:dark;
+  --surface:rgba(12,12,12,.88);--surface-secondary:rgba(22,22,22,.88);
+  --text-primary:#fff;--text-secondary:rgba(255,255,255,.76);--text-muted:rgba(255,255,255,.54);
+  --modal-bg:rgba(12,12,12,.94);--modal-text:#fff;--modal-body-bg:rgba(255,255,255,.05);
+  --modal-sub:rgba(255,255,255,.76);--modal-kicker:rgba(255,255,255,.54);
+  --modal-close-bg:rgba(255,255,255,.08);--modal-close-color:#fff;
+  --modal-action-bg:#181818;--modal-action-hover:#242424;--modal-action-active:#303030;
+}
+html[data-resolved-theme="dark"] #music-library{
+  --player-bg:rgba(8,8,8,.88);--player-text:#fff;--player-text2:rgba(255,255,255,.76);
+  --player-text3:rgba(255,255,255,.54);--player-btn:rgba(255,255,255,.76);
+  --notice-bg:#111;--notice-hover:#1c1c1c;--notice-text:#fff;
+  --modal-bg:rgba(12,12,12,.94);--modal-text:#fff;--modal-body-bg:rgba(255,255,255,.05);
+  --modal-sub:rgba(255,255,255,.76);--modal-kicker:rgba(255,255,255,.54);
+  --modal-close-bg:rgba(255,255,255,.08);--modal-close-color:#fff;
+  --modal-action-bg:#181818;--modal-action-hover:#242424;--modal-action-active:#303030;
+}
+html[data-resolved-theme="dark"] #music-library #ml-worship-picks{
+  --wp-ink:#fff;--wp-muted:rgba(255,255,255,.76);--wp-soft:rgba(255,255,255,.54);
+  --wp-gold:#F2A36B;--wp-panel:rgba(12,12,12,.84);--wp-panel-strong:rgba(8,8,8,.9);
+  background:linear-gradient(135deg,#111,#000) !important;
+}
+html[data-resolved-theme="dark"] #music-library :is(#ml-wp-hero,#ml-wp-side){background:var(--wp-panel) !important;}
+html[data-resolved-theme="dark"] :is(#ml-header,#ml-sidebar,#ml-bottom-nav,#ml-nowbar,#ml-playlist-panel,#ml-detail-dialog,#ml-tools-dialog,#ml-audio-panel,.sw-ink-pop,.ml-staff-panel){
+  background:rgba(8,8,8,.88) !important;
+  -webkit-backdrop-filter:blur(20px);backdrop-filter:blur(20px);
+  border-color:rgba(255,255,255,.12) !important;
+}
+html[data-resolved-theme="dark"] #music-library :is(#ml-player-view,#ml-player-side,#ml-player-dock){background:rgba(8,8,8,.92) !important;}
+html[data-resolved-theme="dark"] #music-library :is(.ml-home-panel,.ml-compact-list,.ml-category-card,.ml-song-card){
+  background:var(--card-grad) !important;border-color:rgba(255,255,255,.12) !important;
+}
+html[data-resolved-theme="dark"] #music-library :is(.ml-song-card,.ml-category-card):hover{background:var(--card-hover) !important;}
+html[data-resolved-theme="dark"] #music-library #ml-filter-done{color:#000;}
+html[data-resolved-theme="dark"] #music-library .ml-practice-chip.is-primary:hover:not(:disabled){background:var(--accent-soft);color:var(--accent);}
+html[data-resolved-theme="dark"] #music-library .sw-ico-yt{color:#fff;}
+#music-library .ml-console-icon{display:block;flex:none;vertical-align:middle;overflow:visible;}
+#music-library :is(.ml-side-link,.ml-bottom-link){align-items:center;}
+#music-library :is(.ml-side-link,.ml-bottom-link)>.ml-console-icon{width:20px;height:20px;}
+#music-library :is(.ml-detail-action,.ml-practice-chip,.ml-shelf-more,.ml-hero-chip){display:inline-flex;align-items:center;justify-content:center;gap:8px;}
+#music-library :is(.ml-player-ctl,.ml-player-icon-btn,.ml-nowbar-btn,.ml-ap-icon-btn,.pl-btn,.sw-ico-btn){align-items:center;justify-content:center;}
+#music-library .ml-card-actions{align-items:center;gap:8px;}
+#music-library :is(#ml-filter-toolbar,#ml-player-view-actions){align-items:center;gap:12px;}
+#music-library :is(.ml-side-link,.ml-bottom-link,.ml-detail-action,.ml-practice-chip,.ml-tools-button):focus-visible{outline:2px solid var(--text-primary);outline-offset:3px;}
+
+#music-library .ml-group-cover.is-artist-logo img,
+#music-library .ml-shelf-card.is-round .ml-shelf-art img{object-fit:contain !important;padding:0;background:transparent;}
+
+/* Warm amber on black, with green used for status accents. */
+html[data-resolved-theme="dark"] #music-library{--sage:#71C397;--success:#71C397;--notice-dot:#71C397;--player-fill:#F2A36B;}
+html[data-resolved-theme="dark"] #music-library :is(.ml-side-link.active,.ml-bottom-link.active){background:var(--accent-soft);color:var(--accent);}
+#music-library .ml-group-cover.is-artist-logo,
+#music-library .ml-shelf-art.is-artist-logo{background:transparent !important;border:0 !important;border-radius:8px !important;}
+#music-library .ml-group-cover.is-artist-logo img,
+#music-library .ml-shelf-art.is-artist-logo img{border-radius:8px !important;object-fit:contain !important;padding:0 !important;background:transparent !important;}
+
+/* Stream of Praise has circular artwork inside a square JPEG with white corners. */
+#music-library :is(.ml-group[data-group="赞美之泉"],.ml-shelf-card[data-source="赞美之泉"]) :is(.ml-group-cover.is-artist-logo,.ml-shelf-art.is-artist-logo),
+#music-library :is(.ml-group[data-group="赞美之泉"],.ml-shelf-card[data-source="赞美之泉"]) :is(.ml-group-cover.is-artist-logo,.ml-shelf-art.is-artist-logo) img{border-radius:50% !important;overflow:hidden;}
+
+/* The tools shortcut now shares the five-item bottom navigation. */
+#music-library #ml-bottom-nav #ml-nav-tools{background:transparent;border:0;}
+#music-library #ml-bottom-nav #ml-nav-tools[aria-expanded="true"]{background:var(--accent-soft);color:var(--accent);}
+
+/* Soft cover-derived fills, shared by cards and playback surfaces in both themes. */
+#music-library{--ml-cover-strength:20%;--ml-cover-hover-strength:27%;}
+html[data-resolved-theme="dark"] #music-library{--ml-cover-strength:34%;--ml-cover-hover-strength:42%;}
+html[data-resolved-theme] #music-library :is(.ml-tile,.ml-shelf-card,.ml-q-row).has-cover-tint,
+html[data-resolved-theme] #music-library #ml-list :is(.ml-song-card,.ml-shelf-card).has-cover-tint,
+html[data-resolved-theme] #music-library :is(#ml-wp-hero,#ml-nowbar,#ml-player-view,#ml-miniplayer).has-cover-tint{
+  background:linear-gradient(110deg,color-mix(in srgb,var(--ml-cover-color) var(--ml-cover-strength),var(--surface)),color-mix(in srgb,var(--ml-cover-color) 5%,var(--surface))) !important;
+}
+html[data-resolved-theme] #music-library :is(.ml-tile,.ml-shelf-card).has-cover-tint:hover,
+html[data-resolved-theme] #music-library #ml-list .ml-song-card.has-cover-tint:hover{
+  background:linear-gradient(110deg,color-mix(in srgb,var(--ml-cover-color) var(--ml-cover-hover-strength),var(--surface)),color-mix(in srgb,var(--ml-cover-color) 8%,var(--surface))) !important;
+}
+html[data-resolved-theme] #music-library .ml-home-panel{
+  background:linear-gradient(120deg,color-mix(in srgb,var(--accent) 14%,var(--surface)),var(--surface)) !important;
+}
+#music-library .ml-category-card:nth-child(3n+2){--ml-category-tint:#71C397;}
+#music-library .ml-category-card:nth-child(3n+3){--ml-category-tint:#B890CB;}
+html[data-resolved-theme] #music-library .ml-category-card{
+  background:color-mix(in srgb,var(--ml-category-tint,var(--accent)) 22%,var(--surface)) !important;
+}
+
+/* Recommendations keep a richer cover palette; layout and typography stay aligned. */
+#music-library #ml-worship-picks{--ml-cover-color:var(--accent);--wp-cover-strength:28%;}
+html[data-resolved-theme="dark"] #music-library #ml-worship-picks{--wp-cover-strength:50%;}
+html[data-resolved-theme] #music-library #ml-worship-picks{
+  background:linear-gradient(125deg,color-mix(in srgb,var(--ml-cover-color) var(--wp-cover-strength),var(--surface)),color-mix(in srgb,#65B79B 20%,var(--surface))) !important;
+  border-color:color-mix(in srgb,var(--ml-cover-color) 22%,var(--divider)) !important;
+}
+html[data-resolved-theme] #music-library #ml-wp-hero{
+  background:linear-gradient(125deg,color-mix(in srgb,var(--ml-cover-color) var(--wp-cover-strength),var(--surface)),color-mix(in srgb,var(--ml-cover-color) 12%,var(--surface))) !important;
+}
+html[data-resolved-theme] #music-library #ml-wp-side{
+  background:linear-gradient(145deg,color-mix(in srgb,#65B79B 26%,var(--surface)),color-mix(in srgb,var(--ml-cover-color) 16%,var(--surface))) !important;
+}
+html[data-resolved-theme] #music-library #ml-wp-list .ml-wp-card.has-cover-tint{
+  background:color-mix(in srgb,var(--ml-cover-color) 12%,var(--surface)) !important;
+}
+#music-library #ml-wp-actions{align-items:center;gap:10px;}
+#music-library #ml-wp-actions .ml-wp-action{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px !important;}
+#music-library #ml-wp-list .ml-wp-card{align-items:center !important;}
+html[data-resolved-theme="dark"] #music-library .ml-wp-action.is-primary{color:#071119 !important;}
+#music-library #ml-worship-picks{border-radius:12px !important;overflow:hidden !important;}
+#music-library #ml-wp-side{padding:20px !important;}
+@media(max-width:600px){#music-library #ml-wp-side{padding:16px !important;}}

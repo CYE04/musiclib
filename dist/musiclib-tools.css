@@ -127,3 +127,16 @@ html[data-resolved-theme="dark"] #music-library #ml-tools{--ml-tools-action-bg:v
   #music-library #ml-tools-dialog{animation:none;}
   #music-library #ml-tools *{transition:none!important;}
 }
+
+/* Console glyphs sit on the same 48px column as the text and entry arrow. */
+#music-library .ml-tools-card{align-items:center;}
+#music-library .ml-tools-card-icon>.ml-console-icon{width:30px;height:30px;}
+#music-library .ml-tools-header{padding-inline:28px;}
+html[data-resolved-theme="dark"] #music-library #ml-tools{
+  --ml-tools-action-bg:#fff;--ml-tools-action-hover:#e5e5e5;--ml-tools-action-text:#000;
+  --ml-tools-accent-text:#fff;
+  --ml-tools-select-arrow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23ffffff' stroke-width='1.5'%3E%3Cpath d='m4 6 4 4 4-4'/%3E%3C/svg%3E");
+}
+html[data-resolved-theme="dark"] #music-library .ml-tools-card-icon{color:var(--accent);}
+html[data-resolved-theme="dark"] #music-library .ml-tools-card-arrow{color:var(--text-secondary);}
+@media(max-width:900px){#music-library .ml-tools-header{padding-inline:20px;}}

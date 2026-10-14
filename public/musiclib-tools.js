@@ -8,8 +8,7 @@
     { id: 'jf', title: '简谱编辑器', description: '整理旋律、节奏、和弦与歌词，制作简谱。', label: '新窗口' },
     { id: 'lrc', title: '歌词编辑器', description: '整理歌词与时间轴，制作同步歌词。', label: '新窗口' }
   ];
-  // Filled instrument silhouettes follow StudioLive; UC glyph provenance is in docs/musiclib-tools-icons.md.
-  const TOOL_ICONS = {"metro": "<svg class=\"ml-tools-glyph\" viewBox=\"0 0 64 64\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path fill-rule=\"evenodd\" d=\"M22 7h20l13 50H9L22 7zm4.5 6L17 51h30l-9.5-38h-11z\"/><path d=\"M31 15h3v32h-3zM24 20h5v2h-5zm-2 9h7v2h-7zm-2 9h9v2h-9z\"/><path d=\"m20 13 3-2 17 31-3 2z\"/><circle cx=\"38\" cy=\"44\" r=\"4.5\"/></svg>", "chords": "<svg viewBox=\"0 0 1000 1000\" class=\"ml-tools-glyph\" aria-hidden=\"true\" focusable=\"false\" xmlns=\"http://www.w3.org/2000/svg\">\n<g>\n</g>\n<g>\n\t<g>\n\t\t<path d=\"M252.9,142.3h-44.8c-37.1,0-67.2,30.1-67.2,67.2v582.1c0,37.1,30.1,67.2,67.2,67.2h89.6V522.9h-22.4    c-12.4,0-22.4-11.8-22.4-26.3L252.9,142.3L252.9,142.3z\" fill=\"currentColor\" />\n\t\t<path d=\"M342.5,522.9h22.4c12.4,0,22.4-11.8,22.4-26.3V142.3H432v354.2c0,14.5,10,26.3,22.4,26.3h22.4v335.8H342.5    L342.5,522.9L342.5,522.9z\" fill=\"currentColor\" />\n\t\t<path d=\"M521.5,522.9v335.8h134.3V522.9h-22.4c-12.4,0-22.4-11.8-22.4-26.3V142.3h-44.8v354.2    c0,14.5-10,26.3-22.4,26.3L521.5,522.9L521.5,522.9z\" fill=\"currentColor\" />\n\t\t<path d=\"M745.4,142.3v354.2c0,14.5-10,26.3-22.4,26.3h-22.4v335.8h89.5c37.1,0,67.2-30,67.2-67.2V209.5    c0-37.1-30-67.2-67.2-67.2H745.4L745.4,142.3z\" fill=\"currentColor\" />\n\t</g>\n</g>\n</svg>", "jf": "<svg class=\"ml-tools-glyph\" viewBox=\"0 0 64 64\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path d=\"M34 8h19v31c0 5-4 9-9 9s-8-3-8-7 4-8 9-8c1 0 3 0 4 1V18H38v28c0 5-4 9-9 9s-8-3-8-7 4-8 9-8c1 0 3 0 4 1V8z\"/><path d=\"M8 12h18v4H8zm0 10h18v4H8zm0 10h14v4H8z\"/></svg>", "lrc": "<svg class=\"ml-tools-glyph\" viewBox=\"0 0 64 64\" fill=\"currentColor\" aria-hidden=\"true\" focusable=\"false\"><path fill-rule=\"evenodd\" d=\"M13 6h29l10 10v42H13V6zm26 5v8h8l-8-8zM21 25v3h23v-3H21zm0 9v3h18v-3H21zm0 9v3h23v-3H21z\"/></svg>"};
+  const TOOL_ICONS = {metro:"metro",chords:"keyboard",jf:"score",lrc:"lrc"};
   const ROOTS = ['C', 'C#', 'Db', 'D', 'D#', 'Eb', 'E', 'F', 'F#', 'Gb', 'G', 'G#', 'Ab', 'A', 'A#', 'Bb', 'B'];
   const QUALITIES = ['', 'm', '7', 'maj7', 'm7', 'sus2', 'sus4', 'add9', 'dim', 'aug'];
   const FOCUSABLE = 'button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),[tabindex]:not([tabindex="-1"])';
@@ -211,7 +210,7 @@
         card.type = 'button';
         card.className = 'ml-tools-card';
         card.dataset.tool = tool.id;
-        card.innerHTML = '<span class="ml-tools-card-icon">' + TOOL_ICONS[tool.id] + '</span><span class="ml-tools-card-body"><strong>' + tool.title + '</strong><span>' + tool.description + '</span><small>' + tool.label + '</small></span><span class="ml-tools-card-arrow">' + icon('chevronRight', 18) + '</span>';
+        card.innerHTML = '<span class="ml-tools-card-icon">' + icon(TOOL_ICONS[tool.id], 30) + '</span><span class="ml-tools-card-body"><strong>' + tool.title + '</strong><span>' + tool.description + '</span><small>' + tool.label + '</small></span><span class="ml-tools-card-arrow">' + icon('chevronRight', 18) + '</span>';
         grid.appendChild(card);
       });
       content.appendChild(grid);

@@ -635,20 +635,35 @@ hr.ym-hr{border:none;margin:1.2rem 0;background:none}
 .ym-section-title{position:relative;font-size:1.3rem;font-weight:800;color:var(--ym-ink);margin:1.5rem 0 .8rem;display:flex;align-items:center;gap:10px;line-height:1.25}
 .ym-section-title::after{content:'';height:1px;flex:1;min-width:32px;background:linear-gradient(90deg,var(--ym-line),transparent)}
 .ym-section-title.is-featured{font-size:1.52rem;font-weight:800;letter-spacing:.01em}
-.ym-block{max-width:100%;min-width:0;background:none;border:0;border-radius:0;padding:4px 2px 0;margin-bottom:1rem;box-shadow:none}
-.ym-block.is-featured{border:0;box-shadow:none;padding:4px 2px 0;background:none}
+:root{--ym-panel-inset:20px}
+.ym-block{max-width:100%;min-width:0;box-sizing:border-box;background:none;border:0;border-radius:0;padding:16px var(--ym-panel-inset);margin-bottom:1rem;box-shadow:none}
+.ym-block.is-featured{border:0;box-shadow:none;background:none}
 .ym-block.ym-message-soft{background:color-mix(in srgb,var(--ym-team-b) 4%,transparent);border-radius:8px}
 .ym-block.ym-game-soft{background:color-mix(in srgb,#A36363 4%,transparent);border-radius:8px}
 .ym-meta{font-size:14px;color:var(--ym-ink2);line-height:1.8}
 .ym-meta.is-featured{font-size:15.5px;line-height:1.95;color:var(--ym-ink);font-weight:400}
 .ym-meta strong{color:var(--ym-ink)}
-.ym-feature-copy{font-family:var(--ym-serif);font-size:16.5px;line-height:2.05;color:var(--ym-ink);font-weight:400}
+.ym-feature-copy{margin:0;font-family:var(--ym-serif);font-size:16.5px;line-height:2.05;color:var(--ym-ink);font-weight:400}
 .ym-meta-row{display:flex;flex-wrap:wrap;align-items:baseline;gap:12px;margin:0;padding:13px 0;border-bottom:1px solid var(--ym-line-soft)}
-.ym-meta-row:last-child{border-bottom:0}
+.ym-meta-row:first-child{padding-top:0}
+.ym-meta-row:last-child{padding-bottom:0;border-bottom:0}
 .ym-meta-label{font-family:'DM Mono','SF Mono',ui-monospace,monospace;font-size:12px;font-weight:500;letter-spacing:.14em;text-transform:none;color:var(--ym-ink3);flex:0 0 auto}
 .ym-meta-value{font-family:var(--ym-serif);font-size:clamp(17px,4.4vw,20px);font-weight:400;color:var(--ym-ink);line-height:1.4}
-.ppt-card{display:flex;align-items:center;gap:14px;width:100%;box-sizing:border-box;padding:16px 18px;margin:6px 0;border:1px solid var(--ym-line);border-radius:10px;background:var(--ym-bg-elevated);color:var(--ym-ink);text-decoration:none;transition:border-color var(--ym-dur) var(--ym-ease),background var(--ym-dur) var(--ym-ease),box-shadow var(--ym-dur) var(--ym-ease)}
+.ppt-card{display:block;width:100%;box-sizing:border-box;margin:6px 0;border:1px solid var(--ym-line);border-radius:10px;overflow:hidden;background:var(--ym-bg-elevated);color:var(--ym-ink);text-decoration:none;transition:border-color var(--ym-dur) var(--ym-ease),background var(--ym-dur) var(--ym-ease),box-shadow var(--ym-dur) var(--ym-ease)}
 .ppt-card:hover,.ppt-card:focus-visible{border-color:var(--ym-border-md);background:var(--ym-accent-subtle)}
+.ppt-card:focus-visible{outline:2px solid var(--ym-accent);outline-offset:3px}
+.ppt-card-details{display:flex;align-items:center;gap:14px;padding:16px calc(var(--ym-panel-inset) - 1px)}
+.ppt-card-preview{position:relative;display:grid;place-items:center;width:100%;aspect-ratio:16/9;overflow:hidden;border-bottom:1px solid var(--ym-line);background:var(--ym-bg-elevated-2)}
+.ppt-card-preview.is-ready{background:#fff}
+.ppt-card-preview.is-unavailable{aspect-ratio:auto;min-height:210px}
+.ppt-card-preview img,.ppt-card-preview canvas{display:block;width:100%;height:100%;object-fit:contain}
+.ppt-preview-fallback{position:relative;isolation:isolate;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:14px;width:100%;min-height:inherit;box-sizing:border-box;padding:32px calc(var(--ym-panel-inset) - 1px);background:linear-gradient(125deg,var(--ym-bg-elevated-2),color-mix(in srgb,var(--ym-accent) 9%,var(--ym-bg-elevated)));color:var(--ym-ink3);font-size:12px;text-align:left}
+.ppt-preview-fallback::after{content:'';position:absolute;z-index:-1;right:8%;top:22%;width:19%;height:57%;border:1px solid color-mix(in srgb,var(--ym-accent) 18%,transparent);border-radius:5px;background:linear-gradient(var(--ym-accent-subtle),var(--ym-accent-subtle)) 20% 25%/60% 2px no-repeat,linear-gradient(var(--ym-accent-subtle),var(--ym-accent-subtle)) 20% 40%/45% 2px no-repeat,var(--ym-bg-elevated-2);box-shadow:8px 8px 0 color-mix(in srgb,var(--ym-accent) 5%,transparent);transform:rotate(-8deg);pointer-events:none}
+.ppt-preview-eyebrow{display:flex;align-items:center;gap:8px;color:var(--ym-accent);font-size:11px;font-weight:600;letter-spacing:.12em}
+.ppt-preview-eyebrow .ym-ic{width:18px;height:18px}
+.ppt-preview-title{max-width:74%;font-family:var(--ym-serif);font-size:clamp(23px,4.5vw,34px);line-height:1.45;color:var(--ym-ink);overflow-wrap:anywhere}
+@media(max-width:480px){.ppt-preview-fallback{padding-top:26px;padding-bottom:26px}.ppt-card-preview.is-unavailable{min-height:190px}}
+.ppt-preview-badge{position:absolute;right:12px;bottom:12px;padding:5px 9px;border-radius:5px;background:rgba(25,38,50,.78);color:#fff;font-size:11px;line-height:1.4;pointer-events:none}
 .ppt-card:hover .ppt-card-s,.ppt-card:focus-visible .ppt-card-s{color:var(--ym-ink2)}
 .ppt-card-ic{display:grid;place-items:center;width:40px;height:40px;flex:0 0 auto;border-radius:9px;color:var(--ym-accent);background:var(--ym-accent-subtle);font-size:19px}
 .ppt-card-main{display:block;flex:1 1 auto;min-width:0}
@@ -661,7 +676,7 @@ hr.ym-hr{border:none;margin:1.2rem 0;background:none}
 .ppt-empty,.replay-tip{color:var(--ym-ink2);font-size:14px;padding:20px 0}
 .ym-iframe-wrap{position:relative;padding-bottom:56.25%;height:0;overflow:hidden;border-radius:8px}
 .ym-iframe-wrap iframe{position:absolute;inset:0;width:100%;height:100%;border:0;border-radius:14px}
-.ym-action{margin:2.4rem 0;padding:4px 0 4px 20px;border-left:2px solid var(--ym-accent);background:none;border-radius:0;font-family:var(--ym-serif);font-size:15.5px;line-height:2;color:var(--ym-ink)}
+.ym-action{box-sizing:border-box;margin:2.4rem 0;padding:16px var(--ym-panel-inset);border:0;box-shadow:inset 2px 0 0 var(--ym-accent);background:color-mix(in srgb,var(--ym-accent) 4%,transparent);border-radius:8px;font-family:var(--ym-serif);font-size:15.5px;line-height:2;color:var(--ym-ink)}
 .ym-action strong{color:var(--ym-ink)}
 
 /* ── Song selector tabs ── */
@@ -687,7 +702,7 @@ hr.ym-hr{border:none;margin:1.2rem 0;background:none}
   .sw-tog{align-self:flex-start;max-width:100%}
   .sw-tools-row{max-width:100%}
   .sw-score-top{gap:10px;flex-wrap:wrap}
-  .ym-block.is-featured{padding:16px}
+  :root{--ym-panel-inset:16px}
 }
 `;
     document.head.appendChild(style);
@@ -6688,17 +6703,124 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
   }
 
   /* ══════════════ PPT ══════════════ */
+  var PPT_PDFJS_BASE = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.624/';
+  var _pptPdfLibrary;
+
+  function loadPptPdfLibrary() {
+    if (!_pptPdfLibrary) {
+      _pptPdfLibrary = import(PPT_PDFJS_BASE + 'build/pdf.min.mjs').then(function(lib) {
+        lib.GlobalWorkerOptions.workerSrc = PPT_PDFJS_BASE + 'build/pdf.worker.min.mjs';
+        return lib;
+      }).catch(function(error) {
+        _pptPdfLibrary = null;
+        throw error;
+      });
+    }
+    return _pptPdfLibrary;
+  }
+
+  async function renderPptPdf(url, width) {
+    var loadingTask, timer, cancelled = false;
+    var rendering = (async function() {
+      var lib = await loadPptPdfLibrary();
+      if (cancelled) return null;
+      loadingTask = lib.getDocument({
+        url:url, isEvalSupported:false, disableAutoFetch:true, disableStream:true,
+        cMapUrl:PPT_PDFJS_BASE + 'cmaps/', cMapPacked:true,
+        standardFontDataUrl:PPT_PDFJS_BASE + 'standard_fonts/', wasmUrl:PPT_PDFJS_BASE + 'wasm/'
+      });
+      var pdf = await loadingTask.promise;
+      var page = await pdf.getPage(1);
+      var natural = page.getViewport({scale:1});
+      var pixels = Math.min(1800, Math.max(360, width) * Math.min(window.devicePixelRatio || 1, 2));
+      var viewport = page.getViewport({scale:pixels / natural.width});
+      var canvas = el('canvas');
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+      await page.render({canvasContext:canvas.getContext('2d'), viewport:viewport}).promise;
+      return canvas;
+    })();
+    try {
+      return await Promise.race([rendering, new Promise(function(_, reject) {
+        timer = setTimeout(function() { reject(new Error('PPT preview timed out')); }, 15000);
+      })]);
+    } finally {
+      cancelled = true;
+      clearTimeout(timer);
+      if (loadingTask) await loadingTask.destroy().catch(function() {});
+    }
+  }
+
+  function loadPptCover(ppt) {
+    return new Promise(function(resolve, reject) {
+      var image = el('img',{alt:ppt.label + ' · 第一页',decoding:'async'});
+      var timer = setTimeout(function() { finish(new Error('PPT cover timed out')); }, 15000);
+      function finish(error) {
+        clearTimeout(timer);
+        image.onload = image.onerror = null;
+        if (error) reject(error); else resolve(image);
+      }
+      image.onload = function() { finish(); };
+      image.onerror = function() { finish(new Error('PPT cover unavailable')); };
+      image.src = ppt.previewUrl;
+    });
+  }
+
+  function buildPptPreview(ppt) {
+    var isPdf = false;
+    try { isPdf = /\.pdf$/i.test(new URL(ppt.url, document.baseURI).pathname); } catch (_) {}
+    var available = !!ppt.previewUrl || isPdf;
+    var status = el('span',{class:'ppt-preview-status',text:available ? '正在加载第一页…' : '讲义 / 演示文件'});
+    var icon = ymIcon('present');
+    var preview = el('span',{class:'ppt-card-preview' + (available ? '' : ' is-unavailable'),'aria-busy':String(available)},[
+      el('span',{class:'ppt-preview-fallback'},[
+        el('span',{class:'ppt-preview-eyebrow'},[icon,el('span',{text:'YOUTH · 信息分享'})]),
+        el('span',{class:'ppt-preview-title',text:ppt.label}),
+        status
+      ])
+    ]);
+    if (!available) return preview;
+    function load() {
+      var media = ppt.previewUrl ? loadPptCover(ppt) : renderPptPdf(ppt.url, preview.clientWidth || 900);
+      media.then(function(element) {
+        if (element.tagName === 'CANVAS') {
+          element.setAttribute('role','img');
+          element.setAttribute('aria-label',ppt.label + ' · 第一页');
+        }
+        preview.replaceChildren(element, el('span',{class:'ppt-preview-badge',text:'第 1 页','aria-hidden':'true'}));
+        preview.classList.add('is-ready');
+      }).catch(function() {
+        status.textContent = '预览暂不可用';
+        preview.classList.add('is-unavailable');
+      }).finally(function() { preview.setAttribute('aria-busy','false'); });
+    }
+    if (typeof IntersectionObserver === 'undefined') load();
+    else {
+      var observer = new IntersectionObserver(function(entries) {
+        if (!entries.some(function(entry) { return entry.isIntersecting; })) return;
+        observer.disconnect();
+        load();
+      },{rootMargin:'300px'});
+      observer.observe(preview);
+    }
+    return preview;
+  }
+
   function buildPPT() {
     if(C.pptUrl){
+      var label = C.pptLabel || '讲员 PPT';
       var ic = el('span',{class:'ppt-card-ic'});
       var svgIc = ymIcon('present'); if(svgIc) ic.appendChild(svgIc); else ic.textContent = '📑';
       return el('a',{class:'ppt-card',href:C.pptUrl,target:'_blank',rel:'noopener noreferrer'},[
-        ic,
-        el('span',{class:'ppt-card-main'},[
-          el('span',{class:'ppt-card-t',text: C.pptLabel || '讲员 PPT'}),
-          el('span',{class:'ppt-card-s',text:'点击查看 / 下载'}),
-        ]),
-        el('span',{class:'ppt-card-arrow',text:'→'}),
+        buildPptPreview({url:C.pptUrl,previewUrl:C.pptPreviewUrl,label:label}),
+        el('span',{class:'ppt-card-details'},[
+          ic,
+          el('span',{class:'ppt-card-main'},[
+            el('span',{class:'ppt-card-t',text:label}),
+            el('span',{class:'ppt-card-s',text:'点击打开完整文件'}),
+          ]),
+          el('span',{class:'ppt-card-arrow',text:'↗','aria-hidden':'true'}),
+        ])
       ]);
     }
     return el('p',{class:'ppt-empty',text:'本周暂未提供讲员 PPT 🙏'});
