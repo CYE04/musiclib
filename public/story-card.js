@@ -5,6 +5,9 @@
   const HEIGHT=1920;
   const SERIF='"Kaiti SC", "STKaiti", "KaiTi", "Songti SC", "Noto Serif CJK SC", Georgia, serif';
   const SANS='-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
+  const HAND='"CECP Story Hand", '+SERIF;
+  const scriptUrl=typeof document!=='undefined'?(document.currentScript?.src||document.baseURI):'';
+  let handwritingPromise=null;
   const backgrounds=[
     {id:'sunset',label:'暖色日落',colors:['#8293af','#f3c6ac','#f9dfbf','#7f91a7']},
     {id:'night',label:'深蓝夜空',colors:['#071d2b','#153d50','#416174','#172c3b']},
@@ -18,6 +21,22 @@
     let timer;
     return Promise.race([promise,new Promise(resolve=>{timer=setTimeout(()=>resolve(fallback),milliseconds);})])
       .finally(()=>clearTimeout(timer));
+  }
+
+  function loadHandwriting(){
+    if(typeof FontFace!=='function'||!document.fonts?.add)return Promise.resolve(false);
+    if(!handwritingPromise){
+      try{
+        const source=new URL('./fonts/MaShanZheng-Regular.ttf',scriptUrl).href;
+        const face=new FontFace('CECP Story Hand',`url("${source}")`);
+        handwritingPromise=timeout(face.load(),8000,null).then(loaded=>{
+          if(!loaded){handwritingPromise=null;return false;}
+          document.fonts.add(loaded);
+          return true;
+        }).catch(()=>{handwritingPromise=null;return false;});
+      }catch(_){return Promise.resolve(false);}
+    }
+    return handwritingPromise;
   }
 
   async function loadCover(source){
@@ -247,15 +266,18 @@
     context.fillText('CECP Music Library',WIDTH/2,top);
   }
 
-  function drawLyrics(context,{song,lines,cover,background,align}){
+  function drawLyrics(context,{song,lines,cover,background,align,font,fontSize,lineHeight}){
     const dark=background==='night'||background==='album';
     const foreground=dark?'#f8f4e9':'#30343b';
     const secondary=dark?'rgba(248,244,233,.64)':'rgba(48,52,59,.62)';
     const text=(Array.isArray(lines)?lines.join('\n'):String(lines||'')).trim()||song.title||'让诗歌，陪伴每一天';
-    const layout=fitText(context,text.slice(0,1400),{width:824,height:800,maxSize:78,minSize:24,lineHeight:1.5});
+    const family=font==='sans'?SANS:font==='handwriting'?HAND:SERIF;
+    const maxSize=Math.max(44,Math.min(110,Number(fontSize)||78));
+    const spacing=Math.max(1.2,Math.min(2,Number(lineHeight)||1.5));
+    const layout=fitText(context,text.slice(0,1400),{width:824,height:800,maxSize,minSize:24,lineHeight:spacing,family});
     const left=align==='center'?WIDTH/2:128;
     const top=330+(800-layout.height)*.4;
-    drawText(context,layout,left,top,{color:foreground,align});
+    drawText(context,layout,left,top,{color:foreground,align,family});
     const dividerTop=Math.min(1240,Math.max(1110,top+layout.height+105));
     context.fillStyle=secondary;
     context.fillRect(align==='center'?514:128,dividerTop,52,2);
@@ -305,7 +327,7 @@
     context.fillRect(548,1514,12,52);
   }
 
-  function drawAlbum(context,{song,cover,template}){
+  function drawAlbum(context,{song,cover,template,font,fontSize,lineHeight}){
     const isPlayer=template==='player';
     const coverSize=isPlayer?792:690;
     const coverTop=isPlayer?300:375;
@@ -318,9 +340,12 @@
     context.fill();
     context.restore();
     coverImage(context,cover,(WIDTH-coverSize)/2,coverTop,coverSize,32);
-    const title=fitText(context,song.title,{width:792,height:isPlayer?140:172,maxSize:isPlayer?54:58,minSize:30,lineHeight:1.3,maxLines:isPlayer?2:3,family:SANS});
+    const family=font==='handwriting'?HAND:font==='serif'?SERIF:SANS;
+    const scale=Math.max(44,Math.min(110,Number(fontSize)||78))/78;
+    const spacing=Math.max(1.2,Math.min(2,Number(lineHeight)||1.5))-.2;
+    const title=fitText(context,song.title,{width:792,height:isPlayer?140:172,maxSize:(isPlayer?54:58)*scale,minSize:30,lineHeight:spacing,maxLines:isPlayer?2:3,family});
     const titleTop=coverTop+coverSize+78;
-    drawText(context,title,isPlayer?144:WIDTH/2,titleTop,{color:'#fff',align:isPlayer?'left':'center',family:SANS});
+    drawText(context,title,isPlayer?144:WIDTH/2,titleTop,{color:'#fff',align:isPlayer?'left':'center',family});
     const artist=fitText(context,song.artist,{width:792,height:85,maxSize:33,minSize:23,lineHeight:1.3,maxLines:2,family:SANS});
     drawText(context,artist,isPlayer?144:WIDTH/2,titleTop+title.height+22,{color:'rgba(255,255,255,.7)',align:isPlayer?'left':'center',family:SANS});
     if(isPlayer)drawControls(context);
@@ -332,20 +357,20 @@
     const supplied=options.song||{};
     const song={title:String(supplied.title||supplied.name||'未命名诗歌'),artist:String(supplied.displayArtist||supplied.artist||supplied.source||supplied.author||supplied.singer||'CECP Music Library')};
     const source=supplied.cover||supplied.coverUrl||supplied.cover_url||supplied.artwork||'';
+    const mode=options.mode==='cover'?'cover':'lyrics';
     const fontReady=typeof document!=='undefined'&&document.fonts?document.fonts.ready.then(()=>true,()=>false):Promise.resolve(true);
-    const [cover,fontsLoaded]=await Promise.all([loadCover(source),timeout(fontReady,2500,false)]);
+    const [cover,fontsLoaded,handLoaded]=await Promise.all([loadCover(source),timeout(fontReady,2500,false),options.font==='handwriting'?loadHandwriting():Promise.resolve(true)]);
     canvas.width=WIDTH;
     canvas.height=HEIGHT;
     const context=canvas.getContext('2d');
     if(!context)throw new Error('此浏览器无法生成分享图片');
     context.imageSmoothingEnabled=true;
     context.imageSmoothingQuality='high';
-    const mode=options.mode==='cover'?'cover':'lyrics';
     const background=backgrounds.some(item=>item.id===options.background)?options.background:'sunset';
     drawBackground(context,background,cover,mode==='cover');
-    if(mode==='cover')drawAlbum(context,{song,cover,template:options.template});
-    else drawLyrics(context,{song,cover,lines:options.lines,background,align:options.align==='center'?'center':'left'});
-    return {coverFailed:!!source&&!cover,fontFallback:!fontsLoaded};
+    if(mode==='cover')drawAlbum(context,{song,cover,template:options.template,font:options.font,fontSize:options.fontSize,lineHeight:options.lineHeight});
+    else drawLyrics(context,{song,cover,lines:options.lines,background,align:options.align==='center'?'center':'left',font:options.font,fontSize:options.fontSize,lineHeight:options.lineHeight});
+    return {coverFailed:!!source&&!cover,fontFallback:!fontsLoaded||!handLoaded};
   }
 
   window.CECPStoryCard={render,backgrounds};

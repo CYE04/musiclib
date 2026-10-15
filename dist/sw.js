@@ -3,12 +3,13 @@
    桶名带内容指纹 —— 任何资源变化都会换桶，activate 里的清理逻辑随即删掉旧桶，
    老用户不会卡在旧壳上，也不用再记得手动 bump 版本号。 */
 /* CECP-PRECACHE-BEGIN */
-const CACHE_NAME = "cecp-musiclib-pwa-3c363ae0ea";
+const CACHE_NAME = "cecp-musiclib-pwa-2d170ecead";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./assets/index-C36G5ZZA.js",
   "./bible-service.js?v=20260711-justify-rows",
   "./cecp-olive-logo.svg",
+  "./fonts/MaShanZheng-Regular.ttf",
   "./gsap.min.js?v=20260711-justify-rows",
   "./icons/apple-touch-icon.png",
   "./icons/favicon.ico",

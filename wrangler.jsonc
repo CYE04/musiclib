@@ -1,6 +1,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "musiclib",
+  "main": "./share-worker.js",
   "compatibility_date": "2026-06-11",
   "observability": {
     "enabled": true
@@ -9,8 +10,8 @@
   // 部署前必须先 npm run build，否则发上去的是空目录。
   "assets": {
     "directory": "./dist",
-    // /s/<songId> 是分享短链，磁盘上没有对应文件 —— 必须回退到 index.html，
-    // 由它把路径换算成 ?key=&song= 。不加这条，短链一律 404。
+    "binding": "ASSETS",
+    "run_worker_first": ["/s/*"],
     "not_found_handling": "single-page-application"
   },
   "compatibility_flags": [

@@ -35,6 +35,13 @@ body.ml-story-lock{overflow:hidden!important}
 #music-library #ml-story-lines label{display:flex;gap:10px;align-items:flex-start;min-height:44px;padding:10px 4px;font-size:13px;line-height:1.6;cursor:pointer}
 #music-library #ml-story-lines input{width:17px;height:17px;flex:none;margin:2px 0;accent-color:var(--accent,#ffa566)}
 #music-library #ml-story-lines p{font-size:13px;line-height:1.6;color:var(--text-secondary,#aaa)}
+#music-library #ml-story-type summary{display:flex;align-items:center;gap:8px;min-height:36px;font-size:13px;font-weight:600;cursor:pointer;list-style:none}
+#music-library #ml-story-type summary::-webkit-details-marker{display:none}
+#music-library #ml-story-font-name{margin-left:auto;font-size:12px;font-weight:400;color:var(--text-secondary,#aaa)}
+#music-library .ml-story-type-controls{display:grid;gap:14px;padding-top:14px}
+#music-library .ml-story-range{display:flex;align-items:center;gap:12px;min-height:36px;font-size:12px}
+#music-library .ml-story-range input{min-width:0;flex:1;accent-color:var(--accent,#ffa66b)}
+#music-library .ml-story-range output{width:34px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text-secondary,#aaa)}
 #music-library #ml-story-status{min-height:0;margin:0;font-size:12px;line-height:1.6;color:var(--text-secondary,#aaa)}
 #music-library #ml-story-status:empty{display:none}
 #music-library .ml-story-actions{display:grid;grid-template-columns:1.25fr 1fr;gap:10px}

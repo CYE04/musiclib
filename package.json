@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:worker": "npm run build && npx wrangler@4 dev",
     "build": "vite build",
     "preview": "vite preview",
     "conformance": "node ../shared/strict-align.conformance.js && node ../tools/staff-conformance.js",

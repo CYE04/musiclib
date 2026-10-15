@@ -6,20 +6,26 @@
     dialog.id = 'ml-story-share';
     dialog.setAttribute('aria-labelledby', 'ml-story-title');
     dialog.innerHTML = `
-      <header class="ml-story-header"><div><span class="ml-story-eyebrow">CECP MUSIC LIBRARY</span><h2 id="ml-story-title">分享到 Instagram Story</h2></div><button type="button" id="ml-story-close" aria-label="关闭分享">${icon('close', 20)}</button></header>
+      <header class="ml-story-header"><div><span class="ml-story-eyebrow">CECP MUSIC LIBRARY</span><h2 id="ml-story-title">分享</h2></div><button type="button" id="ml-story-close" aria-label="关闭分享">${icon('close', 20)}</button></header>
       <div class="ml-story-layout">
-        <div class="ml-story-preview"><canvas id="ml-story-canvas" width="1080" height="1920" aria-label="Instagram Story 卡片预览"></canvas><span>STORY · 9:16 · 1080 × 1920</span></div>
+        <div class="ml-story-preview"><canvas id="ml-story-canvas" width="1080" height="1920" aria-label="分享卡片预览"></canvas><span>9:16 · 1080 × 1920</span></div>
         <div class="ml-story-editor">
           <div class="ml-story-segment" role="group" aria-label="分享内容"><button type="button" data-mode="lyrics" aria-pressed="true">歌词</button><button type="button" data-mode="cover" aria-pressed="false">封面</button></div>
           <p id="ml-story-no-lyrics" class="ml-story-help" hidden>这首歌暂时没有歌词，可分享封面卡片。</p>
           <section id="ml-story-lyrics-section"><details id="ml-story-lyrics-picker"><summary>选择歌词 <span id="ml-story-count"></span>${icon('chevronDown', 14)}</summary><p class="ml-story-help">选择 1–8 行，建议 2–4 行</p><div id="ml-story-lines"></div></details></section>
           <section id="ml-story-cover-section" hidden><h3>封面样式</h3><div class="ml-story-segment"><button type="button" data-template="minimal" aria-pressed="true">简约专辑版</button><button type="button" data-template="player" aria-pressed="false">音乐播放器版</button></div></section>
           <section><h3>背景 <span id="ml-story-background-name">暖色日落</span></h3><div id="ml-story-backgrounds" role="group" aria-label="卡片背景"></div></section>
-          <section id="ml-story-alignment"><h3>文字排版</h3><div class="ml-story-segment"><button type="button" data-align="left" aria-pressed="true">偏左</button><button type="button" data-align="center" aria-pressed="false">居中</button></div></section>
+          <section id="ml-story-typography"><details id="ml-story-type"><summary>文字样式 <span id="ml-story-font-name">灵动手写</span>${icon('chevronDown', 14)}</summary><div class="ml-story-type-controls">
+            <div class="ml-story-segment" role="group" aria-label="字体"><button type="button" data-font="handwriting" aria-pressed="true">手写</button><button type="button" data-font="serif" aria-pressed="false">衬线</button><button type="button" data-font="sans" aria-pressed="false">简约</button></div>
+            <label class="ml-story-range" for="ml-story-size">字号 <input type="range" id="ml-story-size" min="44" max="110" step="2" value="78"><output id="ml-story-size-value">78</output></label>
+            <label class="ml-story-range" for="ml-story-spacing">行距 <input type="range" id="ml-story-spacing" min="1.2" max="2" step="0.05" value="1.5"><output id="ml-story-spacing-value">1.5</output></label>
+            <div id="ml-story-align-controls" class="ml-story-segment" role="group" aria-label="文字对齐"><button type="button" data-align="left" aria-pressed="true">偏左</button><button type="button" data-align="center" aria-pressed="false">居中</button></div>
+            <p class="ml-story-help">文字较多时自动适配，保持完整留白。</p>
+          </div></details></section>
           <p id="ml-story-status" role="status" aria-live="polite"></p>
           <div class="ml-story-actions"><button type="button" id="ml-story-save" disabled>${icon('download', 17)}保存图片</button><button type="button" id="ml-story-send" disabled>${icon('share', 17)}分享</button></div>
           <div class="ml-story-link"><input id="ml-story-url" aria-label="歌曲分享链接" readonly><button type="button" id="ml-story-copy">复制链接</button></div>
-          <p class="ml-story-help">保存图片后，在 Instagram Story 中通过「链接贴纸」粘贴歌曲链接。链接贴纸需在 Instagram 内手动添加。</p>
+          <p class="ml-story-help">Instagram 动态要添加可点击链接：复制歌曲链接 → 添加「链接贴纸」。</p>
           <p class="ml-story-help" id="ml-story-share-help"></p>
           <a id="ml-story-image-link" target="_blank" rel="noopener" hidden>打开原图 · 长按保存到照片</a>
         </div>
@@ -81,7 +87,7 @@
         let supported = false;
         try { supported = !!navigator.share && !!navigator.canShare?.({ files: [currentFile] }); } catch (_) {}
         find('share-help').textContent = supported ? '点击「分享」选择系统提供的应用。' : '此浏览器不支持直接分享图片，请保存图片并复制链接。';
-        message(result?.coverFailed ? '封面无法载入，已使用渐变封面，仍可保存分享。' : '');
+        message(result?.coverFailed ? '封面无法载入，已使用渐变封面，仍可保存分享。' : result?.fontFallback ? '手写字体暂时不可用，已使用设备字体。' : '');
       } catch (_) {
         message('图片生成失败，请切换背景重试；仍可复制歌曲链接。');
       } finally {
@@ -93,12 +99,18 @@
       dialog.querySelectorAll('[data-mode]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.mode === state.mode)));
       dialog.querySelectorAll('[data-template]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.template === state.template)));
       dialog.querySelectorAll('[data-align]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.align === state.align)));
+      dialog.querySelectorAll('[data-font]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.font === state.font)));
       dialog.querySelectorAll('[data-background]').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.background === state.background)));
       find('lyrics-section').hidden = state.mode !== 'lyrics';
       find('cover-section').hidden = state.mode !== 'cover';
-      find('alignment').hidden = state.mode !== 'lyrics';
+      find('align-controls').hidden = state.mode !== 'lyrics';
       find('background-name').textContent = window.CECPStoryCard.backgrounds.find(item => item.id === state.background)?.label || '';
       find('count').textContent = `已选 ${state.selected.size} 行`;
+      find('font-name').textContent = { handwriting: '灵动手写', serif: '经典衬线', sans: '简约' }[state.font];
+      find('size').value = state.fontSize;
+      find('spacing').value = state.lineHeight;
+      find('size-value').textContent = state.fontSize;
+      find('spacing-value').textContent = Number(state.lineHeight).toFixed(2).replace(/0$/, '');
     }
     function displayLines() {
       const list = find('lines');
@@ -163,14 +175,22 @@
     dialog.addEventListener('cancel', event => { event.preventDefault(); close(); });
     dialog.addEventListener('click', event => { if (event.target === dialog) { const bounds = dialog.getBoundingClientRect(); if (event.clientX < bounds.left || event.clientX > bounds.right || event.clientY < bounds.top || event.clientY > bounds.bottom) close(); } });
     find('close').addEventListener('click', close);
-    dialog.querySelectorAll('[data-mode],[data-template],[data-align]').forEach(button => button.addEventListener('click', () => {
-      const property = button.dataset.mode ? 'mode' : button.dataset.template ? 'template' : 'align';
+    dialog.querySelectorAll('[data-mode],[data-template],[data-align],[data-font]').forEach(button => button.addEventListener('click', () => {
+      const property = button.dataset.mode ? 'mode' : button.dataset.template ? 'template' : button.dataset.font ? 'font' : 'align';
       state[property] = button.dataset[property];
       state.modeChosen = true;
       if (property === 'mode') state.background = state.mode === 'cover' || state.song.cover ? 'album' : 'sunset';
       syncControls();
       queueRender();
     }));
+    for (const [control, property] of [['size', 'fontSize'], ['spacing', 'lineHeight']]) {
+      find(control).addEventListener('input', () => {
+        state[property] = Number(find(control).value);
+        state.modeChosen = true;
+        syncControls();
+        queueRender();
+      });
+    }
     for (const background of window.CECPStoryCard.backgrounds) {
       const button = document.createElement('button');
       button.type = 'button';
@@ -209,8 +229,11 @@
       try { supported = !!navigator.share && !!navigator.canShare?.({ files: [currentFile] }); } catch (_) {}
       if (!supported) { download(); message('请保存图片，并点击「复制链接」添加到 Instagram 链接贴纸。'); return; }
       try {
-        await navigator.share({ files: [currentFile], title: state.song.title || 'CECP Music Library' });
-        message('图片已交给系统分享。歌曲链接可用下方按钮复制。');
+        const data = { files: [currentFile], title: state.song.title || 'CECP Music Library', text: find('url').value, url: find('url').value };
+        let includeLink = false;
+        try { includeLink = navigator.canShare(data); } catch (_) {}
+        await navigator.share(includeLink ? data : { files: data.files, title: data.title });
+        message(includeLink ? '图片和歌曲链接已交给系统分享。Instagram Story 如未显示链接，请使用下方链接贴纸提示。' : '图片已交给系统分享。请复制歌曲链接，在 Instagram 添加链接贴纸。');
       } catch (error) {
         if (error.name === 'AbortError') return;
         find('image-link').hidden = false;
@@ -236,7 +259,7 @@
       open(song) {
         returnFocus = document.activeElement;
         const lines = normalizedLines(getFallbackLyrics(song));
-        state = { song, lines, selected: initialSelection(lines), mode: lines.length ? 'lyrics' : 'cover', background: song.cover || !lines.length ? 'album' : 'sunset', template: 'minimal', align: 'left', edited: false, modeChosen: false };
+        state = { song, lines, selected: initialSelection(lines), mode: lines.length ? 'lyrics' : 'cover', background: song.cover || !lines.length ? 'album' : 'sunset', template: 'minimal', align: 'left', font: 'handwriting', fontSize: 78, lineHeight: 1.5, edited: false, modeChosen: false };
         const thumbnail = dialog.querySelector('[data-background="album"] img');
         thumbnail.hidden = !song.cover;
         if (song.cover) thumbnail.src = song.cover; else thumbnail.removeAttribute('src');
@@ -247,6 +270,7 @@
         }
         document.body.classList.add('ml-story-lock');
         find('lyrics-picker').open = false;
+        find('type').open = false;
         displayLines();
         const opening = state;
         Promise.resolve(getLyrics(song)).then(values => {

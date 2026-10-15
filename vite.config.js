@@ -3,7 +3,6 @@ import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
-import { songSharePages } from "./scripts/song-share-pages.mjs";
 
 /* ── Service Worker 预缓存清单：构建期生成 ─────────────────────────────
    原来手写 APP_SHELL 有两个毛病：产物文件名一带 hash 就全失效；每加一个资源就要记得手动补。
@@ -16,6 +15,7 @@ import { songSharePages } from "./scripts/song-share-pages.mjs";
    漏掉它们不会报错，只会在"断网 + 用户点了变调/投影"时静默失败 —— 最难查的那种。 */
 
 const SCAN_INVISIBLE = [
+  "./fonts/MaShanZheng-Regular.ttf",
   "./soundtouch-processor.js",
   "./projection.html",
   "./olive-fellowship-logo.png",
@@ -226,6 +226,6 @@ function editorAssets() {
 // base './' 保持原版「部署到任意子路径都能跑」的特性(原 index.html 全部相对引用)。
 export default defineConfig({
   base: "./",
-  plugins: [react(), staffAssets(), editorAssets(), songSharePages(), precacheManifest()],
+  plugins: [react(), staffAssets(), editorAssets(), precacheManifest()],
   server: { port: 5176 },
 });
