@@ -3,6 +3,7 @@ import react from "@vitejs/plugin-react";
 import fs from "node:fs";
 import path from "node:path";
 import crypto from "node:crypto";
+import { songSharePages } from "./scripts/song-share-pages.mjs";
 
 /* ── Service Worker 预缓存清单：构建期生成 ─────────────────────────────
    原来手写 APP_SHELL 有两个毛病：产物文件名一带 hash 就全失效；每加一个资源就要记得手动补。
@@ -69,7 +70,7 @@ function precacheManifest() {
 
       const scanned = all
         .filter((f) => f.startsWith("assets/") || f.startsWith("icons/"))
-        .concat(["index.html", "musiclib.css", "musiclib.js", "musiclib-tools.js", "musiclib-tools.css", "gsap.min.js", "pinyin-pro.js",
+        .concat(["index.html", "musiclib.css", "musiclib.js", "musiclib-tools.js", "musiclib-tools.css", "story-card.js", "story-share.js", "story-share.css", "gsap.min.js", "pinyin-pro.js",
                  "bible-service.js", "pinyin-kai.woff2", "manifest.webmanifest"])
         .filter((f) => all.includes(f))
         .map(asRequested);
@@ -225,6 +226,6 @@ function editorAssets() {
 // base './' 保持原版「部署到任意子路径都能跑」的特性(原 index.html 全部相对引用)。
 export default defineConfig({
   base: "./",
-  plugins: [react(), staffAssets(), editorAssets(), precacheManifest()],
+  plugins: [react(), staffAssets(), editorAssets(), songSharePages(), precacheManifest()],
   server: { port: 5176 },
 });

@@ -467,6 +467,7 @@
   let _apLoaded=false,_ap=null;
   let _audioCtx=null,_metroTimer=null,_metroNext=0,_metroRunning=false,_metroBpm=72,_metroOwner=null;
   let _toolsController=null;
+  let _storyController=null;
   let _themeObserver=null;
   let _detailStatePushed=false;
   let _revealObserver=null,_weatherCache=null;
@@ -668,7 +669,7 @@
           <button id="ml-detail-service" class="ml-detail-action" type="button" aria-label="标记本堂唱过">${icon('check',16)}<span>本堂</span></button>
           <button id="ml-detail-projection" class="ml-detail-action" type="button" aria-label="投影模式">${icon('projection',16)}<span>投影</span></button>
           <button id="ml-detail-favorite" class="ml-detail-action" type="button" aria-label="收藏诗歌">${icon('heart',16)}</button>
-          <button id="ml-detail-more" class="ml-detail-action" type="button" aria-label="更多操作">${icon('more',16)}</button>
+          <button id="ml-detail-share" class="ml-detail-action" type="button" aria-label="分享诗歌">${icon('share',16)}<span>分享</span></button>
         </div>
       </div>
       <div id="ml-miniplayer">
@@ -749,7 +750,7 @@
             <div id="ml-player-artist"></div>
             <div id="ml-player-actions">
               <button class="ml-player-icon-btn" type="button" aria-label="收藏">${icon('heart',16)}</button>
-              <button class="ml-player-icon-btn" type="button" aria-label="分享">${icon('share',16)}</button>
+              <button id="ml-player-share" class="ml-player-icon-btn" type="button" aria-label="分享">${icon('share',16)}</button>
             </div>
             <div id="ml-player-pills">
               <span id="ml-player-key" class="ml-player-pill"></span>
@@ -1156,6 +1157,7 @@
 
   /* 从上到下。嵌套的层要排在容器层前面（音频面板在播放器里、移调面板在详情里）。 */
   const ESC_LAYERS = [
+    { name:'Story 分享', open:()=>_storyController?.isOpen(), close:()=>_storyController.close() },
     { name:'工具箱', open:()=>_toolsController?.isOpen(), close:()=>_toolsController.back() },
     { name:'投影控制台面板', open:()=>projState.panel?.classList.contains('open'), close:()=>projClosePanel() },
     /* 走 closeNoticeModal 而不是自己摘 class：它还要把 body.overflow 解回去，
@@ -1219,8 +1221,12 @@
     const song=songs.find(s=>s.id===_activeDetailSongId);
     if(song) toggleServiceUsed(song);
   });
-  $('ml-detail-more')?.addEventListener('click',()=>{
+  $('ml-detail-share')?.addEventListener('click',()=>{
     const song=songs.find(s=>s.id===_activeDetailSongId);
+    if(song) shareSong(song);
+  });
+  $('ml-player-share')?.addEventListener('click',()=>{
+    const song=_mpCurrentSong||_mpSongs[_mpIdx];
     if(song) shareSong(song);
   });
   $('ml-detail-projection')?.addEventListener('click',()=>{ensurePinyinPro();projOpenPanel();});
@@ -2686,7 +2692,7 @@
          id 只允许 [A-Za-z0-9_-]（歌库 id 本来就是拼音），出现别的字符就退回长形式，
          免得拼出一个 /s/ 打不开的链接。 */
       if(songId && /^[A-Za-z0-9_-]+$/.test(songId)){
-        return src.origin+'/s/'+songId;
+        return src.origin+'/s/'+songId+'/';
       }
       const u=new URL(src.origin+src.pathname);
       const key=src.searchParams.get('key');
@@ -2708,6 +2714,7 @@
   }
 
   function shareSong(song){
+    if(_storyController){ _storyController.open(song); return; }
     const urlText=buildShareUrl(song.id);
     const title=song.title||'诗歌';
     /* 复制出去的应该是「歌名 + 链接」，光一条 URL 贴到群里没人知道是哪首。
@@ -9936,7 +9943,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         _mpApplyPitch();
         showToast('音频处理器发生错误，已自动恢复原声');
       };
-      if(_mpAudioCtx.state==='suspended') await _mpAudioCtx.resume();
+      await _mpResumeAudioContext('pitch-graph');
       return true;
     })().catch(err=>{
       _mpPitchGraphFailed=true;
@@ -10957,6 +10964,84 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpApplyPitch();
     showToast('练习设置已全部重置');
   }
+  let _mpAudioResumePromise=null;
+  function _mpResumeAudioContext(context){
+    const audioContext=_mpAudioCtx;
+    if(!audioContext||!['suspended','interrupted'].includes(audioContext.state)) return Promise.resolve(true);
+    if(_mpAudioResumePromise) return _mpAudioResumePromise;
+    let recovery;
+    try{ recovery=audioContext.resume(); }catch(error){ recovery=Promise.reject(error); }
+    _mpAudioResumePromise=Promise.resolve(recovery).then(()=>audioContext.state==='running').catch(error=>{
+      console.warn('[musiclib] audio context recovery failed',context,error);
+      return false;
+    }).finally(()=>{ _mpAudioResumePromise=null; });
+    return _mpAudioResumePromise;
+  }
+  function _mpRecoverActiveAudio(){
+    if(document.hidden||!_mpAudio||_mpAudio.paused||_mpAudio.ended) return Promise.resolve(false);
+    return _mpResumeAudioContext('foreground');
+  }
+  function _mpBindAudioLifecycle(){
+    document.addEventListener('visibilitychange',_mpRecoverActiveAudio);
+    window.addEventListener('pageshow',_mpRecoverActiveAudio);
+  }
+  function _mpSyncMediaSession(){
+    const session=navigator.mediaSession;
+    if(!session||!_mpAudio) return;
+    try{
+      session.playbackState=!_mpAudio.src?'none':(_mpAudio.paused?'paused':'playing');
+      if(typeof session.setPositionState!=='function') return;
+      const duration=_mpAudio.duration;
+      if(!Number.isFinite(duration)||duration<=0){
+        session.setPositionState();
+        return;
+      }
+      session.setPositionState({
+        duration,
+        position:Math.max(0,Math.min(duration,_mpAudio.currentTime||0)),
+        playbackRate:_mpAudio.playbackRate||1
+      });
+    }catch(error){ console.warn('[musiclib] media session update failed',error); }
+  }
+  function _mpUpdateMediaMetadata(song){
+    if(!navigator.mediaSession||!window.MediaMetadata||!song) return;
+    try{
+      navigator.mediaSession.metadata=new window.MediaMetadata({
+        title:song.title||'CECP Music Library',
+        artist:song.artist||song.source||'',
+        album:song.album||'CECP Music Library',
+        artwork:song.cover?[{src:new URL(resolveMediaUrl(song.cover),document.baseURI).href}]:[]
+      });
+    }catch(error){ console.warn('[musiclib] media metadata update failed',error); }
+  }
+  function _mpMediaSeekTo(time){
+    if(!_mpAudio||!_mpAudio.src||!Number.isFinite(time)) return;
+    const duration=_mpAudio.duration;
+    if(!Number.isFinite(duration)||duration<=0) return;
+    _mpAudio.currentTime=Math.max(0,Math.min(duration,time));
+    _mpSyncMediaSession();
+  }
+  function _mpBindMediaSession(){
+    try{
+      if(navigator.audioSession) navigator.audioSession.type='playback';
+    }catch(error){ console.warn('[musiclib] audio session setup failed',error); }
+    const session=navigator.mediaSession;
+    if(!session||typeof session.setActionHandler!=='function') return;
+    const actions={
+      play:()=>_mpRequestPlay('media-session'),
+      pause:()=>{ if(_mpAudio&&!_mpAudio.paused) _mpTogglePlayback('media-session'); },
+      previoustrack:()=>_mpPlayIdx(_mpIdx-1,true),
+      nexttrack:()=>_mpPlayIdx(_mpNextIdxFrom(_mpIdx),true),
+      seekto:details=>_mpMediaSeekTo(details.seekTime),
+      seekbackward:details=>_mpMediaSeekTo((_mpAudio?.currentTime||0)-(details.seekOffset||15)),
+      seekforward:details=>_mpMediaSeekTo((_mpAudio?.currentTime||0)+(details.seekOffset||15))
+    };
+    Object.entries(actions).forEach(([action,handler])=>{
+      try{ session.setActionHandler(action,handler); }catch(error){
+        if(error.name!=='NotSupportedError') console.warn('[musiclib] media action unavailable',action,error);
+      }
+    });
+  }
   function _mpHandlePlayError(err,context){
     if(err&&err.name==='AbortError') return;
     try{ console.warn('[musiclib] audio play failed',context||'',err); }catch(_){}
@@ -10977,9 +11062,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(_mpAudio.readyState===0){
       try{ _mpAudio.load(); }catch(_){}
     }
-    if(_mpAudioCtx&&_mpAudioCtx.state==='suspended'){
-      try{ _mpAudioCtx.resume().catch(()=>{}); }catch(_){}
-    }
+    void _mpResumeAudioContext(context||'play');
     try{
       const p=_mpAudio.play();
       if(p&&typeof p.then==='function'){
@@ -11014,6 +11097,9 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpAudio=$('ml-mp-audio');
     if(!_mpAudio) return;
     _mpAudio.preload='auto';
+    _mpBindAudioLifecycle();
+    _mpBindMediaSession();
+    ['durationchange','ratechange','seeked','emptied'].forEach(event=>_mpAudio.addEventListener(event,_mpSyncMediaSession));
     const mv=$('ml-mp-vol'); if(mv) mv.value=String(_mpAudio.volume||1);
     const dv=$('ml-player-dock-vol'); if(dv) dv.value=String(_mpAudio.volume||1);
 
@@ -11022,6 +11108,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       const xd=$('ml-player-dur'); if(xd) xd.textContent=_mpFmt(_mpAudio.duration);
       const nd=$('ml-nowbar-dur'); if(nd) nd.textContent=_mpFmt(_mpAudio.duration);
       _mpSyncPanelTime();
+      _mpSyncMediaSession();
     });
     _mpAudio.addEventListener('timeupdate',()=>{
       $('ml-mp-cur').textContent=_mpFmt(_mpAudio.currentTime);
@@ -11034,13 +11121,15 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       _mpSyncLrc(_mpAudio.currentTime);
       _mpHandleAbLoop();
       _mpSyncPanelTime();
+      _mpSyncMediaSession();
     });
     _mpAudio.addEventListener('play',()=>{
-      if(_mpAudioCtx&&_mpAudioCtx.state==='suspended') _mpAudioCtx.resume().catch(()=>{});
+      void _mpResumeAudioContext('play-event');
       _mpSetPlayUI(true);
       _mpSyncPanelPlaybackUi();
+      _mpSyncMediaSession();
     });
-    _mpAudio.addEventListener('pause',()=>{_mpSetPlayUI(false);_mpSyncPanelPlaybackUi();});
+    _mpAudio.addEventListener('pause',()=>{_mpSetPlayUI(false);_mpSyncPanelPlaybackUi();_mpSyncMediaSession();});
     _mpAudio.addEventListener('ended',()=>{
       if(_mpLoop){
         _mpAudio.currentTime=0;
@@ -11358,6 +11447,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpAudio.src=nextAudioSrc;
     _mpAudio.load();
     _mpApplySongPitchSettings(s,false);
+    _mpUpdateMediaMetadata(s);
+    _mpSyncMediaSession();
     $('ml-mp-cur').textContent='0:00';
     $('ml-mp-dur').textContent='0:00';
     $('ml-mp-fill').style.width='0%';
@@ -13131,6 +13222,23 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       const useFlat=key?needFlat(key.root,key.suf):definition.useFlat;
       return trKeyName(definition.root,semitones,useFlat)+definition.quality.id+
         (definition.bass?'/'+trKeyName(definition.bass,semitones,useFlat):'');
+    }
+  });
+  _storyController=window.CECPStoryShare.create({
+    root,icon,buildShareUrl,
+    getFallbackLyrics:song=>_mpExtractPlainLyrics(song),
+    async getLyrics(song){
+      if(_mpCurrentSong?.id===song.id && _mpLrc.length) return _mpLrc;
+      if(!song.lrc) return _mpExtractPlainLyrics(song);
+      const controller=new AbortController();
+      const timer=setTimeout(()=>controller.abort(),6000);
+      try{
+        const response=await fetch(resolveMediaUrl(song.lrc),{signal:controller.signal});
+        if(!response.ok) throw new Error('lyrics');
+        const lines=_mpParseLrc(await response.text(),song).filter(line=>line.tx);
+        return lines.length?lines:_mpExtractPlainLyrics(song);
+      }catch(_){ return _mpExtractPlainLyrics(song); }
+      finally{ clearTimeout(timer); }
     }
   });
   attachSwipeBack();
