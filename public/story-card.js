@@ -7,7 +7,18 @@
   const SANS='-apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif';
   const HAND='"CECP Story Hand", '+SERIF;
   const scriptUrl=typeof document!=='undefined'?(document.currentScript?.src||document.baseURI):'';
-  let handwritingPromise=null;
+  const fonts=[
+    {id:'handwriting',label:'灵动手写',shortLabel:'手写',family:HAND,face:'CECP Story Hand',file:'MaShanZheng-Regular.ttf'},
+    {id:'longcang',label:'清瘦行书',family:'"CECP Story Long Cang", '+SERIF,face:'CECP Story Long Cang',file:'LongCang-Regular.woff2'},
+    {id:'xiaowei',label:'文艺宋体',family:'"CECP Story Xiao Wei", "Songti SC", Georgia, serif',face:'CECP Story Xiao Wei',file:'ZCOOLXiaoWei-Regular.woff2'},
+    {id:'kuaile',label:'活泼童趣',family:'"CECP Story Kuai Le", '+SANS,face:'CECP Story Kuai Le',file:'ZCOOLKuaiLe-Regular.woff2'},
+    {id:'huangyou',label:'复古窄体',family:'"CECP Story Huang You", '+SANS,face:'CECP Story Huang You',file:'ZCOOLQingKeHuangYou-Regular.woff2'},
+    {id:'caveat',label:'拉丁手写',family:'"CECP Story Caveat", '+SERIF,face:'CECP Story Caveat',file:'Caveat-Variable.woff2',hint:'适合意大利语等拉丁文字；中文自动使用衬线字体。'},
+    {id:'serif',label:'经典衬线',shortLabel:'衬线',family:SERIF},
+    {id:'sans',label:'简约黑体',shortLabel:'简约',family:SANS}
+  ];
+  const fontLoads=new Map();
+  const segmenter=typeof Intl!=='undefined'&&Intl.Segmenter?new Intl.Segmenter(undefined,{granularity:'grapheme'}):null;
   const backgrounds=[
     {id:'sunset',label:'暖色日落',colors:['#8293af','#f3c6ac','#f9dfbf','#7f91a7']},
     {id:'night',label:'深蓝夜空',colors:['#071d2b','#153d50','#416174','#172c3b']},
@@ -23,20 +34,21 @@
       .finally(()=>clearTimeout(timer));
   }
 
-  function loadHandwriting(){
+  function loadFont(font){
+    if(!font.file)return Promise.resolve(true);
     if(typeof FontFace!=='function'||!document.fonts?.add)return Promise.resolve(false);
-    if(!handwritingPromise){
+    if(!fontLoads.has(font.id)){
       try{
-        const source=new URL('./fonts/MaShanZheng-Regular.ttf',scriptUrl).href;
-        const face=new FontFace('CECP Story Hand',`url("${source}")`);
-        handwritingPromise=timeout(face.load(),8000,null).then(loaded=>{
-          if(!loaded){handwritingPromise=null;return false;}
+        const source=new URL('./fonts/'+font.file,scriptUrl).href;
+        const face=new FontFace(font.face,`url("${source}")`);
+        const pending=face.load().then(loaded=>{
           document.fonts.add(loaded);
           return true;
-        }).catch(()=>{handwritingPromise=null;return false;});
+        }).catch(()=>{fontLoads.delete(font.id);return false;});
+        fontLoads.set(font.id,pending);
       }catch(_){return Promise.resolve(false);}
     }
-    return handwritingPromise;
+    return timeout(fontLoads.get(font.id),8000,false);
   }
 
   async function loadCover(source){
@@ -208,18 +220,29 @@
     for(let index=0;index<1800;index++)context.fillRect((index*811)%WIDTH,(index*677)%HEIGHT,1.4,1.4);
   }
 
-  function wrapText(context,value,maxWidth){
+  function textParts(value){
+    const text=String(value||'');
+    return segmenter?Array.from(segmenter.segment(text),part=>part.segment):text.match(/\P{Mark}\p{Mark}*|\p{Mark}+/gu)||[];
+  }
+
+  function textWidth(context,value,letterSpacing){
+    if(!letterSpacing||'letterSpacing' in context)return context.measureText(value).width;
+    const parts=textParts(value);
+    return parts.reduce((width,part)=>width+context.measureText(part).width,0)+Math.max(0,parts.length-1)*letterSpacing;
+  }
+
+  function wrapText(context,value,maxWidth,letterSpacing){
     const output=[];
     String(value||'').split(/\r?\n/).forEach(paragraph=>{
       if(!paragraph.trim()){output.push('');return;}
       const tokens=paragraph.match(/[\u2e80-\uffff]|[^\s\u2e80-\uffff]+|\s+/gu)||[];
       let current='';
       tokens.forEach(token=>{
-        if(context.measureText(current+token).width<=maxWidth){current+=token;return;}
+        if(textWidth(context,current+token,letterSpacing)<=maxWidth){current+=token;return;}
         if(current.trim()){output.push(current.trim());current='';}
-        if(context.measureText(token).width<=maxWidth){current=token.trimStart();return;}
-        Array.from(token).forEach(character=>{
-          if(current&&context.measureText(current+character).width>maxWidth){output.push(current);current='';}
+        if(textWidth(context,token,letterSpacing)<=maxWidth){current=token.trimStart();return;}
+        textParts(token).forEach(character=>{
+          if(current&&textWidth(context,current+character,letterSpacing)>maxWidth){output.push(current);current='';}
           current+=character;
         });
       });
@@ -228,26 +251,28 @@
     return output.length?output:[''];
   }
 
-  function fitText(context,value,{width,height,maxSize,minSize=24,lineHeight=1.45,family=SERIF,maxLines=100}){
+  function fitText(context,value,{width,height,maxSize,minSize=24,lineHeight=1.45,family=SERIF,maxLines=100,letterSpacing=0}){
+    letterSpacing=Math.max(0,Math.min(12,Number(letterSpacing)||0));
+    if('letterSpacing' in context)context.letterSpacing=letterSpacing+'px';
     let size=maxSize;
     let lines=[];
     while(size>=minSize){
       context.font=`${size}px ${family}`;
-      lines=wrapText(context,value,width);
+      lines=wrapText(context,value,width,letterSpacing);
       if(lines.length<=maxLines&&lines.length*size*lineHeight<=height)break;
       size-=2;
     }
     size=Math.max(minSize,size);
     context.font=`${size}px ${family}`;
-    lines=wrapText(context,value,width);
+    lines=wrapText(context,value,width,letterSpacing);
     const limit=Math.max(1,Math.min(maxLines,Math.floor(height/(size*lineHeight))));
     if(lines.length>limit){
       lines=lines.slice(0,limit);
       let last=lines[limit-1];
-      while(last&&context.measureText(last+'…').width>width)last=Array.from(last).slice(0,-1).join('');
+      while(last&&textWidth(context,last+'…',letterSpacing)>width)last=textParts(last).slice(0,-1).join('');
       lines[limit-1]=last+'…';
     }
-    return {lines,size,lineHeight:size*lineHeight,height:lines.length*size*lineHeight};
+    return {lines,size,lineHeight:size*lineHeight,height:lines.length*size*lineHeight,letterSpacing};
   }
 
   function drawText(context,layout,left,top,{color,align='left',family=SERIF,weight=''}){
@@ -255,7 +280,17 @@
     context.textAlign=align;
     context.textBaseline='top';
     context.font=`${weight?weight+' ':''}${layout.size}px ${family}`;
-    layout.lines.forEach((line,index)=>context.fillText(line,left,top+index*layout.lineHeight));
+    if('letterSpacing' in context)context.letterSpacing=layout.letterSpacing+'px';
+    layout.lines.forEach((line,index)=>{
+      const lineTop=top+index*layout.lineHeight;
+      if(!layout.letterSpacing||'letterSpacing' in context){context.fillText(line,left,lineTop);return;}
+      let cursor=left-(align==='center'?textWidth(context,line,layout.letterSpacing)/2:0);
+      context.textAlign='left';
+      textParts(line).forEach(part=>{
+        context.fillText(part,cursor,lineTop);
+        cursor+=context.measureText(part).width+layout.letterSpacing;
+      });
+    });
   }
 
   function drawBrand(context,color,top=1740){
@@ -266,15 +301,15 @@
     context.fillText('CECP Music Library',WIDTH/2,top);
   }
 
-  function drawLyrics(context,{song,lines,cover,background,align,font,fontSize,lineHeight}){
+  function drawLyrics(context,{song,lines,cover,background,align,font,fontSize,lineHeight,letterSpacing}){
     const dark=background==='night'||background==='album';
     const foreground=dark?'#f8f4e9':'#30343b';
     const secondary=dark?'rgba(248,244,233,.64)':'rgba(48,52,59,.62)';
     const text=(Array.isArray(lines)?lines.join('\n'):String(lines||'')).trim()||song.title||'让诗歌，陪伴每一天';
-    const family=font==='sans'?SANS:font==='handwriting'?HAND:SERIF;
+    const family=font.family;
     const maxSize=Math.max(44,Math.min(110,Number(fontSize)||78));
     const spacing=Math.max(1.2,Math.min(2,Number(lineHeight)||1.5));
-    const layout=fitText(context,text.slice(0,1400),{width:824,height:800,maxSize,minSize:24,lineHeight:spacing,family});
+    const layout=fitText(context,text.slice(0,1400),{width:824,height:800,maxSize,minSize:24,lineHeight:spacing,family,letterSpacing});
     const left=align==='center'?WIDTH/2:128;
     const top=330+(800-layout.height)*.4;
     drawText(context,layout,left,top,{color:foreground,align,family});
@@ -327,7 +362,7 @@
     context.fillRect(548,1514,12,52);
   }
 
-  function drawAlbum(context,{song,cover,template,font,fontSize,lineHeight}){
+  function drawAlbum(context,{song,cover,template,font,fontSize,lineHeight,letterSpacing}){
     const isPlayer=template==='player';
     const coverSize=isPlayer?792:690;
     const coverTop=isPlayer?300:375;
@@ -340,10 +375,10 @@
     context.fill();
     context.restore();
     coverImage(context,cover,(WIDTH-coverSize)/2,coverTop,coverSize,32);
-    const family=font==='handwriting'?HAND:font==='serif'?SERIF:SANS;
+    const family=font.family;
     const scale=Math.max(44,Math.min(110,Number(fontSize)||78))/78;
     const spacing=Math.max(1.2,Math.min(2,Number(lineHeight)||1.5))-.2;
-    const title=fitText(context,song.title,{width:792,height:isPlayer?140:172,maxSize:(isPlayer?54:58)*scale,minSize:30,lineHeight:spacing,maxLines:isPlayer?2:3,family});
+    const title=fitText(context,song.title,{width:792,height:isPlayer?140:172,maxSize:(isPlayer?54:58)*scale,minSize:30,lineHeight:spacing,maxLines:isPlayer?2:3,family,letterSpacing});
     const titleTop=coverTop+coverSize+78;
     drawText(context,title,isPlayer?144:WIDTH/2,titleTop,{color:'#fff',align:isPlayer?'left':'center',family});
     const artist=fitText(context,song.artist,{width:792,height:85,maxSize:33,minSize:23,lineHeight:1.3,maxLines:2,family:SANS});
@@ -358,8 +393,9 @@
     const song={title:String(supplied.title||supplied.name||'未命名诗歌'),artist:String(supplied.displayArtist||supplied.artist||supplied.source||supplied.author||supplied.singer||'CECP Music Library')};
     const source=supplied.cover||supplied.coverUrl||supplied.cover_url||supplied.artwork||'';
     const mode=options.mode==='cover'?'cover':'lyrics';
+    const font=fonts.find(item=>item.id===options.font)||fonts.find(item=>item.id===(mode==='cover'?'sans':'serif'));
     const fontReady=typeof document!=='undefined'&&document.fonts?document.fonts.ready.then(()=>true,()=>false):Promise.resolve(true);
-    const [cover,fontsLoaded,handLoaded]=await Promise.all([loadCover(source),timeout(fontReady,2500,false),options.font==='handwriting'?loadHandwriting():Promise.resolve(true)]);
+    const [cover,fontsLoaded,selectedFontLoaded]=await Promise.all([loadCover(source),timeout(fontReady,2500,false),loadFont(font)]);
     canvas.width=WIDTH;
     canvas.height=HEIGHT;
     const context=canvas.getContext('2d');
@@ -368,10 +404,10 @@
     context.imageSmoothingQuality='high';
     const background=backgrounds.some(item=>item.id===options.background)?options.background:'sunset';
     drawBackground(context,background,cover,mode==='cover');
-    if(mode==='cover')drawAlbum(context,{song,cover,template:options.template,font:options.font,fontSize:options.fontSize,lineHeight:options.lineHeight});
-    else drawLyrics(context,{song,cover,lines:options.lines,background,align:options.align==='center'?'center':'left',font:options.font,fontSize:options.fontSize,lineHeight:options.lineHeight});
-    return {coverFailed:!!source&&!cover,fontFallback:!fontsLoaded||!handLoaded};
+    if(mode==='cover')drawAlbum(context,{song,cover,template:options.template,font,fontSize:options.fontSize,lineHeight:options.lineHeight,letterSpacing:options.letterSpacing});
+    else drawLyrics(context,{song,cover,lines:options.lines,background,align:options.align==='center'?'center':'left',font,fontSize:options.fontSize,lineHeight:options.lineHeight,letterSpacing:options.letterSpacing});
+    return {coverFailed:!!source&&!cover,fontFallback:!fontsLoaded||!selectedFontLoaded};
   }
 
-  window.CECPStoryCard={render,backgrounds};
+  window.CECPStoryCard={render,backgrounds,fonts};
 })();
