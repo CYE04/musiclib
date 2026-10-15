@@ -39,6 +39,10 @@ body.ml-story-lock{overflow:hidden!important}
 #music-library #ml-story-type summary::-webkit-details-marker{display:none}
 #music-library #ml-story-font-name{margin-left:auto;font-size:12px;font-weight:400;color:var(--text-secondary,#aaa)}
 #music-library .ml-story-type-controls{display:grid;gap:14px;padding-top:14px}
+#music-library .ml-story-font-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+#music-library .ml-story-font-grid button{min-height:44px;padding:8px;line-height:1.5}
+#music-library .ml-story-type-footer{display:flex;align-items:center;justify-content:space-between;gap:10px}
+#music-library #ml-story-reset-type{flex:none;min-height:40px;padding:0 12px;border:1px solid var(--divider,#444);border-radius:8px;background:transparent;color:var(--text-secondary,#aaa);cursor:pointer}
 #music-library .ml-story-range{display:flex;align-items:center;gap:12px;min-height:36px;font-size:12px}
 #music-library .ml-story-range input{min-width:0;flex:1;accent-color:var(--accent,#ffa66b)}
 #music-library .ml-story-range output{width:34px;text-align:right;font-variant-numeric:tabular-nums;color:var(--text-secondary,#aaa)}
@@ -49,9 +53,11 @@ body.ml-story-lock{overflow:hidden!important}
 #music-library #ml-story-save{background:#ffa66b;border-color:#ffa66b;color:#25180e}
 #music-library .ml-story-actions button:disabled{opacity:.45;cursor:wait}
 #music-library .ml-story-link{display:flex;border:1px solid var(--divider,#444);border-radius:10px;overflow:hidden;min-height:44px}
+#music-library .ml-story-link:focus-within{outline:2px solid var(--accent,#ffa566);outline-offset:3px}
 #music-library #ml-story-url{width:0;min-width:0;flex:1;background:transparent;color:var(--text-secondary,#aaa);border:0;padding:10px;outline:none}
 #music-library #ml-story-copy{flex:none;border:0;border-left:1px solid var(--divider,#444);background:var(--surface-secondary,#292929);color:inherit;padding:0 12px;cursor:pointer}
 #music-library #ml-story-share .ml-story-help{margin:0;color:var(--text-secondary,#aaa);font-size:11px;line-height:1.8}
+#music-library .ml-story-instagram-help strong{color:var(--text-primary,#fafafa);font-weight:600}
 #music-library #ml-story-share-help:empty{display:none}
 #music-library #ml-story-image-link{color:var(--text-primary,#fff);font-size:12px;text-underline-offset:4px}
 @media(max-width:640px){

@@ -9908,6 +9908,7 @@ html:not([data-resolved-theme="light"]) #music-library .sw-ink-pop{
   flex:0 0 auto;
 }
 #music-library #ml-toast .ml-toast-action:hover{background:rgba(255,255,255,.16);}
+#music-library #ml-toast.show .ml-toast-action{pointer-events:auto;}
 #music-library #ml-toast:has(.ml-toast-action){
   display:inline-flex;
   align-items:center;
