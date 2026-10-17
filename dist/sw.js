@@ -3,7 +3,7 @@
    桶名带内容指纹 —— 任何资源变化都会换桶，activate 里的清理逻辑随即删掉旧桶，
    老用户不会卡在旧壳上，也不用再记得手动 bump 版本号。 */
 /* CECP-PRECACHE-BEGIN */
-const CACHE_NAME = "cecp-musiclib-pwa-cc9d2ffc6b";
+const CACHE_NAME = "cecp-musiclib-pwa-6c71f16fa2";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./assets/index-BHyrvNHC.js",
@@ -17,6 +17,12 @@ const APP_SHELL = [
   "./icons/icon-192.png",
   "./icons/icon-512-maskable.png",
   "./icons/icon-512.png",
+  "./icons/musiclib-olive-v1-192-maskable.png",
+  "./icons/musiclib-olive-v1-192.png",
+  "./icons/musiclib-olive-v1-512-maskable.png",
+  "./icons/musiclib-olive-v1-512.png",
+  "./icons/musiclib-olive-v1-apple-touch.png",
+  "./icons/musiclib-olive-v1-favicon.ico",
   "./index.html",
   "./manifest.webmanifest",
   "./musiclib-tools.css?v=20261014-console",
