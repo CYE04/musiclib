@@ -48,23 +48,25 @@
     if(placed)host.appendChild(layer);
   }
 
-  const PAPER_WIDTH=794,LAYOUT_WIDTH=PAPER_WIDTH-24;
+  const PAPER_WIDTH=794,PAPER_MARGIN=24,LAYOUT_WIDTH=PAPER_WIDTH-2*PAPER_MARGIN;
+  const CONTENT_RATIO=(PAPER_WIDTH*297/210-2*PAPER_MARGIN)/LAYOUT_WIDTH;
   function fitPaper(surface,width){
     const page=surface.querySelector('.ml-staff-page');
     const content=surface.querySelector('.ml-staff-page-content');
     const canvas=surface.querySelector('.ml-staff-canvas');
     page.style.width=width+'px';page.style.height=(width*297/210)+'px';
-    const scale=Math.min(content.clientWidth/LAYOUT_WIDTH,content.clientHeight/Number(canvas.dataset.staffHeight));
+    page.style.padding=(width*PAPER_MARGIN/PAPER_WIDTH)+'px';
+    const scoreWidth=Number(canvas.dataset.staffWidth);
+    const scale=Math.min(content.clientWidth/scoreWidth,content.clientHeight/Number(canvas.dataset.staffHeight));
     canvas.style.transform='scale('+scale+')';
-    canvas.style.left=Math.max(0,(content.clientWidth-LAYOUT_WIDTH*scale)/2)+'px';
+    canvas.style.left=Math.max(0,(content.clientWidth-scoreWidth*scale)/2)+'px';
   }
   function makePaper(surface,rendered,width){
     rendered.className='ml-staff-canvas';
-    rendered.style.width=LAYOUT_WIDTH+'px';
     rendered.dataset.staffHeight=String(Math.ceil(rendered.getBoundingClientRect().height));
     Array.from(rendered.children).forEach(node=>node.classList.add('ml-staff-system'));
     const page=document.createElement('div');page.className='ml-staff-page';
-    page.style.cssText='box-sizing:border-box;position:relative;padding:12px;background:#f7f4ee;color:#241C17;';
+    page.style.cssText='box-sizing:border-box;position:relative;background:#f7f4ee;color:#241C17;';
     const content=document.createElement('div');content.className='ml-staff-page-content';
     content.style.cssText='position:relative;width:100%;height:100%;overflow:hidden;';
     page.appendChild(content);surface.appendChild(page);content.appendChild(rendered);
@@ -91,7 +93,7 @@
         const width=host.clientWidth;
         if(width<=0)return;
         const ir=jp.songToIR(song,{key,chordFlat:lastOpts.chordFlat});
-        const source=abc.irToAbc(ir,{lineBreaks:'auto'});
+        const source=abc.irToAbc(ir,{lineBreaks:'auto',stretchLast:true});
         const surface=document.createElement('div');surface.className='ml-staff-surface';
         surface.style.cssText='display:flex;flex-direction:column;gap:14px;color:#241C17;';
         const style=getComputedStyle(host);
@@ -100,11 +102,20 @@
         rendered.style.width=LAYOUT_WIDTH+'px';
         surface.appendChild(rendered);
         host.replaceChildren(surface);
-        // Keep one canonical A4 score, scaling both axes together to fit the complete song.
-        renderer.renderAbc(rendered,source,{staffwidth:LAYOUT_WIDTH,responsive:'resize',add_classes:true,
-          oneSvgPerLine:true,foregroundColor:'#241C17',
-          wrap:{minSpacing:1.8,maxSpacing:2.7,preferredMeasuresPerLine:4},
-          paddingtop:12,paddingbottom:12,paddingleft:0,paddingright:0});
+        // Reflow long scores into wider systems before fitting, so height never wastes the page width.
+        let scoreWidth=LAYOUT_WIDTH;
+        for(let attempt=0;attempt<8;attempt++){
+          rendered.style.width=scoreWidth+'px';rendered.dataset.staffWidth=String(scoreWidth);
+          renderer.renderAbc(rendered,source,{staffwidth:scoreWidth,responsive:'resize',add_classes:true,
+            oneSvgPerLine:true,foregroundColor:'#241C17',
+            wrap:{minSpacing:1,maxSpacing:2.7,preferredMeasuresPerLine:6},
+            paddingtop:10,paddingbottom:10,paddingleft:0,paddingright:0});
+          // abcjs assigns width:100% to the target; restore the canonical width before measuring.
+          rendered.style.width=scoreWidth+'px';
+          const height=rendered.getBoundingClientRect().height;
+          if(height<=scoreWidth*CONTENT_RATIO)break;
+          scoreWidth=Math.max(scoreWidth+80,Math.ceil(scoreWidth*Math.sqrt(height/(scoreWidth*CONTENT_RATIO))*1.05));
+        }
         if(disposed||current!==token)return;
         makePaper(surface,rendered,pageWidth);lastWidth=width;
         lastIr=ir;lastSurface=surface;lastJp=jp;

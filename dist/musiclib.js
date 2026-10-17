@@ -500,6 +500,10 @@
   "timerReset": "<path d=\"M9 2h6M12 2v3M12 9v6l4 2\"/><circle cx=\"12\" cy=\"14\" r=\"8\"/>",
   "crosshair": "<circle cx=\"12\" cy=\"12\" r=\"5\"/><path d=\"M12 2v6M12 16v6M2 12h6M16 12h6\"/>",
   "flag": "<path d=\"M5 21V3h14l-3 5 3 5H5\"/>",
+  "markerA": "<path d=\"m6 19 6-14 6 14M8.5 13h7\"/>",
+  "markerB": "<path d=\"M7 5v14h6a3.5 3.5 0 0 0 0-7H7m0-7h6a3.5 3.5 0 0 1 0 7\"/>",
+  "jumpToMarker": "<path d=\"M4 12h12m-5-5 5 5-5 5M20 5v14\"/>",
+  "playhead": "<path d=\"M12 3v18M3 7l5 5-5 5M21 7l-5 5 5 5\"/>",
   "arrowLeftRight": "<path d=\"m7 3-4 4 4 4M3 7h18m-4 6 4 4-4 4M21 17H3\"/>",
   "skipBack": "<path d=\"M4 5h2v14H4zm15 0L8 12l11 7Z\" fill=\"currentColor\" stroke=\"none\"/>",
   "skipForward": "<path d=\"M18 5h2v14h-2zM5 5l11 7-11 7Z\" fill=\"currentColor\" stroke=\"none\"/>",
@@ -856,34 +860,34 @@
       </div>
       <div class="ml-audio-panel-row" data-control="loop">
         <div class="ml-audio-panel-rowtop">
-          <span>Loop</span>
+          <span>A/B 循环</span>
           <div class="ml-audio-loop-actions">
             <button id="ml-audio-loop-toggle" class="ml-audio-loop-switch" type="button" aria-label="开启 A/B 循环" aria-pressed="false">
               <span class="ml-audio-loop-switch-text">OFF</span>
               <span class="ml-audio-loop-switch-knob" aria-hidden="true"></span>
             </button>
             <button id="ml-audio-loop-use-current" class="ml-ap-icon-btn ml-ap-motion-target ml-loop-action-btn" type="button" aria-label="用当前位置补齐 A/B">
-              ${icon('crosshair',19)}<span class="ml-loop-action-label">当前</span>
+              ${icon('playhead',19)}<span class="ml-loop-action-label">当前</span>
             </button>
             <button id="ml-audio-loop-swap" class="ml-ap-icon-btn ml-ap-motion-swap ml-loop-action-btn" type="button" aria-label="交换 A/B 点">
               ${icon('arrowLeftRight',19)}<span class="ml-loop-action-label">交换</span>
             </button>
             <button id="ml-audio-reset-all" class="ml-ap-icon-btn ml-ap-motion-reset ml-loop-action-btn" type="button" aria-label="恢复全部练习设置">
-              ${icon('refreshCcw',19)}<span class="ml-loop-action-label">恢复</span>
+              ${icon('rotateCcw',19)}<span class="ml-loop-action-label">恢复</span>
             </button>
           </div>
         </div>
         <div id="ml-audio-loop-grid">
           <div class="ml-audio-loop-point" data-point="a">
-            <button id="ml-audio-loop-a" class="ml-audio-loop-mark ml-ap-icon-btn ml-ap-motion-mark" type="button" aria-label="设置 A 点">${icon('flag',18)}</button>
+            <button id="ml-audio-loop-a" class="ml-audio-loop-mark ml-ap-icon-btn ml-ap-motion-mark" type="button" aria-label="设置 A 点">${icon('markerA',18)}</button>
             <input id="ml-audio-loop-a-time" class="ml-audio-loop-time" type="text" inputmode="decimal" value="00:00.0" aria-label="A 点时间">
-            <button id="ml-audio-loop-a-jump" class="ml-audio-loop-jump ml-ap-icon-btn ml-ap-motion-left" type="button" aria-label="跳到 A 点">${icon('skipBack',18)}</button>
+            <button id="ml-audio-loop-a-jump" class="ml-audio-loop-jump ml-ap-icon-btn ml-ap-motion-right" type="button" aria-label="跳到 A 点">${icon('jumpToMarker',18)}</button>
             <input id="ml-audio-loop-a-label" class="ml-audio-loop-label" type="text" value="marker 1" aria-label="A 点标记名称">
           </div>
           <div class="ml-audio-loop-point" data-point="b">
-            <button id="ml-audio-loop-b" class="ml-audio-loop-mark ml-ap-icon-btn ml-ap-motion-mark" type="button" aria-label="设置 B 点">${icon('flag',18)}</button>
+            <button id="ml-audio-loop-b" class="ml-audio-loop-mark ml-ap-icon-btn ml-ap-motion-mark" type="button" aria-label="设置 B 点">${icon('markerB',18)}</button>
             <input id="ml-audio-loop-b-time" class="ml-audio-loop-time" type="text" inputmode="decimal" value="00:30.0" aria-label="B 点时间">
-            <button id="ml-audio-loop-b-jump" class="ml-audio-loop-jump ml-ap-icon-btn ml-ap-motion-right" type="button" aria-label="跳到 B 点">${icon('fastForward',18)}</button>
+            <button id="ml-audio-loop-b-jump" class="ml-audio-loop-jump ml-ap-icon-btn ml-ap-motion-right" type="button" aria-label="跳到 B 点">${icon('jumpToMarker',18)}</button>
             <input id="ml-audio-loop-b-label" class="ml-audio-loop-label" type="text" value="marker 2" aria-label="B 点标记名称">
           </div>
         </div>
