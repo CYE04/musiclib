@@ -1,4 +1,4 @@
-const SONG_SOURCE = 'https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
+const SONG_SOURCE = 'https://raw.githubusercontent.com/CYE04/songs/main/';
 const SONG_PATH = /^\/s\/([A-Za-z0-9_-]{1,128})\/?$/;
 
 function escapeHtml(value) {

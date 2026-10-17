@@ -3,10 +3,10 @@
    桶名带内容指纹 —— 任何资源变化都会换桶，activate 里的清理逻辑随即删掉旧桶，
    老用户不会卡在旧壳上，也不用再记得手动 bump 版本号。 */
 /* CECP-PRECACHE-BEGIN */
-const CACHE_NAME = "cecp-musiclib-pwa-7a030f1d13";
+const CACHE_NAME = "cecp-musiclib-pwa-9d630c9d90";
 const APP_SHELL = [
   "./?key=cecp2026",
-  "./assets/index-C36G5ZZA.js",
+  "./assets/index-BHyrvNHC.js",
   "./bible-service.js?v=20260711-justify-rows",
   "./cecp-olive-logo.svg",
   "./fonts/MaShanZheng-Regular.ttf",
@@ -22,7 +22,7 @@ const APP_SHELL = [
   "./musiclib-tools.css?v=20261014-console",
   "./musiclib-tools.js?v=20261014-console",
   "./musiclib.css?v=20261014-console",
-  "./musiclib.js?v=20261014-console",
+  "./musiclib.js?v=20261017-songs-repo",
   "./olive-fellowship-logo.png",
   "./pinyin-kai.woff2",
   "./pinyin-pro.js",
@@ -72,10 +72,10 @@ self.addEventListener("fetch", (event) => {
   // 缓存 key 去掉查询串（loadSongs 的 ?t= 时间戳），保证离线能命中。
   const isSongList =
     url.hostname === "api.github.com" &&
-    url.pathname.indexOf("/repos/CYE04/Cecp/contents/songs") === 0;
+    /^\/repos\/CYE04\/songs\/contents\/?$/.test(url.pathname);
   const isSongJson =
     url.hostname === "raw.githubusercontent.com" &&
-    url.pathname.indexOf("/CYE04/Cecp/main/songs/") === 0;
+    /^\/CYE04\/songs\/main\/[^/]+\.json$/i.test(url.pathname);
   if (isSongList || isSongJson) {
     const keyUrl = url.origin + url.pathname;
     event.respondWith(
