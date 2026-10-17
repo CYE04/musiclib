@@ -229,6 +229,7 @@
 
 /* ══════════ GitHub Pages 基础路径 ══════════ */
 var YM_BASE = 'https://cye04.github.io/Cecp';
+var SONGS_BASE = 'https://cye04.github.io/songs';
 var YM_LOGO_SRC = (function () {
   try {
     var cur = document.currentScript && document.currentScript.src ? new URL(document.currentScript.src, location.href) : null;
@@ -7111,7 +7112,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     initLightbox();
     var ids = Array.isArray(songIds) ? songIds : [];
     var songPromises = ids.map(function(id) {
-      return fetch(YM_BASE + '/songs/' + id + '.json')
+      return fetch(SONGS_BASE + '/' + id + '.json')
         .then(function(r) {
           if (!r.ok) throw new Error('歌曲不存在: ' + id);
           return r.json();
@@ -7137,7 +7138,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       .then(function(weekly) {
         var songIds = weekly.songs || [];
         var songPromises = songIds.map(function(id) {
-          return fetch(YM_BASE + '/songs/' + id + '.json')
+          return fetch(SONGS_BASE + '/' + id + '.json')
             .then(function(r) {
               if (!r.ok) throw new Error('歌曲不存在: ' + id);
               return r.json();

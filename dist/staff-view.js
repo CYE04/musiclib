@@ -48,6 +48,30 @@
     if(placed)host.appendChild(layer);
   }
 
+  const PAPER_WIDTH=794,LAYOUT_WIDTH=PAPER_WIDTH-24;
+  function fitPaper(surface,width){
+    const page=surface.querySelector('.ml-staff-page');
+    const content=surface.querySelector('.ml-staff-page-content');
+    const canvas=surface.querySelector('.ml-staff-canvas');
+    page.style.width=width+'px';page.style.height=(width*297/210)+'px';
+    const scale=Math.min(content.clientWidth/LAYOUT_WIDTH,content.clientHeight/Number(canvas.dataset.staffHeight));
+    canvas.style.transform='scale('+scale+')';
+    canvas.style.left=Math.max(0,(content.clientWidth-LAYOUT_WIDTH*scale)/2)+'px';
+  }
+  function makePaper(surface,rendered,width){
+    rendered.className='ml-staff-canvas';
+    rendered.style.width=LAYOUT_WIDTH+'px';
+    rendered.dataset.staffHeight=String(Math.ceil(rendered.getBoundingClientRect().height));
+    Array.from(rendered.children).forEach(node=>node.classList.add('ml-staff-system'));
+    const page=document.createElement('div');page.className='ml-staff-page';
+    page.style.cssText='box-sizing:border-box;position:relative;padding:12px;background:#f7f4ee;color:#241C17;';
+    const content=document.createElement('div');content.className='ml-staff-page-content';
+    content.style.cssText='position:relative;width:100%;height:100%;overflow:hidden;';
+    page.appendChild(content);surface.appendChild(page);content.appendChild(rendered);
+    rendered.style.position='absolute';rendered.style.top='0';rendered.style.transformOrigin='top left';
+    fitPaper(surface,width);
+  }
+
   root.CecpStaffView={create(host,{base,onError}){
     let token=0,disposed=false,lastSong,lastKey,lastWidth=0,frame=0;
     /* 坏小节角标默认**关**：它是修谱用的提示，不是给唱的人看的。
@@ -67,31 +91,35 @@
         const width=host.clientWidth;
         if(width<=0)return;
         const ir=jp.songToIR(song,{key,chordFlat:lastOpts.chordFlat});
-        const source=abc.irToAbc(ir);
+        const source=abc.irToAbc(ir,{lineBreaks:'auto'});
         const surface=document.createElement('div');surface.className='ml-staff-surface';
-        /* 断行**跟随简谱**：ir-to-abc 默认按 song JSON 的 lines[] 输出硬换行，
-           五线谱与简谱逐行对照。所以这里**不能传 abcjs 的 wrap 选项**，会覆盖硬换行。
-
-           版面宽度不跟面板走，取一个足够宽的下限再由 responsive:'resize' 整体缩放到面板
-           —— 跟简谱那边的 A4 纸缩放同一套思路。abcjs 在 staffwidth 低于内容自然宽时
-           会放弃两端对齐，所以下限必须够宽。全库实测满行极差：
-             版面 700  → 最大 222px，44 首超 20px
-             版面 880  → 最大 108px，8 首超 20px
-             版面 1100 → 最大 6px，0 首超 20px      ← 采用
-             版面 1400 → 最大 2px（再宽收益很小，缩放后字更小）
-           简谱每行 3–6 小节占 92%，跟随分行后平均 4.4 小节/行。 */
-        const layoutWidth=Math.max(1100,width-48);
-        renderer.renderAbc(surface,source,{staffwidth:layoutWidth,responsive:'resize',add_classes:true,
-          paddingtop:24,paddingbottom:24,paddingleft:24,paddingright:24});
+        surface.style.cssText='display:flex;flex-direction:column;gap:14px;color:#241C17;';
+        const style=getComputedStyle(host);
+        const pageWidth=width-(parseFloat(style.paddingLeft)||0)-(parseFloat(style.paddingRight)||0);
+        const rendered=document.createElement('div');
+        rendered.style.width=LAYOUT_WIDTH+'px';
+        surface.appendChild(rendered);
+        host.replaceChildren(surface);
+        // Keep one canonical A4 score, scaling both axes together to fit the complete song.
+        renderer.renderAbc(rendered,source,{staffwidth:LAYOUT_WIDTH,responsive:'resize',add_classes:true,
+          oneSvgPerLine:true,foregroundColor:'#241C17',
+          wrap:{minSpacing:1.8,maxSpacing:2.7,preferredMeasuresPerLine:4},
+          paddingtop:12,paddingbottom:12,paddingleft:0,paddingright:0});
         if(disposed||current!==token)return;
-        host.replaceChildren(surface);lastWidth=width;
+        makePaper(surface,rendered,pageWidth);lastWidth=width;
         lastIr=ir;lastSurface=surface;lastJp=jp;
         if(warnOn)markBadMeasures(host,surface,jp,ir);
       }catch(error){if(!disposed&&current===token){onError(error);console.warn('Staff rendering failed',error);}}
     }
     const observer=new ResizeObserver(()=>{
       if(disposed||host.hidden||!lastSong||host.clientWidth<=0||host.clientWidth===lastWidth)return;
-      cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>render(lastSong,lastKey,lastOpts));
+      cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>{
+        if(!lastSurface?.isConnected)return;
+        const style=getComputedStyle(host),width=host.clientWidth;
+        fitPaper(lastSurface,width-(parseFloat(style.paddingLeft)||0)-(parseFloat(style.paddingRight)||0));lastWidth=width;
+        host.querySelector('.ml-staff-warn-layer')?.remove();
+        if(warnOn)markBadMeasures(host,lastSurface,lastJp,lastIr);
+      });
     });observer.observe(host);
     function setWarnings(on){
       warnOn=!!on;
