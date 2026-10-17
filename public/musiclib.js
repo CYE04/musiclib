@@ -802,17 +802,17 @@
         <div class="ml-audio-panel-icons" aria-hidden="true">✧✦</div>
         <div id="ml-audio-panel-title">
           <span class="ml-audio-panel-brandmark"><img src="${TRANSPOSE_LOGO_SRC}" alt=""></span>
-          <span>CECP Transpose</span>
+          <span class="ml-audio-panel-heading"><strong>音频变调</strong><small>CECP Transpose</small></span>
         </div>
         <button class="ml-audio-panel-head-btn ml-motion-close-btn" id="ml-audio-panel-close" type="button" aria-label="关闭 CECP Transpose">${icon('close',22)}</button>
       </div>
       <button id="ml-audio-panel-play" type="button">
-        <span>Start playback</span>
+        <span>开始播放</span>
         <span id="ml-audio-panel-play-icon">${icon('circlePlay',21)}</span>
       </button>
       <div class="ml-audio-panel-row" data-control="transpose">
         <div class="ml-audio-panel-rowtop">
-          <span>Transpose</span>
+          <span>半音变调</span>
           <strong id="ml-audio-transpose-value">0</strong>
           <button id="ml-audio-transpose-reset" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="重置半音">${icon('rotateCcw',20)}</button>
         </div>
@@ -824,7 +824,7 @@
       </div>
       <div class="ml-audio-panel-row" data-control="pitch">
         <div class="ml-audio-panel-rowtop">
-          <span>Pitch</span>
+          <span>音高微调</span>
           <strong id="ml-audio-pitch-value">0</strong>
           <button id="ml-audio-pitch-reset" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="重置音高细调">${icon('rotateCcw',20)}</button>
         </div>
@@ -836,8 +836,8 @@
       </div>
       <div class="ml-audio-panel-row" data-control="speed">
         <div class="ml-audio-panel-rowtop">
-          <span>Speed <strong id="ml-audio-speed-value">100%</strong></span>
-          <span>Tempo <strong id="ml-audio-tempo-value">bpm</strong></span>
+          <span>速度 <strong id="ml-audio-speed-value">100%</strong></span>
+          <span>节拍 <strong id="ml-audio-tempo-value">bpm</strong></span>
           <button id="ml-audio-speed-reset" class="ml-ap-icon-btn ml-ap-motion-reset" type="button" aria-label="重置速度">${icon('rotateCcw',20)}</button>
         </div>
         <div class="ml-audio-panel-control">
@@ -1141,6 +1141,8 @@
   });
   $('ml-search-clear')?.addEventListener('click',()=>{
     query='';
+    clearTimeout(_searchDebounce);
+    _lastRenderedQuery='';
     const input=$('ml-search');
     if(input){ input.value=''; input.focus(); }
     updateSearchControls();
@@ -10961,7 +10963,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(play){
       const label=play.querySelector('span');
       const stateIcon=$('ml-audio-panel-play-icon');
-      if(label) label.textContent=playing?'Pause playback':'Start playback';
+      if(label) label.textContent=playing?'暂停播放':'开始播放';
       if(stateIcon) stateIcon.innerHTML=playing?icon('pause',21):icon('circlePlay',21);
       play.classList.toggle('is-playing',playing);
     }
