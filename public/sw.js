@@ -48,10 +48,10 @@ self.addEventListener("fetch", (event) => {
   // 缓存 key 去掉查询串（loadSongs 的 ?t= 时间戳），保证离线能命中。
   const isSongList =
     url.hostname === "api.github.com" &&
-    url.pathname.indexOf("/repos/CYE04/Cecp/contents/songs") === 0;
+    /^\/repos\/CYE04\/songs\/contents\/?$/.test(url.pathname);
   const isSongJson =
     url.hostname === "raw.githubusercontent.com" &&
-    url.pathname.indexOf("/CYE04/Cecp/main/songs/") === 0;
+    /^\/CYE04\/songs\/main\/[^/]+\.json$/i.test(url.pathname);
   if (isSongList || isSongJson) {
     const keyUrl = url.origin + url.pathname;
     event.respondWith(

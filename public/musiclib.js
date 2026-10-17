@@ -230,8 +230,8 @@
     return staffViewPromise;
   }
   const ML_VER='20261013-tools1';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
-  const GITHUB_API='https://api.github.com/repos/CYE04/Cecp/contents/songs';
-  const RAW_BASE='https://raw.githubusercontent.com/CYE04/Cecp/main/songs/';
+  const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
+  const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
   function resolveMediaUrl(url){
     if(!url) return '';
@@ -10650,7 +10650,26 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpRenderQueueInto(list);
   }
 
+  function _mpSyncDetailAudio(){
+    const hasAudio=!!(_mpCurrentSong&&hasSongAudio(_mpCurrentSong));
+    $('ml-miniplayer')?.classList.toggle('has-mp3',hasAudio);
+    const entry=detail.querySelector('.ml-practice-player-entry');
+    if(entry){
+      const playThis=entry.dataset.songAudio==='true'&&entry.dataset.songId!==_mpCurrentSong?.id;
+      entry.dataset.playSong=playThis?entry.dataset.songId:'';
+      entry.disabled=!hasAudio&&entry.dataset.songAudio!=='true';
+      entry.setAttribute('aria-label',playThis?'播放此曲：'+entry.dataset.songTitle:'打开音频播放器');
+      entry.innerHTML=icon('play',17)+'<span>'+(playThis?'播放此曲':'播放器')+'</span>';
+    }
+    const tempo=detail.querySelector('[data-act="tempo"]');
+    if(tempo){
+      tempo.disabled=!hasAudio;
+      tempo.title=hasAudio?'当前音频：'+(_mpCurrentSong.title||''):'暂无音频';
+      tempo.setAttribute('aria-describedby','ml-mp-title');
+    }
+  }
   function _mpRenderQueue(){
+    _mpSyncDetailAudio();
     _mpSavePlayback(true);
     const box=$('ml-player-queue-list');
     const empty=$('ml-player-queue-empty');
@@ -11931,75 +11950,11 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     updateDetailStateButtons(s);
 
     _mpBind();
-    if(hasSongAudio(s)){
-      let idx=_mpSongs.findIndex(x=>x.id===s.id);
-      if(idx<0) idx=_mpAddToQueue(s,true);
-      const isSameSong = (idx>=0 && idx===_mpIdx);
-      if(!isSameSong){
-        _mpIdx=idx;
-        _mpRenderQueue();
-        _mpLrc=[]; _mpLrcIdx=-1;
-        _mpPlayRequestId++;
-        _mpAudio.src=_mpPrepareAudioSrc(resolveMediaUrl(s.mp3));
-        _mpApplySongPitchSettings(s,false);
-        if(s.lrc){
-          fetch(resolveMediaUrl(s.lrc)).then(r=>{
-            if(!r.ok) throw new Error('LRC '+r.status);
-            return r.text();
-          }).then(text=>{
-            const parsed=_mpParseLrc(text,s);
-            if(parsed.length){
-              _mpLrc=parsed;
-              _mpLrcTimed=true;
-              _mpLrcIdx=-1;
-              _mpRenderLrc();
-              _mpSyncLrc(_mpAudio.currentTime||0,true);
-            }else{
-              _mpUseFallbackLyrics(s);
-              _mpSyncLrc(_mpAudio.currentTime||0,true);
-            }
-          }).catch(()=>{
-            _mpUseFallbackLyrics(s);
-            _mpSyncLrc(_mpAudio.currentTime||0,true);
-          });
-        }else{
-          _mpUseFallbackLyrics(s);
-          _mpSyncLrc(_mpAudio.currentTime||0,true);
-        }
-      }else{
-        _mpSetPitchUi(_mpPitchSemi);
-      }
-      _mpCurrentSong=s;
-      _mpUpdateMediaMetadata(s);
-      _mpSyncMediaSession();
-      const titleEl=document.getElementById('ml-mp-title');
-      const artistEl=document.getElementById('ml-mp-artist');
-      if(titleEl) titleEl.textContent=s.title||'';
-      if(artistEl) artistEl.textContent=s.artist||'';
-      const xt=document.getElementById('ml-player-title');
-      const xa=document.getElementById('ml-player-artist');
-      const xk=document.getElementById('ml-player-key');
-      const xb=document.getElementById('ml-player-bpm');
-      const xnt=document.getElementById('ml-player-now-title');
-      const xns=document.getElementById('ml-player-now-sub');
-      if(xt) xt.textContent=s.title||'';
-      if(xa) xa.textContent=s.artist||'';
-      if(xk) xk.textContent='调: '+(s.origKey||'—');
-      if(xb) xb.textContent='速度: '+(s.bpm||'—');
-      if(xnt) xnt.textContent=s.title||'正在播放';
-      if(xns) xns.textContent=s.artist||s.source||'诗歌';
-      _mpSetCover(s.cover||null);
-      _mpApplyPlayerAccent(s);
-      const stage=document.getElementById('ml-mp-stage');
-      if(stage) stage.classList.toggle('playing', !_mpAudio.paused);
-      if(isSameSong && _mpLrc.length && !document.getElementById('ml-mp-lrc-inner')?.children.length){
-        _mpRenderLrc();
-      }
-      const detailPlayer=document.getElementById('ml-miniplayer');
-      if(detailPlayer) detailPlayer.classList.add('has-mp3');
-    } else {
-      const detailPlayer=document.getElementById('ml-miniplayer');
-      if(detailPlayer) detailPlayer.classList.remove('has-mp3');
+    // Browsing a score does not replace the selected audio, queue, or playback settings.
+    // Only prepare this song when the player has no selected track yet.
+    if(!(_mpCurrentSong&&hasSongAudio(_mpCurrentSong))&&hasSongAudio(s)){
+      _mpIdx=_mpAddToQueue(s,true);
+      _mpLoadAndPlaySong(s,false);
     }
     const fromUrl=!!opts.fromUrl;
     if(!fromUrl){
@@ -12055,10 +12010,14 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     const playerEntry=document.createElement('button');
     playerEntry.type='button';playerEntry.className='ml-practice-player-entry';
     playerEntry.dataset.act='player';
+    playerEntry.dataset.songId=s.id;
+    playerEntry.dataset.songTitle=s.title||'';
+    playerEntry.dataset.songAudio=String(hasSongAudio(s));
     playerEntry.setAttribute('aria-label','打开音频播放器');
     playerEntry.innerHTML=icon('play',17)+'<span>播放器</span>';
     playerEntry.disabled=!hasSongAudio(s);
     playerEntry.addEventListener('click',()=>{
+      if(playerEntry.dataset.playSong)playSongNow(s);
       _mpSetLyricsMode(true);
       _mpSetExpanded(true);
     });
@@ -12091,7 +12050,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       e.currentTarget.setAttribute('aria-expanded',String(expanded));
     });
     practiceRow.querySelector('[data-act="tempo"]')?.addEventListener('click',()=>{
-      if(!hasSongAudio(s)) return;
+      if(!_mpCurrentSong||!hasSongAudio(_mpCurrentSong)) return;
       _mpBind();
       _mpSetPanelOpen(true);
     });
@@ -13421,6 +13380,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     detail.classList.add('open');
     root.classList.add('ml-has-detail-open');
     document.body.classList.add('ml-detail-lock');
+    _mpSyncDetailAudio();
     syncDetailHeaderVar();
     detail.scrollTop=0;
     $('ml-detail-dialog')?.scrollTo?.({top:0,left:0});
