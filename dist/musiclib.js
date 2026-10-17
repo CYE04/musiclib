@@ -3047,6 +3047,56 @@
     setTimeout(()=>URL.revokeObjectURL(url),800);
   }
 
+  async function exportRenderedScorePng(pages,opt={}){
+    await document.fonts?.ready;
+    const [capture,logo]=await Promise.all([loadHtml2Canvas(),loadImageForExport(LOGO_SRC)]);
+    if(!logo)throw new Error('score export logo unavailable');
+    await waitPaint2();
+    const stem=safeFileName(opt.title||'score')+'_'+safeFileName(opt.key||'');
+    for(let index=0;index<pages.length;index++){
+      const page=pages[index],rect=page.getBoundingClientRect();
+      if(rect.width<=0||rect.height<=0)throw new Error('rendered score is not visible');
+      // Capture the existing page, including its transforms, line spacing, SVG and ink.
+      // The only addition is a centered logo; no notation or page layout is rebuilt.
+      const canvas=await capture(page,{
+        backgroundColor:resolveExportBackground(page),scale:2000/rect.width,
+        useCORS:true,logging:false,foreignObjectRendering:false,
+        // html2canvas clips nested responsive SVG transforms. Paint these natively below.
+        ignoreElements:element=>page.classList.contains('ml-staff-page')&&!!element.closest('.ml-staff-canvas')
+      });
+      const ctx=canvas.getContext('2d');
+      if(!ctx)throw new Error('canvas unavailable');
+      if(page.classList.contains('ml-staff-page')){
+        const scale=canvas.width/rect.width;
+        for(const svg of page.querySelectorAll('.ml-staff-canvas svg')){
+          const box=svg.getBoundingClientRect(),copy=svg.cloneNode(true);
+          const ink=getComputedStyle(svg);
+          copy.setAttribute('xmlns','http://www.w3.org/2000/svg');
+          copy.setAttribute('width',String(box.width*scale));copy.setAttribute('height',String(box.height*scale));
+          copy.style.cssText='width:'+box.width*scale+'px;height:'+box.height*scale+'px;color:'+ink.color+';fill:'+ink.fill+';';
+          const texts=copy.querySelectorAll('text');
+          svg.querySelectorAll('text').forEach((text,index)=>{
+            const style=getComputedStyle(text);
+            for(const name of ['font-family','font-size','font-weight','font-style','fill','stroke'])texts[index].style.setProperty(name,style.getPropertyValue(name));
+          });
+          const blob=new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'});
+          const image=await blobToImage(blob);
+          ctx.save();ctx.setTransform(1,0,0,1,0,0);
+          ctx.drawImage(image,(box.left-rect.left)*scale,(box.top-rect.top)*scale,box.width*scale,box.height*scale);
+          ctx.restore();
+        }
+      }
+      const ratio=logo.naturalHeight/logo.naturalWidth;
+      const logoWidth=Math.min(canvas.width*.5,canvas.height*.32/ratio);
+      const logoHeight=logoWidth*ratio;
+      ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=.055;
+      ctx.drawImage(logo,(canvas.width-logoWidth)/2,(canvas.height-logoHeight)/2,logoWidth,logoHeight);
+      ctx.restore();
+      const suffix=pages.length>1?'_'+(index+1):'';
+      saveBlobAs(await canvasToPngBlob(canvas),stem+suffix+'.png');
+    }
+  }
+
   function withExportJpFix(scope,work){
     const touched=[];
     const setStyle=(el,prop,val,pri='')=>{
@@ -12112,7 +12162,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(hasRenderedScore&&!hasImageScore) panel.classList.add('open','ml-structured-only');
 
     const canStaff=window.CECP_MUSICLIB_CONFIG?.canStaff!==false && Array.isArray(s.sections) && s.sections.some(section=>Array.isArray(section.lines)&&section.lines.length);
-    let staffOn=false,staffController=null,staffToken=0,staffDisposed=false;
+    let staffOn=false,staffController=null,staffToken=0,staffDisposed=false,staffRenderPending=null;
     let staffBar,staffPanel,staffSimple,staffButton,staffWarnBtn;
     /* 坏小节角标：**默认关**。它是修谱用的提示，不是给唱的人看的。
        选择记在 localStorage，跨歌跨会话保留。 */
@@ -12139,7 +12189,11 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     function restoreSimple(){
       staffOn=false;staffToken++;staffController?.cancel();syncStaffVisibility();scheduleFitRows();
     }
-    async function renderStaff(){
+    function renderStaff(){
+      staffRenderPending=renderStaffNow();
+      return staffRenderPending;
+    }
+    async function renderStaffNow(){
       if(!canStaff||!staffOn||staffDisposed)return;
       const token=++staffToken;
       try{
@@ -12950,36 +13004,36 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     shareBtn.addEventListener('click',()=>shareSong(s));
 
     const exportBtn=swIcoBtn('download','下载图片');
-    exportBtn.addEventListener('click',()=>{
+    exportBtn.addEventListener('click',async()=>{
       if(exportBtn.disabled) return;
-      if(hasRenderedScore&&!scoreBuilt){renderScore();inkCtl.attach();}
       /* 忙碌态用类名转圈，不再改 textContent（图标按钮里没有文字可改）;
          状态提示本来就有 showToast，文字态是冗余的 */
       exportBtn.disabled=true;
       exportBtn.classList.add('is-busy');
-      const exportOpts={
-        title:s.title||'transpose',
-        key:curKey,
-        song:s,
-        a4:true,
-        bgColor:'#ffffff',
-        tight:true,
-        width:Math.max(560,Math.ceil(wrap.getBoundingClientRect().width||0)||900)
-      };
-      exportSongAsFittedPng(lbDiv,exportOpts).catch(err=>{
-        try{ console.warn('[musiclib] fitted export failed, fallback to legacy single image',err); }catch(_){}
-        return exportTransposePanel(lbDiv,exportOpts);
-      }).then(()=>{
+      try{
+        let pages;
+        if(staffOn)await staffRenderPending;
+        if(staffOn){
+          pages=[staffPanel.querySelector('.ml-staff-page')];
+        }else if(hasRenderedScore&&(panel.classList.contains('open')||!hasImageScore)){
+          if(!scoreBuilt){renderScore();inkCtl.attach();}
+          pages=[ensureScorePage()];
+        }else{
+          pages=Array.from(imagePanel.querySelectorAll('.ml-score-image-page'));
+          await Promise.all(pages.flatMap(page=>Array.from(page.querySelectorAll('img')).map(img=>img.decode())));
+        }
+        if(!pages.length||pages.some(page=>!page))throw new Error('no rendered score page');
+        await exportRenderedScorePng(pages,{title:s.title,key:staffOn||panel.classList.contains('open')?curKey:s.origKey});
         showToast('图片已下载');
-      }).catch(err=>{
+      }catch(err){
         showToast('导出失败，请重试');
         try{ console.error('[musiclib] export transpose image failed',err); }catch(_){}
-      }).finally(()=>{
+      }finally{
         setTimeout(()=>{
           exportBtn.disabled=false;
           exportBtn.classList.remove('is-busy');
         },1200);
-      });
+      }
     });
     /* 四个都挂到练习工具行；工具条那边一个都不留 */
     shareRow.appendChild(asPracticeChip(shareBtn,'分享'));
