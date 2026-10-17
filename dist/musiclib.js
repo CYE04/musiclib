@@ -406,7 +406,7 @@
       EC+' #ml-mp-stage{display:none!important;height:0!important;min-height:0!important}',
       EC+' .pl-progress-wrap,'+EC+' .pl-vol-wrap{display:none!important}',
       EC+' #ml-mp-seek-back,'+EC+' #ml-mp-seek-fwd,'+EC+' #ml-mp-prev,',
-      EC+' #ml-mp-next,'+EC+' #ml-mp-repeat{display:none!important}',
+      EC+' #ml-mp-next,'+EC+' #ml-mp-shuffle,'+EC+' #ml-mp-repeat{display:none!important}',
       E+' .pl-song-row{gap:8px}',
       /* 节拍器：平时收起，点小图标才展开（现场不占地方） */
       /* 嵌入模式里节拍器仍然是「内联展开」，不走弹窗那一套：
@@ -690,11 +690,13 @@
         </div>
         <button class="pl-btn" id="ml-mp-expand" type="button" aria-label="打开播放器与同步歌词" title="打开播放器">${icon('lrc',16)}<span>播放器</span></button>
       </div>
+      <div id="ml-mp-live-lyric" class="pl-live-lyric" aria-label="当前歌词">歌词将在播放时显示</div>
       <div class="pl-progress-wrap">
         <div class="pl-progress-bar"><div class="pl-progress-fill" id="ml-mp-fill"></div></div>
         <div class="pl-times"><span id="ml-mp-cur">0:00</span><span id="ml-mp-dur">0:00</span></div>
       </div>
       <div class="pl-controls">
+        <button class="pl-btn" id="ml-mp-shuffle" type="button" aria-label="随机播放" aria-pressed="false" title="随机播放">${icon('shuffle',16)}<span class="pl-shuffle-label">随机</span></button>
         <button class="pl-btn" id="ml-mp-seek-back" aria-label="后退15秒">${icon('rewind',17)}</button>
         <button class="pl-btn" id="ml-mp-prev" aria-label="上一首">${icon('skipBack',16)}</button>
         <button class="pl-btn pl-playpause" id="ml-mp-playpause" aria-label="播放">${icon('play',18)}</button>
@@ -899,13 +901,16 @@
     </section>
     <div id="ml-nowbar" aria-label="正在播放">
       <div id="ml-nowbar-bg" aria-hidden="true"></div>
+      <div class="ml-nowbar-track">
       <div id="ml-nowbar-cover" title="打开播放页"><span>♪</span></div>
       <div id="ml-nowbar-main" title="打开播放页">
         <div id="ml-nowbar-title">正在播放</div>
         <div id="ml-nowbar-artist"></div>
-        <div id="ml-nowbar-lyric">歌词将在播放时显示</div>
         <div id="ml-nowbar-progress"><div id="ml-nowbar-fill"></div></div>
       </div>
+      </div>
+      <div id="ml-nowbar-lyric" aria-label="当前歌词">歌词将在播放时显示</div>
+      <div class="ml-nowbar-actions">
       <div id="ml-nowbar-controls">
         <button class="ml-nowbar-btn" id="ml-nowbar-shuffle" type="button" aria-label="随机播放">
           ${icon('shuffle',17)}
@@ -933,6 +938,7 @@
         </button>
       </div>
     </div>
+      </div>
     <nav id="ml-bottom-nav" aria-label="手机底部导航">
       <button class="ml-bottom-link active" type="button" data-nav="home">${icon('home')}<span>首页</span></button>
 
@@ -10684,14 +10690,32 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpRenderPlaylist();
   }
   function _mpSyncModeUI(){
-    const r1=$('ml-mp-repeat');
-    const r2=$('ml-player-repeat-toggle');
-    const s2=$('ml-player-shuffle');
-    if(r1) r1.classList.toggle('on',!!_mpLoop);
-    if(r2) r2.classList.toggle('on',!!_mpLoop);
-    if(s2) s2.classList.toggle('on',!!_mpShuffle);
-    $('ml-nowbar-repeat')?.classList.toggle('on',!!_mpLoop);
-    $('ml-nowbar-shuffle')?.classList.toggle('on',!!_mpShuffle);
+    for(const id of ['ml-mp-repeat','ml-player-repeat-toggle','ml-nowbar-repeat']){
+      const button=$(id);if(!button)continue;
+      button.classList.toggle('on',!!_mpLoop);button.setAttribute('aria-pressed',String(!!_mpLoop));
+    }
+    for(const id of ['ml-mp-shuffle','ml-player-shuffle','ml-nowbar-shuffle']){
+      const button=$(id);if(!button)continue;
+      button.classList.toggle('on',!!_mpShuffle);button.setAttribute('aria-pressed',String(!!_mpShuffle));
+      button.title=_mpShuffle?'随机播放已开启，点击关闭':'开启随机播放';
+    }
+  }
+  function _mpToggleShuffle(){
+    _mpShuffle=!_mpShuffle;
+    if(_mpShuffle){
+      _mpLoop=false;
+      if(_mpQueueOrigin==='auto'&&_mpSongs.length<2&&_mpCurrentSong){
+        const context=getFilteredSongs().filter(hasSongAudio);
+        if(!context.some(song=>song.id===_mpCurrentSong.id))context.unshift(_mpCurrentSong);
+        _mpSongs=context;_mpIdx=context.findIndex(song=>song.id===_mpCurrentSong.id);
+      }
+    }
+    _mpSyncModeUI();_mpRenderQueue();
+    showToast(_mpShuffle?'随机播放已开启':'已恢复顺序播放');
+  }
+  function _mpToggleRepeat(){
+    _mpLoop=!_mpLoop;if(_mpLoop)_mpShuffle=false;
+    _mpSyncModeUI();_mpSavePlayback(true);
   }
   function _mpNextIdxFrom(cur){
     if(!_mpSongs.length) return 0;
@@ -10810,6 +10834,12 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpLrcIdx=-1;
     _mpRenderLrc();
   }
+  function _mpSetBarLyric(text){
+    for(const id of ['ml-nowbar-lyric','ml-mp-live-lyric']){
+      const line=$(id);if(!line)continue;
+      line.textContent=text;line.title=text;
+    }
+  }
   function _mpRenderLrc(){
     function paint(innerId,panelId,lineClass){
       const inner=$(innerId);
@@ -10818,8 +10848,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       inner.innerHTML='';
       if(!_mpLrc.length){
         inner.innerHTML=`<div class="${lineClass} is-empty">${MP_NO_LYRIC_TEXT}</div>`;
-        const nbLyric=$('ml-nowbar-lyric');
-        if(nbLyric) nbLyric.textContent=MP_NO_LYRIC_SHORT;
+        _mpSetBarLyric(MP_NO_LYRIC_SHORT);
         return;
       }
       inner.classList.toggle('is-static',!_mpLrcTimed);
@@ -10837,8 +10866,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     paint('ml-mp-lrc-inner','ml-mp-lrc-panel','ml-mp-lrc-line');
     paint('ml-player-lyrics-inner','ml-player-lyrics','ml-player-lrc-line');
     _mpLrcIdx=0;
-    const nbLyric=$('ml-nowbar-lyric');
-    if(nbLyric) nbLyric.textContent=_mpLrc[0]?.tx || MP_NO_LYRIC_SHORT;
+    _mpSetBarLyric(_mpLrc[0]?.tx || MP_NO_LYRIC_SHORT);
   }
   function _mpSyncLrc(cur,force=false){
     if(!_mpLrc.length) return;
@@ -10878,8 +10906,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     }
     sync('ml-mp-lrc-inner','ml-mp-lrc-panel');
     sync('ml-player-lyrics-inner','ml-player-lyrics');
-    const nbLyric=$('ml-nowbar-lyric');
-    if(nbLyric) nbLyric.textContent=_mpLrc[idx]?.tx || '…';
+    _mpSetBarLyric(_mpLrc[idx]?.tx || '…');
   }
   function _mpFmtMs(t){
     if(t==null||!isFinite(t)) return '--:--.-';
@@ -11345,28 +11372,9 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       if(!_mpAudio.src) return;
       _mpAudio.currentTime=Math.min(_mpAudio.duration||1e9, (_mpAudio.currentTime||0)+15);
     });
-    $('ml-mp-repeat')?.addEventListener('click',e=>{
-      _mpLoop=!_mpLoop;
-      _mpSyncModeUI();
-    });
-    $('ml-player-repeat-toggle')?.addEventListener('click',()=>{
-      _mpLoop=!_mpLoop;
-      _mpSyncModeUI();
-    });
-    $('ml-player-shuffle')?.addEventListener('click',()=>{
-      _mpShuffle=!_mpShuffle;
-      _mpSyncModeUI();
-    });
-    $('ml-nowbar-shuffle')?.addEventListener('click',()=>{
-      _mpShuffle=!_mpShuffle;
-      _mpSyncModeUI();
-      showToast(_mpShuffle?'随机播放已开':'随机播放已关');
-    });
-    $('ml-nowbar-repeat')?.addEventListener('click',()=>{
-      _mpLoop=!_mpLoop;
-      _mpSyncModeUI();
-      showToast(_mpLoop?'单曲循环已开':'单曲循环已关');
-    });
+    for(const id of ['ml-mp-repeat','ml-player-repeat-toggle'])$(id)?.addEventListener('click',_mpToggleRepeat);
+    for(const id of ['ml-mp-shuffle','ml-player-shuffle','ml-nowbar-shuffle'])$(id)?.addEventListener('click',_mpToggleShuffle);
+    $('ml-nowbar-repeat')?.addEventListener('click',_mpToggleRepeat);
     $('ml-nowbar-queue')?.addEventListener('click',e=>{
       e.stopPropagation();
       _mpSetPlaylistOpen(true);
@@ -12017,7 +12025,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     playerEntry.innerHTML=icon('play',17)+'<span>播放器</span>';
     playerEntry.disabled=!hasSongAudio(s);
     playerEntry.addEventListener('click',()=>{
-      if(playerEntry.dataset.playSong)playSongNow(s);
+      if(playerEntry.dataset.playSong){
+        playSongNow(s);
+        return;
+      }
       _mpSetLyricsMode(true);
       _mpSetExpanded(true);
     });
