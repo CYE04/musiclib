@@ -3057,13 +3057,14 @@
       const page=pages[index],rect=page.getBoundingClientRect();
       if(rect.width<=0||rect.height<=0)throw new Error('rendered score is not visible');
       // Capture the existing page, including its transforms, line spacing, SVG and ink.
-      // The only addition is a centered logo; no notation or page layout is rebuilt.
-      const canvas=await capture(page,{
+      // Notation stays intact; song information and branding are composed around it below.
+      const captured=await capture(page,{
         backgroundColor:resolveExportBackground(page),scale:2000/rect.width,
         useCORS:true,logging:false,foreignObjectRendering:false,
         // html2canvas clips nested responsive SVG transforms. Paint these natively below.
         ignoreElements:element=>page.classList.contains('ml-staff-page')&&!!element.closest('.ml-staff-canvas')
       });
+      let canvas=captured;
       const ctx=canvas.getContext('2d');
       if(!ctx)throw new Error('canvas unavailable');
       if(page.classList.contains('ml-staff-page')){
@@ -3086,12 +3087,37 @@
           ctx.restore();
         }
       }
+      // Keep the song information as well as the rendered notation. Staff pages already
+      // contain their title and composer; only add the missing metadata above them.
+      const song=opt.song||{},staff=page.classList.contains('ml-staff-page');
+      const headerHeight=staff?(song.sub?140:100):220;
+      const output=document.createElement('canvas');output.width=canvas.width;output.height=canvas.height;
+      const outputCtx=output.getContext('2d');
+      if(!outputCtx)throw new Error('canvas unavailable');
+      outputCtx.fillStyle=resolveExportBackground(page);outputCtx.fillRect(0,0,output.width,output.height);
+      const fit=(output.height-headerHeight)/canvas.height;
+      outputCtx.drawImage(canvas,(output.width-canvas.width*fit)/2,headerHeight,canvas.width*fit,canvas.height*fit);
+      outputCtx.fillStyle='#241C17';outputCtx.textAlign='center';outputCtx.textBaseline='middle';
+      const subtitle=[song.artist,song.sub].filter(Boolean).join('  ');
+      if(!staff){
+        outputCtx.font='700 44px "Noto Serif SC","Songti SC","PingFang SC",serif';
+        outputCtx.fillText(song.title||opt.title||'',output.width/2,60,output.width-240);
+        outputCtx.font='500 25px "Noto Sans SC","PingFang SC",sans-serif';
+        if(subtitle)outputCtx.fillText(subtitle,output.width/2,116,output.width-240);
+      }else if(song.sub){
+        outputCtx.font='500 25px "Noto Sans SC","PingFang SC",sans-serif';
+        outputCtx.fillText(song.sub,output.width/2,40,output.width-240);
+      }
+      const metadata=['调性 '+(opt.key||song.origKey||'C'),song.timeSign?'拍号 '+song.timeSign:'',song.bpm?'♩ = '+song.bpm:''].filter(Boolean).join('    ·    ');
+      outputCtx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
+      outputCtx.fillText(metadata,output.width/2,staff?headerHeight-42:164,output.width-240);
+      canvas=output;
       const ratio=logo.naturalHeight/logo.naturalWidth;
       const logoWidth=Math.min(canvas.width*.5,canvas.height*.32/ratio);
       const logoHeight=logoWidth*ratio;
-      ctx.save();ctx.setTransform(1,0,0,1,0,0);ctx.globalAlpha=.055;
-      ctx.drawImage(logo,(canvas.width-logoWidth)/2,(canvas.height-logoHeight)/2,logoWidth,logoHeight);
-      ctx.restore();
+      outputCtx.save();outputCtx.globalAlpha=.055;
+      outputCtx.drawImage(logo,(canvas.width-logoWidth)/2,(canvas.height-logoHeight)/2,logoWidth,logoHeight);
+      outputCtx.restore();
       const suffix=pages.length>1?'_'+(index+1):'';
       saveBlobAs(await canvasToPngBlob(canvas),stem+suffix+'.png');
     }
@@ -13023,7 +13049,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
           await Promise.all(pages.flatMap(page=>Array.from(page.querySelectorAll('img')).map(img=>img.decode())));
         }
         if(!pages.length||pages.some(page=>!page))throw new Error('no rendered score page');
-        await exportRenderedScorePng(pages,{title:s.title,key:staffOn||panel.classList.contains('open')?curKey:s.origKey});
+        await exportRenderedScorePng(pages,{title:s.title,song:s,key:staffOn||panel.classList.contains('open')?curKey:s.origKey});
         showToast('图片已下载');
       }catch(err){
         showToast('导出失败，请重试');
