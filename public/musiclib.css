@@ -8840,13 +8840,7 @@ body.ml-proj-studio-lock{overflow:hidden !important;}
   #music-library .ml-weather-pill{font-size:12px !important;padding:0 10px !important;}
 }
 
-/* 播放键：原来是「奶油白 → 封面取色」的渐变，换成实心主题色，深浅色下对比都稳 */
-#music-library #ml-nowbar-playpause{
-  background:var(--accent) !important;color:#fff !important;
-  box-shadow:none !important;
-}
-#music-library #ml-nowbar-playpause:hover{background:var(--accent-hover) !important;}
-#music-library #ml-nowbar.is-playing #ml-nowbar-playpause{background:var(--accent) !important;}
+/* Play and pause share the rounded-rectangle control colors defined below. */
 
 /* 控件真正居中：时间挂到控件组右侧（绝对定位，不参与居中计算），左侧标题不越界 */
 /* ⚠️ 必须留在 min-width:1181px 里。这条原来是裸的，写在上面那句
@@ -11441,3 +11435,63 @@ html[data-resolved-theme="dark"] #music-library{
 
 /* Single-page staff sheets carry an explicit paper width when opened in the zoom viewer. */
 #music-library .czoom-content.ml-staff-panel{width:max-content !important;max-width:none !important;padding:0 !important;}
+
+/* Shuffle stays visible in practice, using the same selected state as repeat. */
+#music-library #ml-detail #ml-miniplayer #ml-mp-shuffle{width:auto;min-width:40px;padding:0 8px;gap:5px;}
+#music-library #ml-detail #ml-miniplayer .pl-shuffle-label{font-size:11px;line-height:1;}
+#music-library #ml-detail #ml-miniplayer :is(#ml-mp-shuffle,#ml-mp-repeat).on{
+  border-color:var(--control-active-ink) !important;background:var(--control-active-bg) !important;color:var(--control-active-ink) !important;
+}
+@media(max-width:600px){
+  #music-library #ml-detail #ml-miniplayer :is(#ml-mp-prev,#ml-mp-next){display:inline-flex !important;}
+  #music-library #ml-detail #ml-miniplayer :is(#ml-mp-seek-back,#ml-mp-seek-fwd){display:none !important;}
+  #music-library #ml-detail #ml-miniplayer .pl-shuffle-label{display:none;}
+  #music-library #ml-detail #ml-miniplayer > .pl-controls{gap:4px !important;}
+}
+
+/* Current lyrics occupy the center; playback controls stay together on the right. */
+#music-library #ml-nowbar{
+  display:grid !important;grid-template-areas:'track live actions' !important;
+  grid-template-columns:minmax(0,1fr) minmax(120px,1.2fr) minmax(0,1fr) !important;
+  gap:12px !important;height:calc(80px + env(safe-area-inset-bottom,0px)) !important;
+}
+#music-library #ml-nowbar .ml-nowbar-track{grid-area:track;display:flex;align-items:center;gap:12px;min-width:0;}
+#music-library #ml-nowbar #ml-nowbar-main{position:static !important;min-width:0 !important;max-width:none !important;flex:1;}
+#music-library #ml-nowbar #ml-nowbar-cover{flex:0 0 52px;}
+#music-library #ml-nowbar #ml-nowbar-lyric{
+  grid-area:live;display:block !important;position:static !important;width:100%;min-width:0;
+  margin:0;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  color:var(--control-ink) !important;font-size:14px !important;font-weight:500;line-height:1.5;
+}
+#music-library #ml-nowbar .ml-nowbar-actions{grid-area:actions;display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0;}
+#music-library #ml-nowbar #ml-nowbar-controls{position:static !important;transform:none !important;left:auto !important;top:auto !important;bottom:auto !important;margin:0 !important;flex:0 0 auto;}
+#music-library #ml-nowbar #ml-nowbar-extra{margin:0 !important;gap:4px;}
+#music-library #ml-nowbar #ml-nowbar-times{display:none !important;}
+#music-library #ml-nowbar #ml-nowbar-shuffle{display:inline-flex !important;}
+#music-library #ml-nowbar :is(#ml-nowbar-shuffle,#ml-nowbar-repeat).on{color:var(--control-active-ink) !important;background:var(--control-active-bg) !important;}
+#music-library #ml-detail #ml-miniplayer.has-mp3{grid-template-areas:'info controls lyrics' 'live live live' 'progress progress progress' !important;}
+#music-library #ml-detail #ml-miniplayer .pl-live-lyric{
+  grid-area:live;display:block;min-width:0;max-width:100%;overflow:hidden;text-overflow:ellipsis;
+  white-space:nowrap;text-align:center;color:var(--control-ink);font-size:13px;font-weight:500;line-height:20px;
+}
+@media(max-width:900px){
+  #music-library #ml-nowbar{
+    grid-template-areas:'track actions' 'live live' !important;grid-template-columns:minmax(0,1fr) auto !important;
+    grid-template-rows:44px 20px !important;gap:4px 8px !important;height:calc(92px + env(safe-area-inset-bottom,0px)) !important;
+    padding:10px 12px calc(10px + env(safe-area-inset-bottom,0px)) !important;
+  }
+  #music-library #ml-nowbar #ml-nowbar-cover{width:44px !important;height:44px !important;flex-basis:44px;}
+  #music-library #ml-nowbar .ml-nowbar-track{gap:8px;}
+  #music-library #ml-nowbar .ml-nowbar-actions{gap:4px;}
+  #music-library #ml-nowbar #ml-nowbar-lyric{font-size:12px !important;}
+  #music-library #ml-nowbar #ml-nowbar-expand{display:none !important;}
+}
+@media(max-width:600px){
+  #music-library #ml-detail #ml-miniplayer.has-mp3{grid-template-areas:'controls lyrics' 'live live' 'progress progress' !important;}
+}
+
+#music-library #ml-nowbar{z-index:950 !important;}
+#music-library #ml-detail #ml-miniplayer #ml-mp-shuffle{width:auto !important;min-width:64px !important;white-space:nowrap;flex-shrink:0;}
+@media(max-width:600px){
+  #music-library #ml-detail #ml-miniplayer #ml-mp-shuffle{width:40px !important;min-width:44px !important;padding:0 !important;}
+}
