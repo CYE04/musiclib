@@ -229,7 +229,7 @@
     });
     return staffViewPromise;
   }
-  const ML_VER='20261018-library-shuffle';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20261020-display-launch';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
@@ -1178,7 +1178,7 @@
   const ESC_LAYERS = [
     { name:'Story 分享', open:()=>_storyController?.isOpen(), close:()=>_storyController.close() },
     { name:'工具箱', open:()=>_toolsController?.isOpen(), close:()=>_toolsController.back() },
-    { name:'投影控制台面板', open:()=>projState.panel?.classList.contains('open'), close:()=>projClosePanel() },
+    { name:'投影控制台面板', open:()=>projState.panel?.classList.contains('open'), close:()=>projState.projWin&&!projState.projWin.closed?projCloseProjector():projClosePanel() },
     /* 走 closeNoticeModal 而不是自己摘 class：它还要把 body.overflow 解回去，
        只摘 class 的话弹窗关了、整页却还锁着滚不动。 */
     { name:'版权声明弹窗',   open:()=>$('ml-notice-modal')?.classList.contains('open'),
@@ -1297,6 +1297,52 @@
      渲染复用: 控制台用 renderScore 同款原语(projBuildRow)把整首渲成逐行 HTML,
      经 bus 推给投影页注入(投影页 <link musiclib.css> + #music-library 包裹命中作用域样式);
      分页在投影页按屏幕高度算, 翻页/开关回报控制台。移调/开关变化 -> 控制台重推 content。 */
+  // Keep semantic sections and alternate stanzas shared by practice and projection.
+  function buildLyricSections(song){
+    const labelName=value=>{
+      const text=String(value||'').trim();
+      const types=[[/^(?:pre[-\s]?chorus|预副歌|导歌)(\s*\d*)$/i,'预副歌 Pre-Chorus'],[/^(?:chorus|副歌)(\s*\d*)$/i,'副歌 Chorus'],[/^(?:verse|主歌)(\s*\d*)$/i,'主歌 Verse'],[/^(?:bridge|桥段|过渡)(\s*\d*)$/i,'桥段 Bridge'],[/^(?:intro|前奏)(\s*\d*)$/i,'前奏 Intro'],[/^(?:interlude|间奏)(\s*\d*)$/i,'间奏 Interlude'],[/^(?:outro|ending|tag|尾声|尾奏|结尾)(\s*\d*)$/i,'尾声 Outro']];
+      for(const [pattern,name] of types){const match=text.match(pattern);if(match)return name+(match[1].trim()?' '+match[1].trim():'');}
+      return '';
+    };
+    const clean=value=>{
+      const raw=String(value||'');
+      return (song.align==='strict'?CecpStrictAlign.strictLyricPlain(raw):spStripTokens(raw)).replace(/[ㅤ　]+/g,'').replace(/ {2,}/g,' ').trim();
+    };
+    const parts=[];
+    for(const section of song.sections||[]){
+      let part={name:labelName(section.name)||(section.name!==song.title?section.name:'')||'歌词',rows:[]};
+      const change=name=>{if(part.rows.length)parts.push(part);part={name,rows:[]};};
+      for(const row of section.lines||[]){
+        const cells=Array.isArray(row)?row:(row?.line||[]);
+        const leading=cells.find(cell=>cell?.style!=='jump'&&Number.isFinite(cell?.dx)&&cell.dx<=32&&labelName(cell.label));
+        if(leading)change(labelName(leading.label));
+        let buffer=[];
+        const flush=()=>{if(buffer.length){part.rows.push(buffer);buffer=[];}};
+        for(const cell of cells){
+          if(!cell||typeof cell!=='object')continue;
+          if(typeof cell.label==='string'){
+            const name=cell.style==='jump'?'':labelName(cell.label);
+            if(name&&cell!==leading){flush();change(name);}
+          }else buffer.push(cell);
+        }
+        flush();
+      }
+      if(part.rows.length)parts.push(part);
+    }
+    const result=[];
+    for(const part of parts){
+      const keys=['lyric','lyric2','lyric3','lyric4'];
+      const lanes=keys.filter(key=>part.rows.some(row=>row.some(cell=>clean(cell[key]))));
+      for(const key of lanes){
+        const lines=part.rows.map(row=>row.map(cell=>clean(cell[key]??cell.lyric)).reduce((text,next)=>text+(/[a-z0-9]$/i.test(text)&&/^[a-z0-9]/i.test(next)?' ':'')+next,'').trim()).filter(Boolean);
+        if(!lines.length)continue;
+        const stanza=keys.indexOf(key)+1;
+        result.push({name:part.name+(lanes.length>1?' · 第'+stanza+'段':''),lines});
+      }
+    }
+    return result;
+  }
   const PROJ_CH_NAME='cecp:musiclib:projection:v1';
   const PROJ_SETTINGS_KEY='cecp:musiclib:projection:settings:v1';
   const PROJ_BUS_KEY='cecp:musiclib:projection:bus:v1';
@@ -1318,6 +1364,7 @@
     fontScale:1.3,           // 每页少放几行; 1.5 用户实测偏大, 1.3 刚好
     layer:{chord:1,gap:1}    // 倍率(1=原始): 和弦大小 / 行距
   };
+  const PROJ_AUDIENCE_DEFAULTS={fontScale:1.5,linesPerPage:4,textAlign:'center',verticalAlign:'center',margin:4,weight:600,overlay:0.3,showSection:true};
   const projState={
     toggles:Object.assign({},PROJ_DEFAULTS.toggles),
     aspect:PROJ_DEFAULTS.aspect,fontScale:PROJ_DEFAULTS.fontScale,
@@ -1325,6 +1372,10 @@
     textColor:'#ffffff', // 全局字体色(默认白+阴影)
     // 倍率(1=原始): 和弦大小(chord) / 行距(gap)
     layer:Object.assign({},PROJ_DEFAULTS.layer),
+    presentation:'lyrics',
+    audience:Object.assign({},PROJ_AUDIENCE_DEFAULTS),
+    screenDetails:null,screenPreference:'auto',screenMessage:'连接显示器后，可自动选择副屏。',
+    activeScreen:null,projectorReady:false,projectorFullscreen:false,launching:false,
     bgImages:{}, // imgKey -> dataURL 内存缓存(真身在 IndexedDB)
     setlist:[],studio:null,
     pages:[],pageIdx:0,blank:false,songId:'',songTitle:'',
@@ -1356,6 +1407,11 @@
       if(s.layer&&typeof s.layer==='object'){
         PROJ_LAYER_DEFS.forEach(([k,,mn,mx])=>{ const v=Number(s.layer[k]); if(v>0) projState.layer[k]=Math.max(mn,Math.min(mx,v)); });
       }
+      if(s.presentation==='score'||s.presentation==='lyrics')projState.presentation=s.presentation;
+      if(s.audience&&typeof s.audience==='object'){
+        for(const key of Object.keys(projState.audience))projSetAudienceValue(key,s.audience[key]);
+      }
+      if(typeof s.screenPreference==='string')projState.screenPreference=s.screenPreference;
     }catch(_){}
   }
   function projSaveSettings(){
@@ -1366,6 +1422,8 @@
       prev.bgMode=projState.bg.mode; // 图片本身存 IndexedDB, 这里只存模式
       prev.textColor=projState.textColor;
       prev.layer=Object.assign({},prev.layer,projState.layer);
+      prev.presentation=projState.presentation;prev.audience=Object.assign({},projState.audience);
+      prev.screenPreference=projState.screenPreference;
       localStorage.setItem(PROJ_SETTINGS_KEY,JSON.stringify(prev));
     }catch(_){}
   }
@@ -1392,7 +1450,13 @@
     const bus=projMakeBus();
     bus.on(msg=>{
       if(msg.role==='console') return;               // 忽略自己(storage 兜底会回读)
-      if(msg.t==='hello'){ projPushPage(); return; } // 投影页就绪 -> 推当前页(含该页背景)
+      if(msg.t==='hello'){
+        projPushPage();if(!projState.launching)projLaunchMessage(!projState.projectorFullscreen,false);return;
+      }
+      if(msg.t==='display-status'){
+        projState.projectorReady=true;projState.projectorFullscreen=msg.fullscreen===true;
+        projUpdateStatus();return;
+      }
       if(msg.t==='nav'){ projNav(msg.action==='prev'?-1:1); return; } // 投影屏自己翻页 -> 同步过来
       if(msg.t==='bye'){ projMarkProjectorGone(); return; }
     });
@@ -1737,8 +1801,71 @@
   const PROJ_SETLIST_KEY='cecp:musiclib:projection:setlist:v1';
   function projSaveSetlist(){ try{ localStorage.setItem(PROJ_SETLIST_KEY,JSON.stringify(projState.setlist||[])); }catch(_){} }
   function projLoadSetlist(){ try{ const a=JSON.parse(localStorage.getItem(PROJ_SETLIST_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
+  function projSetAudienceValue(key,value){
+    const ranges={fontScale:[0.6,2.6],linesPerPage:[1,8],margin:[2,12],weight:[400,700],overlay:[0,0.8]};
+    if(ranges[key]&&Number.isFinite(Number(value))){const [min,max]=ranges[key];projState.audience[key]=Math.max(min,Math.min(max,Number(value)));}
+    else if(key==='textAlign'&&['left','center','right'].includes(value))projState.audience[key]=value;
+    else if(key==='verticalAlign'&&['top','center','bottom'].includes(value))projState.audience[key]=value;
+    else if(key==='showSection'&&typeof value==='boolean')projState.audience[key]=value;
+  }
+  function projAudiencePages(){
+    const pages=[],options=projState.audience;
+    const width=1000,height=width/projAspectRatio(),inset=width*options.margin/100;
+    const fontSize=40*options.fontScale;
+    const contentWidth=width-inset*2,contentHeight=height-inset*2-80;
+    const lineHeight=Math.min(contentHeight,fontSize*1.35*projState.layer.gap);
+    const capacity=Math.max(1,Math.min(Math.round(options.linesPerPage),Math.floor(contentHeight/lineHeight)));
+    const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
+    ctx.font=options.weight+' '+fontSize+'px "Noto Sans SC",sans-serif';
+    const wrap=text=>{
+      const lines=[];let rest=String(text||'').trim();
+      while(rest){
+        const chars=Array.from(rest);let count=0;
+        while(count<chars.length&&ctx.measureText(chars.slice(0,count+1).join('')).width<=contentWidth-4)count++;
+        count=Math.max(1,count);
+        if(count<chars.length){
+          let boundary=count;
+          for(let i=count-1;i>=Math.floor(count*.55);i--)if(/[\s，,。；;！!？?、]/.test(chars[i])){boundary=i+1;break;}
+          count=boundary;
+        }
+        lines.push(chars.slice(0,count).join('').trim());rest=chars.slice(count).join('').trim();
+      }
+      return lines.filter(Boolean);
+    };
+    projSetlist().forEach((item,itemIdx)=>{
+      const song=item.t==='song'?songs.find(s=>s.id===item.id):null;
+      const title=song?.title||item.title||'经文';
+      const sections=song?buildLyricSections(song):[{name:item.ref||'',lines:(item.verses||[]).map(v=>[v.verse,v.primary,v.secondary].filter(Boolean).join(' '))}];
+      for(const section of sections){
+        const lines=section.lines.flatMap(wrap);
+        for(let index=0;index<lines.length;index+=capacity){
+          const slide=document.createElement('article');slide.className='proj-audience-slide';
+          slide.style.cssText='box-sizing:border-box;display:flex;flex-direction:column;flex:0 0 auto;width:'+width+'px;height:'+height+'px;padding:'+inset+'px;font-family:"Noto Sans SC",sans-serif;font-size:'+fontSize+'px;font-weight:'+options.weight+';text-align:'+options.textAlign+';color:var(--proj-text,#fff);background:rgba(0,0,0,'+options.overlay+');';
+          const header=document.createElement('header');header.className='proj-audience-header';
+          header.style.cssText='flex:0 0 54px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;font-size:20px;line-height:1.35;text-align:left;';
+          const name=document.createElement('span');name.textContent=title;
+          const label=document.createElement('span');label.textContent=options.showSection?section.name:'';
+          header.append(name,label);slide.appendChild(header);
+          const body=document.createElement('div');body.className='proj-audience-body';
+          const vertical={top:'flex-start',center:'center',bottom:'flex-end'}[options.verticalAlign];
+          body.style.cssText='display:flex;flex:1;min-height:0;flex-direction:column;justify-content:'+vertical+';line-height:'+lineHeight+'px;';
+          lines.slice(index,index+capacity).forEach(text=>{const p=document.createElement('p');p.className='proj-audience-line';p.style.cssText='margin:0;width:100%;white-space:nowrap;font:inherit;line-height:inherit;';p.textContent=text;body.appendChild(p);});
+          slide.appendChild(body);
+          const footer=document.createElement('footer');footer.style.cssText='flex:0 0 26px;font-size:16px;line-height:26px;opacity:.55;';footer.textContent='CECP Musiclib';slide.appendChild(footer);
+          pages.push({html:slide.outerHTML,refW:width,refH:height,itemIdx,songId:song?.id||'',title,scripture:!song,section:section.name});
+        }
+      }
+    });
+    return pages;
+  }
   /* setlist 项 = {t:'song',id} 或 {t:'scripture',title,ref,primary,verses:[{verse,primary,secondary}]} */
   function projBuildPages(){
+    const generation=_projSeq;
+    if(projState.presentation==='lyrics')return Promise.resolve(document.fonts?.ready).then(()=>{
+      if(generation!==_projSeq)return;
+      projState.pages=projAudiencePages();
+      projState.pageIdx=Math.min(projState.pageIdx,Math.max(0,projState.pages.length-1));
+    });
     return new Promise(resolve=>{
       const list=projSetlist();
       if(!list.length){ projState.pages=[]; resolve(); return; }
@@ -1779,6 +1906,7 @@
       }
       root.appendChild(songStage); root.appendChild(scriptStage);
       setTimeout(()=>{
+        if(generation!==_projSeq){songStage.remove();scriptStage.remove();resolve();return;}
         const ar=projState.aspect==='4:3'?{w:4,h:3}:{w:16,h:9};
         projNormalizeRowHeights(songStage); projNormalizeRowHeights(scriptStage); // 先统一每行音格高度(和弦/连音/房子线整齐), 再测页高
         // 测高; 诗歌统一用最宽那首的行宽(songMaxW)避免窄歌被切成一行一页; 经文各自算宽
@@ -1840,10 +1968,12 @@
     projBusSend({t:'page',chordCss:projChordCss(),payload:{
       html:pg?pg.html:'', refW:pg?(pg.refW||0):0, refH:pg?(pg.refH||0):0, aspect:projState.aspect, blank:projState.blank,
       idx:projState.pageIdx, total:projState.pages.length, title:pg?pg.title:'', songId:pg?pg.songId:'',
-      bgCss:rb.css, bgImage:rb.image, bgVideo:rb.video||null, textColor:projTextColorValue(), layer:Object.assign({},projState.layer)
+      bgCss:rb.css, bgImage:rb.image, bgVideo:rb.video||null, textColor:projTextColorValue(), layer:Object.assign({},projState.layer),
+      presentation:projState.presentation
     }});
   }
   function projRebuild(){
+    clearTimeout(_projRebuildTimer);
     const seq=++_projSeq;
     projBuildPages().then(()=>{ if(seq!==_projSeq) return; projRenderPager(); projRenderPreview(); projPushPage(); });
   }
@@ -1931,9 +2061,8 @@
   }
   function projRequestFullscreen(){
     if(!(projState.projWin&&!projState.projWin.closed)){ showToast('请先进入投影'); return; }
-    projBusSend({t:'fullscreen'}); // best-effort: 浏览器多半会拦截"消息式"全屏(非用户手势)
+    projLaunchMessage(true,true);
     try{ projState.projWin.focus(); }catch(_){}
-    showToast('若没全屏, 在投影窗口里点一下画面即可进入全屏');
   }
   /* 背景以「整首歌/每个歌单项」为单位: item.bg 覆盖, 没有则用 projState.bg 默认 */
   function projCurrentItem(){
@@ -1962,6 +2091,7 @@
       scope.querySelectorAll('.ml-proj-bg').forEach(b=>b.classList.toggle('on',b.dataset.bg===curBgMode||(b.dataset.bg==='image'&&curBgMode==='video')));
       scope.querySelectorAll('.ml-proj-color[data-color]').forEach(b=>b.classList.toggle('on',b.dataset.color.toLowerCase()===curTc));
       const cp=scope.querySelector('#ml-ps-colorpick'); if(cp&&/^#[0-9a-f]{6}$/i.test(curTc))cp.value=curTc;
+      projSyncPresentationControls(scope);
     });
   }
   function projSetToggle(k){ if(!(k in projState.toggles))return; projState.toggles[k]=!projState.toggles[k]; projSyncControlButtons(); projSaveSettings(); projRebuild(); }
@@ -1984,6 +2114,7 @@
     Object.assign(projState.layer,PROJ_DEFAULTS.layer);
     projState.aspect=PROJ_DEFAULTS.aspect;
     projState.fontScale=PROJ_DEFAULTS.fontScale;
+    projState.presentation='lyrics';Object.assign(projState.audience,PROJ_AUDIENCE_DEFAULTS);
     [projState.panel,projState.studio].forEach(scope=>{
       if(!scope)return;
       const f=scope.querySelector('.ml-proj-font'); if(f)f.value=String(projState.fontScale);
@@ -2007,9 +2138,10 @@
   }
   function projSetFontScale(v){
     v=Math.max(0.6,Math.min(2.6,Number(v)||1));
-    projState.fontScale=v;
+    if(projState.presentation==='lyrics')projState.audience.fontScale=v;
+    else projState.fontScale=v;
     [projState.panel,projState.studio].forEach(scope=>{ if(!scope)return; const s=scope.querySelector('.ml-proj-font'); if(s&&s.value!=String(v))s.value=String(v); });
-    projSaveSettings(); projRebuild();
+    projSyncControlButtons();projSaveSettings();projQueueRebuild();
   }
   function projSetBg(mode,media){ // media = 图片或视频的 dataURL(mode 'image'/'video' 时)
     let bg;
@@ -2022,13 +2154,14 @@
   }
   function projUpdateStatus(){
     const running=!!(projState.projWin&&!projState.projWin.closed);
-    if(projState.statusEl) projState.statusEl.textContent='投影窗口：'+(running?'运行中':'未开启');
-    if(projState.enterBtn) projState.enterBtn.textContent=running?'重新聚焦投影':'进入投影';
+    const status=running?(projState.launching?'正在连接显示器，请完成授权…':projState.projectorReady?(projState.projectorFullscreen?'放映中 · 已全屏':'窗口模式 · 点击“投影全屏”完成放映'):'正在连接放映窗口…'):'放映未开始';
+    if(projState.statusEl) projState.statusEl.textContent=status;
+    if(projState.enterBtn){projState.enterBtn.textContent=running?'返回放映画面':'开始放映';projState.enterBtn.disabled=!!projState.launching;}
     const cw=projState.panel&&projState.panel.querySelector('#ml-proj-closewin');
     if(cw) cw.hidden=!running;
     if(projState.studio){
-      const st=projState.studio.querySelector('#ml-ps-status'); if(st) st.textContent='投影窗口：'+(running?'运行中':'未开启');
-      const en=projState.studio.querySelector('#ml-ps-enter'); if(en) en.textContent=running?'重新聚焦投影':'进入投影';
+      const st=projState.studio.querySelector('#ml-ps-status'); if(st) st.textContent=status;
+      const en=projState.studio.querySelector('#ml-ps-enter'); if(en){en.textContent=running?'返回放映画面':'开始放映';en.disabled=!!projState.launching;}
       const scw=projState.studio.querySelector('#ml-ps-closewin'); if(scw) scw.hidden=!running;
     }
   }
@@ -2041,42 +2174,78 @@
   function projMarkProjectorGone(){
     clearInterval(projState.watchTimer); projState.watchTimer=0;
     projState.projWin=null;
+    projState.projectorReady=false;projState.projectorFullscreen=false;projState.launching=false;
     projUpdateStatus();
   }
-  async function projEnterProjection(){
-    if(projState.projWin&&!projState.projWin.closed){ try{projState.projWin.focus();}catch(_){} return; }
-    const url='./projection.html';
-    // Window Management API: 有副屏则把投影窗口定位到副屏并铺满; 单屏/不支持 -> 普通新窗口(页内全屏兜底)
-    // popup 特性 = 无标签栏/无工具栏的独立窗口(而非新标签页, 避免顶部一直显示地址栏 projection.html)
-    const chrome='popup=yes,menubar=no,toolbar=no,location=no,status=no,scrollbars=no';
-    let feat=chrome, onExternal=false;
-    try{
-      if(window.getScreenDetails){
-        const sd=await window.getScreenDetails();
-        const screensArr=sd&&sd.screens||[];
-        if(screensArr.length>1){
-          const ext=screensArr.find(s=>!s.isPrimary)||sd.currentScreen;
-          if(ext){ feat=`${chrome},left=${ext.availLeft},top=${ext.availTop},width=${ext.availWidth},height=${ext.availHeight}`; onExternal=true; }
-        }
-      }
-    }catch(_){ /* 权限被拒/不支持: 降级普通窗口 */ }
-    if(!onExternal){ // 单屏兜底也开成无边 popup 铺满主屏(不是新标签页)
-      const sw=(window.screen&&screen.availWidth)||window.innerWidth, sh=(window.screen&&screen.availHeight)||window.innerHeight;
-      feat=`${chrome},left=0,top=0,width=${sw},height=${sh}`;
+  function projScreenKey(display){
+    return [display.label||'',display.left??display.availLeft??0,display.top??display.availTop??0,display.width??display.availWidth??0,display.height??display.availHeight??0].join('|');
+  }
+  function projChooseScreen(details,preference){
+    const displays=Array.from(details?.screens||[]);
+    const chosen=preference&&preference!=='auto'?displays.find(display=>projScreenKey(display)===preference):null;
+    return chosen||displays.find(display=>display!==details.currentScreen&&!display.isPrimary)||displays.find(display=>display!==details.currentScreen)||details?.currentScreen||displays[0]||null;
+  }
+  async function projRefreshScreens(){
+    if(typeof window.getScreenDetails!=='function'){
+      projState.screenMessage='当前浏览器不支持自动选屏；可把放映窗口拖到投影仪后全屏。';projSyncScreenControls();return null;
     }
+    try{
+      const details=await window.getScreenDetails();
+      if(projState.screenDetails!==details){
+        details.addEventListener?.('screenschange',()=>{
+          projState.screenMessage='显示器连接已变化，已刷新可用屏幕。';
+          if(projState.projWin&&!projState.projWin.closed){projPositionOutput();projLaunchMessage(false,false);}
+          projSyncScreenControls();
+        });
+        details.addEventListener?.('currentscreenchange',()=>projSyncScreenControls());
+      }
+      projState.screenDetails=details;
+      projState.screenMessage=details.screens.length>1?'已连接 '+details.screens.length+' 块屏幕；自动模式优先使用控制台以外的副屏。':'只检测到一块屏幕，将在独立窗口中放映。';
+      projSyncScreenControls();return details;
+    }catch(_){
+      projState.screenDetails=null;projState.screenMessage='未获显示器访问权限；仍可打开独立放映窗口，再手动移到副屏。';projSyncScreenControls();return null;
+    }
+  }
+  function projLaunchMessage(fullscreen=true,delegate=false){
+    const win=projState.projWin;if(!win||win.closed)return;
+    const display=projState.activeScreen;
+    const message={__cecpProjLaunch:true,fullscreen,screen:display?{left:display.left??display.availLeft,top:display.top??display.availTop,label:display.label||''}:null};
+    try{
+      if(delegate&&navigator.userActivation?.isActive){win.postMessage(message,{targetOrigin:location.origin,delegate:'fullscreen'});return;}
+    }catch(_){}
+    try{win.postMessage(message,location.origin);}catch(_){}
+  }
+  function projPositionOutput(){
+    const win=projState.projWin;if(!win||win.closed)return;
+    const display=projChooseScreen(projState.screenDetails,projState.screenPreference);
+    projState.activeScreen=display;
+    if(!display)return;
+    try{win.moveTo(display.availLeft??display.left??0,display.availTop??display.top??0);win.resizeTo(display.availWidth||display.width,display.availHeight||display.height);}catch(_){}
+  }
+  async function projEnterProjection(){
+    if(projState.projWin&&!projState.projWin.closed){
+      if(!projState.launching){projPositionOutput();projLaunchMessage(true,true);}
+      try{projState.projWin.focus();}catch(_){}return;
+    }
+    const url='./projection.html?managed=1';
+    const chrome='popup=yes,menubar=no,toolbar=no,location=no,status=no,scrollbars=no';
+    const target=projChooseScreen(projState.screenDetails,projState.screenPreference)||window.screen;
+    const feat=chrome+',left='+(target.availLeft??target.left??0)+',top='+(target.availTop??target.top??0)+',width='+(target.availWidth||window.innerWidth)+',height='+(target.availHeight||window.innerHeight);
     let win=null;
+    // Open within the click before awaiting a permission prompt: popup activation is otherwise lost.
     try{ win=window.open(url,'cecpProjection',feat); }catch(_){}
     if(!win){ showToast('无法打开投影窗口（可能被浏览器拦截）'); return; }
-    projState.projWin=win;
+    projState.projWin=win;projState.projectorReady=false;projState.projectorFullscreen=false;projState.launching=true;
     projEnsureBus(); projUpdateStatus(); projWatchWindow();
-    if(!onExternal) showToast('未检测到副屏，投影已在新窗口内全屏');
-    // 定位到副屏后请投影页全屏(best-effort, 需激活)
-    setTimeout(()=>{ if(projState.projWin&&!projState.projWin.closed) projBusSend({t:'fullscreen'}); },800);
-    // 兜底握手: 短时间多推几次当前页, 防投影页 hello 时机错过
+    if(!projState.screenDetails){try{window.focus?.();}catch(_){}await projRefreshScreens();}
+    if(projState.projWin!==win)return;
+    projState.launching=false;
+    if(win.closed){projMarkProjectorGone();return;}
+    projPositionOutput();projLaunchMessage(true,false);projSyncScreenControls();projUpdateStatus();
     let tries=0;
     const kick=setInterval(()=>{
       if(++tries>8||!projState.projWin||projState.projWin.closed){clearInterval(kick);return;}
-      projPushPage();
+      projPushPage();if(!projState.projectorFullscreen)projLaunchMessage(true,false);
     },400);
   }
   function projCloseProjector(){
@@ -2086,8 +2255,98 @@
   }
   function projKeydown(e){
     if(!(projState.panel&&projState.panel.classList.contains('open')))return;
+    if(e.key==='F5'){e.preventDefault();if(!e.shiftKey){projState.pageIdx=0;projRenderPager();projRenderPreview();projPushPage();}projEnterProjection();return;}
+    if(e.target?.closest('input,textarea,select,button,[contenteditable="true"]'))return;
     if(e.key==='ArrowLeft'){ e.preventDefault(); projNav(-1); }
     else if(e.key==='ArrowRight'){ e.preventDefault(); projNav(1); }
+  }
+  let _projRebuildTimer=0;
+  function projQueueRebuild(){clearTimeout(_projRebuildTimer);_projRebuildTimer=setTimeout(projRebuild,80);}
+  function projScreenControlsHTML(){
+    return `<section class="ml-proj-display" aria-label="放映显示器"><label>放映显示器<select class="ml-proj-display-select" aria-label="选择放映显示器"><option value="auto">自动选择副屏</option></select></label><button class="ml-proj-detect" type="button">检测显示器</button><p class="ml-proj-display-note" role="status"></p></section>`;
+  }
+  function projSyncScreenControls(){
+    const displays=Array.from(projState.screenDetails?.screens||[]).sort((a,b)=>Number(b.isPrimary)-Number(a.isPrimary)||(a.left||0)-(b.left||0)||(a.top||0)-(b.top||0));
+    [projState.panel,projState.studio].forEach(scope=>{
+      if(!scope)return;
+      const select=scope.querySelector('.ml-proj-display-select');if(!select)return;
+      const key=displays.map(projScreenKey).join(';')+';'+projState.screenPreference;
+      if(select.dataset.options!==key){
+        select.replaceChildren(new Option('自动选择副屏','auto'));
+        displays.forEach((display,index)=>select.add(new Option('屏幕 '+(index+1)+' · '+(display.label||'显示器')+(display===projState.screenDetails.currentScreen?'（控制台所在屏）':''),projScreenKey(display))));
+        select.value=displays.some(display=>projScreenKey(display)===projState.screenPreference)?projState.screenPreference:'auto';select.dataset.options=key;
+      }
+      const active=projState.activeScreen;
+      scope.querySelector('.ml-proj-display-note').textContent=(active&&projState.projWin&&!projState.projWin.closed?'目标：'+(active.label||'已选显示器')+'。':'')+projState.screenMessage;
+    });
+  }
+  function projBindScreenControls(scope){
+    scope.querySelector('.ml-proj-detect').addEventListener('click',()=>projRefreshScreens());
+    scope.querySelector('.ml-proj-display-select').addEventListener('change',event=>{
+      projState.screenPreference=event.target.value;projSaveSettings();
+      if(projState.projWin&&!projState.projWin.closed){projPositionOutput();projLaunchMessage(true,true);}
+      projSyncScreenControls();
+    });
+  }
+  function projInitScreenControls(){
+    projSyncScreenControls();
+    if(projState.screenInit)return;projState.screenInit=true;
+    if(typeof window.getScreenDetails!=='function'){projRefreshScreens();return;}
+    if(navigator.permissions?.query)navigator.permissions.query({name:'window-management'}).then(permission=>{
+      if(permission.state==='granted')projRefreshScreens();
+      permission.addEventListener?.('change',()=>{
+        if(permission.state==='granted')projRefreshScreens();
+        else{projState.screenDetails=null;projState.screenMessage='显示器访问未授权；点击“检测显示器”重新连接。';projSyncScreenControls();}
+      });
+    }).catch(()=>{});
+  }
+  function projPresentationControlsHTML(prefix){
+    return `<section class="ml-proj-presentation" aria-label="投屏排版">
+      <div class="ml-proj-presets" role="group" aria-label="投屏用途">
+        <button type="button" data-proj-presentation="lyrics">${icon('lrc',16)}大字歌词</button>
+        <button type="button" data-proj-presentation="score">${icon('score',16)}简谱＋歌词</button>
+      </div>
+      <label class="ml-ps-fontrow"><span class="ml-ps-fontlbl">字号</span><input aria-label="投屏字号" type="range" class="ml-proj-font" id="${prefix}-font" min="0.6" max="2.6" step="0.1"><output class="ml-proj-font-value"></output></label>
+      <div class="ml-proj-audience-settings">
+        <label>每页行数<select class="ml-proj-setting" data-setting="linesPerPage">${[1,2,3,4,6,8].map(n=>'<option value="'+n+'">最多 '+n+' 行</option>').join('')}</select></label>
+        <label>水平对齐<select class="ml-proj-setting" data-setting="textAlign"><option value="left">居左</option><option value="center">居中</option><option value="right">居右</option></select></label>
+        <label>垂直位置<select class="ml-proj-setting" data-setting="verticalAlign"><option value="top">靠上</option><option value="center">居中</option><option value="bottom">靠下</option></select></label>
+        <label>字体粗细<select class="ml-proj-setting" data-setting="weight"><option value="400">常规</option><option value="600">适中</option><option value="700">加粗</option></select></label>
+        <label>安全边距<input aria-label="安全边距" class="ml-proj-setting" data-setting="margin" type="range" min="2" max="12" step="1"></label>
+        <label>背景压暗<input aria-label="背景压暗" class="ml-proj-setting" data-setting="overlay" type="range" min="0" max="0.8" step="0.05"></label>
+        <label class="ml-proj-section-choice"><input class="ml-proj-setting" data-setting="showSection" type="checkbox">显示段落名称</label>
+      </div>
+      <p class="ml-proj-layout-hint">按段落换页；长句自动换行，放大字号后自动减少每页行数。</p>
+    </section>`;
+  }
+  function projSyncPresentationControls(scope){
+    const audience=projState.presentation==='lyrics';
+    scope.querySelectorAll('[data-proj-presentation]').forEach(button=>{
+      const active=button.dataset.projPresentation===projState.presentation;
+      button.classList.toggle('on',active);button.setAttribute('aria-pressed',String(active));
+    });
+    scope.querySelectorAll('.ml-proj-audience-settings').forEach(el=>el.hidden=!audience);
+    scope.querySelectorAll('.ml-proj-layout-hint').forEach(el=>el.textContent=audience?'按段落换页；长句自动换行，放大字号后自动减少每页行数。':'简谱、和弦、歌词、拼音可独立选择，移调会实时同步。');
+    scope.querySelectorAll('.ml-proj-setting').forEach(input=>{const value=projState.audience[input.dataset.setting];if(input.type==='checkbox')input.checked=value;else input.value=String(value);});
+    const font=audience?projState.audience.fontScale:projState.fontScale;
+    scope.querySelectorAll('.ml-proj-font').forEach(input=>input.value=String(font));
+    scope.querySelectorAll('.ml-proj-font-value').forEach(output=>output.textContent=Math.round(font*100)+'%');
+    scope.querySelectorAll('.ml-proj-layer[data-layer="chord"]').forEach(input=>input.closest('.ml-ps-fontrow').hidden=audience);
+    scope.querySelectorAll('.ml-proj-toggles').forEach(group=>{
+      group.hidden=audience;
+      const label=group.previousElementSibling;if(label?.classList.contains('ml-proj-sec-label'))label.hidden=audience;
+    });
+  }
+  function projBindPresentationControls(scope){
+    scope.querySelectorAll('[data-proj-presentation]').forEach(button=>button.addEventListener('click',()=>{
+      projState.presentation=button.dataset.projPresentation;projState.pageIdx=0;
+      projSyncControlButtons();projSaveSettings();projRebuild();
+    }));
+    scope.querySelectorAll('.ml-proj-font').forEach(input=>input.addEventListener('input',()=>projSetFontScale(input.value)));
+    scope.querySelectorAll('.ml-proj-setting').forEach(input=>input.addEventListener(input.type==='range'?'input':'change',()=>{
+      projSetAudienceValue(input.dataset.setting,input.type==='checkbox'?input.checked:input.value);
+      projSyncControlButtons();projSaveSettings();projQueueRebuild();
+    }));
   }
   function projBuildPanel(){
     if(projState.panel){
@@ -2103,7 +2362,9 @@
           <button class="ml-proj-x" type="button" aria-label="关闭控制台">${icon('close',18)}</button>
         </div>
         <div class="ml-proj-song" id="ml-proj-song"></div>
+        ${projScreenControlsHTML()}
         <div class="ml-proj-preview" id="ml-proj-preview"><div class="ml-proj-preview-scale"></div></div>
+        ${projPresentationControlsHTML('ml-proj')}
         <div class="ml-proj-sec-label">显示内容</div>
         <div class="ml-proj-toggles" id="ml-proj-toggles"></div>
         <div class="ml-proj-sec-label">背景</div>
@@ -2131,12 +2392,14 @@
         </div>
         <div class="ml-proj-status" id="ml-proj-status">投影窗口：未开启</div>
         <div class="ml-proj-actions">
-          <button class="ml-proj-enter" id="ml-proj-enter" type="button">进入投影</button>
-          <button class="ml-proj-closewin" id="ml-proj-closewin" type="button" hidden>关闭投影窗口</button>
+          <button class="ml-proj-enter" id="ml-proj-enter" type="button">开始放映</button>
+          <button class="ml-proj-closewin" id="ml-proj-closewin" type="button" hidden>结束放映</button>
         </div>
-        <div class="ml-proj-hint">点「进入投影」会自动把投影画面全屏到副屏（外接显示器/投影仪）；只有一块屏时在新窗口内全屏。开关、翻页、移调都会实时同步。</div>
+        <div class="ml-proj-hint">允许访问显示器后，自动优先在副屏放映，主屏保留控制台。若全屏被拦截，可点“投影全屏”或在放映画面点一次。F5 从头放映，Shift+F5 从当前页开始。</div>
       </div>`;
     root.appendChild(ov); // 挂在 #music-library 内, 继承其作用域内的主题变量
+    projBindPresentationControls(ov);
+    projBindScreenControls(ov);
     const tg=ov.querySelector('#ml-proj-toggles');
     PROJ_TOGGLE_DEFS.forEach(([k,label])=>{
       const b=document.createElement('button');
@@ -2174,6 +2437,7 @@
     ov.querySelector('#ml-proj-enter').addEventListener('click',()=>projEnterProjection());
     ov.querySelector('#ml-proj-closewin').addEventListener('click',()=>projCloseProjector());
     projState.panel=ov;
+    projInitScreenControls();
     projState.statusEl=ov.querySelector('#ml-proj-status');
     projState.pageEl=ov.querySelector('#ml-proj-pageno');
     projState.enterBtn=ov.querySelector('#ml-proj-enter');
@@ -2354,8 +2618,8 @@
           </div>
           <div class="ml-ps-head-actions">
             <span class="ml-ps-status" id="ml-ps-status">投影窗口：未开启</span>
-            <button class="ml-ps-enter" id="ml-ps-enter" type="button">进入投影</button>
-            <button class="ml-ps-closewin" id="ml-ps-closewin" type="button" hidden>关闭投影窗口</button>
+            <button class="ml-ps-enter" id="ml-ps-enter" type="button">开始放映</button>
+            <button class="ml-ps-closewin" id="ml-ps-closewin" type="button" hidden>结束放映</button>
             <button class="ml-ps-x" id="ml-ps-x" type="button" aria-label="关闭">${icon('close',20)}</button>
           </div>
         </div>
@@ -2390,6 +2654,7 @@
           </div>
           <div class="ml-ps-right">
             <div class="ml-ps-col-title">当前输出</div>
+            ${projScreenControlsHTML()}
             <div class="ml-proj-preview" id="ml-ps-preview"></div>
             <div class="ml-ps-pager">
               <button class="ml-proj-pg" id="ml-ps-prev" type="button">${icon('chevronLeft',22)}</button>
@@ -2397,6 +2662,7 @@
               <button class="ml-proj-pg ml-proj-pg-next" id="ml-ps-next" type="button">${icon('chevronLeft',22)}</button>
             </div>
             <div class="ml-ps-controls">
+              ${projPresentationControlsHTML('ml-ps')}
               <div class="ml-ps-ctrl-row">
                 <span class="ml-ps-sec">显示</span>
                 <div class="ml-proj-toggles" id="ml-ps-toggles"></div>
@@ -2409,7 +2675,6 @@
                 <button class="ml-proj-s2" id="ml-ps-reset" type="button">恢复默认</button>
               </div>
               <div class="ml-ps-ctrl-row ml-ps-ctrl-sliders">
-                <span class="ml-ps-fontrow"><span class="ml-ps-fontlbl">字号</span><input type="range" class="ml-proj-font" id="ml-ps-font" min="0.6" max="2.6" step="0.1"></span>
                 ${projLayerSlidersHTML()}
               </div>
             </div>
@@ -2438,7 +2703,8 @@
     ov.querySelector('#ml-ps-next').addEventListener('click',()=>projNav(1));
     ov.querySelector('#ml-ps-black').addEventListener('click',()=>projToggleBlank());
     ov.querySelector('#ml-ps-fs').addEventListener('click',()=>projRequestFullscreen());
-    ov.querySelector('#ml-ps-font').addEventListener('input',e=>projSetFontScale(e.target.value));
+    projBindPresentationControls(ov);
+    projBindScreenControls(ov);
     ov.querySelectorAll('.ml-proj-layer').forEach(s=>s.addEventListener('input',e=>projSetLayer(e.target.dataset.layer,e.target.value)));
     ov.querySelector('#ml-ps-reset').addEventListener('click',()=>projResetDefaults());
     ov.querySelector('#ml-ps-enter').addEventListener('click',()=>projEnterProjection());
@@ -2449,6 +2715,7 @@
     ov.querySelector('#ml-ps-bible-add').addEventListener('click',()=>projAddScriptureFromInput(bref));
     bref.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); projAddScriptureFromInput(bref); } });
     projState.studio=ov;
+    projInitScreenControls();
     return ov;
   }
   const PROJ_COLOR_PRESETS=[['#ffffff','白'],['#ffe08a','金'],['#ffd0d0','粉'],['#cfe8ff','蓝'],['#1a1a1a','黑']];
@@ -2491,7 +2758,8 @@
     const ov=projBuildStudio();
     projPreloadSetlistBgImages();      // 预载各歌单项的背景图
     projSyncControlButtons();
-    const fs=ov.querySelector('#ml-ps-font'); if(fs) fs.value=String(projState.fontScale);
+    projSyncPresentationControls(ov);
+    projInitScreenControls();
     ov.querySelectorAll('.ml-proj-layer').forEach(s=>{ s.value=String(projState.layer[s.dataset.layer]||1); });
     const tc=projTextColorValue();
     ov.querySelectorAll('.ml-proj-color[data-color]').forEach(b=>b.classList.toggle('on',b.dataset.color.toLowerCase()===tc.toLowerCase()));
@@ -2518,8 +2786,10 @@
   });
   function projStudioKeydown(e){
     if(!(projState.studio&&projState.studio.classList.contains('open')))return;
+    if(e.key==='F5'){e.preventDefault();if(!e.shiftKey){projState.pageIdx=0;projRenderPager();projRenderPreview();projPushPage();}projEnterProjection();return;}
+    if(e.key==='Escape'&&projState.projWin&&!projState.projWin.closed){e.preventDefault();projCloseProjector();return;}
     const tag=(e.target&&e.target.tagName)||'';
-    if(tag==='INPUT'||tag==='TEXTAREA')return;
+    if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||tag==='BUTTON'||e.target?.isContentEditable)return;
     if(e.key==='ArrowLeft'){ e.preventDefault(); projNav(-1); }
     else if(e.key==='ArrowRight'||e.key===' '){ e.preventDefault(); projNav(1); }
     else if(e.key==='Escape'){ projCloseStudio(); }
@@ -12306,49 +12576,14 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     const lyricsPanel=document.createElement('div');
     lyricsPanel.className='ml-lyrics-panel';
     let lyricsLineCount=0;
-    const splitLyricLines=text=>{
-      const rough=[];
-      let buf='';
-      for(const ch of text){
-        buf+=ch;
-        if('。；;！!？?'.indexOf(ch)>=0){rough.push(buf.trim());buf='';}
+    for(const section of buildLyricSections(s)){
+      const secEl=document.createElement('section');secEl.className='ml-lyrics-sec';
+      const title=document.createElement('h3');title.className='ml-lyrics-sec-name';title.textContent=section.name;secEl.appendChild(title);
+      for(const text of section.lines){
+        const line=document.createElement('p');line.className='ml-lyrics-line';line.textContent=text;secEl.appendChild(line);lyricsLineCount++;
       }
-      if(buf.trim())rough.push(buf.trim());
-      const out=[];
-      rough.forEach(line=>{
-        if([...line].length<=20){out.push(line);return;}
-        const parts=line.split(/([，,、])/);
-        let cur='';
-        for(let i=0;i<parts.length;i+=2){
-          const seg2=parts[i]+(parts[i+1]||'');
-          if(cur&&[...cur+seg2].length>18){out.push(cur.trim());cur=seg2;}
-          else cur+=seg2;
-        }
-        if(cur.trim())out.push(cur.trim());
-      });
-      return out.filter(Boolean);
-    };
-    (s.sections||[]).forEach(sec=>{
-      const secEl=document.createElement('div');secEl.className='ml-lyrics-sec';
-      if(sec&&sec.name){
-        const nm=document.createElement('div');nm.className='ml-lyrics-sec-name';nm.textContent=sec.name;secEl.appendChild(nm);
-      }
-      const rowTexts=[];
-      for(const row of (sec&&sec.lines)||[]){
-        const segs=Array.isArray(row)?row:((row&&row.line)||[]);
-        const tx=segs.map(seg=>{
-          if(!seg||typeof seg!=='object'||typeof seg.label==='string')return '';
-          return (s&&s.align==='strict')?CecpStrictAlign.strictLyricPlain(seg.lyric):spStripTokens(seg.lyric||'');  // strict: 去 @/音位空白
-        }).join('').replace(/[ㅤ　]+/g,'').replace(/ {2,}/g,' ').trim();
-        if(tx)rowTexts.push(tx);
-      }
-      if(!rowTexts.length)return;
-      splitLyricLines(rowTexts.join('')).forEach(lineText=>{
-        const le=document.createElement('div');le.className='ml-lyrics-line';le.textContent=lineText;secEl.appendChild(le);
-        lyricsLineCount++;
-      });
       lyricsPanel.appendChild(secEl);
-    });
+    }
     const scoreMain=document.createElement('div');
     scoreMain.className='ml-score-main';
     scoreMain.appendChild(wrap);
