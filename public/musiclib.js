@@ -10666,10 +10666,18 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(!_mpAudio) return url||'';
     let next=url||'';
     try{
-      const mediaUrl=new URL(next,location.href);
+      let mediaUrl=new URL(next,location.href);
       const isAllowedCecpAudio=mediaUrl.hostname==='cecp.it' && mediaUrl.pathname.startsWith('/upload/');
       if(isAllowedCecpAudio){
         mediaUrl.searchParams.set('cecp_audio_session',MP_AUDIO_SESSION_VERSION);
+        const proxyBase=window.CECP_MUSICLIB_CONFIG?.audioProxyBase;
+        if(typeof proxyBase==='string'){
+          const proxy=new URL(proxyBase,location.href);
+          if(proxy.origin===location.origin&&proxy.pathname==='/__cecp_audio/'){
+            proxy.pathname+=mediaUrl.pathname.slice('/upload/'.length);
+            proxy.search=mediaUrl.search;proxy.hash=mediaUrl.hash;mediaUrl=proxy;
+          }
+        }
         next=mediaUrl.href;
       }
       const needsCors=mediaUrl.origin!==location.origin && isAllowedCecpAudio;

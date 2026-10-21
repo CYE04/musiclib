@@ -44,6 +44,11 @@ function loadScript(src) {
 export async function initMusicLib() {
   if (started) return;
   started = true;
+  if (import.meta.env.DEV) {
+    window.CECP_MUSICLIB_CONFIG = Object.assign({}, window.CECP_MUSICLIB_CONFIG, {
+      audioProxyBase: "/__cecp_audio/",
+    });
+  }
   await Promise.all(LEGACY_SCRIPTS.map(loadScript));
 }
 

@@ -227,5 +227,14 @@ function editorAssets() {
 export default defineConfig({
   base: "./",
   plugins: [react(), staffAssets(), editorAssets(), precacheManifest()],
-  server: { port: 5176 },
+  server: {
+    port: 5176,
+    proxy: {
+      "^/__cecp_audio/": {
+        target: "https://cecp.it",
+        changeOrigin: true,
+        rewrite: (url) => url.replace(/^\/__cecp_audio\//, "/upload/"),
+      },
+    },
+  },
 });
