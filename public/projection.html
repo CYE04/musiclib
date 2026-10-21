@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow">
   <title>投影输出 · CECP 诗歌库</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./musiclib.css?v=20261020-audio-refresh">
+  <link rel="stylesheet" href="./musiclib.css?v=20261021-projection-edit">
   <style>
     /* 屏2 = 纯投影输出。无任何控制按钮; 内容由屏1(控制端)推送当前页, 这里只缩放铺满显示。 */
     html,body{height:100%;margin:0;background:#000;overflow:hidden;cursor:none;}
@@ -64,7 +64,7 @@
   (function(){
     "use strict";
     var CH_NAME='cecp:musiclib:projection:v1', BUS_KEY='cecp:musiclib:projection:bus:v1';
-    var lastV=-1, chordInjected=false, curAspect='16:9', curRefW=0, curRefH=0;
+    var lastV=-1, chordInjected=false, curAspect='16:9', curRefW=0, curRefH=0,lastHtml=null;
     var $=function(id){return document.getElementById(id);};
     var managed=new URLSearchParams(location.search).get('managed')==='1', targetDisplay=null, displayDetails=null;
 
@@ -103,7 +103,8 @@
       injectChordCss(msg.chordCss);
       if(p.aspect==='4:3'||p.aspect==='16:9') curAspect=p.aspect;
       curRefW=Number(p.refW)||0; curRefH=Number(p.refH)||0;
-      document.querySelector('.proj-root').classList.toggle('is-audience',p.presentation==='lyrics');
+      document.querySelector('.proj-root').classList.toggle('is-audience',p.refW===1000);
+      $('proj-clock').style.fontSize=Math.max(16,Math.min(72,Number(p.clockSize)||32))+'px';
       applyBg({css:p.bgCss,image:p.bgImage,video:p.bgVideo});   // 每首歌自己的背景(图/视频, 随页推送)
       $('proj-black').hidden=!p.blank;
       var cont=$('proj-page'); cont.style.setProperty('--proj-text', p.textColor||'#fff');
@@ -111,7 +112,9 @@
       var L=p.layer||{};
       cont.style.setProperty('--pl-chord', String(L.chord||1));
       cont.style.setProperty('--pl-gap',   String(L.gap||1));
-      cont.innerHTML=p.html||'';
+      cont.style.setProperty('--pl-n',String(L.n||1));
+      cont.style.setProperty('--pl-lyric',String(L.lyric||1));
+      if(lastHtml!==(p.html||'')){lastHtml=p.html||'';cont.innerHTML=lastHtml;}
       var empty=!p.html;                                  // 歌单为空/无内容 -> 提示, 不留旧画面
       var hint=$('proj-hint'); hint.hidden=!empty; if(empty) hint.textContent='歌单为空，请在控制端加入诗歌或经文';
       var pn=$('proj-pageno');                            // 右下角小页码(空歌单不显示)

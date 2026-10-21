@@ -229,7 +229,7 @@
     });
     return staffViewPromise;
   }
-  const ML_VER='20261020-audio-refresh';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20261021-projection-edit';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
@@ -1347,10 +1347,7 @@
   const PROJ_SETTINGS_KEY='cecp:musiclib:projection:settings:v1';
   const PROJ_BUS_KEY='cecp:musiclib:projection:bus:v1';
   const PROJ_TOGGLE_DEFS=[['chord','和弦'],['jianpu','简谱'],['lyric','歌词'],['pinyin','拼音']];
-  /* 只保留「和弦」「行距」两个倍率(外加原有的「字号」)。[key,标签,min,max]
-     曾做过「歌词+简谱」与「每行宽度(换行)」——都已按用户要求撤掉:
-     页面是按最宽行自动缩放铺满的, 把歌词+简谱调大会把行一起撑宽 -> 又被缩回去, 实测 3× 只换来 +9% 的实际变化, 等于无效控件。 */
-  const PROJ_LAYER_DEFS=[['chord','和弦',0.4,3],['gap','行距',0.4,3]];
+  const PROJ_LAYER_DEFS=[['n','简谱',0.6,2],['lyric','歌词',0.6,2],['chord','和弦',0.4,3],['gap','行距',0.4,3]];
   const PROJ_BG_PRESETS={
     warm:{label:'暖阳',css:'linear-gradient(135deg,#8a4b2f 0%,#a86a44 28%,#7a6a72 60%,#3f4a5e 100%)'},
     night:{label:'深蓝',css:'linear-gradient(160deg,#0b1830 0%,#122844 55%,#0a1220 100%)'},
@@ -1361,8 +1358,8 @@
   const PROJ_DEFAULTS={
     toggles:{chord:true,jianpu:true,lyric:true,pinyin:true},
     aspect:'16:9',
-    fontScale:1.3,           // 每页少放几行; 1.5 用户实测偏大, 1.3 刚好
-    layer:{chord:1,gap:1}    // 倍率(1=原始): 和弦大小 / 行距
+    fontScale:1.3,
+    layer:{n:1,lyric:1,chord:1,gap:1},clockSize:32
   };
   const PROJ_AUDIENCE_DEFAULTS={fontScale:1.5,linesPerPage:4,textAlign:'center',verticalAlign:'center',margin:4,weight:600,overlay:0.3,showSection:true};
   const projState={
@@ -1374,6 +1371,8 @@
     layer:Object.assign({},PROJ_DEFAULTS.layer),
     presentation:'lyrics',
     audience:Object.assign({},PROJ_AUDIENCE_DEFAULTS),
+    scoreLayout:Object.assign({},PROJ_AUDIENCE_DEFAULTS,{fontScale:1.3}),
+    clockSize:32,layouts:{},editing:false,selectedObject:'',
     screenDetails:null,screenPreference:'auto',screenMessage:'连接显示器后，可自动选择副屏。',
     activeScreen:null,projectorReady:false,projectorFullscreen:false,launching:false,
     bgImages:{}, // imgKey -> dataURL 内存缓存(真身在 IndexedDB)
@@ -1411,6 +1410,21 @@
       if(s.audience&&typeof s.audience==='object'){
         for(const key of Object.keys(projState.audience))projSetAudienceValue(key,s.audience[key]);
       }
+      if(s.scoreLayout&&typeof s.scoreLayout==='object'){
+        for(const key of Object.keys(projState.scoreLayout))projSetAudienceValue(key,s.scoreLayout[key],projState.scoreLayout);
+      }
+      if(Number.isFinite(s.clockSize))projState.clockSize=Math.max(16,Math.min(72,s.clockSize));
+      if(s.layouts&&typeof s.layouts==='object'){
+        for(const [key,objects] of Object.entries(s.layouts).slice(-200)){
+          if(!/^p[\da-z]+$/.test(key)||!objects||typeof objects!=='object')continue;
+          const clean={};
+          for(const [id,value] of Object.entries(objects).slice(0,50)){
+            if(!/^[\w-]+$/.test(id)||!value||!['dx','dy','scale'].every(k=>Number.isFinite(value[k])))continue;
+            clean[id]={dx:Math.max(-1000,Math.min(1000,value.dx)),dy:Math.max(-1000,Math.min(1000,value.dy)),scale:Math.max(.5,Math.min(2,value.scale))};
+          }
+          projState.layouts[key]=clean;
+        }
+      }
       if(typeof s.screenPreference==='string')projState.screenPreference=s.screenPreference;
     }catch(_){}
   }
@@ -1423,6 +1437,8 @@
       prev.textColor=projState.textColor;
       prev.layer=Object.assign({},prev.layer,projState.layer);
       prev.presentation=projState.presentation;prev.audience=Object.assign({},projState.audience);
+      prev.scoreLayout=Object.assign({},projState.scoreLayout);prev.clockSize=projState.clockSize;
+      prev.layouts=Object.fromEntries(Object.entries(projState.layouts).slice(-200));
       prev.screenPreference=projState.screenPreference;
       localStorage.setItem(PROJ_SETTINGS_KEY,JSON.stringify(prev));
     }catch(_){}
@@ -1801,15 +1817,15 @@
   const PROJ_SETLIST_KEY='cecp:musiclib:projection:setlist:v1';
   function projSaveSetlist(){ try{ localStorage.setItem(PROJ_SETLIST_KEY,JSON.stringify(projState.setlist||[])); }catch(_){} }
   function projLoadSetlist(){ try{ const a=JSON.parse(localStorage.getItem(PROJ_SETLIST_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
-  function projSetAudienceValue(key,value){
+  function projSetAudienceValue(key,value,options=projState.audience){
     const ranges={fontScale:[0.6,2.6],linesPerPage:[1,8],margin:[2,12],weight:[400,700],overlay:[0,0.8]};
-    if(ranges[key]&&Number.isFinite(Number(value))){const [min,max]=ranges[key];projState.audience[key]=Math.max(min,Math.min(max,Number(value)));}
-    else if(key==='textAlign'&&['left','center','right'].includes(value))projState.audience[key]=value;
-    else if(key==='verticalAlign'&&['top','center','bottom'].includes(value))projState.audience[key]=value;
-    else if(key==='showSection'&&typeof value==='boolean')projState.audience[key]=value;
+    if(ranges[key]&&Number.isFinite(Number(value))){const [min,max]=ranges[key];options[key]=Math.max(min,Math.min(max,Number(value)));}
+    else if(key==='textAlign'&&['left','center','right'].includes(value))options[key]=value;
+    else if(key==='verticalAlign'&&['top','center','bottom'].includes(value))options[key]=value;
+    else if(key==='showSection'&&typeof value==='boolean')options[key]=value;
   }
-  function projAudiencePages(){
-    const pages=[],options=projState.audience;
+  function projAudiencePages(options=projState.audience,entries=projSetlist().map((item,itemIdx)=>({item,itemIdx}))){
+    const pages=[];
     const width=1000,height=width/projAspectRatio(),inset=width*options.margin/100;
     const fontSize=40*options.fontScale;
     const contentWidth=width-inset*2,contentHeight=height-inset*2-80;
@@ -1832,7 +1848,7 @@
       }
       return lines.filter(Boolean);
     };
-    projSetlist().forEach((item,itemIdx)=>{
+    entries.forEach(({item,itemIdx})=>{
       const song=item.t==='song'?songs.find(s=>s.id===item.id):null;
       const title=song?.title||item.title||'经文';
       const sections=song?buildLyricSections(song):[{name:item.ref||'',lines:(item.verses||[]).map(v=>[v.verse,v.primary,v.secondary].filter(Boolean).join(' '))}];
@@ -1843,13 +1859,13 @@
           slide.style.cssText='box-sizing:border-box;display:flex;flex-direction:column;flex:0 0 auto;width:'+width+'px;height:'+height+'px;padding:'+inset+'px;font-family:"Noto Sans SC",sans-serif;font-size:'+fontSize+'px;font-weight:'+options.weight+';text-align:'+options.textAlign+';color:var(--proj-text,#fff);background:rgba(0,0,0,'+options.overlay+');';
           const header=document.createElement('header');header.className='proj-audience-header';
           header.style.cssText='flex:0 0 54px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;font-size:20px;line-height:1.35;text-align:left;';
-          const name=document.createElement('span');name.textContent=title;
+          const name=document.createElement('span');name.textContent=title;name.style.flex='0 1 auto';
           const label=document.createElement('span');label.textContent=options.showSection?section.name:'';
           header.append(name,label);slide.appendChild(header);
           const body=document.createElement('div');body.className='proj-audience-body';
           const vertical={top:'flex-start',center:'center',bottom:'flex-end'}[options.verticalAlign];
           body.style.cssText='display:flex;flex:1;min-height:0;flex-direction:column;justify-content:'+vertical+';line-height:'+lineHeight+'px;';
-          lines.slice(index,index+capacity).forEach(text=>{const p=document.createElement('p');p.className='proj-audience-line';p.style.cssText='margin:0;width:100%;white-space:nowrap;font:inherit;line-height:inherit;';p.textContent=text;body.appendChild(p);});
+          lines.slice(index,index+capacity).forEach(text=>{const p=document.createElement('p');p.className='proj-audience-line';p.style.cssText='margin:0;width:max-content;max-width:100%;align-self:'+({left:'flex-start',center:'center',right:'flex-end'}[options.textAlign])+';white-space:nowrap;font:inherit;line-height:inherit;';p.textContent=text;body.appendChild(p);});
           slide.appendChild(body);
           const footer=document.createElement('footer');footer.style.cssText='flex:0 0 26px;font-size:16px;line-height:26px;opacity:.55;';footer.textContent='CECP Musiclib';slide.appendChild(footer);
           pages.push({html:slide.outerHTML,refW:width,refH:height,itemIdx,songId:song?.id||'',title,scripture:!song,section:section.name});
@@ -1858,109 +1874,152 @@
     });
     return pages;
   }
-  /* setlist 项 = {t:'song',id} 或 {t:'scripture',title,ref,primary,verses:[{verse,primary,secondary}]} */
-  function projBuildPages(){
-    const generation=_projSeq;
-    if(projState.presentation==='lyrics')return Promise.resolve(document.fonts?.ready).then(()=>{
-      if(generation!==_projSeq)return;
-      projState.pages=projAudiencePages();
-      projState.pageIdx=Math.min(projState.pageIdx,Math.max(0,projState.pages.length-1));
-    });
-    return new Promise(resolve=>{
-      const list=projSetlist();
-      if(!list.length){ projState.pages=[]; resolve(); return; }
-      const tg=projState.toggles;
-      // 诗歌与经文分两个离屏容器: 经文行很宽会撑宽容器, 若与诗歌同容器会把诗歌行也撑宽 -> 诗歌被算得更小。分开测量互不影响。
-      // flex column + align flex-start: 与投影页 #proj-page 布局一致(margin 不折叠、行按内容宽不被撑满) -> 测高测宽都准
-      const measCss='position:fixed;left:-99999px;top:0;width:auto;visibility:hidden;display:flex;flex-direction:column;align-items:flex-start;';
-      const songStage=_div('sw-lb'); songStage.style.cssText=measCss;
-      const scriptStage=_div('sw-lb'); scriptStage.style.cssText=measCss;
-      projApplyLayerVars(songStage); projApplyLayerVars(scriptStage); // 和弦/行距倍率先套上再渲染测量
-      const groups=[];
-      for(let itemIdx=0;itemIdx<list.length;itemIdx++){
-        const item=list[itemIdx];
-        const blocks=[];
-        if(item.t==='scripture'){
-          const titleEl=_div('proj-title');
-          titleEl.innerHTML='<span class="proj-title-name">'+esc(item.title||'经文')+'</span>';
-          scriptStage.appendChild(titleEl); blocks.push(titleEl);
-          (item.verses||[]).forEach(v=>{
-            const ve=_div('proj-verse');
-            ve.innerHTML='<span class="proj-vnum">'+esc(v.verse||'')+'</span>'+esc(v.primary||'')+(v.secondary?('<span class="proj-vsec">'+esc(v.secondary)+'</span>'):'');
-            scriptStage.appendChild(ve); blocks.push(ve);
-          });
-          groups.push({blocks,meta:{title:item.title||'经文',scripture:true,itemIdx}});
-        }else{
-          const song=songs.find(s=>s.id===item.id); if(!song)continue;
-          const curKey=projCurKey(song);
-          const info=calcCapo(curKey,song.origKey||'C'), st=info.st;
-          const useFlat=FLAT_KEYS.has(parseKeyName(curKey).root);
-          const titleEl=_div('proj-title');   // 每首第一页顶部: 调+拍号 + 歌名(参考图第一张那种)
-          titleEl.innerHTML='<span class="proj-title-key">'+esc(curKey)+'调'+(song.timeSign?(' '+esc(song.timeSign)):'')+'</span><span class="proj-title-name">'+esc(song.title||'')+'</span>';
-          songStage.appendChild(titleEl); blocks.push(titleEl);
-          for(const sec of song.sections||[]){          // 段名(主歌/副歌等)不显示 -> 纯净画面
-            for(const line of sec.lines||[]){ const r=projBuildRow(line,st,useFlat,tg,song.align); songStage.appendChild(r); blocks.push(r); }
-          }
-          groups.push({blocks,meta:{songId:song.id,title:song.title||'',itemIdx}});
-        }
+  // Reflow intact vertical columns before geometry generation. Tuplets stay atomic.
+  function projReflowScoreRow(row,maxWidth){
+    const atoms=Array.from(row.querySelectorAll('.prev-seg'));
+    if(!atoms.length)return [row];
+    const units=[];let group=[],depth=0;
+    for(const node of atoms){
+      if(node.classList.contains('p-barslot')&&!depth&&!group.length){
+        if(units.length)units[units.length-1].push(node);else group.push(node);
+        continue;
       }
-      root.appendChild(songStage); root.appendChild(scriptStage);
-      setTimeout(()=>{
-        if(generation!==_projSeq){songStage.remove();scriptStage.remove();resolve();return;}
-        const ar=projState.aspect==='4:3'?{w:4,h:3}:{w:16,h:9};
-        projNormalizeRowHeights(songStage); projNormalizeRowHeights(scriptStage); // 先统一每行音格高度(和弦/连音/房子线整齐), 再测页高
-        // 测高; 诗歌统一用最宽那首的行宽(songMaxW)避免窄歌被切成一行一页; 经文各自算宽
-        const measureAll=()=>{
-          let mw=1;
-          groups.forEach(g=>g.blocks.forEach(el=>{
-            const cs=getComputedStyle(el);
-            el._h=(el.offsetHeight||0)+(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0); // 含行间 margin, 免得低估页高把末行裁掉
-            if(!g.meta.scripture&&!el.classList.contains('proj-title')){ const w=el.scrollWidth||0; if(w>mw)mw=w; }
-          }));
-          return mw;
-        };
-        // 贪心装箱分页(抽成函数, 折行前后各跑一次); 诗歌统一 maxWForSongs 缩放(字号一致), 经文各自算宽。
-        const collectSongRows=()=>{ const a=[]; groups.forEach(g=>{ if(g.meta.scripture)return; g.blocks.forEach(el=>{ if(el.classList&&el.classList.contains('sw-lrow'))a.push(el); }); }); return a; };
-        const paginate=(maxWForSongs)=>{
-          const raw=[];
-          groups.forEach(g=>{
-            let maxW=maxWForSongs;
-            if(g.meta.scripture){ maxW=1; g.blocks.forEach(el=>{ if(!el.classList.contains('proj-title')){ const w=el.scrollWidth||0; if(w>maxW)maxW=w; } }); }
-            const budget=(ar.h/ar.w)*maxW/(projState.fontScale||1);   // 字号=每页行数控制(越大每页越少行=字越大)
-            const gp=[]; let cur=[],hsum=0;
-            // 装满就换页; 但"只有歌名标题"的页不许单独成页(标题必须带着第一行走, 哪怕稍超预算)
-            g.blocks.forEach(el=>{ if(cur.length&&hsum+el._h>budget&&!cur.every(x=>x.classList&&x.classList.contains('proj-title'))){ gp.push({b:cur,h:hsum}); cur=[]; hsum=0; } cur.push(el); hsum+=el._h; });
-            if(cur.length)gp.push({b:cur,h:hsum});
-            let gMaxH=1; gp.forEach(p=>{ if(p.h>gMaxH)gMaxH=p.h; });
-            gp.forEach(p=>raw.push({b:p.b,meta:g.meta,refW:maxW,gMaxH,scripture:!!g.meta.scripture}));
-          });
-          let smh=1; raw.forEach(p=>{ if(!p.scripture&&p.gMaxH>smh)smh=p.gMaxH; });
-          return {raw,songMaxH:smh};
-        };
-        let songMaxW=measureAll();
-        // 两端对齐(分散对齐): 级联重排后各行都是真实单行, 拉伸到统一宽 -> 右边缘整齐(短尾行不拉)
-        const songRows=collectSongRows();
-        layoutStrictChordsAll(songStage);   // CECP-CHORD-FIT: 和弦避让要先于两端对齐(非 strict 为 no-op)
-        if(typeof justifyScoreRows==='function' && songRows.length){
-          justifyScoreRows(songRows,{ratio:0.5});
-        }
-        // strict: 两端对齐后按最终音符位置连梁+画连音弧, 位置烘进 outerHTML;
-        // 投影页对整页做匀速 transform 缩放 -> 绝对定位的弧/梁随内容等比缩放, 对位不乱。
-        // connectStrictBeams/layoutStrictArcsAll 对非 strict 行(无 .p-slot 列)是 no-op, 故整台跑无副作用。
-        songStage.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
-        layoutStrictArcsAll(songStage);
-        positionVoltaRails(songStage);
-        // 房子与连音布局可能增加行高；用最终尺寸分页和缩放，避免投影底部被裁。
-        songMaxW=measureAll();
-        const {raw,songMaxH}=paginate(songMaxW);
-        projState.pages=raw.map(p=>Object.assign({
-          html:p.b.map(x=>x.outerHTML).join(''), refW:p.refW, refH:p.scripture?p.gMaxH:songMaxH
-        },p.meta));
-        songStage.remove(); scriptStage.remove();
-        if(projState.pageIdx>=projState.pages.length) projState.pageIdx=Math.max(0,projState.pages.length-1);
-        resolve();
-      },40);
+      if(node.hasAttribute('data-tuplet-open'))depth++;
+      group.push(node);
+      if(node.hasAttribute('data-tuplet-close'))depth=Math.max(0,depth-1);
+      if(!depth){units.push(group);group=[];}
+    }
+    if(group.length)units.push(group);
+    const width=nodes=>nodes.reduce((sum,node)=>{const cs=getComputedStyle(node);return sum+node.getBoundingClientRect().width+(parseFloat(cs.marginLeft)||0)+(parseFloat(cs.marginRight)||0);},0);
+    const chunks=[];let current=[],used=0,lastBar=0;
+    for(const unit of units){
+      const w=width(unit);
+      if(current.length&&used+w>maxWidth){
+        const cut=lastBar||current.length;
+        chunks.push(current.slice(0,cut).flat());current=current.slice(cut);
+        used=current.reduce((sum,u)=>sum+width(u),0);lastBar=0;
+        if(current.length&&used+w>maxWidth){chunks.push(current.flat());current=[];used=0;}
+      }
+      current.push(unit);used+=w;
+      if(unit.some(node=>node.classList.contains('p-barslot')))lastBar=current.length;
+    }
+    if(current.length)chunks.push(current.flat());
+    const parents=new Map(atoms.map(node=>[node,node.closest('.prev-volta')]));
+    const first=new Map(),last=new Map();
+    atoms.forEach(node=>{const parent=parents.get(node);if(parent){if(!first.has(parent))first.set(parent,node);last.set(parent,node);}});
+    return chunks.map(nodes=>{
+      const next=row.cloneNode(false);let active=null,host=null;
+      nodes.forEach(node=>{
+        const parent=parents.get(node);
+        if(parent){
+          if(active!==parent){host=parent.cloneNode(false);host.classList.remove('closed');
+            if(node!==first.get(parent)){host.dataset.v='';host.classList.add('proj-volta-continuation');}
+            next.appendChild(host);active=parent;
+          }
+          host.appendChild(node);
+          if(node===last.get(parent)&&parent.classList.contains('closed'))host.classList.add('closed');
+        }else{next.appendChild(node);active=null;host=null;}
+      });
+      return next;
     });
+  }
+  async function projScorePages(generation){
+    await document.fonts?.ready;
+    if(generation!==_projSeq)return [];
+    const options=projState.scoreLayout,width=1000,height=width/projAspectRatio();
+    const inset=width*options.margin/100,available=width-inset*2;
+    // Notation includes octave marks, beams and several lyric lanes; reserve their vertical space.
+    const scale=(24/18)*projState.fontScale,naturalWidth=available/scale;
+    const stage=_div('sw-lb');stage.classList.add('proj-score-measure');
+    stage.style.cssText='position:fixed;left:-99999px;top:0;visibility:hidden;display:flex;flex-direction:column;align-items:flex-start;width:max-content;';
+    projApplyLayerVars(stage);stage.style.setProperty('--proj-score-weight',String(options.weight));root.appendChild(stage);
+    const pages=[];
+    try{
+      for(const [itemIdx,item] of projSetlist().entries()){
+        if(item.t==='scripture'){
+          pages.push(...projAudiencePages(Object.assign({},options,{fontScale:projState.fontScale}),[{item,itemIdx}]));continue;
+        }
+        const song=songs.find(s=>s.id===item.id);if(!song)continue;
+        const key=projCurKey(song),st=calcCapo(key,song.origKey||'C').st;
+        const useFlat=FLAT_KEYS.has(parseKeyName(key).root);
+        stage.replaceChildren();const rows=[];
+        for(const section of song.sections||[])for(const line of section.lines||[]){
+          const row=projBuildRow(line,st,useFlat,projState.toggles,song.align);
+          row.dataset.projSection=section.name&&section.name!==song.title?section.name:'';
+          if(!row.children.length)continue;
+          stage.appendChild(row);rows.push(row);
+        }
+        layoutStrictChordsAll(stage);
+        const wrapped=[];
+        rows.forEach((row,index)=>{
+          const fragments=projReflowScoreRow(row,naturalWidth);
+          fragments.forEach((fragment,part)=>{fragment.dataset.projRow=index+'-'+part;stage.appendChild(fragment);wrapped.push(fragment);});
+          if(!fragments.includes(row))row.remove();
+        });
+        layoutStrictChordsAll(stage);projNormalizeRowHeights(stage);
+        wrapped.forEach(connectStrictBeams);layoutStrictArcsAll(stage);positionVoltaRails(stage);
+        const headerHeight=56,footerHeight=24,bodyHeight=height-inset*2-headerHeight-footerHeight;
+        const measured=wrapped.map(row=>{
+          const cs=getComputedStyle(row),w=Math.max(row.scrollWidth,row.offsetWidth,1);
+          const k=Math.min(scale,available/w,bodyHeight/Math.max(row.offsetHeight,1));
+          return {row,w,k,h:row.offsetHeight*k+(parseFloat(cs.marginBottom)||0)*k};
+        });
+        const groups=[];let batch=[],used=0;
+        for(const entry of measured){
+          if(batch.length&&(used+entry.h>bodyHeight||batch.length>=options.linesPerPage)){groups.push(batch);batch=[];used=0;}
+          batch.push(entry);used+=entry.h;
+        }
+        if(batch.length)groups.push(batch);
+        groups.forEach(batch=>{
+          const slide=_div('proj-score-slide');
+          slide.style.cssText='position:relative;box-sizing:border-box;flex:0 0 auto;width:'+width+'px;height:'+height+'px;color:var(--proj-text,#fff);background:rgba(0,0,0,'+options.overlay+');--proj-score-weight:'+options.weight+';';
+          const title=_div('proj-score-title');title.dataset.projObject='title';title.dataset.projLabel='歌名';title.textContent=song.title||'';
+          title.style.cssText='position:absolute;left:'+inset+'px;top:'+inset+'px;max-width:'+available+'px;font:600 26px/1.35 "Noto Sans SC",sans-serif;';slide.appendChild(title);
+          const metadata=_div('proj-score-meta');metadata.dataset.projObject='key';metadata.dataset.projLabel='调号与拍号';metadata.textContent=key+'调 '+(song.timeSign||'');
+          metadata.style.cssText='position:absolute;right:'+inset+'px;top:'+(inset+34)+'px;font:500 14px/1.2 "Noto Sans SC",sans-serif;';slide.appendChild(metadata);
+          if(options.showSection&&batch[0]?.row.dataset.projSection){const section=_div('proj-score-section');section.dataset.projObject='section';section.dataset.projLabel='段落名称';section.textContent=batch[0].row.dataset.projSection;section.style.cssText='position:absolute;left:'+inset+'px;top:'+(inset+34)+'px;font:500 14px/1.2 "Noto Sans SC",sans-serif;';slide.appendChild(section);}
+          const used=batch.reduce((sum,entry)=>sum+entry.h,0);
+          let y=inset+headerHeight+(options.verticalAlign==='bottom'?bodyHeight-used:options.verticalAlign==='center'?(bodyHeight-used)/2:0);
+          batch.forEach(({row,w,k,h},index)=>{
+            const frame=_div('proj-score-row-frame');frame.dataset.projObject='score-'+row.dataset.projRow;frame.dataset.projLabel='简谱歌词第 '+(index+1)+' 行';
+            const realWidth=w*k,x=inset+(options.textAlign==='right'?available-realWidth:options.textAlign==='center'?(available-realWidth)/2:0);
+            frame.style.cssText='position:absolute;left:'+x+'px;top:'+y+'px;width:'+realWidth+'px;height:'+h+'px;';
+            const inner=_div('proj-score-row-scale');inner.style.cssText='width:'+w+'px;transform:scale('+k+');transform-origin:top left;';
+            inner.appendChild(row.cloneNode(true));frame.appendChild(inner);slide.appendChild(frame);y+=h;
+          });
+          const footer=_div('proj-score-footer');footer.textContent='CECP Musiclib';footer.style.cssText='position:absolute;left:'+inset+'px;bottom:'+inset+'px;font:400 12px/20px "Noto Sans SC",sans-serif;opacity:.5;';slide.appendChild(footer);
+          pages.push({html:slide.outerHTML,refW:width,refH:height,itemIdx,songId:song.id,title:song.title||''});
+        });
+      }
+    }finally{stage.remove();}
+    return pages;
+  }
+  function projPreparePageLayout(page,index){
+    const template=document.createElement('template');template.innerHTML=page.html;
+    const slide=template.content.firstElementChild;if(!slide)return page;
+    slide.querySelectorAll('.proj-audience-header span').forEach((node,i)=>{node.dataset.projObject=i?'section':'title';node.dataset.projLabel=i?'段落名称':'歌名';});
+    slide.querySelectorAll('.proj-audience-line').forEach((node,i)=>{node.dataset.projObject='lyrics-'+i;node.dataset.projLabel='歌词第 '+(i+1)+' 行';});
+    slide.querySelectorAll('[data-proj-object]').forEach(node=>{node.classList.add('proj-layout-object');node.style.transformOrigin='top left';});
+    page.baseHtml=template.innerHTML;
+    let hash=2166136261;const signature=projState.presentation+'|'+index+'|'+page.itemIdx+'|'+page.baseHtml;
+    for(let i=0;i<signature.length;i++)hash=Math.imul(hash^signature.charCodeAt(i),16777619);
+    page.layoutKey='p'+(hash>>>0).toString(36);projApplyPageLayout(page);return page;
+  }
+  function projApplyPageLayout(page){
+    const template=document.createElement('template');template.innerHTML=page.baseHtml;
+    const objects=projState.layouts[page.layoutKey]||{};
+    template.content.querySelectorAll('[data-proj-object]').forEach(node=>{
+      const value=objects[node.dataset.projObject];
+      if(value)node.style.transform='translate('+value.dx+'px,'+value.dy+'px) scale('+value.scale+')';
+    });
+    page.html=template.innerHTML;
+  }
+  async function projBuildPages(){
+    const generation=_projSeq;await document.fonts?.ready;
+    const pages=projState.presentation==='lyrics'?projAudiencePages():await projScorePages(generation);
+    if(generation!==_projSeq)return;
+    projState.pages=pages.map(projPreparePageLayout);
+    projState.pageIdx=Math.min(projState.pageIdx,Math.max(0,projState.pages.length-1));
   }
   function projPushPage(){
     const pg=projState.pages[projState.pageIdx];
@@ -1969,7 +2028,7 @@
       html:pg?pg.html:'', refW:pg?(pg.refW||0):0, refH:pg?(pg.refH||0):0, aspect:projState.aspect, blank:projState.blank,
       idx:projState.pageIdx, total:projState.pages.length, title:pg?pg.title:'', songId:pg?pg.songId:'',
       bgCss:rb.css, bgImage:rb.image, bgVideo:rb.video||null, textColor:projTextColorValue(), layer:Object.assign({},projState.layer),
-      presentation:projState.presentation
+      presentation:projState.presentation,clockSize:projState.clockSize
     }});
   }
   function projRebuild(){
@@ -2035,6 +2094,7 @@
       // 缩放内容, wrap 铺满框(inset:0)并居中 -> 顶对齐水平居中, 不溢出被裁, 不盖邻居
       content.style.transformOrigin='top center';
       content.style.transform='scale('+k+')';
+      projSyncLayoutEditor(box);
     };
     requestAnimationFrame(fit);
   }
@@ -2105,7 +2165,8 @@
     const L=projState.layer;
     el.style.setProperty('--pl-chord',String(L.chord||1));
     el.style.setProperty('--pl-gap',String(L.gap||1));
-    ['--pl-lyric','--pl-n','--pl-roww'].forEach(v=>el.style.removeProperty(v)); // 歌词/简谱不单独调(恒为原始尺寸), 清掉残留
+    el.style.setProperty('--pl-lyric',String(L.lyric||1));
+    el.style.setProperty('--pl-n',String(L.n||1));
   }
   /* 一键恢复默认显示参数: 四个开关 + 比例 + 字号 + 分层大小/行距。
      不动背景与字体色(那是每首歌各自设的, 抹掉会很意外), 也不动歌单。 */
@@ -2115,6 +2176,7 @@
     projState.aspect=PROJ_DEFAULTS.aspect;
     projState.fontScale=PROJ_DEFAULTS.fontScale;
     projState.presentation='lyrics';Object.assign(projState.audience,PROJ_AUDIENCE_DEFAULTS);
+    Object.assign(projState.scoreLayout,PROJ_AUDIENCE_DEFAULTS,{fontScale:1.3});projState.clockSize=32;
     [projState.panel,projState.studio].forEach(scope=>{
       if(!scope)return;
       const f=scope.querySelector('.ml-proj-font'); if(f)f.value=String(projState.fontScale);
@@ -2126,7 +2188,7 @@
   function projLayerSlidersHTML(){
     return PROJ_LAYER_DEFS.map(([k,label,mn,mx])=>
       '<span class="ml-ps-fontrow"><span class="ml-ps-fontlbl">'+label+'</span>'+
-      '<input type="range" class="ml-proj-layer" data-layer="'+k+'" min="'+mn+'" max="'+mx+'" step="0.05"></span>'
+      '<input aria-label="'+label+'大小" type="range" class="ml-proj-layer" data-layer="'+k+'" min="'+mn+'" max="'+mx+'" step="0.05"></span>'
     ).join('');
   }
   function projSetLayer(k,v){
@@ -2134,7 +2196,7 @@
     const def=PROJ_LAYER_DEFS.find(d=>d[0]===k)||[k,'',0.4,3];
     projState.layer[k]=Math.max(def[2],Math.min(def[3],Number(v)||1));
     [projState.panel,projState.studio].forEach(scope=>{ if(!scope)return; const s=scope.querySelector('.ml-proj-layer[data-layer="'+k+'"]'); if(s&&s.value!=String(projState.layer[k]))s.value=String(projState.layer[k]); });
-    projSaveSettings(); projRebuild();
+    projSaveSettings(); projQueueRebuild();
   }
   function projSetFontScale(v){
     v=Math.max(0.6,Math.min(2.6,Number(v)||1));
@@ -2300,6 +2362,90 @@
       });
     }).catch(()=>{});
   }
+  function projLayoutControlsHTML(prefix){
+    return `<section class="ml-proj-layout-tools" aria-label="画布编辑"><div class="ml-proj-layout-actions"><button id="${prefix}-layout-edit" class="ml-proj-layout-edit" aria-label="编辑布局" aria-pressed="false" type="button">${icon('grip',15)} 编辑布局</button><button id="${prefix}-layout-reset" class="ml-proj-layout-reset" type="button">恢复本页布局</button></div><label class="ml-ps-fontrow"><span class="ml-proj-layout-selection">点选预览中的内容</span><input id="${prefix}-layout-scale" class="ml-proj-layout-scale" aria-label="选中内容大小" type="range" min="0.5" max="2" step="0.05" value="1" disabled></label><p class="ml-proj-layout-help">开启后拖动歌名、歌词或谱行；方向键微调，Shift 加速。字号变化后按新排版保存。</p></section><label class="ml-ps-fontrow"><span class="ml-ps-fontlbl">时钟大小</span><input class="ml-proj-clock-size" aria-label="时钟大小" type="range" min="16" max="72" step="2" value="32"><output class="ml-proj-clock-value">32</output></label>`;
+  }
+  function projSyncLayoutEditor(box){
+    if(!box)return;
+    box.classList.toggle('is-editing',projState.editing);
+    box.querySelectorAll('.proj-layout-object').forEach(node=>{
+      node.classList.toggle('is-selected',projState.editing&&node.dataset.projObject===projState.selectedObject);
+      node.tabIndex=projState.editing?0:-1;node.setAttribute('role','button');node.setAttribute('aria-label',node.dataset.projLabel||'投屏内容');
+    });
+    const scope=box.closest('.ml-ps-overlay,.ml-proj-overlay');if(!scope)return;
+    const selected=box.querySelector('.is-selected'),page=projState.pages[projState.pageIdx];
+    const button=scope.querySelector('.ml-proj-layout-edit');if(button){button.setAttribute('aria-pressed',String(projState.editing));button.classList.toggle('on',projState.editing);}
+    const range=scope.querySelector('.ml-proj-layout-scale');if(range){range.disabled=!selected;range.value=String(projState.layouts[page?.layoutKey]?.[projState.selectedObject]?.scale||1);}
+    const label=scope.querySelector('.ml-proj-layout-selection');if(label)label.textContent=selected?.dataset.projLabel||'点选预览中的内容';
+  }
+  function projLayoutGeometry(box,node,page){
+    const canvas=box.querySelector('.proj-score-slide,.proj-audience-slide');if(!canvas)return null;
+    const c=canvas.getBoundingClientRect(),r=node.getBoundingClientRect(),k=c.width/page.refW;
+    const value=projState.layouts[page.layoutKey]?.[node.dataset.projObject]||{dx:0,dy:0,scale:1};
+    return {value,x:(r.left-c.left)/k-value.dx,y:(r.top-c.top)/k-value.dy,w:r.width/k/value.scale,h:r.height/k/value.scale,k,width:page.refW,height:page.refH};
+  }
+  function projMoveLayoutObject(box,node,page,geometry,value,snap=false){
+    const g=geometry,scale=Math.max(.5,Math.min(2,value.scale,g.width/g.w,g.height/g.h));
+    let dx=Math.max(-g.x,Math.min(g.width-g.x-g.w*scale,value.dx));
+    let dy=Math.max(-g.y,Math.min(g.height-g.y-g.h*scale,value.dy));
+    const snapX=snap&&Math.abs(g.x+dx+g.w*scale/2-g.width/2)<7;
+    const snapY=snap&&Math.abs(g.y+dy+g.h*scale/2-g.height/2)<7;
+    if(snapX)dx=(g.width-g.w*scale)/2-g.x;if(snapY)dy=(g.height-g.h*scale)/2-g.y;
+    box.classList.toggle('is-snap-x',!!snapX);box.classList.toggle('is-snap-y',!!snapY);
+    const layout=projState.layouts[page.layoutKey]||(projState.layouts[page.layoutKey]={});
+    layout[node.dataset.projObject]={dx,dy,scale};
+    node.style.transform='translate('+dx+'px,'+dy+'px) scale('+scale+')';
+  }
+  function projCommitLayout(page,render=true){
+    projApplyPageLayout(page);projSaveSettings();projPushPage();projRenderThumbs();
+    if(render)projRenderPreview();
+  }
+  function projBindLayoutControls(scope){
+    const box=scope.querySelector('.ml-proj-preview');if(!box)return;
+    let drag=null,frame=0;
+    scope.querySelector('.ml-proj-layout-edit')?.addEventListener('click',()=>{
+      projState.editing=!projState.editing;
+      [projState.panel,projState.studio].forEach(view=>projSyncLayoutEditor(view?.querySelector('.ml-proj-preview')));
+    });
+    scope.querySelector('.ml-proj-layout-reset')?.addEventListener('click',()=>{
+      const page=projState.pages[projState.pageIdx];if(!page)return;
+      delete projState.layouts[page.layoutKey];projState.selectedObject='';projCommitLayout(page);
+    });
+    scope.querySelector('.ml-proj-layout-scale')?.addEventListener('input',event=>{
+      const page=projState.pages[projState.pageIdx],node=box.querySelector('.is-selected');if(!page||!node)return;
+      const g=projLayoutGeometry(box,node,page);if(!g)return;
+      projMoveLayoutObject(box,node,page,g,{...g.value,scale:Number(event.target.value)});projCommitLayout(page);
+    });
+    scope.querySelector('.ml-proj-clock-size')?.addEventListener('input',event=>{
+      projState.clockSize=Math.max(16,Math.min(72,Number(event.target.value)||32));
+      projSyncControlButtons();projSaveSettings();projPushPage();
+    });
+    box.addEventListener('pointerdown',event=>{
+      const node=event.target.closest('.proj-layout-object'),page=projState.pages[projState.pageIdx];
+      if(!projState.editing||!node||!page)return;
+      const geometry=projLayoutGeometry(box,node,page);if(!geometry)return;
+      event.preventDefault();event.stopPropagation();projState.selectedObject=node.dataset.projObject;
+      projSyncLayoutEditor(box);node.focus({preventScroll:true});
+      drag={node,page,geometry,x:event.clientX,y:event.clientY};box.setPointerCapture(event.pointerId);
+    });
+    box.addEventListener('pointermove',event=>{
+      if(!drag)return;
+      const {node,page,geometry:g,x,y}=drag;
+      projMoveLayoutObject(box,node,page,g,{...g.value,dx:g.value.dx+(event.clientX-x)/g.k,dy:g.value.dy+(event.clientY-y)/g.k},true);
+      if(!frame)frame=requestAnimationFrame(()=>{frame=0;if(drag){projApplyPageLayout(page);projPushPage();}});
+    });
+    const finish=()=>{if(!drag)return;const {page,node}=drag;drag=null;box.classList.remove('is-snap-x','is-snap-y');projCommitLayout(page,false);projSyncLayoutEditor(box);node.focus({preventScroll:true});};
+    box.addEventListener('pointerup',finish);box.addEventListener('pointercancel',finish);
+    box.addEventListener('keydown',event=>{
+      const node=event.target.closest('.proj-layout-object'),page=projState.pages[projState.pageIdx];
+      if(!projState.editing||!node||!page||!event.key.startsWith('Arrow'))return;
+      const g=projLayoutGeometry(box,node,page);if(!g)return;
+      event.preventDefault();event.stopPropagation();const step=event.shiftKey?10:1;
+      projState.selectedObject=node.dataset.projObject;
+      projMoveLayoutObject(box,node,page,g,{...g.value,dx:g.value.dx+(event.key==='ArrowLeft'?-step:event.key==='ArrowRight'?step:0),dy:g.value.dy+(event.key==='ArrowUp'?-step:event.key==='ArrowDown'?step:0)});
+      projCommitLayout(page,false);projSyncLayoutEditor(box);
+    });
+  }
   function projPresentationControlsHTML(prefix){
     return `<section class="ml-proj-presentation" aria-label="投屏排版">
       <div class="ml-proj-presets" role="group" aria-label="投屏用途">
@@ -2317,6 +2463,7 @@
         <label class="ml-proj-section-choice"><input class="ml-proj-setting" data-setting="showSection" type="checkbox">显示段落名称</label>
       </div>
       <p class="ml-proj-layout-hint">按段落换页；长句自动换行，放大字号后自动减少每页行数。</p>
+      ${projLayoutControlsHTML(prefix)}
     </section>`;
   }
   function projSyncPresentationControls(scope){
@@ -2325,13 +2472,16 @@
       const active=button.dataset.projPresentation===projState.presentation;
       button.classList.toggle('on',active);button.setAttribute('aria-pressed',String(active));
     });
-    scope.querySelectorAll('.ml-proj-audience-settings').forEach(el=>el.hidden=!audience);
-    scope.querySelectorAll('.ml-proj-layout-hint').forEach(el=>el.textContent=audience?'按段落换页；长句自动换行，放大字号后自动减少每页行数。':'简谱、和弦、歌词、拼音可独立选择，移调会实时同步。');
-    scope.querySelectorAll('.ml-proj-setting').forEach(input=>{const value=projState.audience[input.dataset.setting];if(input.type==='checkbox')input.checked=value;else input.value=String(value);});
+    const options=audience?projState.audience:projState.scoreLayout;
+    scope.querySelectorAll('.ml-proj-audience-settings').forEach(el=>el.hidden=false);
+    scope.querySelectorAll('.ml-proj-layout-hint').forEach(el=>el.textContent=audience?'按段落换页；长句自动换行，放大字号后自动减少每页行数。':'放大后按小节换行、自动分页；简谱与对应歌词一起对齐。');
+    scope.querySelectorAll('.ml-proj-setting').forEach(input=>{const value=options[input.dataset.setting];if(input.type==='checkbox')input.checked=value;else input.value=String(value);});
     const font=audience?projState.audience.fontScale:projState.fontScale;
     scope.querySelectorAll('.ml-proj-font').forEach(input=>input.value=String(font));
     scope.querySelectorAll('.ml-proj-font-value').forEach(output=>output.textContent=Math.round(font*100)+'%');
-    scope.querySelectorAll('.ml-proj-layer[data-layer="chord"]').forEach(input=>input.closest('.ml-ps-fontrow').hidden=audience);
+    scope.querySelectorAll('.ml-proj-layer').forEach(input=>input.closest('.ml-ps-fontrow').hidden=audience&&input.dataset.layer!=='gap');
+    scope.querySelectorAll('.ml-proj-clock-size').forEach(input=>input.value=String(projState.clockSize));
+    scope.querySelectorAll('.ml-proj-clock-value').forEach(output=>output.textContent=projState.clockSize+'px');
     scope.querySelectorAll('.ml-proj-toggles').forEach(group=>{
       group.hidden=audience;
       const label=group.previousElementSibling;if(label?.classList.contains('ml-proj-sec-label'))label.hidden=audience;
@@ -2344,9 +2494,10 @@
     }));
     scope.querySelectorAll('.ml-proj-font').forEach(input=>input.addEventListener('input',()=>projSetFontScale(input.value)));
     scope.querySelectorAll('.ml-proj-setting').forEach(input=>input.addEventListener(input.type==='range'?'input':'change',()=>{
-      projSetAudienceValue(input.dataset.setting,input.type==='checkbox'?input.checked:input.value);
+      projSetAudienceValue(input.dataset.setting,input.type==='checkbox'?input.checked:input.value,projState.presentation==='lyrics'?projState.audience:projState.scoreLayout);
       projSyncControlButtons();projSaveSettings();projQueueRebuild();
     }));
+    projBindLayoutControls(scope);
   }
   function projBuildPanel(){
     if(projState.panel){
@@ -10372,7 +10523,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
 
       if(!_mpAudioCtx){
         _mpAudioCtx=new AC({latencyHint:'playback'});
-        _mpAudioCtx.addEventListener('statechange',()=>_mpRecordPlayback('context-state'));
+        _mpBindAudioContextLifecycle(_mpAudioCtx);
       }
       await _mpAudioCtx.audioWorklet.addModule(SOUNDTOUCH_PROCESSOR_URL);
 
@@ -11572,8 +11723,20 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     return _mpAudioResumePromise;
   }
   function _mpRecoverActiveAudio(){
-    if(document.hidden||!_mpAudio||_mpAudio.paused||_mpAudio.ended) return Promise.resolve(false);
-    return _mpResumeAudioContext('foreground');
+    if(!_mpAudio||_mpAudio.paused||_mpAudio.ended) return Promise.resolve(false);
+    return _mpResumeAudioContext(document.hidden?'background':'foreground');
+  }
+  function _mpBindAudioContextLifecycle(audioContext){
+    audioContext.addEventListener('statechange',()=>{
+      _mpRecordPlayback('context-state');
+      return _mpRecoverActiveAudio();
+    });
+  }
+  function _mpSyncPlaybackRate(){
+    if(!_mpAudio)return;
+    const rate=_mpClampSpeed(_mpAudio.playbackRate);
+    if(Math.abs(rate-_mpSpeed)>.001){_mpSpeed=rate;_mpApplyPitch();}
+    _mpSyncMediaSession();
   }
   function _mpBindAudioLifecycle(){
     document.addEventListener('visibilitychange',()=>{ _mpRecordPlayback('visibilitychange'); return _mpRecoverActiveAudio(); });
@@ -11700,7 +11863,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpAudio.preload='auto';
     _mpBindAudioLifecycle();
     _mpBindMediaSession();
-    ['durationchange','ratechange','seeked','emptied'].forEach(event=>_mpAudio.addEventListener(event,_mpSyncMediaSession));
+    ['durationchange','seeked','emptied'].forEach(event=>_mpAudio.addEventListener(event,_mpSyncMediaSession));
+    _mpAudio.addEventListener('ratechange',_mpSyncPlaybackRate);
     const mv=$('ml-mp-vol'); if(mv) mv.value=String(_mpAudio.volume||1);
     const dv=$('ml-player-dock-vol'); if(dv) dv.value=String(_mpAudio.volume||1);
 
