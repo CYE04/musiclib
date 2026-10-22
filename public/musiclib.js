@@ -229,7 +229,7 @@
     });
     return staffViewPromise;
   }
-  const ML_VER='20261021-projection-edit';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20261022-media-entry';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
@@ -10357,8 +10357,6 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
   let _mpAudioCtx=null,_mpPitchGraph=null,_mpPitchGraphPromise=null,_mpPitchGraphFailed=false,_mpPitchSemi=0,_mpFinePitch=0,_mpSpeed=1,_mpPitchMode='off',_mpPitchStore=null,_mpPitchWarned=false;
   let _mpAbLoop=false,_mpLoopA=0,_mpLoopB=30,_mpPanelOpen=false;
   const MP_PITCH_KEY='cecp:musiclib:audio-pitch:v1';
-  // Halo 同名替换仍沿用旧 URL；每次打开应用取新版本，同次使用复用缓存。
-  const MP_AUDIO_SESSION_VERSION=Date.now().toString(36);
   const MP_PITCH_MIN=-12;
   const MP_PITCH_MAX=12;
 
@@ -10669,7 +10667,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       let mediaUrl=new URL(next,location.href);
       const isAllowedCecpAudio=mediaUrl.hostname==='cecp.it' && mediaUrl.pathname.startsWith('/upload/');
       if(isAllowedCecpAudio){
-        mediaUrl.searchParams.set('cecp_audio_session',MP_AUDIO_SESSION_VERSION);
+        // 保持音源地址稳定，沿用 Halo 的 Cache-Control（一年）。
         const proxyBase=window.CECP_MUSICLIB_CONFIG?.audioProxyBase;
         if(typeof proxyBase==='string'){
           const proxy=new URL(proxyBase,location.href);

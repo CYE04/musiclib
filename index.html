@@ -57,8 +57,21 @@
       })();
 
       const key = new URLSearchParams(window.location.search).get("key");
+      const entryMemoryKey = "cecp:musiclib:entry:v1";
+      let entryAllowed = key === "cecp2026";
+      try {
+        if (entryAllowed) {
+          localStorage.setItem(entryMemoryKey, "cecp2026");
+        } else if (key === null && localStorage.getItem(entryMemoryKey) === "cecp2026") {
+          // 系统返回或普通根地址入口可能不带查询参数；恢复已在本设备进入过的曲库。
+          const entryUrl = new URL(window.location.href);
+          entryUrl.searchParams.set("key", "cecp2026");
+          history.replaceState(history.state, "", entryUrl.href);
+          entryAllowed = true;
+        }
+      } catch (_) {}
 
-      if (key !== "cecp2026") {
+      if (!entryAllowed) {
         alert("Access denied");
         window.location.replace("https://cecp.it");
       }
@@ -81,7 +94,7 @@
 
     <!-- musiclib.css 保持 <head> 静态 <link>(与原版同名 id、同 ?v=)：
          id="ml-style" 会让 musiclib.js L320 的自注入分支跳过，避免样式表被加载两次。 -->
-    <link id="ml-style" rel="stylesheet" href="./musiclib.css?v=20261021-projection-edit">
+    <link id="ml-style" rel="stylesheet" href="./musiclib.css?v=20261022-media-entry">
     <link rel="stylesheet" href="./musiclib-tools.css?v=20261014-console">
     <link rel="stylesheet" href="./story-share.css?v=20261015-story">
   </head>
