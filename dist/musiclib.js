@@ -229,7 +229,7 @@
     });
     return staffViewPromise;
   }
-  const ML_VER='20261022-media-entry';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20261025-borderless-export';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
@@ -3484,6 +3484,13 @@
       const captured=await capture(page,{
         backgroundColor:resolveExportBackground(page),scale:2000/rect.width,
         useCORS:true,logging:false,foreignObjectRendering:false,
+        onclone:(_document,clonedPage)=>{
+          // Remove the screen's paper frame only in the capture; preserve its layout box.
+          clonedPage.style.setProperty('border-color','transparent','important');
+          clonedPage.style.setProperty('border-radius','0','important');
+          clonedPage.style.setProperty('box-shadow','none','important');
+          clonedPage.style.setProperty('outline','none','important');
+        },
         // html2canvas clips nested responsive SVG transforms. Paint these natively below.
         ignoreElements:element=>page.classList.contains('ml-staff-page')&&!!element.closest('.ml-staff-canvas')
       });
