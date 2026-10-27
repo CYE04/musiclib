@@ -3635,8 +3635,14 @@
       }
       outputCtx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
       const authors=songCreditLines(song).flatMap(line=>exportTextLines(outputCtx,line,650));
-      const metadataY=Math.max(186,centerY+10);
-      const headerHeight=Math.max(metadataY+76,metadataY+authors.length*32+30),footerHeight=64;
+      // Side blocks (key/time/bpm on the left, credits on the right) share one row rhythm and
+      // are bottom-aligned with the last centred heading line, so they sit beside the heading
+      // instead of below it and leave more height for the score.
+      const sideGap=36,lastCenterY=center.length?center[center.length-1].y:60;
+      const leftRows=song.bpm?2:1,sideRows=Math.max(leftRows,authors.length,1);
+      const metadataY=Math.max(66,lastCenterY-(sideRows-1)*sideGap);
+      const sideBottomY=metadataY+(sideRows-1)*sideGap;
+      const headerHeight=Math.max(lastCenterY,sideBottomY)+48,footerHeight=80;
       outputCtx.fillStyle=resolveExportBackground(page);outputCtx.fillRect(0,0,output.width,output.height);
       let cropTop=0,cropHeight=canvas.height;
       if(page.classList.contains('ml-staff-page')){
@@ -3661,12 +3667,12 @@
       outputCtx.textAlign='left';
       outputCtx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
       outputCtx.fillText(metadata,100,metadataY,950);
-      if(song.bpm)outputCtx.fillText('♩ = '+song.bpm,100,metadataY+40,900);
+      if(song.bpm)outputCtx.fillText('♩ = '+song.bpm,100,metadataY+sideGap,900);
       outputCtx.textAlign='right';outputCtx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
-      authors.forEach((line,index)=>outputCtx.fillText(line,output.width-100,metadataY+index*32,650));
+      authors.forEach((line,index)=>outputCtx.fillText(line,output.width-100,metadataY+index*sideGap,650));
       canvas=output;
       outputCtx.fillStyle='#51483f';outputCtx.textAlign='center';outputCtx.font='400 24px "Noto Sans SC","PingFang SC",sans-serif';
-      outputCtx.fillText('YuEn参照原版音频/歌谱制作，无商业用途，请勿翻印',canvas.width/2,canvas.height-30,canvas.width-200);
+      outputCtx.fillText('YuEn参照原版音频/歌谱制作，无商业用途，请勿翻印',canvas.width/2,canvas.height-46,canvas.width-200);
       const ratio=logo.naturalHeight/logo.naturalWidth;
       const logoWidth=Math.min(canvas.width*.6,canvas.height*.4/ratio);
       const logoHeight=logoWidth*ratio;
