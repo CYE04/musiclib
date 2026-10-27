@@ -4,7 +4,7 @@
 
   const TOOLS = [
     { id: 'metro', title: '节拍器', description: '找到稳定的速度，练习节奏与合奏。', label: '库内使用' },
-    { id: 'chords', title: '和弦查询', description: '查询与移调和弦，查看钢琴键位与吉他指法。', label: '库内使用' },
+    { id: 'chords', title: '和弦查询', description: '查询与移调和弦，查看钢琴、吉他和贝斯弹法。', label: '库内使用' },
     { id: 'jf', title: '简谱编辑器', description: '整理旋律、节奏、和弦与歌词，制作简谱。', label: '新窗口' },
     { id: 'lrc', title: '歌词编辑器', description: '整理歌词与时间轴，制作同步歌词。', label: '新窗口' }
   ];
@@ -426,7 +426,7 @@
       result.appendChild(feedback);
       const hint = document.createElement('p');
       hint.className = 'ml-tools-field-help';
-      hint.textContent = entry.guitar.length ? '指法面板内可查看不同吉他把位，并试听扫弦。' : '此和弦暂未收录吉他把位，指法面板仍可查看钢琴组成音。';
+      hint.textContent = '指法面板可切换钢琴、吉他和贝斯，查看指位、五声音阶与加花示例。' + (entry.guitar.length ? '' : '此和弦暂未收录吉他把位。');
       result.appendChild(hint);
     }
 
