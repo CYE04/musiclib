@@ -11399,12 +11399,8 @@ html[data-resolved-theme="dark"] #ml-audio-panel #ml-audio-panel-main{color:#171
 #music-library .ml-proj-preview.is-snap-y::after{top:50%;left:0;right:0;height:1px;}
 #music-library .ml-proj-clock-value{min-width:40px;font-size:12px;text-align:right;}
 
-/* Song authors are independent from artist and album information. */
-#music-library .ml-practice-heading .sw-title-row{display:grid;grid-template-columns:auto minmax(0,1fr) auto;}
+/* Song authors sit in the info column under the sub line, on one compact row. */
+#music-library .ml-practice-heading .sw-title-row{display:grid;grid-template-columns:auto minmax(0,1fr);}
 #music-library .sw-title-en{font-size:16px;line-height:1.45;margin-top:5px;color:var(--text2);overflow-wrap:anywhere;}
 #music-library .sw-artist{font-size:14px;line-height:1.6;margin-top:7px;color:var(--text2);}
-#music-library .sw-credits{font-size:12px;line-height:1.8;text-align:right;max-width:240px;overflow-wrap:anywhere;color:var(--text2);}
-@media(max-width:600px){
-  #music-library .ml-practice-heading .sw-title-row{grid-template-columns:auto minmax(0,1fr);}
-  #music-library .sw-credits{grid-column:2;justify-self:end;}
-}
+#music-library .sw-credits{font-size:12px;line-height:1.6;margin-top:2px;text-align:left;overflow-wrap:anywhere;color:var(--text2);}
