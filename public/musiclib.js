@@ -3585,7 +3585,9 @@
           _document.head.appendChild(style);
         },
         // html2canvas clips nested responsive SVG transforms. Paint these natively below.
-        ignoreElements:element=>page.classList.contains('ml-staff-page')&&!!element.closest('.ml-staff-canvas')
+        // Image-score cards: drop the「打开原图」link and page caption, they are screen UI only.
+        ignoreElements:element=>(page.classList.contains('ml-staff-page')&&!!element.closest('.ml-staff-canvas'))||
+          (element.matches?.('.ml-score-image-actions,.ml-score-image-error')||(element.tagName==='FIGCAPTION'&&page.classList.contains('ml-score-image-page')))
       });
       let canvas=captured;
       const ctx=canvas.getContext('2d');
@@ -13062,16 +13064,17 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     pillsDiv.appendChild(kPill);
     if(s.timeSign){const p=document.createElement('span');p.className='sw-pill';p.textContent=s.timeSign;pillsDiv.appendChild(p);}
     if(s.bpm){const p=document.createElement('span');p.className='sw-pill';p.textContent='♩ = '+s.bpm;pillsDiv.appendChild(p);}
+    // 词曲跟其它信息排在同一列（sub 下面、pills 上面），一行写完，尽量少占空间。
+    const creditLines=songCreditLines(s);
+    if(creditLines.length){
+      const credits=document.createElement('div');credits.className='sw-credits';
+      credits.textContent=creditLines.join('　');
+      infoDiv.appendChild(credits);
+    }
     infoDiv.appendChild(pillsDiv);
 
     const titleRow=document.createElement('div');titleRow.className='sw-title-row';
     titleRow.appendChild(coverThumb);titleRow.appendChild(infoDiv);
-    const creditLines=songCreditLines(s);
-    if(creditLines.length){
-      const credits=document.createElement('div');credits.className='sw-credits';
-      creditLines.forEach(text=>{const line=document.createElement('div');line.textContent=text;credits.appendChild(line);});
-      titleRow.appendChild(credits);
-    }
 
     const togBtn=document.createElement('button');togBtn.className='sw-tog';
     togBtn.innerHTML=icon('chevronDown',18)+' 移调';
@@ -14016,19 +14019,34 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       exportBtn.disabled=true;
       exportBtn.classList.add('is-busy');
       try{
-        let pages;
+        let pages,restorePanel=null;
+        const panelWasOpen=panel.classList.contains('open');
         if(staffOn)await staffRenderPending;
         if(staffOn){
           pages=[staffPanel.querySelector('.ml-staff-page')];
-        }else if(hasRenderedScore&&(panel.classList.contains('open')||!hasImageScore)){
+        }else if(hasRenderedScore){
+          /* 有结构化谱就一律导出排好的简谱：原图谱自带一套标题/副标题，
+             再叠上导出图自己的标题就会出现两个歌名。移调面板收起时临时展开
+             （关掉过渡、导出后复原），让谱面有真实尺寸可截。 */
+          if(!panelWasOpen){
+            const prevTransition=panel.style.transition;
+            panel.style.transition='none';
+            panel.classList.add('open');
+            restorePanel=()=>{panel.classList.remove('open');void panel.offsetHeight;panel.style.transition=prevTransition;};
+          }
           if(!scoreBuilt){renderScore();inkCtl.attach();}
           pages=[ensureScorePage()];
+          await waitPaint2();
         }else{
           pages=Array.from(imagePanel.querySelectorAll('.ml-score-image-page'));
           await Promise.all(pages.flatMap(page=>Array.from(page.querySelectorAll('img')).map(img=>img.decode())));
         }
-        if(!pages.length||pages.some(page=>!page))throw new Error('no rendered score page');
-        await exportRenderedScorePng(pages,{title:s.title,song:s,key:staffOn||panel.classList.contains('open')?curKey:s.origKey});
+        try{
+          if(!pages.length||pages.some(page=>!page))throw new Error('no rendered score page');
+          await exportRenderedScorePng(pages,{title:s.title,song:s,key:staffOn||panelWasOpen?curKey:s.origKey});
+        }finally{
+          if(restorePanel)restorePanel();
+        }
         showToast('图片已下载');
       }catch(err){
         showToast('导出失败，请重试');
