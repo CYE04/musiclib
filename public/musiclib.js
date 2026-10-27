@@ -229,7 +229,7 @@
     });
     return staffViewPromise;
   }
-  const ML_VER='20261025-borderless-export';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20261027-score-flow';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
@@ -1795,7 +1795,49 @@
   /* 跟移调页 normalizePreviewRowHeights 一样: 每行把所有简谱音格(.p-n)统一到该行最高音格高度, 底对齐 ->
      和弦/连音弧/房子线(volta)在整行内高度一致、整整齐齐(离屏算好 --row-note-height 烘进 outerHTML)。 */
   /* Keep the ending rail between chords and notes, in unscaled layout coordinates. */
-  function positionVoltaRails(scope){scoreLayoutChordRows(scope);
+  function positionVoltaRails(scope){
+    scoreLayoutChordRows(scope);
+    scope.querySelectorAll('.prev-volta,.jp-volta').forEach(house=>{
+      delete house.dataset.joined;
+      house.style.setProperty('--volta-left','0px');
+      const verse=(house.dataset.v||'').match(/[1-4]/)?.[0]||house.dataset.verse;
+      if(verse){
+        house.dataset.verse=verse;
+        const palette=getComputedStyle(house.closest('.prev-row')||scope);
+        house.style.setProperty('--volta-ink',palette.getPropertyValue(verse==='1'?'--text':'--ly'+verse).trim());
+      }
+      const atoms=house.querySelectorAll('.jp-wrap,.jp-plain,.jp-bar');
+      const last=atoms[atoms.length-1];
+      const strokes=last?.classList.contains('jp-bar')?last.querySelectorAll('.jp-bar-stroke'):[];
+      const stroke=strokes[strokes.length-1];
+      const box=house.getBoundingClientRect(),scale=scoreHeightScale(house);
+      let inset=0;
+      if(stroke&&scale){
+        const bar=stroke.getBoundingClientRect();
+        const closed=house.classList.contains('closed')||house.classList.contains('v-close');
+        inset=Math.max(0,(box.right-(bar.left+bar.right)/2)/scale-(closed?0.75:0));
+      }
+      house.style.setProperty('--volta-right',inset.toFixed(3)+'px');
+    });
+    scoreHeightRows(scope).forEach(row=>{
+      const houses=[...row.querySelectorAll('.prev-volta,.jp-volta')].filter(house=>!house.parentElement.closest('.prev-volta,.jp-volta'));
+      if(houses.length<2)return;
+      const top=Math.min(...houses.map(house=>house.getBoundingClientRect().top+(parseFloat(getComputedStyle(house,'::before').top)||0)*scoreHeightScale(house)));
+      houses.forEach((house,index)=>{
+        const scale=scoreHeightScale(house);if(!scale)return;
+        const nested=house.classList.contains('jp-volta');
+        const padding=nested?0:parseFloat(getComputedStyle(house).getPropertyValue('--volta-rail'))||0;
+        house.style.setProperty(nested?'--jp-volta-top':'--volta-top',((top-house.getBoundingClientRect().top)/scale+padding).toFixed(3)+'px');
+        const previous=houses[index-1];
+        if(previous&&previous.nextElementSibling===house){
+          const before=getComputedStyle(previous,'::before'),previousScale=scoreHeightScale(previous);
+          const divider=parseFloat(before.borderRightWidth)||0;
+          const join=previous.getBoundingClientRect().right-((parseFloat(before.right)||0)+divider/2)*previousScale;
+          house.style.setProperty('--volta-left',((join-house.getBoundingClientRect().left)/scale-(divider?0:0.75)).toFixed(3)+'px');
+          if(divider)house.dataset.joined='1';
+        }
+      });
+    });
   }
   function projNormalizeRowHeights(scope){
     if(!scope)return;
@@ -3470,6 +3512,33 @@
     setTimeout(()=>URL.revokeObjectURL(url),800);
   }
 
+  function drawExportEndingRails(canvas,page){
+    const context=canvas.getContext('2d'),paper=page.getBoundingClientRect(),outputScale=canvas.width/paper.width;
+    page.querySelectorAll('.prev-volta,.jp-volta').forEach(house=>{
+      const box=house.getBoundingClientRect(),scale=scoreHeightScale(house)*outputScale;
+      const rail=getComputedStyle(house,'::before'),label=getComputedStyle(house,'::after');
+      const left=(box.left-paper.left)*outputScale+(parseFloat(rail.left)||0)*scale;
+      const right=(box.right-paper.left)*outputScale-(parseFloat(rail.right)||0)*scale;
+      const top=(box.top-paper.top)*outputScale+(parseFloat(rail.top)||0)*scale;
+      const weight=(parseFloat(rail.borderTopWidth)||1.5)*scale,height=(parseFloat(rail.height)||10)*scale;
+      const closed=house.classList.contains('closed')||house.classList.contains('v-close');
+      context.save();context.setTransform(1,0,0,1,0,0);
+      context.strokeStyle=rail.borderTopColor;context.lineWidth=weight;context.globalAlpha=Number(rail.opacity);
+      context.beginPath();
+      if(house.dataset.joined==='1')context.moveTo(left,top+weight/2);
+      else{context.moveTo(left+weight/2,top+height);context.lineTo(left+weight/2,top+weight/2);}
+      context.lineTo(right-(closed?weight/2:0),top+weight/2);
+      if(closed)context.lineTo(right-weight/2,top+height);
+      context.stroke();
+      if(house.dataset.v){
+        context.globalAlpha=Number(label.opacity);context.fillStyle=label.color;context.textBaseline='top';
+        context.font=[label.fontStyle,label.fontWeight,(parseFloat(label.fontSize)||8)*scale+'px',label.fontFamily].join(' ');
+        context.fillText(house.dataset.v,(box.left-paper.left)*outputScale+(parseFloat(label.left)||0)*scale,(box.top-paper.top)*outputScale+(parseFloat(label.top)||0)*scale);
+      }
+      context.restore();
+    });
+  }
+
   async function exportRenderedScorePng(pages,opt={}){
     await document.fonts?.ready;
     const [capture,logo]=await Promise.all([loadHtml2Canvas(),loadImageForExport(LOGO_SRC)]);
@@ -3490,6 +3559,15 @@
           clonedPage.style.setProperty('border-radius','0','important');
           clonedPage.style.setProperty('box-shadow','none','important');
           clonedPage.style.setProperty('outline','none','important');
+          clonedPage.querySelectorAll('.prev-seg').forEach(column=>{
+            column.style.setProperty('width',_document.defaultView.getComputedStyle(column).width,'important');
+            column.style.setProperty('flex-shrink','0','important');
+          });
+          const style=_document.createElement('style');
+          style.textContent='#music-library .prev-volta::before,#music-library .prev-volta::after,#music-library .jp-volta::before,#music-library .jp-volta::after{display:none!important;}'+
+            '#music-library .sw-page .p-lyric{font-weight:500!important;text-shadow:none!important;-webkit-text-stroke:0!important;}'+
+            '#music-library .sw-page .p-lyric.bold{font-weight:600!important;}';
+          _document.head.appendChild(style);
         },
         // html2canvas clips nested responsive SVG transforms. Paint these natively below.
         ignoreElements:element=>page.classList.contains('ml-staff-page')&&!!element.closest('.ml-staff-canvas')
@@ -3497,6 +3575,7 @@
       let canvas=captured;
       const ctx=canvas.getContext('2d');
       if(!ctx)throw new Error('canvas unavailable');
+      drawExportEndingRails(canvas,page);
       if(page.classList.contains('ml-staff-page')){
         const scale=canvas.width/rect.width;
         for(const svg of page.querySelectorAll('.ml-staff-canvas svg')){
@@ -3509,6 +3588,11 @@
           svg.querySelectorAll('text').forEach((text,index)=>{
             const style=getComputedStyle(text);
             for(const name of ['font-family','font-size','font-weight','font-style','fill','stroke'])texts[index].style.setProperty(name,style.getPropertyValue(name));
+            if(text.matches('.abcjs-lyric')||text.closest('[data-name="lyric"]')){
+              texts[index].style.setProperty('font-weight','400');
+              texts[index].style.setProperty('stroke','none');
+            }
+            if(text.matches('.abcjs-title,[data-name="title"]'))texts[index].style.setProperty('font-size',parseFloat(style.fontSize)*1.12+'px');
           });
           const blob=new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'});
           const image=await blobToImage(blob);
@@ -3520,30 +3604,45 @@
       // Keep the song information as well as the rendered notation. Staff pages already
       // contain their title and composer; only add the missing metadata above them.
       const song=opt.song||{},staff=page.classList.contains('ml-staff-page');
-      const headerHeight=staff?(song.sub?140:100):220;
       const output=document.createElement('canvas');output.width=canvas.width;output.height=canvas.height;
       const outputCtx=output.getContext('2d');
       if(!outputCtx)throw new Error('canvas unavailable');
+      outputCtx.font='500 22px "Noto Sans SC","PingFang SC",sans-serif';
+      const authors=[];let authorLine='';
+      for(const character of String(song.sub||'')){
+        if(character==='\n'||outputCtx.measureText(authorLine+character).width>650){authors.push(authorLine);authorLine=character==='\n'?'':character;}
+        else authorLine+=character;
+      }
+      if(authorLine)authors.push(authorLine);
+      if(authors.length>1){
+        const last=authors.length-1;
+        while(authors[last-1].length>1&&outputCtx.measureText(authors[last-1]).width>outputCtx.measureText(authors[last]).width*1.5){
+          authors[last]=authors[last-1].slice(-1)+authors[last];authors[last-1]=authors[last-1].slice(0,-1);
+        }
+      }
+      const headerHeight=Math.max(staff?110:230,(staff?26:146)+authors.length*30+34),footerHeight=64;
       outputCtx.fillStyle=resolveExportBackground(page);outputCtx.fillRect(0,0,output.width,output.height);
-      const fit=(output.height-headerHeight)/canvas.height;
+      const fit=(output.height-headerHeight-footerHeight)/canvas.height;
       outputCtx.drawImage(canvas,(output.width-canvas.width*fit)/2,headerHeight,canvas.width*fit,canvas.height*fit);
       outputCtx.fillStyle='#241C17';outputCtx.textAlign='center';outputCtx.textBaseline='middle';
-      const subtitle=[song.artist,song.sub].filter(Boolean).join('  ');
       if(!staff){
-        outputCtx.font='700 44px "Noto Serif SC","Songti SC","PingFang SC",serif';
+        outputCtx.font='700 50px "Noto Serif SC","Songti SC","PingFang SC",serif';
         outputCtx.fillText(song.title||opt.title||'',output.width/2,60,output.width-240);
         outputCtx.font='500 25px "Noto Sans SC","PingFang SC",sans-serif';
-        if(subtitle)outputCtx.fillText(subtitle,output.width/2,116,output.width-240);
-      }else if(song.sub){
-        outputCtx.font='500 25px "Noto Sans SC","PingFang SC",sans-serif';
-        outputCtx.fillText(song.sub,output.width/2,40,output.width-240);
+        if(song.artist)outputCtx.fillText(song.artist,output.width/2,108,output.width-240);
       }
-      const metadata=['调性 '+(opt.key||song.origKey||'C'),song.timeSign?'拍号 '+song.timeSign:'',song.bpm?'♩ = '+song.bpm:''].filter(Boolean).join('    ·    ');
+      const metadata=['1='+(opt.key||song.origKey||'C'),song.timeSign||''].filter(Boolean).join('   ');
+      outputCtx.textAlign='left';
       outputCtx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
-      outputCtx.fillText(metadata,output.width/2,staff?headerHeight-42:164,output.width-240);
+      outputCtx.fillText(metadata,100,staff?30:154,950);
+      if(song.bpm)outputCtx.fillText('♩ = '+song.bpm,100,staff?70:194,900);
+      outputCtx.textAlign='right';outputCtx.font='500 22px "Noto Sans SC","PingFang SC",sans-serif';
+      authors.forEach((line,index)=>outputCtx.fillText(line,output.width-100,(staff?30:154)+index*30,650));
       canvas=output;
+      outputCtx.fillStyle='#51483f';outputCtx.textAlign='center';outputCtx.font='400 24px "Noto Sans SC","PingFang SC",sans-serif';
+      outputCtx.fillText('YuEn参照原版音频/歌谱制作，无商业用途，请勿翻印',canvas.width/2,canvas.height-30,canvas.width-200);
       const ratio=logo.naturalHeight/logo.naturalWidth;
-      const logoWidth=Math.min(canvas.width*.5,canvas.height*.32/ratio);
+      const logoWidth=Math.min(canvas.width*.6,canvas.height*.4/ratio);
       const logoHeight=logoWidth*ratio;
       outputCtx.save();outputCtx.globalAlpha=.055;
       outputCtx.drawImage(logo,(canvas.width-logoWidth)/2,(canvas.height-logoHeight)/2,logoWidth,logoHeight);
@@ -4364,28 +4463,89 @@
     window.matchMedia('(prefers-color-scheme: dark)').addEventListener?.('change',()=>applyMusicTheme(getStoredTheme(),false));
   }
 
-  async function loadSongs(opts={}){
+  // Keep the catalog in the existing asynchronous song cache, never in localStorage.
+  const SONG_CATALOG_CACHE='cecp-musiclib-data-v1';
+  const SONG_CATALOG_URL=new URL('__song-catalog-v1.json',staffAssetBase).href;
+  let songCatalogEntries=[],songLoadPromise=null;
+  async function readSongCatalog(){
     try{
-      if(opts.refresh) showToast('正在刷新诗歌库');
-      const res=await fetch(GITHUB_API+'?t='+Date.now(),{cache:'no-store'});if(!res.ok)throw 0;
+      const cache=await caches.open(SONG_CATALOG_CACHE);
+      const response=await cache.match(SONG_CATALOG_URL,{ignoreVary:true});
+      if(!response)return [];
+      const snapshot=await response.json();
+      if(snapshot.v!==1||!Array.isArray(snapshot.entries))return [];
+      return snapshot.entries.filter(entry=>entry&&typeof entry.name==='string'&&entry.name.endsWith('.json')&&entry.song&&typeof entry.song.id==='string'&&entry.song.id);
+    }catch(_){return [];}
+  }
+  async function saveSongCatalog(entries){
+    try{
+      const cache=await caches.open(SONG_CATALOG_CACHE);
+      await cache.put(SONG_CATALOG_URL,new Response(JSON.stringify({v:1,entries}),{headers:{'Content-Type':'application/json'}}));
+    }catch(_){} // Storage full/private browsing must not prevent listening or editing.
+  }
+  async function fetchSongCatalog(files,previous){
+    const cached=new Map(previous.map(entry=>[entry.name,entry]));
+    const entries=new Array(files.length);
+    let next=0;
+    // Bound requests and JSON parsing instead of starting hundreds of fetches at once.
+    async function worker(){
+      while(next<files.length){
+        const index=next++,file=files[index],old=cached.get(file.name);
+        if(old&&file.sha&&old.sha===file.sha){entries[index]=old;continue;}
+        try{
+          const response=await fetch(RAW_BASE+file.name,{cache:'no-store'});
+          if(!response.ok)throw new Error('Song request failed');
+          const song=await response.json();
+          if(!song||typeof song.id!=='string'||!song.id)throw new Error('Invalid song');
+          entries[index]={name:file.name,sha:response.headers.get('X-CECP-Song-Cache')==='fallback'?'':(file.sha||''),song};
+        }catch(_){entries[index]=old||null;}
+      }
+    }
+    await Promise.all(Array.from({length:Math.min(6,files.length)},()=>worker()));
+    return entries.filter(Boolean);
+  }
+  function publishSongCatalog(entries,initial){
+    songCatalogEntries=entries;
+    songs=entries.map(entry=>enrichSong(entry.song));
+    $('ml-loading').style.display='none';
+    $('ml-count').textContent=songs.length+' 首';
+    if(initial)applyUrlState();
+    renderWorshipPicks();
+    render();
+    window.dispatchEvent(new CustomEvent('cecp:musiclib-songs-loaded',{detail:{songs:songs.slice()}}));
+    schedulePinyinPreload();
+    if(initial)_mpRestorePlayback();
+    // A background refresh must not reopen a score or reset the reader's scroll/key.
+    if(initial||!_activeDetailSongId)openSongFromUrl();
+  }
+  function loadSongs(opts={}){
+    if(songLoadPromise)return songLoadPromise;
+    songLoadPromise=loadSongCatalog(opts).finally(()=>{songLoadPromise=null;});
+    return songLoadPromise;
+  }
+  async function loadSongCatalog(opts){
+    try{
+      if(opts.refresh)showToast('正在刷新诗歌库');
+      if(!songs.length){
+        const cached=await readSongCatalog();
+        if(cached.length)publishSongCatalog(cached,true);
+      }
+      const res=await fetch(GITHUB_API+'?t='+Date.now(),{cache:'no-store'});
+      if(!res.ok)throw new Error('Song list request failed');
       const files=await res.json();
       const jsons=files.filter(f=>f.name.endsWith('.json')&&f.name!=='test.json');
-      const all=await Promise.all(jsons.map(f=>fetch(RAW_BASE+f.name,{cache:'no-store'}).then(r=>r.json()).catch(()=>null)));
-      songs=all.filter(Boolean).map(enrichSong);
-      $('ml-loading').style.display='none';
-      $('ml-count').textContent=songs.length+' 首';
-      applyUrlState();           // 先按 URL 把筛选/搜索/索引页定好，再画
-      renderWorshipPicks();
-      renderHomePanels();
-      renderQuickFilters();
-      render();
-      window.dispatchEvent(new CustomEvent('cecp:musiclib-songs-loaded',{detail:{songs:songs.slice()}}));
-      schedulePinyinPreload();   // 首屏画完了，趁空闲把拼音库补上
-      _mpRestorePlayback();
-      openSongFromUrl();         // ?song= 是最上面一层，最后叠
-      if(opts.refresh) showToast('诗歌库已刷新');
+      const entries=await fetchSongCatalog(jsons,songCatalogEntries);
+      if(jsons.length&&!entries.length)throw new Error('No songs available');
+      const changed=entries.length!==songCatalogEntries.length||entries.some((entry,i)=>entry!==songCatalogEntries[i]);
+      if(changed||!songs.length)publishSongCatalog(entries,!songs.length);
+      void saveSongCatalog(entries);
+      if(opts.refresh)showToast('诗歌库已刷新');
     }catch(e){
-      if(!opts.refresh) $('ml-loading').innerHTML='<div style="color:#ff3b30;font-size:14px">载入失败，请刷新重试</div>';
+      if(songs.length){
+        if(opts.refresh)showToast('刷新暂时失败，继续使用已缓存的诗歌');
+        return;
+      }
+      $('ml-loading').innerHTML='<div style="color:#ff3b30;font-size:14px">载入失败，请刷新重试</div>';
       throw e;
     }
   }
@@ -4949,29 +5109,30 @@
       .filter(Boolean)
       .map(resolveMediaUrl);
   }
+  let songStatesRaw=null,songStatesCache={};
   function getSongState(songId){
-    if(!songId) return {};
-    try{
-      const all=JSON.parse(localStorage.getItem(SONG_STATE_KEY)||'{}')||{};
-      return all[songId]||{};
-    }catch(_){
-      return {};
-    }
+    return songId?(getAllSongStates()[songId]||{}):{};
   }
   function setSongState(songId,patch){
-    if(!songId) return;
+    if(!songId)return;
     try{
-      const all=JSON.parse(localStorage.getItem(SONG_STATE_KEY)||'{}')||{};
+      const all=Object.assign({},getAllSongStates());
       all[songId]=Object.assign({},all[songId]||{},patch,{updatedAt:Date.now()});
-      localStorage.setItem(SONG_STATE_KEY,JSON.stringify(all));
+      const raw=JSON.stringify(all);
+      localStorage.setItem(SONG_STATE_KEY,raw);
+      songStatesRaw=raw;songStatesCache=all;
     }catch(_){}
   }
   function getAllSongStates(){
     try{
-      return JSON.parse(localStorage.getItem(SONG_STATE_KEY)||'{}')||{};
-    }catch(_){
-      return {};
-    }
+      const raw=localStorage.getItem(SONG_STATE_KEY)||'{}';
+      if(raw!==songStatesRaw){
+        const parsed=JSON.parse(raw);
+        songStatesCache=parsed&&typeof parsed==='object'&&!Array.isArray(parsed)?parsed:{};
+        songStatesRaw=raw;
+      }
+      return songStatesCache;
+    }catch(_){return {};}
   }
   function loadSearchHistory(){
     try{
@@ -5600,7 +5761,6 @@
     const state=getSongState(song.id);
     setSongState(song.id,{favorite:!state.favorite,favoriteAt:!state.favorite?Date.now():state.favoriteAt||0});
     showToast(!state.favorite?'已加入收藏':'已取消收藏');
-    renderHomePanels();
     updateDetailStateButtons(song);
     render();
   }
@@ -5614,7 +5774,6 @@
       serviceCount:next?(Number(state.serviceCount||0)+1):Number(state.serviceCount||0)
     });
     showToast(next?'已标记本堂唱过':'已取消本堂标记');
-    renderHomePanels();
     updateDetailStateButtons(song);
     render();
   }
@@ -5822,11 +5981,29 @@
     wireShelfCards(list);
   }
 
+  // One listener survives list refreshes, replacing six closures per song per render.
+  $('ml-list').addEventListener('click',event=>{
+    const card=event.target.closest('.ml-song-card');
+    if(!card||!$('ml-list').contains(card))return;
+    const song=songs.find(item=>item.id===card.dataset.id);
+    if(!song)return;
+    const action=event.target.closest('.ml-card-favorite,.ml-card-service,.ml-card-share,.ml-card-play,.ml-card-queue');
+    if(action){
+      event.preventDefault();event.stopPropagation();
+      if(action.classList.contains('ml-card-favorite'))toggleFavorite(song);
+      else if(action.classList.contains('ml-card-service'))toggleServiceUsed(song);
+      else if(action.classList.contains('ml-card-share'))shareSong(song);
+      else if(hasSongAudio(song)){
+        if(action.classList.contains('ml-card-play'))playSongNow(song);
+        else addSongToPlaylist(song);
+      }
+    }else openDetail(song);
+  });
   function render(){
     const list=$('ml-list'),empty=$('ml-empty'),q=query.toLowerCase();
     renderSourceBar();
     renderQuickFilters();
-    renderHomePanels();
+    if(root.dataset.view!=='library')renderHomePanels();
     updateSearchControls();
     if(browseMode!=='songs'){ renderBrowseIndex(); observeRevealItems(); syncBrowseUrl(); return; }
     const filtered=getFilteredSongs();
@@ -5873,43 +6050,7 @@
         list.innerHTML=filtered.map(s=>cardHTML(s,q)).join('')+'<div id="ml-list-end"></div>';
       }
       _mpRenderQueue();
-      list.querySelectorAll('.ml-song-card').forEach(el=>{
-        el.addEventListener('click',()=>{const s=songs.find(x=>x.id===el.dataset.id);if(s)openDetail(s);});
 
-        el.querySelector('.ml-card-favorite')?.addEventListener('click',e=>{
-          e.stopPropagation();
-          const s=songs.find(x=>x.id===el.dataset.id);
-          if(s) toggleFavorite(s);
-        });
-
-        el.querySelector('.ml-card-service')?.addEventListener('click',e=>{
-          e.stopPropagation();
-          const s=songs.find(x=>x.id===el.dataset.id);
-          if(s) toggleServiceUsed(s);
-        });
-
-        el.querySelector('.ml-card-share')?.addEventListener('click',e=>{
-          e.stopPropagation();
-          const s=songs.find(x=>x.id===el.dataset.id);
-          if(s) shareSong(s);
-        });
-
-        el.querySelector('.ml-card-play')?.addEventListener('click',e=>{
-          e.preventDefault();
-          e.stopPropagation();
-          const s=songs.find(x=>x.id===el.dataset.id);
-          if(!hasSongAudio(s)) return;
-          playSongNow(s);
-        });
-
-        el.querySelector('.ml-card-queue')?.addEventListener('click',e=>{
-          e.preventDefault();
-          e.stopPropagation();
-          const s=songs.find(x=>x.id===el.dataset.id);
-          if(!hasSongAudio(s)) return;
-          addSongToPlaylist(s);
-        });
-      });
     }
     observeRevealItems();
     syncBrowseUrl();
@@ -6695,10 +6836,8 @@ layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);j
   const NOTES_FLAT =['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
   const FLAT_KEYS=new Set(['F','Bb','Eb','Ab','Db','Gb','Cb']);
   const USE_FLAT_MINOR_ROOTS=new Set(['D','G','C','F','Bb','Eb']);
-  const KEY_SET_FLAT=['C','Db','D','Eb','E','F','Gb','G','Ab','A','Bb','B'];
+  const KEY_SET_AUTO=['C','Db','D','Eb','E','F','F#','G','Ab','A','Bb','B'];
   const KEY_SET_SHARP=['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
-  const ENHARMONIC_FLAT={'C#':'Db','D#':'Eb','F#':'Gb','G#':'Ab','A#':'Bb'};
-  const ENHARMONIC_SHARP={Db:'C#',Eb:'D#',Gb:'F#',Ab:'G#',Bb:'A#'};
   function parseKeyName(key){
     const k=(key||'').trim();
     if(!k)return {root:'C',suf:''};
@@ -10297,19 +10436,13 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     });
     return {st, capo:best?best.capo:0, playKey:best?best.playKey:target};
   }
-  function stepKeyName(key,delta,useFlat){
+  function stepKeyName(key,delta){
     const parsed=parseKeyName(key);
     const n=NOTE_MAP[parsed.root];
     if(n===undefined)return key;
-    const roots=useFlat?NOTES_FLAT:NOTES_SHARP;
+    const roots=KEY_SET_AUTO;
     return roots[(n+delta+120)%12]+parsed.suf;
   }
-  function enharmonicKeyName(key,useFlat){
-    const parsed=parseKeyName(key);
-    const root=useFlat?(ENHARMONIC_FLAT[parsed.root]||parsed.root):(ENHARMONIC_SHARP[parsed.root]||parsed.root);
-    return root+parsed.suf;
-  }
-
   let _mpAudio=null,_mpSongs=[],_mpIdx=-1,_mpLoop=false,_mpShuffle=false,_mpLrc=[],_mpLrcIdx=-1,_mpLrcTimed=false,_mpCurrentSong=null,_mpCoverFallback='',_mpExpanded=false,_mpSideMode='song',_mpSideCollapsed=false,_mpLyricsOpen=true,_mpPlayRequestId=0,_mpReturnUrl='';
   const MP_PLAYBACK_KEY='cecp:musiclib:playback:v1';
   const _mpShufflePlayed=new Set();
@@ -12553,7 +12686,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     const scoreImages=normalizeScoreImages(s);
     const hasImageScore=scoreImages.length>0;
     let curKey=songState.lastKey||s.origKey||'C';
-    let preferFlat=FLAT_KEYS.has(parseKeyName(curKey).root);
+    let preferFlat=needFlat(parseKeyName(curKey).root,parseKeyName(curKey).suf);
 
     const wrap=document.createElement('div');wrap.className='sw-wrap';
     const kPill=document.createElement('span');kPill.className='sw-pill sw-kpill';kPill.textContent='1 = '+curKey;
@@ -13032,10 +13165,11 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       });
     }
 
-    function setCurrentKey(nextKey,flatMode){
+    function setCurrentKey(nextKey){
       const prevInkKey=curKey;
-      if(flatMode!==undefined)preferFlat=flatMode;
       curKey=nextKey;
+      const spelling=parseKeyName(curKey);
+      preferFlat=needFlat(spelling.root,spelling.suf);
       setSongState(s.id,{lastKey:curKey});
       renderHomePanels();
       renderKeyButtons();
@@ -13058,27 +13192,20 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       quickKeys.appendChild(b);
       return b;
     }
-    addQuickKey('-1',()=>setCurrentKey(stepKeyName(curKey,-1,preferFlat)));
-    addQuickKey('原调',()=>setCurrentKey(s.origKey||'C',FLAT_KEYS.has(parseKeyName(s.origKey||'C').root)));
-    addQuickKey('+1',()=>setCurrentKey(stepKeyName(curKey,1,preferFlat)));
-    const enharmBtn=addQuickKey(preferFlat?'♭':'#',()=>{
-      preferFlat=!preferFlat;
-      curKey=enharmonicKeyName(curKey,preferFlat);
-      enharmBtn.textContent=preferFlat?'♭':'#';
-      setCurrentKey(curKey,preferFlat);
-    });
+    addQuickKey('-1',()=>setCurrentKey(stepKeyName(curKey,-1)));
+    addQuickKey('原调',()=>setCurrentKey(s.origKey||'C'));
+    addQuickKey('+1',()=>setCurrentKey(stepKeyName(curKey,1)));
     function renderKeyButtons(){
       kg.innerHTML='';
-      const keys=preferFlat?KEY_SET_FLAT:KEY_SET_SHARP;
+      const keys=KEY_SET_AUTO;
       keys.forEach(k=>{
         const b=document.createElement('button');
-        b.className='sw-kb'+(k===curKey?' on':'');
+        b.className='sw-kb'+(NOTE_MAP[k]===NOTE_MAP[parseKeyName(curKey).root]?' on':'');
         b.type='button';
         b.textContent=k;
-        b.addEventListener('click',()=>setCurrentKey(k,preferFlat));
+        b.addEventListener('click',()=>setCurrentKey(k));
         kg.appendChild(b);
       });
-      enharmBtn.textContent=preferFlat?'♭':'#';
     }
     renderKeyButtons();
 

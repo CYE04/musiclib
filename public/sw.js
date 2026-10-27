@@ -74,7 +74,13 @@ self.addEventListener("fetch", (event) => {
           caches
             .open(DATA_CACHE)
             .then((cache) => cache.match(keyUrl, MATCH_OPTS))
-            .then((match) => match || Response.error())
+            .then((match) => {
+              if (!match) return Response.error();
+              // Distinguish an offline copy from a successfully fetched new version.
+              const fallback = new Response(match.body, { status: match.status, statusText: match.statusText, headers: match.headers });
+              fallback.headers.set('X-CECP-Song-Cache', 'fallback');
+              return fallback;
+            })
         )
     );
     return;
