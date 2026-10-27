@@ -1363,6 +1363,14 @@ html,body,#music-library{
 #music-library .prev-volta{display:inline-flex;align-items:flex-end;position:relative;}
 #music-library .prev-volta::before{content:'';position:absolute;top:calc(var(--volta-top,2px) - var(--volta-rail,0px));left:0;right:0;height:10px;border-top:1.5px solid var(--text);border-left:1.5px solid var(--text);pointer-events:none;box-sizing:border-box;opacity:0.5;}
 #music-library .prev-volta.closed::before{border-right:1.5px solid var(--text);}
+#music-library :is(.prev-volta,.jp-volta)::before{left:var(--volta-left,0px);right:var(--volta-right,0px);}
+#music-library :is(.prev-volta,.jp-volta)[data-joined="1"]::before{border-left:0;}
+#music-library :is(.sw-page,.ml-staff-page){--ly2:#123577;--ly3:#0c442d;--ly4:#4e1d68;}
+#music-library .sw-page .p-lyric{font-weight:500;text-shadow:none;}
+#music-library .sw-page .p-lyric.bold{font-weight:600;}
+#music-library :is(.prev-volta,.jp-volta)[data-verse] .p-lyric{color:var(--volta-ink) !important;}
+#music-library :is(.prev-volta,.jp-volta)[data-verse]::before{opacity:.85;}
+#music-library :is(.prev-volta,.jp-volta)[data-verse]::after{left:calc(var(--volta-left,0px) + 3px);color:var(--text);opacity:1;}
 #music-library .prev-volta::after{content:attr(data-v);position:absolute;top:calc(var(--volta-top,2px) + 1px - var(--volta-rail,0px));left:3px;font-size:8px;line-height:1;color:var(--text);opacity:0.65;pointer-events:none;font-family:'DM Mono',monospace;}
 #music-library .jp-wrap{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom;min-width:1em;}
 #music-library .jp-plain{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom;min-width:1em;}

@@ -18,7 +18,7 @@ const LEGACY_SCRIPTS = [
   "./musiclib-tools.js?v=20261014-console",
   "./story-card.js?v=20261015-story",
   "./story-share.js?v=20261015-story",
-  "./musiclib.js?v=20261025-borderless-export",
+  "./musiclib.js?v=20261027-score-flow",
 ];
 
 let started = false;
