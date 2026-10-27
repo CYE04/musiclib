@@ -794,11 +794,20 @@ body.mt-resizing,body.mt-resizing *{user-select:none !important;}
       <label style="font-size:9px;color:var(--ink2);font-family:'Space Mono',monospace;letter-spacing:1px;">歌名
         <input id="meta-title" placeholder="顺服" style="width:100%;margin-top:3px;padding:5px 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);font-size:11px;font-family:'Space Mono',monospace;">
       </label>
-      <label style="font-size:9px;color:var(--ink2);font-family:'Space Mono',monospace;letter-spacing:1px;">艺人
+      <label style="font-size:9px;color:var(--ink2);font-family:'Space Mono',monospace;letter-spacing:1px;">歌手 / 乐团 Artist
         <input id="meta-artist" placeholder="赞美之泉" style="width:100%;margin-top:3px;padding:5px 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);font-size:11px;font-family:'Space Mono',monospace;">
       </label>
-      <label style="font-size:9px;color:var(--ink2);font-family:'Space Mono',monospace;letter-spacing:1px;">副标题 / 词曲
-        <input id="meta-sub" placeholder="余盈盈 词曲" style="width:100%;margin-top:3px;padding:5px 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);font-size:11px;font-family:'Space Mono',monospace;">
+      <label style="font-size:9px;color:var(--ink2);font-family:'Space Mono',monospace;letter-spacing:1px;">专辑 / 其他资料 Sub
+        <input id="meta-sub" placeholder="专辑名称、年份或其他资料" style="width:100%;margin-top:3px;padding:5px 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);font-size:11px;font-family:'Space Mono',monospace;">
+      </label>
+      <label style="font-size:9px;color:var(--ink2);font-family:'Space Mono',monospace;letter-spacing:1px;">英文歌名（选填）
+        <input id="meta-titleEn" placeholder="Walk Together in Unity" style="width:100%;margin-top:3px;padding:5px 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);font-size:11px;">
+      </label>
+      <label style="font-size:9px;color:var(--ink2);font-family:'Space Mono',monospace;letter-spacing:1px;">作词
+        <input id="meta-lyricist" placeholder="词作者姓名" style="width:100%;margin-top:3px;padding:5px 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);font-size:11px;">
+      </label>
+      <label style="font-size:9px;color:var(--ink2);font-family:'Space Mono',monospace;letter-spacing:1px;">作曲
+        <input id="meta-composer" placeholder="曲作者姓名" style="width:100%;margin-top:3px;padding:5px 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);font-size:11px;">
       </label>
       <label style="font-size:9px;color:var(--ink2);font-family:'Space Mono',monospace;letter-spacing:1px;">原调
         <input id="meta-key" placeholder="A" style="width:100%;margin-top:3px;padding:5px 7px;border-radius:5px;border:1px solid var(--border);background:var(--panel2);color:var(--ink);font-size:11px;font-family:'Space Mono',monospace;">
@@ -4417,10 +4426,27 @@ function buildPreviewLine(line,psi,pli){
   Array.prototype.forEach.call(fragment.childNodes,function(node){node.setAttribute('data-preview-line',psi+'-'+pli);});
   return fragment;
 }
+function buildMetadataPreview(){
+  function value(id){return (document.getElementById('meta-'+id)||{}).value||'';}
+  if(!value('title')&&!value('artist')&&!value('sub')&&!value('lyricist')&&!value('composer'))return null;
+  var header=document.createElement('div');header.className='score-meta-preview';header.style.cssText='padding:12px 8px 18px;margin-bottom:12px;line-height:1.5;';
+  [['title','700 28px serif'],['titleEn','500 16px sans-serif'],['artist','500 14px sans-serif'],['sub','400 12px sans-serif']].forEach(function(row){
+    if(!value(row[0]))return;
+    var line=document.createElement('div');line.className='score-meta-'+row[0];line.textContent=value(row[0]);line.style.cssText='text-align:center;margin:3px 0;overflow-wrap:anywhere;font:'+row[1]+';';header.appendChild(line);
+  });
+  var bottom=document.createElement('div');bottom.style.cssText='display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;font-size:11px;';
+  var left=document.createElement('div');left.textContent='1='+value('key')+'  '+value('timesign')+'  ♩='+value('bpm');
+  var right=document.createElement('div');right.className='score-meta-credits';right.style.textAlign='right';
+  var lyricist=value('lyricist'),composer=value('composer');
+  var credits=lyricist&&lyricist===composer?['词曲：'+lyricist]:[lyricist?'作词：'+lyricist:'',composer?'作曲：'+composer:''].filter(Boolean);
+  credits.forEach(function(text){var line=document.createElement('div');line.textContent=text;right.appendChild(line);});
+  bottom.appendChild(left);bottom.appendChild(right);header.appendChild(bottom);return header;
+}
 function renderPreview(){
   cancelScheduledPreview();
   var wrap=document.getElementById('previewWrap');wrap.innerHTML='';
   var inner=document.createElement('div');inner.className='prev-inner';
+  var metadata=buildMetadataPreview();if(metadata)inner.appendChild(metadata);
 
   // scoreImg 预览
   var scoreUrl=resolveMediaUrl((document.getElementById('meta-scoreimg')&&document.getElementById('meta-scoreimg').value)||'','https://cecpadua.github.io/resouces/scoreIMG/');
@@ -4523,8 +4549,11 @@ function copyFullJson(){
     createdTime:ts,
     id:document.getElementById('meta-id').value||'song-id',
     title:document.getElementById('meta-title').value||'',
+    titleEn:document.getElementById('meta-titleEn').value||'',
     artist:document.getElementById('meta-artist').value||'',
     sub:document.getElementById('meta-sub').value||'',
+    lyricist:document.getElementById('meta-lyricist').value||'',
+    composer:document.getElementById('meta-composer').value||'',
     origKey:document.getElementById('meta-key').value||'C',
     timeSign:normalizeTimeSignValue((document.getElementById('meta-timesign')||{}).value)||'4/4',
     bpm:bpm,
@@ -4703,7 +4732,9 @@ function doImport(){
       var lastBracket=raw.lastIndexOf(']');
       if(lastBracket>firstBracket)arrStr=raw.slice(firstBracket,lastBracket+1);
     }
-    var parsed=eval('('+arrStr+')');
+    var importedSong=null;
+    try{var fullSong=JSON.parse(raw);if(fullSong&&Array.isArray(fullSong.sections))importedSong=fullSong;}catch(ignore){}
+    var parsed=importedSong?importedSong.sections:eval('('+arrStr+')');
     if(!Array.isArray(parsed))throw new Error('不是数组');
     saveUndo();
     var keepSeg=function(seg){return !!seg&&typeof seg==='object';};
@@ -4713,6 +4744,11 @@ function doImport(){
         return{bold:!!line.b,segs:(line.line||[]).filter(keepSeg)};
       })};
     });
+    if(importedSong){
+      var importedMeta={},aliases={key:'origKey',timesign:'timeSign',scoreimg:'scoreImg'},defaults={key:'C',timesign:'4/4',bpm:72};
+      MT_META_IDS.forEach(function(k){var value=importedSong[aliases[k]||k];importedMeta[k]=value==null?(defaults[k]||''):value;});
+      mtApplyMeta(importedMeta);
+    }
     curSi=-1;curLi=-1;curGi=-1;curTok=-1;clearSel();
     closeImport();renderEditor();updateStrictUi();
   }catch(e){err.textContent='解析失败：'+e.message;}
@@ -5069,7 +5105,7 @@ Object.assign(window, {
    本块在 srcdoc 模板内：不用反引号、不用正则。
 ════════════════════════════════════════════ */
 var MT_DRAFT_KEY='mt_draft_v1';
-var MT_META_IDS=['id','title','artist','sub','key','timesign','bpm','mp3','cover','lrc','youtube','scoreimg'];
+var MT_META_IDS=['id','title','titleEn','artist','sub','lyricist','composer','key','timesign','bpm','mp3','cover','lrc','youtube','scoreimg'];
 function mtCollectMeta(){
   var m={};
   MT_META_IDS.forEach(function(k){var el=document.getElementById('meta-'+k);if(el)m[k]=el.value;});
@@ -5158,7 +5194,7 @@ if(typeof renderEditor==='function'){
   renderEditor=function(){var r=_mtOrigRenderEditor.apply(this,arguments);if(!arguments[2])mtDraftSaveSoon();mtArmBackGuard();return r;};
 }
 /* meta 输入框改动也触发自动保存 */
-MT_META_IDS.forEach(function(k){var el=document.getElementById('meta-'+k);if(el)el.addEventListener('input',mtDraftSaveSoon);});
+MT_META_IDS.forEach(function(k){var el=document.getElementById('meta-'+k);if(el)el.addEventListener('input',function(){mtDraftSaveSoon();schedulePreview();});});
 /* 切走/隐藏/卸载那一刻立即存一次兜底 */
 document.addEventListener('visibilitychange',function(){if(document.visibilityState==='hidden')mtDraftSave();});
 window.addEventListener('pagehide',mtDraftSave);
