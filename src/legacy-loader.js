@@ -18,7 +18,7 @@ const LEGACY_SCRIPTS = [
   "./musiclib-tools.js?v=20261027-sampler",
   "./story-card.js?v=20261015-story",
   "./story-share.js?v=20261015-story",
-  "./musiclib.js?v=20261027-export-header",
+  "./musiclib.js?v=20261028-heading-inline",
 ];
 
 let started = false;

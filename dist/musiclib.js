@@ -3644,7 +3644,7 @@
       const leftRows=song.bpm?2:1,sideRows=Math.max(leftRows,authors.length,1);
       const metadataY=Math.max(66,lastCenterY-(sideRows-1)*sideGap);
       const sideBottomY=metadataY+(sideRows-1)*sideGap;
-      const headerHeight=Math.max(lastCenterY,sideBottomY)+48,footerHeight=80;
+      const headerHeight=Math.max(lastCenterY,sideBottomY)+48,footerHeight=112;
       outputCtx.fillStyle=resolveExportBackground(page);outputCtx.fillRect(0,0,output.width,output.height);
       let cropTop=0,cropHeight=canvas.height;
       if(page.classList.contains('ml-staff-page')){
@@ -3673,8 +3673,11 @@
       outputCtx.textAlign='right';outputCtx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
       authors.forEach((line,index)=>outputCtx.fillText(line,output.width-100,metadataY+index*sideGap,650));
       canvas=output;
-      outputCtx.fillStyle='#51483f';outputCtx.textAlign='center';outputCtx.font='400 24px "Noto Sans SC","PingFang SC",sans-serif';
-      outputCtx.fillText('YuEn参照原版音频/歌谱制作，无商业用途，请勿翻印',canvas.width/2,canvas.height-46,canvas.width-200);
+      outputCtx.fillStyle='#51483f';outputCtx.textAlign='center';
+      outputCtx.font='400 24px "Noto Sans SC","PingFang SC",sans-serif';
+      outputCtx.fillText('YuEn 制谱｜根据原版音频整理',canvas.width/2,canvas.height-78,canvas.width-200);
+      outputCtx.font='400 22px "Noto Sans SC","PingFang SC",sans-serif';
+      outputCtx.fillText('仅供学习与敬拜使用 · 非商业用途 · 请勿擅自转载或翻印',canvas.width/2,canvas.height-44,canvas.width-200);
       const ratio=logo.naturalHeight/logo.naturalWidth;
       const logoWidth=Math.min(canvas.width*.6,canvas.height*.4/ratio);
       const logoHeight=logoWidth*ratio;
@@ -14035,6 +14038,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
             restorePanel=()=>{panel.classList.remove('open');void panel.offsetHeight;panel.style.transition=prevTransition;};
           }
           if(!scoreBuilt){renderScore();inkCtl.attach();}
+          if(!panelWasOpen)fitRows();
           pages=[ensureScorePage()];
           await waitPaint2();
         }else{
