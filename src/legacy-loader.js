@@ -15,10 +15,10 @@
 const LEGACY_SCRIPTS = [
   "./gsap.min.js?v=20260711-justify-rows",
   "./bible-service.js?v=20260711-justify-rows",
-  "./musiclib-tools.js?v=20261014-console",
+  "./musiclib-tools.js?v=20261027-bass",
   "./story-card.js?v=20261015-story",
   "./story-share.js?v=20261015-story",
-  "./musiclib.js?v=20261027-score-flow",
+  "./musiclib.js?v=20261027-bass-original",
 ];
 
 let started = false;
