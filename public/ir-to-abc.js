@@ -100,8 +100,14 @@
     var stretch = (opts.stretchLast === undefined) ? 0.38 : opts.stretchLast;
     if (stretch !== false) out.push('%%stretchlast ' + (stretch === true ? 'true' : stretch));
     out.push('X:1');
+    out.push('%%titlefont serif 30');
+    out.push('%%subtitlefont sans-serif 13');
+    out.push('%%composerfont sans-serif 11');
     out.push('T:' + (ir.meta.title || '').replace(/[\r\n]/g, ' '));
-    if (ir.meta.artist) out.push('C:' + ir.meta.artist.replace(/[\r\n]/g, ' '));
+    [ir.meta.titleEn,ir.meta.artist,ir.meta.sub].forEach(function(text){if(text)out.push('T:'+String(text).replace(/[\r\n]/g,' '));});
+    var lyricist=String(ir.meta.lyricist||'').replace(/[\r\n]/g,' '),composer=String(ir.meta.composer||'').replace(/[\r\n]/g,' ');
+    var credits=lyricist&&lyricist===composer?'词曲：'+lyricist:[lyricist?'作词：'+lyricist:'',composer?'作曲：'+composer:''].filter(Boolean).join(' / ');
+    if(credits)out.push('C:'+credits);
     out.push('M:' + ir.meta.timeSign);
     out.push('L:1/32');
     out.push('Q:1/4=' + (ir.meta.bpm || 72));

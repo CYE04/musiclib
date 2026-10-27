@@ -656,6 +656,8 @@
     var ir = {
       meta: {
         id: (song && song.id) || '', title: (song && song.title) || '', artist: (song && song.artist) || '',
+        titleEn: (song && song.titleEn) || '', sub: (song && song.sub) || '',
+        lyricist: (song && song.lyricist) || '', composer: (song && song.composer) || '',
         key: keyName, sourceKey: srcKey, requestedKey: requestedKey, timeSign: songTs.text, bpm: (song && song.bpm) || 72,
         lyricsAvailable: isStrict ? 'strict' : 'loose',       // PLAN §5.5：strict=精确，loose=97.1% 精确
         octaveShift: octaveShift,

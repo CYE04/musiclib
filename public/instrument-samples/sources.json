@@ -1,0 +1,142 @@
+[
+  {
+    "instrument": "piano",
+    "note": "C2",
+    "bytes": 25585,
+    "sha256": "e02c5a80c03871e1889a3bb371d853f92294c1e8538ac06f70df0fd045540207",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_grand_piano-mp3/C2.mp3"
+  },
+  {
+    "instrument": "piano",
+    "note": "C3",
+    "bytes": 25585,
+    "sha256": "7d0409ea3c40af25c6d3d606f12890f88f896d93c381b6eb8c58497f308b30d3",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_grand_piano-mp3/C3.mp3"
+  },
+  {
+    "instrument": "piano",
+    "note": "C4",
+    "bytes": 25585,
+    "sha256": "b6d32e0d9d0c2e4b88165a2ec27b8787a970f131a03d96d065f28f158640af96",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_grand_piano-mp3/C4.mp3"
+  },
+  {
+    "instrument": "piano",
+    "note": "C5",
+    "bytes": 25585,
+    "sha256": "7a4be6dae323ac5564ad1a617b554fd595e5e0a63f19c3581e3ee94c33ae2e4b",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_grand_piano-mp3/C5.mp3"
+  },
+  {
+    "instrument": "piano",
+    "note": "C6",
+    "bytes": 19371,
+    "sha256": "6a0030c071ccd6c9a722455851d65b18cb86cbfe515772a6ded4c747eda339a0",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_grand_piano-mp3/C6.mp3"
+  },
+  {
+    "instrument": "piano",
+    "note": "C7",
+    "bytes": 14977,
+    "sha256": "5e4cadc06eb25e2302dcc5bf1af76fe85ed258759d02c46e9169376ade83845e",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_grand_piano-mp3/C7.mp3"
+  },
+  {
+    "instrument": "guitar",
+    "note": "E2",
+    "bytes": 17057,
+    "sha256": "be69779ff6821ee4cd0e5246f494bcaf3579540456ee0fdda118f3c1bc5266a2",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_steel-mp3/E2.mp3"
+  },
+  {
+    "instrument": "guitar",
+    "note": "A2",
+    "bytes": 17837,
+    "sha256": "8b8bdfd75cf1d0583da9841beca08d0408d3fb119e19c90607701b0dc5cc69c7",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_steel-mp3/A2.mp3"
+  },
+  {
+    "instrument": "guitar",
+    "note": "D3",
+    "bytes": 19527,
+    "sha256": "86b157ea5190bd6834c1f59e7b3653ba1f16741a3bc4e2db1065c0fe341e6aab",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_steel-mp3/D3.mp3"
+  },
+  {
+    "instrument": "guitar",
+    "note": "G3",
+    "bytes": 19553,
+    "sha256": "8b3bf7c3fdff64762d4f5cfef7c1ccba7df7e4366a86faed371edf42f6532304",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_steel-mp3/G3.mp3"
+  },
+  {
+    "instrument": "guitar",
+    "note": "B3",
+    "bytes": 19865,
+    "sha256": "2e4c26ca80afcef62e23a8939c91233cd98314151a7781ba0d2ce561bc54f1c4",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_steel-mp3/B3.mp3"
+  },
+  {
+    "instrument": "guitar",
+    "note": "E4",
+    "bytes": 21321,
+    "sha256": "6112ea351fa24c140b2149cd99f17e837982314ab74565a5a0869c5d126a37a0",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_steel-mp3/E4.mp3"
+  },
+  {
+    "instrument": "guitar",
+    "note": "A4",
+    "bytes": 17343,
+    "sha256": "0f46d341b731dfa7c68bb06992f3c52c56425f89f2cfcd79aa02aedae6b8b75b",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_steel-mp3/A4.mp3"
+  },
+  {
+    "instrument": "guitar",
+    "note": "D5",
+    "bytes": 16563,
+    "sha256": "5c49f87885f52db64418d7b479a3742a67c121729fb4a09776616cc78c81e3a8",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/acoustic_guitar_steel-mp3/D5.mp3"
+  },
+  {
+    "instrument": "bass",
+    "note": "E1",
+    "bytes": 14275,
+    "sha256": "b6c5c27fbcbf83ddfbf8e51bf07cc1474b84af0bed1383250e1301d6f3550a30",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/electric_bass_finger-mp3/E1.mp3"
+  },
+  {
+    "instrument": "bass",
+    "note": "A1",
+    "bytes": 14951,
+    "sha256": "21eefca40f03995a99211ab0ad69400f06346b7d318b039b70919fb09de28d07",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/electric_bass_finger-mp3/A1.mp3"
+  },
+  {
+    "instrument": "bass",
+    "note": "D2",
+    "bytes": 17213,
+    "sha256": "b284891da3174720034c1b01173b9aaa8af53be857c9a1ba225830b5d8d31045",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/electric_bass_finger-mp3/D2.mp3"
+  },
+  {
+    "instrument": "bass",
+    "note": "G2",
+    "bytes": 16849,
+    "sha256": "6a5e8ad64a123f715de09da31cbce2b69ca2a8635ebcc3ee22f1eb93b473a50b",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/electric_bass_finger-mp3/G2.mp3"
+  },
+  {
+    "instrument": "bass",
+    "note": "C3",
+    "bytes": 16173,
+    "sha256": "2ebc6adc15cc1d1624f203986ede3fe818594b613f45ad4fcd2de94fc01e693a",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/electric_bass_finger-mp3/C3.mp3"
+  },
+  {
+    "instrument": "bass",
+    "note": "G3",
+    "bytes": 16693,
+    "sha256": "8554ed0559a50d6fd85efea072e0398a32e61098d1bad4cc8091859c98ae3ca9",
+    "source": "https://gleitz.github.io/midi-js-soundfonts/FluidR3_GM/electric_bass_finger-mp3/G3.mp3"
+  }
+]

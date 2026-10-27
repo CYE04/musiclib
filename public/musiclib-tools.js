@@ -73,6 +73,7 @@
 
     function stopTool() {
       stopMetronome();
+      chordEngine()?.audio?.stopAll?.();
       if (ownedExplorer && ownedExplorer.classList.contains('open')) ownedExplorer.close();
     }
 
@@ -413,10 +414,11 @@
       feedback.setAttribute('aria-live', 'polite');
       actions.querySelector('#ml-tools-chord-play').addEventListener('click', () => {
         try {
-          if (engine.audio.playChord(def.pianoMidis)) {
-            piano.flash(def.pianoMidis);
-            feedback.textContent = '正在试听 ' + def.symbol + '。';
-          } else feedback.textContent = '此浏览器暂时无法播放试听，请检查声音权限或使用支持音频的浏览器。';
+          feedback.textContent = '正在准备钢琴音色…';
+          if (!engine.audio.playChord(def.pianoMidis, {
+            onStart() { piano.flash(def.pianoMidis); feedback.textContent = '正在试听 ' + def.symbol + '。'; },
+            onError() { feedback.textContent = '音色未能加载，请点击试听重试。'; }
+          })) feedback.textContent = '此浏览器暂时无法播放试听，请检查声音权限或使用支持音频的浏览器。';
         } catch (_) {
           feedback.textContent = '试听未能播放，请检查浏览器声音权限后重试。';
         }

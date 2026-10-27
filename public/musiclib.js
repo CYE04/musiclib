@@ -229,7 +229,7 @@
     });
     return staffViewPromise;
   }
-  const ML_VER='20261027-bass-original';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20261027-song-credits';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
@@ -3540,6 +3540,20 @@
     });
   }
 
+  function songCreditLines(song){
+    const lyricist=String(song.lyricist||'').trim(),composer=String(song.composer||'').trim();
+    if(lyricist&&lyricist===composer)return ['词曲：'+lyricist];
+    return [lyricist?'作词：'+lyricist:'',composer?'作曲：'+composer:''].filter(Boolean);
+  }
+  function exportTextLines(ctx,text,width){
+    const lines=[];let line='';
+    for(const character of String(text||'')){
+      if(character==='\n'||ctx.measureText(line+character).width>width){if(line)lines.push(line);line=character==='\n'?'':character;}
+      else line+=character;
+    }
+    if(line)lines.push(line);
+    return lines;
+  }
   async function exportRenderedScorePng(pages,opt={}){
     await document.fonts?.ready;
     const [capture,logo]=await Promise.all([loadHtml2Canvas(),loadImageForExport(LOGO_SRC)]);
@@ -3595,6 +3609,7 @@
             }
             if(text.matches('.abcjs-title,[data-name="title"]'))texts[index].style.setProperty('font-size',parseFloat(style.fontSize)*1.12+'px');
           });
+          copy.querySelectorAll('.abcjs-title,.abcjs-subtitle,.abcjs-composer,[data-name="title"],[data-name="subtitle"],[data-name="composer"]').forEach(text=>text.remove());
           const blob=new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'});
           const image=await blobToImage(blob);
           ctx.save();ctx.setTransform(1,0,0,1,0,0);
@@ -3602,43 +3617,53 @@
           ctx.restore();
         }
       }
-      // Keep the song information as well as the rendered notation. Staff pages already
-      // contain their title and composer; only add the missing metadata above them.
-      const song=opt.song||{},staff=page.classList.contains('ml-staff-page');
+      const song=opt.song||{};
       const output=document.createElement('canvas');output.width=canvas.width;output.height=canvas.height;
       const outputCtx=output.getContext('2d');
       if(!outputCtx)throw new Error('canvas unavailable');
-      outputCtx.font='500 22px "Noto Sans SC","PingFang SC",sans-serif';
-      const authors=[];let authorLine='';
-      for(const character of String(song.sub||'')){
-        if(character==='\n'||outputCtx.measureText(authorLine+character).width>650){authors.push(authorLine);authorLine=character==='\n'?'':character;}
-        else authorLine+=character;
+      const center=[];let centerY=60;
+      const headingRows=[
+        [song.title||opt.title||'','700 58px "Noto Serif SC","Songti SC",serif',70],
+        [song.titleEn,'500 30px "Noto Sans SC",sans-serif',40],
+        [song.artist,'500 27px "Noto Sans SC","PingFang SC",sans-serif',38],
+        [song.sub,'400 24px "Noto Sans SC","PingFang SC",sans-serif',32]
+      ];
+      for(const [text,font,height] of headingRows){
+        if(!text)continue;
+        outputCtx.font=font;
+        for(const line of exportTextLines(outputCtx,text,output.width-240)){center.push({text:line,font,y:centerY});centerY+=height;}
       }
-      if(authorLine)authors.push(authorLine);
-      if(authors.length>1){
-        const last=authors.length-1;
-        while(authors[last-1].length>1&&outputCtx.measureText(authors[last-1]).width>outputCtx.measureText(authors[last]).width*1.5){
-          authors[last]=authors[last-1].slice(-1)+authors[last];authors[last-1]=authors[last-1].slice(0,-1);
+      outputCtx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
+      const authors=songCreditLines(song).flatMap(line=>exportTextLines(outputCtx,line,650));
+      const metadataY=Math.max(186,centerY+10);
+      const headerHeight=Math.max(metadataY+76,metadataY+authors.length*32+30),footerHeight=64;
+      outputCtx.fillStyle=resolveExportBackground(page);outputCtx.fillRect(0,0,output.width,output.height);
+      let cropTop=0,cropHeight=canvas.height;
+      if(page.classList.contains('ml-staff-page')){
+        const bounds=[];
+        for(const ink of page.querySelectorAll('.ml-staff-canvas svg path,.ml-staff-canvas svg text,.ml-staff-canvas svg line')){
+          if(ink.closest('defs,.abcjs-title,.abcjs-subtitle,.abcjs-composer,[data-name="title"],[data-name="subtitle"],[data-name="composer"]'))continue;
+          const box=ink.getBoundingClientRect(),style=getComputedStyle(ink);
+          if(box.width>0&&box.height>0&&style.display!=='none'&&style.visibility!=='hidden')bounds.push(box);
+        }
+        if(bounds.length){
+          const scale=canvas.width/rect.width;
+          cropTop=Math.max(0,Math.floor((Math.min(...bounds.map(box=>box.top))-rect.top)*scale)-24);
+          const bottom=Math.min(canvas.height,Math.ceil((Math.max(...bounds.map(box=>box.bottom))-rect.top)*scale)+24);
+          cropHeight=bottom-cropTop;
         }
       }
-      const headerHeight=Math.max(staff?110:230,(staff?26:146)+authors.length*30+34),footerHeight=64;
-      outputCtx.fillStyle=resolveExportBackground(page);outputCtx.fillRect(0,0,output.width,output.height);
-      const fit=(output.height-headerHeight-footerHeight)/canvas.height;
-      outputCtx.drawImage(canvas,(output.width-canvas.width*fit)/2,headerHeight,canvas.width*fit,canvas.height*fit);
+      const fit=Math.min((output.height-headerHeight-footerHeight)/cropHeight,(output.width-80)/canvas.width);
+      outputCtx.drawImage(canvas,0,cropTop,canvas.width,cropHeight,(output.width-canvas.width*fit)/2,headerHeight,canvas.width*fit,cropHeight*fit);
       outputCtx.fillStyle='#241C17';outputCtx.textAlign='center';outputCtx.textBaseline='middle';
-      if(!staff){
-        outputCtx.font='700 50px "Noto Serif SC","Songti SC","PingFang SC",serif';
-        outputCtx.fillText(song.title||opt.title||'',output.width/2,60,output.width-240);
-        outputCtx.font='500 25px "Noto Sans SC","PingFang SC",sans-serif';
-        if(song.artist)outputCtx.fillText(song.artist,output.width/2,108,output.width-240);
-      }
+      center.forEach(line=>{outputCtx.font=line.font;outputCtx.fillText(line.text,output.width/2,line.y,output.width-240);});
       const metadata=['1='+(opt.key||song.origKey||'C'),song.timeSign||''].filter(Boolean).join('   ');
       outputCtx.textAlign='left';
       outputCtx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
-      outputCtx.fillText(metadata,100,staff?30:154,950);
-      if(song.bpm)outputCtx.fillText('♩ = '+song.bpm,100,staff?70:194,900);
-      outputCtx.textAlign='right';outputCtx.font='500 22px "Noto Sans SC","PingFang SC",sans-serif';
-      authors.forEach((line,index)=>outputCtx.fillText(line,output.width-100,(staff?30:154)+index*30,650));
+      outputCtx.fillText(metadata,100,metadataY,950);
+      if(song.bpm)outputCtx.fillText('♩ = '+song.bpm,100,metadataY+40,900);
+      outputCtx.textAlign='right';outputCtx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
+      authors.forEach((line,index)=>outputCtx.fillText(line,output.width-100,metadataY+index*32,650));
       canvas=output;
       outputCtx.fillStyle='#51483f';outputCtx.textAlign='center';outputCtx.font='400 24px "Noto Sans SC","PingFang SC",sans-serif';
       outputCtx.fillText('YuEn参照原版音频/歌谱制作，无商业用途，请勿翻印',canvas.width/2,canvas.height-30,canvas.width-200);
@@ -8952,8 +8977,6 @@ var ChordEngine=(function(){
   var BASS_STRING_MIDI=[28,33,38,43];
   /* 试听参数 */
   var STRUM_STAGGER_MS=48;      /* 吉他扫弦相邻弦触发间隔 */
-  var PIANO_NOTE_SECONDS=1.9;   /* 钢琴音衰减时长 */
-  var GUITAR_NOTE_SECONDS=1.5;  /* 吉他音衰减时长 */
   var FLASH_MS=420;             /* 按键/指法点按下反馈时长 */
 
   /* ───────────────────────── 极简 Store ─────────────────────────
@@ -9435,6 +9458,21 @@ var ChordEngine=(function(){
     });
     return positions;
   }
+  function bassPattern(options){
+    var windowStart=-1,previous=null;
+    for(var base=0;base<=9;base++){
+      if(options.midis.every(function(midi){return options.positions.some(function(note){return note.midi===midi&&(note.fret===0||(note.fret>=base&&note.fret<=base+3));});})){windowStart=base;break;}
+    }
+    var notes=options.midis.map(function(midi){
+      var candidates=options.positions.filter(function(note){return note.midi===midi&&(windowStart<0||note.fret===0||(note.fret>=windowStart&&note.fret<=windowStart+3));});
+      function cost(note){return previous?Math.abs(note.fret-previous.fret)+Math.abs(note.string-previous.string)*1.5+note.fret*.1:note.fret;}
+      candidates.sort(function(a,b){return cost(a)-cost(b);});previous=candidates[0];
+      return Object.assign({},previous,{beats:options.beats});
+    });
+    var fretted=notes.filter(function(note){return note.fret>0;}),firstFret=Math.min.apply(null,fretted.map(function(note){return note.fret;}));
+    notes.forEach(function(note){note.finger=note.fret?note.fret-firstFret+1:0;});
+    return {id:options.id,label:options.label,description:options.description,notes:notes};
+  }
   function bassFor(def,scaleMode){
     if(!def)return null;
     var anchor=def.bassNote||def.notes[0];
@@ -9454,19 +9492,16 @@ var ChordEngine=(function(){
       return midi>low&&midi<low+12&&def.notes.some(function(note){return note.pc===midi%12;});
     }).filter(function(midi,index,list){return list.indexOf(midi)===index;}).sort(function(a,b){return a-b;});
     function pattern(id,label,description,midis,beats){
-      var previous=null;
-      var notes=midis.map(function(midi){
-        var candidates=allPositions.filter(function(note){return note.midi===midi;});
-        function cost(note){return previous?Math.abs(note.fret-previous.fret)+Math.abs(note.string-previous.string)*1.5+note.fret*.1:note.fret;}
-        candidates.sort(function(a,b){return cost(a)-cost(b);});
-        previous=candidates[0];
-        return Object.assign({},previous,{beats:beats});
-      });
-      return {id:id,label:label,description:description,notes:notes};
+      return bassPattern({id:id,label:label,description:description,midis:midis,beats:beats,positions:allPositions});
     }
     var rootLow=28+(def.rootPc-28%12+12)%12;
     var pentatonic=[low,rootLow+intervals[1],rootLow+intervals[2],rootLow+intervals[3],rootLow+intervals[4],rootLow+intervals[3],rootLow+intervals[2],low];
     var scale={id:minor?'minor':'major',label:minor?'小调五声':'大调五声',tones:scaleTones,positions:scalePositions};
+    var ascending=intervals.concat([12]).map(function(interval){return rootLow+interval;});
+    scale.demos=[
+      bassPattern({id:'scale-up',label:'五声上行示范',description:'一拍一个音，跟着亮点从低到高弹。',midis:ascending,beats:1,positions:scalePositions}),
+      bassPattern({id:'scale-down',label:'五声下行示范',description:'一拍一个音，跟着亮点从高到低弹。',midis:ascending.slice().reverse(),beats:1,positions:scalePositions})
+    ];
     return {anchor:{name:anchor.name,midi:low},positions:positions,scale:scale,patterns:[
       pattern('steady','稳拍低音','每拍一个低音，先把节奏弹稳。',[low,low,low,low],1),
       pattern('octave','八度变化','低音与高八度交替，保持相同节奏。',[low,low+12,low,low+12],1),
@@ -9494,11 +9529,18 @@ var ChordEngine=(function(){
     return entry;
   }
 
-  /* ───────────────────────── 音频引擎（Web Audio 合成） ─────────────────────────
-     MVP 用振荡器合成，零音频文件、天然离线、低延迟。
-     接口化设计：将来可用同接口换成真实采样音色。 */
+  var SAMPLE_NOTES={piano:[['C2',36],['C3',48],['C4',60],['C5',72],['C6',84],['C7',96]],
+    guitar:[['E2',40],['A2',45],['D3',50],['G3',55],['B3',59],['E4',64],['A4',69],['D5',74]],
+    bass:[['E1',28],['A1',33],['D2',38],['G2',43],['C3',48],['G3',55]]};
+  var SAMPLE_BASE=(function(){
+    if(typeof document==='undefined')return './instrument-samples/';
+    var script=new URL(document.currentScript&&document.currentScript.src||location.href);
+    return new URL(script.pathname.indexOf('/musictool/')>=0?'../instrument-samples/':'./instrument-samples/',script).href;
+  })();
+  // Bundled FluidR3 samples keep playback local and work with the PWA offline cache.
   var AudioEngine={
-    _ctx:null,_master:null,_bassVoices:new Set(),
+    _ctx:null,_master:null,_bassVoices:new Set(),_voices:new Map(),_encoded:new Map(),_decoded:new Map(),
+    _requests:{piano:0,guitar:0,bass:0},
     /** 懒初始化 AudioContext（必须由用户手势触发的调用链进入）。 */
     _ensure:function(){
       if(typeof window==='undefined')return null;
@@ -9506,92 +9548,121 @@ var ChordEngine=(function(){
       if(!AC)return null;
       if(!this._ctx){
         this._ctx=new AC();
-        /* 压限器兜底，多音齐奏不削波 */
         this._master=this._ctx.createDynamicsCompressor();
-        this._master.threshold.value=-16;
+        this._master.threshold.value=-10;this._master.ratio.value=8;
         this._master.connect(this._ctx.destination);
       }
-      if(this._ctx.state==='suspended'){try{this._ctx.resume();}catch(e){}}
+      if(this._ctx.state==='suspended'){try{this._ctx.resume().catch(function(){});}catch(e){}}
       return this._ctx;
     },
-    _midiFreq:function(m){return 440*Math.pow(2,(m-69)/12);},
-    /** 单音合成：双振荡器 + 低通 + 指数衰减包络。timbre: 'piano'|'guitar' */
-    _voice:function(midi,when,timbre){
-      var ctx=this._ctx,freq=this._midiFreq(midi);
-      var isG=timbre==='guitar';
-      var dur=isG?GUITAR_NOTE_SECONDS:PIANO_NOTE_SECONDS;
-      var lp=ctx.createBiquadFilter();
-      lp.type='lowpass';
-      lp.frequency.value=isG?2300:3800;
-      lp.Q.value=0.6;
-      var gain=ctx.createGain();
-      gain.gain.setValueAtTime(0.0001,when);
-      gain.gain.linearRampToValueAtTime(isG?0.30:0.26,when+0.006);
-      gain.gain.exponentialRampToValueAtTime(0.0008,when+dur);
-      var o1=ctx.createOscillator();
-      o1.type=isG?'sawtooth':'triangle';
-      o1.frequency.value=freq;
-      var o2=ctx.createOscillator();
-      o2.type=isG?'triangle':'sine';
-      o2.frequency.value=freq*(isG?1:2);
-      o2.detune.value=isG?4:2;
-      var g2=ctx.createGain();
-      g2.gain.value=isG?0.5:0.35;
-      o1.connect(lp);o2.connect(g2);g2.connect(lp);
-      lp.connect(gain);gain.connect(this._master);
-      o1.start(when);o2.start(when);
-      o1.stop(when+dur+0.05);o2.stop(when+dur+0.05);
+    prepare:function(instrument){
+      var self=this;
+      if(!SAMPLE_NOTES[instrument])return Promise.reject(new Error('Unknown instrument'));
+      if(!this._encoded.has(instrument)){
+        var pending=Promise.all(SAMPLE_NOTES[instrument].map(async function(sample){
+          var response=await fetch(SAMPLE_BASE+instrument+'/'+sample[0]+'.mp3');
+          if(!response.ok)throw new Error('Instrument sample unavailable: '+response.status);
+          return {midi:sample[1],bytes:await response.arrayBuffer()};
+        })).catch(function(error){self._encoded.delete(instrument);throw error;});
+        this._encoded.set(instrument,pending);
+      }
+      return this._encoded.get(instrument);
+    },
+    _ready:function(instrument){
+      var self=this;
+      if(!this._decoded.has(instrument)){
+        var pending=this.prepare(instrument).then(samples=>Promise.all(samples.map(async sample=>{
+          var buffer=await self._ctx.decodeAudioData(sample.bytes.slice(0)),peak=0;
+          for(var c=0;c<buffer.numberOfChannels;c++){
+            var data=buffer.getChannelData(c);for(var i=0;i<data.length;i++)peak=Math.max(peak,Math.abs(data[i]));
+          }
+          return {midi:sample.midi,buffer:buffer,level:1/Math.max(.25,peak)};
+        }))).catch(function(error){self._decoded.delete(instrument);throw error;});
+        this._decoded.set(instrument,pending);
+      }
+      return this._decoded.get(instrument);
+    },
+    _voice:function(instrument,event,when,samples,volume){
+      var ctx=this._ctx,self=this;
+      var sample=samples.reduce(function(best,item){return Math.abs(item.midi-event.midi)<Math.abs(best.midi-event.midi)?item:best;});
+      var source=ctx.createBufferSource(),gain=ctx.createGain(),rate=Math.pow(2,(event.midi-sample.midi)/12);
+      var duration=Math.min(event.duration,sample.buffer.duration/rate),level=volume*sample.level;
+      source.buffer=sample.buffer;source.playbackRate.value=rate;
+      gain.gain.setValueAtTime(.0001,when);gain.gain.linearRampToValueAtTime(level,when+.004);
+      gain.gain.setValueAtTime(level,when+Math.max(.005,duration-.07));gain.gain.linearRampToValueAtTime(.0001,when+duration);
+      source.connect(gain);gain.connect(this._master);
+      this._voices.set(source,{gain:gain,instrument:instrument});
+      if(instrument==='bass')this._bassVoices.add(source);
+      source.onended=function(){source.disconnect();gain.disconnect();self._voices.delete(source);self._bassVoices.delete(source);};
+      source.start(when);source.stop(when+duration+.005);
+    },
+    stop:function(instrument){
+      this._requests[instrument]++;
+      if(instrument==='bass'&&this._bassFrame){cancelAnimationFrame(this._bassFrame);this._bassFrame=null;}
+      var now=this._ctx?this._ctx.currentTime:0;
+      this._voices.forEach((voice,source)=>{
+        if(voice.instrument!==instrument)return;
+        voice.gain.gain.cancelScheduledValues(now);voice.gain.gain.setTargetAtTime(.0001,now,.004);
+        try{source.stop(now+.025);}catch(e){}
+        this._voices.delete(source);this._bassVoices.delete(source);
+      });
+    },
+    stopAll:function(){['piano','guitar','bass'].forEach(instrument=>this.stop(instrument));},
+    _watchBass:function(events,start,token,options){
+      var self=this,last=-1,end=events[events.length-1].offset+events[events.length-1].duration;
+      function tick(){
+        if(token!==self._requests.bass)return;
+        var elapsed=self._ctx.currentTime-start,index=-1;
+        for(var i=0;i<events.length;i++)if(events[i].offset<=elapsed)index=i;
+        if(index>=0&&index!==last){last=index;if(options.onNote)options.onNote(events[index],index,events.length);}
+        if(elapsed>=end){self._bassFrame=null;if(options.onEnd)options.onEnd();return;}
+        self._bassFrame=requestAnimationFrame(tick);
+      }
+      this._bassFrame=requestAnimationFrame(tick);
+    },
+    _play:function(instrument,events,options){
+      var ctx=this._ensure(),self=this;options=options||{};
+      if(!ctx||!events.length)return false;
+      this.stopAll();var token=this._requests[instrument];
+      this._ready(instrument).then(function(samples){
+        if(token!==self._requests[instrument])return;
+        if(ctx.state!=='running')throw new Error('Audio context unavailable');
+        var when=ctx.currentTime+.04,volume=instrument==='piano'?.4/Math.sqrt(events.length):instrument==='guitar'?.28:.45;
+        events.forEach(function(event){self._voice(instrument,event,when+event.offset,samples,volume);});
+        if(options.onStart)options.onStart();
+        if(instrument==='bass')self._watchBass(events,when,token,options);
+      }).catch(function(error){
+        if(token!==self._requests[instrument])return;
+        self.stop(instrument);if(options.onError)options.onError(error);
+      });
+      return true;
     },
     /**
      * 钢琴式播放：组成音同时触发。
      * @param {number[]} midis MIDI 音高列表
      * @returns {boolean} 环境不支持 Web Audio 时返回 false
      */
-    playChord:function(midis){
-      var ctx=this._ensure();
-      if(!ctx||!midis||!midis.length)return false;
-      var t=ctx.currentTime+0.02;
-      for(var i=0;i<midis.length;i++)this._voice(midis[i],t,'piano');
-      return true;
+    playChord:function(midis,options){
+      return this._play('piano',(midis||[]).map(midi=>({midi:midi,offset:0,duration:2.8})),options);
     },
     /**
      * 吉他扫弦：各弦按 STRUM_STAGGER_MS 间隔依次触发。
      * @param {number[]} midis 低音弦->高音弦的 MIDI 列表
      * @returns {number[]} 各音相对触发延时（ms），供 UI 同步动画；不支持时返回 []
      */
-    strumGuitar:function(midis){
-      var ctx=this._ensure();
-      if(!ctx||!midis||!midis.length)return [];
-      var t=ctx.currentTime+0.02,delays=[];
-      for(var i=0;i<midis.length;i++){
-        this._voice(midis[i],t+i*STRUM_STAGGER_MS/1000,'guitar');
-        delays.push(i*STRUM_STAGGER_MS);
-      }
-      return delays;
+    strumGuitar:function(midis,options){
+      var events=(midis||[]).map((midi,index)=>({midi:midi,offset:index*STRUM_STAGGER_MS/1000,duration:2.2}));
+      return this._play('guitar',events,options)?events.map(event=>event.offset*1000):[];
     },
     stopBass:function(){
-      this._bassVoices.forEach(function(voice){try{voice.stop();}catch(e){}});
-      this._bassVoices.clear();
+      this.stop('bass');
     },
-    playBass:function(notes,bpm){
-      var ctx=this._ensure();
-      if(!ctx||!notes||!notes.length)return false;
-      this.stopBass();
-      var beat=60/Math.max(40,Math.min(180,Number(bpm)||90)),when=ctx.currentTime+.02,self=this;
-      notes.forEach(function(note){
-        var duration=(note.beats||1)*beat,osc=ctx.createOscillator(),filter=ctx.createBiquadFilter(),gain=ctx.createGain();
-        osc.type='triangle';osc.frequency.value=self._midiFreq(note.midi);
-        filter.type='lowpass';filter.frequency.value=900;
-        gain.gain.setValueAtTime(.0001,when);
-        gain.gain.exponentialRampToValueAtTime(.32,when+.008);
-        gain.gain.exponentialRampToValueAtTime(.0001,when+Math.max(.04,duration*.9));
-        osc.connect(filter);filter.connect(gain);gain.connect(self._master);
-        self._bassVoices.add(osc);
-        osc.onended=function(){osc.disconnect();filter.disconnect();gain.disconnect();self._bassVoices.delete(osc);};
-        osc.start(when);osc.stop(when+duration);
-        when+=duration;
+    playBass:function(notes,bpm,options){
+      var beat=60/Math.max(40,Math.min(180,Number(bpm)||90)),offset=0;
+      var events=(notes||[]).map(function(note){
+        var duration=(note.beats||1)*beat,event=Object.assign({},note,{offset:offset,duration:duration});offset+=duration;return event;
       });
-      return true;
+      return this._play('bass',events,options);
     }
   };
 
@@ -10035,6 +10106,7 @@ var ChordEngine=(function(){
       '.gmeta{display:flex;align-items:center;justify-content:space-between;gap:6px}'+
       '.glabel{font-size:11.5px;color:var(--ce-text2);font-weight:600}'+
       '.gempty{font-size:12.5px;color:var(--ce-text3);padding:6px 2px}'+
+      '.sample-credit{font-size:10px;color:var(--ce-text3);margin:18px 0 0}.sample-credit a{color:inherit}'+
       '[hidden]{display:none!important}button,input{font:inherit}button:focus-visible,input:focus-visible{outline:2px solid var(--ce-accent);outline-offset:3px}'+
       '.instruments{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:18px;padding:4px;border:1px solid var(--ce-border);border-radius:12px;background:var(--ce-bg2)}'+
       '.instrument{min-height:42px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--ce-text2);cursor:pointer;font-size:14px;font-weight:600}'+
@@ -10046,6 +10118,9 @@ var ChordEngine=(function(){
       '.bass-cell{box-sizing:border-box;width:100%;height:38px;display:flex;align-items:center;justify-content:center;background:linear-gradient(transparent calc(50% - .5px),var(--ce-border-md) 50%,transparent calc(50% + .5px));border-right:1px solid var(--ce-border)}'+
       '.bass-dot{width:28px;height:28px;padding:0;border:1px solid var(--ce-border-md);border-radius:8px;background:var(--ce-bg);color:var(--ce-text);cursor:pointer;font-size:11px;font-weight:600}'+
       '.bass-dot.root,.bass-dot.bass{color:var(--ce-accent);border-color:var(--ce-accent)}.bass-dot.bass{border-width:2px}.bass-dot.third{color:var(--ce-third)}.bass-dot.ext{color:var(--ce-ext)}'+
+      '.bass-dot{position:relative}.bass-dot.is-playing{background:var(--ce-accent);border-color:var(--ce-accent);color:var(--ce-bg);box-shadow:0 0 0 4px var(--ce-accent-soft)}.bass-dot.is-playing:after{content:attr(data-step);position:absolute;right:-7px;top:-9px;min-width:14px;height:14px;line-height:14px;border-radius:5px;background:var(--ce-text);color:var(--ce-solid-bg);font-size:9px}'+
+      '.bass-demo{padding:12px;border:1px solid var(--ce-border);border-radius:12px;background:var(--ce-bg2);margin:12px 0}.bass-demo-actions{display:flex;gap:6px;flex-wrap:wrap}.bass-demo-actions button{min-height:38px;padding:6px 12px;border:1px solid var(--ce-border-md);border-radius:9px;background:var(--ce-bg);color:var(--ce-text);cursor:pointer;font-size:12px}.bass-demo-actions button:first-child{color:var(--ce-accent);border-color:var(--ce-accent)}'+
+      '.bass-now{font-size:13px;line-height:1.6;min-height:22px;margin:10px 0 0;color:var(--ce-text)}.bass-demo-steps{list-style:none;padding:0;margin:10px 0 0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}.bass-demo-steps button{width:100%;min-height:52px;padding:6px 2px;border:1px solid var(--ce-border);border-radius:8px;background:var(--ce-bg);color:var(--ce-text);cursor:pointer}.bass-demo-steps b{display:block;font-size:12px}.bass-demo-steps small{display:block;font-size:10px;color:var(--ce-text2);margin-top:4px}.bass-demo-steps [aria-current=step]{border-color:var(--ce-accent);background:var(--ce-accent-soft)}.audio-status{font-size:12px;color:var(--ce-text2);line-height:1.5}.audio-status:empty{display:none}'+
       '.bass-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px}.bass-controls label{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ce-text2)}'+
       '.bass-controls input{width:110px;accent-color:var(--ce-accent)}.bass-controls output{min-width:58px;font-variant-numeric:tabular-nums}'+
       '.bass-map-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:12px 0}.bass-map-controls button,.bass-map-controls select{min-height:36px;padding:5px 10px;border:1px solid var(--ce-border-md);border-radius:9px;background:var(--ce-bg2);color:var(--ce-text2);font-size:12px;cursor:pointer}.bass-map-controls button[aria-pressed=true]{color:var(--ce-accent);border-color:var(--ce-accent)}.bass-map-controls select{margin-left:auto}.bass-scale-notes{font-size:12px;color:var(--ce-text2);line-height:1.6}'+
@@ -10053,7 +10128,7 @@ var ChordEngine=(function(){
       '.pattern-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:600}.pattern-notes{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;list-style:none;padding:0;margin:12px 0 0;text-align:center}'+
       '.pattern-notes b{display:block;color:var(--ce-text);font-size:15px}.pattern-notes small{display:block;font-size:10px;color:var(--ce-text3);margin-top:4px}.bass-stop{border:1px solid var(--ce-border-md);border-radius:9px;background:var(--ce-bg2);color:var(--ce-text2);min-height:36px;padding:4px 12px;cursor:pointer}'+
       '@media(prefers-reduced-motion:reduce){.sheet,.backdrop,.play{transition:none}}'+
-      '@media (max-width:480px){.name{font-size:26px}.gcard{flex-basis:138px}.patterns{grid-template-columns:1fr}}';
+      '@media (max-width:480px){.name{font-size:26px}.gcard{flex-basis:138px}.patterns{grid-template-columns:1fr}.bass-demo-steps{grid-template-columns:repeat(3,minmax(0,1fr))}}';
     var PLAY_SVG='<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.6c0-.5.55-.8.98-.55l7.02 4.4c.4.25.4.85 0 1.1l-7.02 4.4a.65.65 0 0 1-.98-.55z"/></svg>';
 
     /**
@@ -10083,6 +10158,7 @@ var ChordEngine=(function(){
               '<button type="button" class="instrument" role="tab" id="ce-tab-piano" data-instrument="piano" aria-controls="ce-panel-piano" aria-selected="true">钢琴</button>'+
               '<button type="button" class="instrument" role="tab" id="ce-tab-guitar" data-instrument="guitar" aria-controls="ce-panel-guitar" aria-selected="false" tabindex="-1">吉他</button>'+
               '<button type="button" class="instrument" role="tab" id="ce-tab-bass" data-instrument="bass" aria-controls="ce-panel-bass" aria-selected="false" tabindex="-1">贝斯</button></div>'+
+            '<p class="audio-status" role="status" aria-live="polite"></p>'+
             '<div class="sec" id="ce-panel-piano" role="tabpanel" aria-labelledby="ce-tab-piano"><div class="sec-h"><span class="sec-t">钢琴</span>'+
               '<button class="play piano-play" aria-label="钢琴试听">'+PLAY_SVG+'</button></div>'+
               '<div class="piano-card"><chord-piano></chord-piano></div></div>'+
@@ -10090,10 +10166,13 @@ var ChordEngine=(function(){
               '<div class="gwrap"></div><div class="gempty" hidden>该和弦性质的吉他把位暂未收录，可参考上方钢琴组成音。</div></div>'+
             '<div class="sec" id="ce-panel-bass" role="tabpanel" aria-labelledby="ce-tab-bass" hidden>'+
               '<div class="sec-h"><span class="sec-t">四弦贝斯 · E A D G</span></div>'+
-              '<p class="bass-hint bass-summary"></p><div class="bass-map-controls"><button type="button" data-bass-view="chord" aria-pressed="true">和弦音</button><button type="button" data-bass-view="pentatonic" aria-pressed="false">五声音阶</button><select class="bass-scale" aria-label="五声音阶类型"><option value="auto">跟随和弦</option><option value="major">大调五声</option><option value="minor">小调五声</option></select></div><p class="bass-scale-notes"></p><div class="bass-scroll"><div class="bass-board" role="group" aria-label="贝斯指板"></div></div>'+
+              '<p class="bass-hint bass-summary"></p><div class="bass-map-controls"><button type="button" data-bass-view="chord" aria-pressed="true">和弦音</button><button type="button" data-bass-view="pentatonic" aria-pressed="false">五声音阶</button><select class="bass-scale" aria-label="五声音阶类型"><option value="auto">跟随和弦</option><option value="major">大调五声</option><option value="minor">小调五声</option></select></div><p class="bass-scale-notes"></p>'+
+              '<div class="bass-stage"><div class="bass-demo"><div class="bass-demo-actions"><button type="button" data-demo="scale-up">上行示范</button><button type="button" data-demo="scale-down">下行示范</button><button type="button" data-demo="step">单步跟弹</button></div><p class="bass-now">选择示范，跟着指板上的亮点弹。</p><ol class="bass-demo-steps" aria-label="示范弹奏顺序"></ol></div><div class="bass-scroll"><div class="bass-board" role="group" aria-label="贝斯指板"></div></div></div>'+
               '<p class="bass-hint">上方是细弦 G，下方是粗弦 E。横向查看 0–12 品，点音名试听。</p>'+
+              '<p class="bass-hint">左手 1 食指、2 中指、3 无名指、4 小指；右手食指与中指交替拨弦。先慢速跟亮点，再逐渐提速。</p>'+
               '<div class="bass-controls"><span class="sec-t">伴奏与加花</span><label>速度 <input class="bass-tempo" type="range" min="50" max="150" step="5" value="90" aria-label="贝斯试听速度"><output>90 BPM</output></label><button type="button" class="bass-stop">停止试听</button></div>'+
               '<div class="patterns"></div><p class="bass-hint">这些是练习示例，并非原版编配；加花放在乐句空隙，优先跟稳鼓点。</p><p class="bass-status" role="status" aria-live="polite"></p></div>'+
+            '<p class="sample-credit">音色：FluidR3 / Frank Wen · <a href="'+SAMPLE_BASE+'LICENSE.txt" target="_blank" rel="noopener">CC BY 3.0</a></p>'+
           '</div>';
         this._els={
           backdrop:this._shadow.querySelector('.backdrop'),
@@ -10113,6 +10192,9 @@ var ChordEngine=(function(){
           bassScaleNotes:this._shadow.querySelector('.bass-scale-notes'),
           bassTempo:this._shadow.querySelector('.bass-tempo'),
           bassStatus:this._shadow.querySelector('.bass-status'),
+          bassNow:this._shadow.querySelector('.bass-now'),
+          demoSteps:this._shadow.querySelector('.bass-demo-steps'),
+          audioStatus:this._shadow.querySelector('.audio-status'),
           close:this._shadow.querySelector('.close')
         };
         this._els.backdrop.addEventListener('click',function(){self.close();});
@@ -10127,12 +10209,21 @@ var ChordEngine=(function(){
         });
         this._els.board.addEventListener('click',function(e){
           var button=e.target.closest('[data-midi]');
-          if(button)self._previewBass([{midi:Number(button.dataset.midi),beats:1}],button.getAttribute('aria-label'));
+          if(button)self._previewBass([{midi:Number(button.dataset.midi),string:Number(button.dataset.string),fret:Number(button.dataset.fret),name:button.textContent,beats:1}],button.getAttribute('aria-label'));
         });
         this._els.patterns.addEventListener('click',function(e){
           var button=e.target.closest('[data-pattern]');
           var pattern=button&&self._bassModel.patterns.find(function(item){return item.id===button.dataset.pattern;});
-          if(pattern)self._previewBass(pattern.notes,pattern.label);
+          if(pattern)self._previewBass(pattern.notes,pattern.label,{pentatonic:pattern.id==='pentatonic'});
+        });
+        this._shadow.querySelector('.bass-demo-actions').addEventListener('click',function(e){
+          var button=e.target.closest('[data-demo]');if(!button)return;
+          if(button.dataset.demo==='step'){self._stepBass();return;}
+          var demo=self._bassModel.scale.demos.find(function(item){return item.id===button.dataset.demo;});
+          self._previewBass(demo.notes,demo.label,{pentatonic:true});
+        });
+        this._els.demoSteps.addEventListener('click',function(e){
+          var button=e.target.closest('[data-step-index]');if(button)self._stepBass(Number(button.dataset.stepIndex));
         });
         this._els.bassTempo.addEventListener('input',function(){
           self._stopBass();self._bassBpm=Number(this.value);this.nextElementSibling.textContent=this.value+' BPM';
@@ -10149,7 +10240,11 @@ var ChordEngine=(function(){
         this._els.pianoPlay.addEventListener('click',function(){
           var st=self._store.getState();
           if(!st.entry)return;
-          if(AudioEngine.playChord(st.entry.def.pianoMidis))self._els.piano.flash(st.entry.def.pianoMidis);
+          self._els.audioStatus.textContent='正在准备钢琴音色…';
+          if(!AudioEngine.playChord(st.entry.def.pianoMidis,{
+            onStart:function(){self._els.audioStatus.textContent='';self._els.piano.flash(st.entry.def.pianoMidis);},
+            onError:function(){self._els.audioStatus.textContent='音色未能加载，请点击试听重试。';}
+          }))self._els.audioStatus.textContent='此浏览器暂时无法试听。';
         });
         this._unsub=this._store.subscribe(this._render.bind(this));
         /* 宿主主题切换时同步变量并重绘 */
@@ -10183,24 +10278,65 @@ var ChordEngine=(function(){
       close(){
         if(!this._store.getState().visible)return;
         this._stopBass();
+        AudioEngine.stopAll();
         this._store.setState({visible:false});
         document.removeEventListener('keydown',this._onKey);
         this.dispatchEvent(new CustomEvent('chord-close',{detail:null}));
       }
       _stopBass(){
-        AudioEngine.stopBass();clearTimeout(this._bassTimer);
+        AudioEngine.stopBass();this._bassStepIndex=-1;
+        this._els.board.querySelectorAll('.is-playing').forEach(note=>note.classList.remove('is-playing'));
+        this._els.demoSteps.querySelectorAll('[aria-current]').forEach(step=>step.removeAttribute('aria-current'));
         this._els.bassStatus.textContent='';
+        this._els.bassNow.textContent='选择示范，跟着指板上的亮点弹。';
       }
-      _previewBass(notes,label){
-        this._stopBass();
+      _previewBass(notes,label,options){
+        options=options||{};this._stopBass();
+        this._bassLesson=options.sequence||notes;
+        if(options.pentatonic)this._bassView='pentatonic';
+        this._renderBassBoard(notes);this._renderBassSteps(this._bassLesson);
+        this._shadow.querySelector('.bass-stage').scrollIntoView({block:'nearest'});
+        this._els.bassStatus.textContent='正在准备贝斯音色…';
         try{
-          if(!AudioEngine.playBass(notes,this._bassBpm)){this._els.bassStatus.textContent='暂时无法试听，请检查浏览器声音权限。';return;}
-          this._els.bassStatus.textContent='正在试听：'+label;
-          this._bassTimer=setTimeout(()=>{this._els.bassStatus.textContent='试听结束';},notes.reduce(function(total,note){return total+note.beats;},0)*60000/this._bassBpm+50);
+          if(!AudioEngine.playBass(notes,this._bassBpm,{
+            onStart:()=>{this._els.bassStatus.textContent='正在示范：'+label;},
+            onNote:(note,index)=>this._showBassNote(note,index+(options.stepOffset||0),this._bassLesson.length),
+            onEnd:()=>{this._els.bassStatus.textContent='示范结束，可单步跟弹或重新播放。';},
+            onError:()=>{this._els.bassStatus.textContent='音色未能加载，请点击示范重试。';}
+          })){this._els.bassStatus.textContent='暂时无法试听，请检查浏览器声音权限。';return;}
         }catch(e){this._els.bassStatus.textContent='试听未能播放，请重试。';}
       }
+      _stepBass(index){
+        var notes=this._bassLesson||this._bassModel.scale.demos[0].notes;
+        if(index==null)index=((this._bassStepIndex??-1)+1)%notes.length;
+        this._previewBass([notes[index]],'单步跟弹',{sequence:notes,stepOffset:index,pentatonic:this._bassView==='pentatonic'});
+      }
+      _showBassNote(note,index,total){
+        this._bassStepIndex=index;
+        this._els.board.querySelectorAll('.is-playing').forEach(dot=>dot.classList.remove('is-playing'));
+        var dot=this._els.board.querySelector('[data-string="'+note.string+'"][data-fret="'+note.fret+'"]');
+        if(dot){
+          dot.classList.add('is-playing');dot.dataset.step=index+1;
+          var scroll=this._els.board.parentElement,box=dot.getBoundingClientRect(),view=scroll.getBoundingClientRect();
+          if(box.left<view.left+10)scroll.scrollLeft-=view.left+10-box.left;
+          else if(box.right>view.right-10)scroll.scrollLeft+=box.right-view.right+10;
+        }
+        this._els.demoSteps.querySelectorAll('button').forEach((step,i)=>{if(i===index)step.setAttribute('aria-current','step');else step.removeAttribute('aria-current');});
+        this._els.bassNow.textContent='第 '+(index+1)+' / '+total+' 音：'+note.name+' · 第'+note.string+'弦 '+(note.fret?note.fret+'品':'空弦')+(note.finger>0&&note.finger<=4?' · 左手'+note.finger+'指':'');
+      }
+      _renderBassSteps(notes){
+        this._els.demoSteps.replaceChildren();
+        notes.forEach((note,index)=>{
+          var step=document.createElement('li'),button=document.createElement('button');button.type='button';button.dataset.stepIndex=index;
+          button.innerHTML='<b></b><small></small>';button.querySelector('b').textContent=(index+1)+'. '+note.name;
+          button.querySelector('small').textContent=note.string+'弦'+(note.fret?note.fret+'品':'空弦');
+          button.setAttribute('aria-label','跟弹第'+(index+1)+'音 '+note.name+' 第'+note.string+'弦 '+(note.fret?note.fret+'品':'空弦'));
+          step.appendChild(button);this._els.demoSteps.appendChild(step);
+        });
+      }
       _selectInstrument(instrument){
-        this._stopBass();this._instrument=instrument;
+        this._stopBass();AudioEngine.stopAll();this._instrument=instrument;this._els.audioStatus.textContent='';
+        AudioEngine.prepare(instrument).catch(function(){});
         Array.from(this._els.tabs.children).forEach(tab=>{
           var selected=tab.dataset.instrument===instrument;
           tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;
@@ -10209,11 +10345,18 @@ var ChordEngine=(function(){
         if(instrument==='bass'&&this._store.getState().entry)this._renderBass(this._store.getState().entry.def);
       }
       _renderBass(def){
-        var bass=this._bassModel=bassFor(def,this._bassScale),board=this._els.board;
-        var positions=this._bassView==='pentatonic'?bass.scale.positions:bass.positions;
+        var bass=this._bassModel=bassFor(def,this._bassScale);
+        this._bassLesson=bass.scale.demos[0].notes;
         this._shadow.querySelectorAll('[data-bass-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bassView===this._bassView)));
         this._els.bassScaleNotes.textContent=def.root+' '+bass.scale.label+'：'+bass.scale.tones.map(function(note){return note.name;}).join(' · ')+(def.quality.intervals.indexOf(7)<0?'；此和弦含变化音，伴奏时优先参考和弦音。':'');
         this._els.bassSummary.textContent='当前低音 '+bass.anchor.name+(def.bassNote?' · '+def.symbol+' 先弹斜杠后的 '+bass.anchor.name:' · 优先稳住根音')+'，其余圆点是和弦音。';
+        this._renderBassBoard();this._renderBassSteps(this._bassLesson);
+        this._renderBassPatterns(bass);
+      }
+      _renderBassBoard(extraNotes){
+        var bass=this._bassModel,board=this._els.board;
+        var positions=(this._bassView==='pentatonic'?bass.scale.positions:bass.positions).concat(extraNotes||[]);
+        this._shadow.querySelectorAll('[data-bass-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bassView===this._bassView)));
         board.replaceChildren();
         for(var fret=-1;fret<=12;fret++){
           var label=document.createElement('span');label.className='fret-label';label.textContent=fret<0?'':String(fret);board.appendChild(label);
@@ -10225,11 +10368,14 @@ var ChordEngine=(function(){
             var note=positions.find(function(position){return position.string===string&&position.fret===f;});
             if(note){
               var button=document.createElement('button');button.type='button';button.className='bass-dot '+note.role;button.textContent=note.name;button.dataset.midi=note.midi;
+              button.dataset.string=string;button.dataset.fret=f;
               button.setAttribute('aria-label',note.name+' · 第'+string+'弦 '+(f?f+'品':'空弦'));cell.appendChild(button);
             }
             board.appendChild(cell);
           }
         }
+      }
+      _renderBassPatterns(bass){
         this._els.patterns.replaceChildren();
         bass.patterns.forEach(pattern=>{
           var card=document.createElement('div');card.className='pattern';
@@ -10288,8 +10434,11 @@ var ChordEngine=(function(){
             btn.setAttribute('aria-label','吉他试听 '+pos.label);
             btn.innerHTML=PLAY_SVG;
             btn.addEventListener('click',function(){
-              var delays=AudioEngine.strumGuitar(pos.midis);
-              if(delays.length)diagram.flashStrings(delays);
+              self._els.audioStatus.textContent='正在准备吉他音色…';
+              AudioEngine.strumGuitar(pos.midis,{
+                onStart:function(){self._els.audioStatus.textContent='';diagram.flashStrings(pos.midis.map(function(_,index){return index*STRUM_STAGGER_MS;}));},
+                onError:function(){self._els.audioStatus.textContent='音色未能加载，请点击试听重试。';}
+              });
             });
             meta.appendChild(label);
             meta.appendChild(btn);
@@ -12899,11 +13048,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     else{coverThumb.textContent='♪';}
 
     const infoDiv=document.createElement('div');infoDiv.className='sw-info';
-    const detailNote=getSongDetailNote(s);
-    infoDiv.innerHTML=`<div class="sw-eyebrow">${s.displayArtist||s.source||'诗歌库'}</div>
-      <div class="sw-title">${s.title||''}</div>
-      <div class="sw-sub">${getSongDetailSub(s)}</div>
-      ${detailNote?`<div class="sw-note">${detailNote}</div>`:''}`;
+    infoDiv.innerHTML=`<div class="sw-title">${esc(s.title||'')}</div>
+      ${s.titleEn?`<div class="sw-title-en">${esc(s.titleEn)}</div>`:''}
+      <div class="sw-artist">${esc(s.artist||s.displayArtist||s.source||'')}</div>
+      <div class="sw-sub">${esc(s.sub||s.album||'')}</div>`;
     const pillsDiv=document.createElement('div');pillsDiv.className='sw-pills';
     pillsDiv.appendChild(kPill);
     if(s.timeSign){const p=document.createElement('span');p.className='sw-pill';p.textContent=s.timeSign;pillsDiv.appendChild(p);}
@@ -12912,6 +13060,12 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
 
     const titleRow=document.createElement('div');titleRow.className='sw-title-row';
     titleRow.appendChild(coverThumb);titleRow.appendChild(infoDiv);
+    const creditLines=songCreditLines(s);
+    if(creditLines.length){
+      const credits=document.createElement('div');credits.className='sw-credits';
+      creditLines.forEach(text=>{const line=document.createElement('div');line.textContent=text;credits.appendChild(line);});
+      titleRow.appendChild(credits);
+    }
 
     const togBtn=document.createElement('button');togBtn.className='sw-tog';
     togBtn.innerHTML=icon('chevronDown',18)+' 移调';
