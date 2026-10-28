@@ -2,9 +2,12 @@
 (function(root){
   'use strict';
   const loads=new Map();
+  const version=new URL(document.currentScript?.src||location.href).searchParams.get('v');
   function script(base,file,globalName){
     if(root[globalName])return Promise.resolve(root[globalName]);
-    const url=new URL(file,base).href;
+    const asset=new URL(file,base);
+    if(version&&file!=='abcjs-basic-min.js')asset.searchParams.set('v',version);
+    const url=asset.href;
     if(!loads.has(url))loads.set(url,new Promise((resolve,reject)=>{
       const node=document.createElement('script');node.src=url;
       node.onload=()=>{if(root[globalName])resolve(root[globalName]);else{loads.delete(url);node.remove();reject(new Error(file+' missing global'));}};

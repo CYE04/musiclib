@@ -114,7 +114,7 @@
     out.push('K:' + key);
 
     ir.sections.forEach(function (sec) {
-      if (sec.name) out.push('%%text ' + sec.name.replace(/[\r\n]/g, ' '));
+      if (sec.name && sec.name.trim() !== String(ir.meta.title || '').trim()) out.push('%%text ' + sec.name.replace(/[\r\n]/g, ' '));
       var body = '', measuresOnLine = 0, curTs = ir.meta.timeSign;
       var words = [];
       for (var vi = 0; vi < verseCount; vi++) words.push('');
@@ -156,7 +156,12 @@
 
         m.events.forEach(function (e) {
           if (e.beamBreakBefore) body += ' ';
-          if (e.chordSymbol) body += '"' + String(e.chordSymbol).replace(/"/g, '') + '"';
+          if (e.chordSymbol) {
+            // Source stacks are bottom-first; ABC lays adjacent chord symbols top-first.
+            String(e.chordSymbol).split(',').map(function (chord) { return chord.trim(); }).filter(Boolean).reverse().forEach(function (chord) {
+              body += '"' + chord.replace(/"/g, '') + '"';
+            });
+          }
           (e.slurStarts || []).forEach(function () { body += '('; });
           if (e.fermata) body += 'H';                        // ABC 的装饰记号是**前缀**
 

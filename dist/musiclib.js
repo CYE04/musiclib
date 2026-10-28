@@ -222,14 +222,14 @@
   let staffViewPromise;
   function loadStaffView(){
     if(!staffViewPromise) staffViewPromise=new Promise((resolve,reject)=>{
-      const script=document.createElement('script');script.src=new URL('staff-view.js',staffAssetBase).href;
+      const script=document.createElement('script');script.src=new URL('staff-view.js?v='+ML_VER,staffAssetBase).href;
       script.onload=()=>resolve(window.CecpStaffView);
       script.onerror=()=>{script.remove();staffViewPromise=null;reject(new Error('staff-view load failed'));};
       document.head.appendChild(script);
     });
     return staffViewPromise;
   }
-  const ML_VER='20261027-song-credits';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20261028-white-score';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
@@ -3566,7 +3566,7 @@
       // Capture the existing page, including its transforms, line spacing, SVG and ink.
       // Notation stays intact; song information and branding are composed around it below.
       const captured=await capture(page,{
-        backgroundColor:resolveExportBackground(page),scale:2000/rect.width,
+        backgroundColor:'#ffffff',scale:2000/rect.width,
         useCORS:true,logging:false,foreignObjectRendering:false,
         onclone:(_document,clonedPage)=>{
           // Remove the screen's paper frame only in the capture; preserve its layout box.
@@ -3574,6 +3574,10 @@
           clonedPage.style.setProperty('border-radius','0','important');
           clonedPage.style.setProperty('box-shadow','none','important');
           clonedPage.style.setProperty('outline','none','important');
+          clonedPage.style.setProperty('background','#ffffff','important');
+          clonedPage.querySelectorAll('.sw-lsec-name').forEach(label=>{
+            if(label.textContent.trim()===(opt.song?.title||opt.title||'').trim())label.style.visibility='hidden';
+          });
           clonedPage.querySelectorAll('.prev-seg').forEach(column=>{
             column.style.setProperty('width',_document.defaultView.getComputedStyle(column).width,'important');
             column.style.setProperty('flex-shrink','0','important');
@@ -3611,7 +3615,7 @@
             }
             if(text.matches('.abcjs-title,[data-name="title"]'))texts[index].style.setProperty('font-size',parseFloat(style.fontSize)*1.12+'px');
           });
-          copy.querySelectorAll('.abcjs-title,.abcjs-subtitle,.abcjs-composer,[data-name="title"],[data-name="subtitle"],[data-name="composer"]').forEach(text=>text.remove());
+          copy.querySelectorAll('.abcjs-title,.abcjs-subtitle,.abcjs-composer,.abcjs-tempo,[data-name="title"],[data-name="subtitle"],[data-name="composer"],[data-name="tempo"]').forEach(text=>text.remove());
           const blob=new Blob([new XMLSerializer().serializeToString(copy)],{type:'image/svg+xml;charset=utf-8'});
           const image=await blobToImage(blob);
           ctx.save();ctx.setTransform(1,0,0,1,0,0);
@@ -3623,8 +3627,11 @@
       const output=document.createElement('canvas');output.width=canvas.width;output.height=canvas.height;
       const outputCtx=output.getContext('2d');
       if(!outputCtx)throw new Error('canvas unavailable');
+      const isOriginalImage=page.classList.contains('ml-score-image-page');
+      if(isOriginalImage)output.height=Math.round(output.width*297/210);
       const center=[];let centerY=60;
-      const headingRows=[
+      // Original raster scores already contain their own title and author information.
+      const headingRows=isOriginalImage?[]:[
         [song.title||opt.title||'','700 58px "Noto Serif SC","Songti SC",serif',70],
         [song.titleEn,'500 30px "Noto Sans SC",sans-serif',40],
         [song.artist,'500 27px "Noto Sans SC","PingFang SC",sans-serif',38],
@@ -3644,13 +3651,28 @@
       const leftRows=song.bpm?2:1,sideRows=Math.max(leftRows,authors.length,1);
       const metadataY=Math.max(66,lastCenterY-(sideRows-1)*sideGap);
       const sideBottomY=metadataY+(sideRows-1)*sideGap;
-      const headerHeight=Math.max(lastCenterY,sideBottomY)+48,footerHeight=112;
-      outputCtx.fillStyle=resolveExportBackground(page);outputCtx.fillRect(0,0,output.width,output.height);
+      const headerHeight=isOriginalImage?40:Math.max(lastCenterY,sideBottomY)+48,footerHeight=112;
+      outputCtx.fillStyle='#ffffff';outputCtx.fillRect(0,0,output.width,output.height);
       let cropTop=0,cropHeight=canvas.height;
+      const notation=page.querySelector('.sw-lb');
+      if(notation){
+        const box=notation.getBoundingClientRect(),scale=canvas.width/rect.width;
+        cropTop=Math.max(0,Math.floor((box.top-rect.top)*scale));
+        cropHeight=Math.min(canvas.height-cropTop,Math.ceil(box.height*scale));
+      }
+      if(isOriginalImage){
+        const image=page.querySelector('img'),original=await loadImageForExport(image.currentSrc||image.src);
+        if(!original)throw new Error('original score image unavailable');
+        const clean=document.createElement('canvas');clean.width=canvas.width;clean.height=Math.round(canvas.width*original.naturalHeight/original.naturalWidth);
+        const cleanCtx=clean.getContext('2d');
+        cleanCtx.fillStyle='#ffffff';cleanCtx.fillRect(0,0,clean.width,clean.height);
+        cleanCtx.drawImage(original,0,0,clean.width,clean.height);
+        canvas=clean;cropHeight=clean.height;
+      }
       if(page.classList.contains('ml-staff-page')){
         const bounds=[];
         for(const ink of page.querySelectorAll('.ml-staff-canvas svg path,.ml-staff-canvas svg text,.ml-staff-canvas svg line')){
-          if(ink.closest('defs,.abcjs-title,.abcjs-subtitle,.abcjs-composer,[data-name="title"],[data-name="subtitle"],[data-name="composer"]'))continue;
+          if(ink.closest('defs,.abcjs-title,.abcjs-subtitle,.abcjs-composer,.abcjs-tempo,[data-name="title"],[data-name="subtitle"],[data-name="composer"],[data-name="tempo"]'))continue;
           const box=ink.getBoundingClientRect(),style=getComputedStyle(ink);
           if(box.width>0&&box.height>0&&style.display!=='none'&&style.visibility!=='hidden')bounds.push(box);
         }
@@ -3662,16 +3684,21 @@
         }
       }
       const fit=Math.min((output.height-headerHeight-footerHeight)/cropHeight,(output.width-80)/canvas.width);
-      outputCtx.drawImage(canvas,0,cropTop,canvas.width,cropHeight,(output.width-canvas.width*fit)/2,headerHeight,canvas.width*fit,cropHeight*fit);
+      const scoreX=(output.width-canvas.width*fit)/2;
+      outputCtx.drawImage(canvas,0,cropTop,canvas.width,cropHeight,scoreX,headerHeight,canvas.width*fit,cropHeight*fit);
+      const edgeBoxes=Array.from(page.querySelectorAll(page.classList.contains('ml-staff-page')?'.abcjs-staff':'.sw-lrow'),node=>node.getBoundingClientRect()).filter(box=>box.width>0);
+      const pageScale=canvas.width/rect.width;
+      const leftEdge=edgeBoxes.length?scoreX+(Math.min(...edgeBoxes.map(box=>box.left))-rect.left)*pageScale*fit:100;
+      const rightEdge=edgeBoxes.length?scoreX+(Math.max(...edgeBoxes.map(box=>box.right))-rect.left)*pageScale*fit:output.width-100;
       outputCtx.fillStyle='#241C17';outputCtx.textAlign='center';outputCtx.textBaseline='middle';
       center.forEach(line=>{outputCtx.font=line.font;outputCtx.fillText(line.text,output.width/2,line.y,output.width-240);});
       const metadata=['1='+(opt.key||song.origKey||'C'),song.timeSign||''].filter(Boolean).join('   ');
       outputCtx.textAlign='left';
       outputCtx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
-      outputCtx.fillText(metadata,100,metadataY,950);
-      if(song.bpm)outputCtx.fillText('♩ = '+song.bpm,100,metadataY+sideGap,900);
+      if(!isOriginalImage)outputCtx.fillText(metadata,leftEdge,metadataY,950);
+      if(!isOriginalImage&&song.bpm)outputCtx.fillText('♩ = '+song.bpm,leftEdge,metadataY+sideGap,900);
       outputCtx.textAlign='right';outputCtx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
-      authors.forEach((line,index)=>outputCtx.fillText(line,output.width-100,metadataY+index*sideGap,650));
+      if(!isOriginalImage)authors.forEach((line,index)=>outputCtx.fillText(line,rightEdge,metadataY+index*sideGap,650));
       canvas=output;
       outputCtx.fillStyle='#51483f';outputCtx.textAlign='center';
       outputCtx.font='400 24px "Noto Sans SC","PingFang SC",sans-serif';
@@ -3681,7 +3708,7 @@
       const ratio=logo.naturalHeight/logo.naturalWidth;
       const logoWidth=Math.min(canvas.width*.6,canvas.height*.4/ratio);
       const logoHeight=logoWidth*ratio;
-      outputCtx.save();outputCtx.globalAlpha=.055;
+      outputCtx.save();outputCtx.globalAlpha=.09;
       outputCtx.drawImage(logo,(canvas.width-logoWidth)/2,(canvas.height-logoHeight)/2,logoWidth,logoHeight);
       outputCtx.restore();
       const suffix=pages.length>1?'_'+(index+1):'';
@@ -4085,8 +4112,7 @@
     headerH:250,bottomH:118,sideM:150,
     minLyricPx:24,maxScale:2.6,ss:1.5
   };
-  /* 导出图纸张底色：暖白，比纯白柔和、久看不刺眼（只作用于「下载歌谱图」，屏幕与移调面板导出不变） */
-  var EXPORT_PAPER_BG='#faf7f1';
+  var EXPORT_PAPER_BG='#ffffff';
   function exportMeasureLyricFont(scope){
     const el=scope.querySelector('.p-lyric');
     if(!el)return 19;
@@ -14047,7 +14073,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         }
         try{
           if(!pages.length||pages.some(page=>!page))throw new Error('no rendered score page');
-          await exportRenderedScorePng(pages,{title:s.title,song:s,key:staffOn||panelWasOpen?curKey:s.origKey});
+          await exportRenderedScorePng(pages,{title:s.title,song:s,key:hasRenderedScore?curKey:s.origKey});
         }finally{
           if(restorePanel)restorePanel();
         }
