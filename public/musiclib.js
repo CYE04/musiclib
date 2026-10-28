@@ -3702,9 +3702,9 @@
       canvas=output;
       outputCtx.fillStyle='#51483f';outputCtx.textAlign='center';
       outputCtx.font='400 24px "Noto Sans SC","PingFang SC",sans-serif';
-      outputCtx.fillText('YuEn 制谱｜根据原版音频整理',canvas.width/2,canvas.height-78,canvas.width-200);
+      outputCtx.fillText('YuEn 制谱｜依据原版音频及歌谱整理',canvas.width/2,canvas.height-78,canvas.width-200);
       outputCtx.font='400 22px "Noto Sans SC","PingFang SC",sans-serif';
-      outputCtx.fillText('仅供学习与敬拜使用 · 非商业用途 · 请勿擅自转载或翻印',canvas.width/2,canvas.height-44,canvas.width-200);
+      outputCtx.fillText('仅供非商业使用 · 请勿转载或翻印',canvas.width/2,canvas.height-44,canvas.width-200);
       const ratio=logo.naturalHeight/logo.naturalWidth;
       const logoWidth=Math.min(canvas.width*.6,canvas.height*.4/ratio);
       const logoHeight=logoWidth*ratio;
