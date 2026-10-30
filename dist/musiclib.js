@@ -229,7 +229,7 @@
     });
     return staffViewPromise;
   }
-  const ML_VER='20261028-white-score';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20261030-background-queue';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
@@ -12194,6 +12194,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpApplyPitch();
     showToast('练习设置已全部重置');
   }
+  const _mpBufferWatch={timer:null,src:'',time:0,at:0,attempts:0,cancel:null};
   let _mpAudioResumePromise=null;
   const _mpPlaybackTrace=[];
   let _mpLastTraceTime=0;
@@ -12257,7 +12258,9 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     return _mpAudioResumePromise;
   }
   function _mpRecoverActiveAudio(){
-    if(!_mpAudio||_mpAudio.paused||_mpAudio.ended) return Promise.resolve(false);
+    if(!_mpAudio) return Promise.resolve(false);
+    if(_mpAudio.ended){_mpHandleEnded();return Promise.resolve(true);}
+    if(_mpAudio.paused) return Promise.resolve(false);
     return _mpResumeAudioContext(document.hidden?'background':'foreground');
   }
   function _mpBindAudioContextLifecycle(audioContext){
@@ -12272,10 +12275,62 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(Math.abs(rate-_mpSpeed)>.001){_mpSpeed=rate;_mpApplyPitch();}
     _mpSyncMediaSession();
   }
+  // The media clock, rather than page visibility, determines whether streaming
+  // has stopped. Background timers may be delayed; never rely on them to play audio.
+  function _mpStartBufferWatch(){
+    if(!_mpAudio||_mpAudio.paused||!_mpAudio.src) return;
+    const watch=_mpBufferWatch;
+    if(watch.src!==_mpAudio.src){
+      if(watch.cancel) watch.cancel();
+      watch.src=_mpAudio.src;watch.attempts=0;
+    }
+    watch.time=_mpAudio.currentTime||0;watch.at=Date.now();
+    if(watch.timer===null) watch.timer=setInterval(_mpCheckBuffering,4000);
+  }
+  function _mpStopBufferWatch(){
+    const watch=_mpBufferWatch;
+    if(watch.timer!==null){clearInterval(watch.timer);watch.timer=null;}
+    if(watch.cancel) watch.cancel();
+  }
+  function _mpCheckBuffering(){
+    const audio=_mpAudio,watch=_mpBufferWatch;
+    if(!audio||audio.paused||audio.ended||!audio.src) return;
+    if(watch.src!==audio.src){_mpStartBufferWatch();return;}
+    const now=Date.now(),time=audio.currentTime||0;
+    if(Math.abs(time-watch.time)>.05){watch.time=time;watch.at=now;return;}
+    if(now-watch.at<15000) return;
+    const interrupted=_mpAudioCtx&&_mpAudioCtx.state!=='running';
+    void _mpRecoverActiveAudio();
+    // A processing interruption needs context recovery, not a stream reload.
+    if(interrupted) return;
+    if(navigator.onLine===false||watch.attempts>=3||watch.cancel) return;
+    watch.at=now;watch.attempts++;
+    const src=audio.src,position=time;
+    _mpRecordPlayback('buffer-reconnect');
+    const cleanup=()=>{
+      audio.removeEventListener('loadedmetadata',restore);
+      audio.removeEventListener('error',cleanup);
+      if(watch.cancel===cleanup) watch.cancel=null;
+    };
+    const restore=()=>{
+      cleanup();
+      if(audio.src!==src) return;
+      try{audio.currentTime=Number.isFinite(audio.duration)?Math.min(position,Math.max(0,audio.duration-.25)):position;}catch(_){}
+    };
+    watch.cancel=cleanup;
+    audio.addEventListener('loadedmetadata',restore,{once:true});
+    audio.addEventListener('error',cleanup,{once:true});
+    // Reload only after a measured stall. Keep URL, volume, speed, queue and position.
+    audio.load();
+    try{audio.currentTime=position;}catch(_){}
+    void _mpRequestPlay('buffer-recovery').then(ok=>{if(!ok&&watch.cancel===cleanup)cleanup();});
+  }
   function _mpBindAudioLifecycle(){
-    document.addEventListener('visibilitychange',()=>{ _mpRecordPlayback('visibilitychange'); return _mpRecoverActiveAudio(); });
-    window.addEventListener('pageshow',()=>{ _mpRecordPlayback('pageshow'); return _mpRecoverActiveAudio(); });
+    document.addEventListener('visibilitychange',()=>{ _mpRecordPlayback('visibilitychange'); const recovery=_mpRecoverActiveAudio(); _mpFlushSongUi(); return recovery; });
+    window.addEventListener('pageshow',()=>{ _mpRecordPlayback('pageshow'); const recovery=_mpRecoverActiveAudio(); _mpFlushSongUi(); return recovery; });
     window.addEventListener('pagehide',()=>_mpRecordPlayback('pagehide'));
+    window.addEventListener('online',_mpCheckBuffering);
+    _mpAudio.addEventListener('playing',_mpStartBufferWatch);
     ['loadstart','loadedmetadata','play','playing','pause','ended','waiting','stalled','error','emptied','suspend'].forEach(event=>{
       _mpAudio.addEventListener(event,()=>_mpRecordPlayback(event));
     });
@@ -12356,9 +12411,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(!_mpAudio||!_mpAudio.src) return Promise.resolve(false);
     _mpRecordPlayback('play-request:'+(context||'play'));
     const req=++_mpPlayRequestId;
-    if(_mpAudio.readyState===0){
-      try{ _mpAudio.load(); }catch(_){}
-    }
+    // Assigning src already starts resource selection. Repeated load() calls reset
+    // that transition and can abort a pending play when the page is in the background.
     void _mpResumeAudioContext(context||'play');
     try{
       const p=_mpAudio.play();
@@ -12379,6 +12433,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if(_mpAudio.paused) void _mpRequestPlay(context||'toggle');
     else{
       _mpPlayRequestId++;
+      _mpStopBufferWatch();
       _mpRecordPlayback('pause-request:'+(context||'toggle'));
       _mpAudio.pause();
     }
@@ -12388,6 +12443,17 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     if((_mpAudio.currentTime||0)>=_mpLoopB){
       _mpAudio.currentTime=Math.max(0,_mpLoopA||0);
       if(_mpAudio.paused) void _mpRequestPlay('ab-loop');
+    }
+  }
+  function _mpHandleEnded(){
+    // A delayed ended event can arrive after visibility recovery already changed src.
+    if(!_mpAudio||!_mpAudio.ended) return;
+    _mpStopBufferWatch();
+    if(_mpLoop){
+      _mpAudio.currentTime=0;
+      void _mpRequestPlay('repeat');
+    }else{
+      _mpPlayIdx(_mpNextIdxFrom(_mpIdx),true);
     }
   }
   function _mpBind(){
@@ -12432,15 +12498,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     });
     _mpAudio.addEventListener('seeked',()=>_mpSavePlayback(true));
     _mpAudio.addEventListener('volumechange',()=>_mpSavePlayback(true));
-    _mpAudio.addEventListener('pause',()=>{_mpSavePlayback(true);_mpSetPlayUI(false);_mpSyncPanelPlaybackUi();_mpSyncMediaSession();});
-    _mpAudio.addEventListener('ended',()=>{
-      if(_mpLoop){
-        _mpAudio.currentTime=0;
-        void _mpRequestPlay('repeat');
-      }else{
-        _mpPlayIdx(_mpNextIdxFrom(_mpIdx),true);
-      }
-    });
+    _mpAudio.addEventListener('pause',()=>{if(_mpAudio.paused)_mpStopBufferWatch();_mpSavePlayback(true);_mpSetPlayUI(false);_mpSyncPanelPlaybackUi();_mpSyncMediaSession();});
+    _mpAudio.addEventListener('ended',_mpHandleEnded);
 
     $('ml-mp-playpause')?.addEventListener('click',()=>_mpTogglePlayback('mini'));
     $('ml-player-playpause')?.addEventListener('click',()=>_mpTogglePlayback('player'));
@@ -12707,10 +12766,36 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
   }
 
   // 加载并播放指定歌曲到播放器。不修改 _mpSongs / _mpIdx（由调用方决定）。
+  let _mpPendingSongUi=null;
   function _mpLoadAndPlaySong(s,autoplay){
     if(!s) return;
+    _mpStopBufferWatch();
     _mpCurrentSong=s;
+    _mpPlayRequestId++;
+    if(!_mpPitchGraph){
+      _mpPitchGraphFailed=false;
+      _mpPitchGraphPromise=null;
+    }
+    const nextAudioSrc=_mpPrepareAudioSrc(resolveMediaUrl(s.mp3));
+    _mpAudio.src=nextAudioSrc;
+    _mpApplySongPitchSettings(s,false);
+    _mpUpdateMediaMetadata(s);
+    // Continue on the same media element inside the ended event, before any
+    // home/cover/queue rendering. No timers, animation frames or fetches gate play.
+    if(autoplay) void _mpRequestPlay('load-song');
+    else _mpAudio.load(); // Paused restores still need metadata to restore position.
     setSongState(s.id,{playedAt:Date.now(),lastKey:getSongState(s.id).lastKey||s.origKey||'C'});
+    _mpPendingSongUi=s;
+    _mpSavePlayback(true);
+    _mpFlushSongUi();
+  }
+  function _mpFlushSongUi(){
+    if(document.hidden||!_mpPendingSongUi) return;
+    const song=_mpPendingSongUi;
+    _mpPendingSongUi=null;
+    if(song===_mpCurrentSong) _mpRenderLoadedSong(song);
+  }
+  function _mpRenderLoadedSong(s){
     renderHomePanels();
     const mini=$('ml-miniplayer');
     if(mini) mini.classList.add('has-mp3');
@@ -12730,24 +12815,14 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     const xns=$('ml-player-now-sub'); if(xns) xns.textContent=s.artist||s.source||'诗歌';
     _mpSetCover(s.cover||'');
     _mpApplyPlayerAccent(s);
-    _mpPlayRequestId++;
-    if(!_mpPitchGraph){
-      _mpPitchGraphFailed=false;
-      _mpPitchGraphPromise=null;
-    }
-    const nextAudioSrc=_mpPrepareAudioSrc(resolveMediaUrl(s.mp3));
-    _mpAudio.src=nextAudioSrc;
-    _mpAudio.load();
-    _mpApplySongPitchSettings(s,false);
-    _mpUpdateMediaMetadata(s);
-    _mpSyncMediaSession();
-    $('ml-mp-cur').textContent='0:00';
-    $('ml-mp-dur').textContent='0:00';
-    $('ml-mp-fill').style.width='0%';
-    const xcur=$('ml-player-cur'); if(xcur) xcur.textContent='0:00';
-    const xdur=$('ml-player-dur'); if(xdur) xdur.textContent='0:00';
-    const xfill=$('ml-player-fill'); if(xfill) xfill.style.width='0%';
-    const nfill=$('ml-nowbar-fill'); if(nfill) nfill.style.width='0%';
+    $('ml-mp-cur').textContent=_mpFmt(_mpAudio.currentTime||0);
+    $('ml-mp-dur').textContent=_mpFmt(_mpAudio.duration||0);
+    $('ml-mp-fill').style.width=_mpAudio.duration?((_mpAudio.currentTime/_mpAudio.duration)*100)+'%':'0%';
+    const current=_mpFmt(_mpAudio.currentTime||0),duration=_mpFmt(_mpAudio.duration||0);
+    const fill=_mpAudio.duration?((_mpAudio.currentTime/_mpAudio.duration)*100)+'%':'0%';
+    for(const id of ['ml-player-cur','ml-nowbar-cur']){const el=$(id);if(el)el.textContent=current;}
+    for(const id of ['ml-player-dur','ml-nowbar-dur']){const el=$(id);if(el)el.textContent=duration;}
+    for(const id of ['ml-player-fill','ml-nowbar-fill']){const el=$(id);if(el)el.style.width=fill;}
     _mpLrc=[]; _mpLrcIdx=-1; _mpLrcTimed=false;
     _mpUseFallbackLyrics(s);
     _mpRenderQueue();
@@ -12768,9 +12843,6 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
           _mpUseFallbackLyrics(s);
         }
       }).catch(()=>{if(_mpCurrentSong?.id===s.id)_mpUseFallbackLyrics(s);});
-    }
-    if(autoplay){
-      void _mpRequestPlay('load-song');
     }
   }
 
