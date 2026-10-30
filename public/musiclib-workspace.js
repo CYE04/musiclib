@@ -116,7 +116,7 @@
       const container = sc('#ml-personal-sidebar-list'); if (!container) return;
       container.replaceChildren();
       if (readError) { container.appendChild(el('p', 'ml-personal-error', readError)); return; }
-      if (!records.length) { container.appendChild(button(T('playlists.first', '创建你的第一个歌单'), () => openCreate(), { className: 'ml-personal-sidebar-empty', glyph: 'plus' })); return; }
+      if (!records.length) { container.appendChild(el('p', 'ml-personal-sidebar-empty', T('playlists.emptyTitle', '还没有自己的歌单'))); return; }
       records.forEach(record => {
         const item = button('', () => open(record.id), { className: 'ml-personal-sidebar-item', label: record.name });
         item.dataset.playlistId = record.id;
@@ -141,7 +141,7 @@
         const grid = el('div', 'ml-personal-grid');
         if (!records.length) {
           const empty = el('div', 'ml-personal-empty');
-          empty.append(el('h2', '', T('playlists.emptyTitle', '还没有自己的歌单')), el('p', '', T('playlists.emptyDescription', '把练习、主日敬拜或喜欢的诗歌整理在一起。')), button(T('playlists.create', '新建歌单'), () => openCreate(), { className: 'ml-personal-primary', glyph: 'plus' }));
+          empty.append(el('h2', '', T('playlists.emptyTitle', '还没有自己的歌单')), el('p', '', T('playlists.emptyDescription', '把练习、主日敬拜或喜欢的诗歌整理在一起。')));
           page.appendChild(empty);
         } else records.forEach(record => {
           const card = button('', () => open(record.id), { className: 'ml-personal-card' });
@@ -322,12 +322,15 @@
     document.addEventListener('focusin', event => { if (modalMode && !dialog.contains(event.target)) dialog.focus({ preventScroll: true }); });
     function refreshNowPlaying() {
       if (document.hidden) return;
-      const song = options.getCurrentSong?.();
+      const candidate = options.getCurrentSong?.();
+      const song = candidate && String(candidate.id || '').trim() && String(candidate.title || '').trim() ? candidate : null;
       const lyricLines = (options.getLyrics?.() || []).map(line => typeof line === 'string' ? line : line?.tx || '').filter(Boolean).slice(0, 12);
       const signature = JSON.stringify([song?.id, song?.title, song?.cover, song?.artist, song?.source, !!options.isPlaying?.(), rightPanelHidden, lyricLines, T('player.nowPlaying', '正在播放')]);
+      const visible = !!song && !rightPanelHidden;
+      now.hidden = !visible;
+      root.classList.toggle('ml-has-desktop-now', visible);
       if (signature === nowSignature) return;
       nowSignature = signature; now.replaceChildren();
-      now.hidden = !song || rightPanelHidden; root.classList.toggle('ml-has-desktop-now', !!song && !rightPanelHidden);
       if (!song) return;
       const header = el('header', 'ml-desktop-now-head');
       header.append(el('h2', '', T('player.nowPlaying', '正在播放')), button('', () => { rightPanelHidden = true; refreshNowPlaying(); }, { glyph: 'close', label: T('workspace.closeNowPlaying', '关闭正在播放侧栏') }));
