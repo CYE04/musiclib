@@ -70,7 +70,7 @@ function precacheManifest() {
 
       const scanned = all
         .filter((f) => f.startsWith("assets/") || f.startsWith("icons/") || f.startsWith("instrument-samples/"))
-        .concat(["index.html", "musiclib.css", "musiclib.js", "musiclib-tools.js", "musiclib-tools.css", "story-card.js", "story-share.js", "story-share.css", "gsap.min.js", "pinyin-pro.js",
+        .concat(["index.html", "musiclib.css", "musiclib.js", "musiclib-i18n.js", "musiclib-playlists.js", "musiclib-workspace.js", "musiclib-playback.js", "musiclib-tools.js", "musiclib-tools.css", "story-card.js", "story-share.js", "story-share.css", "gsap.min.js", "pinyin-pro.js",
                  "bible-service.js", "pinyin-kai.woff2", "manifest.webmanifest"])
         .filter((f) => all.includes(f))
         .map(asRequested);

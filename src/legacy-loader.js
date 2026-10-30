@@ -18,7 +18,11 @@ const LEGACY_SCRIPTS = [
   "./musiclib-tools.js?v=20261027-sampler",
   "./story-card.js?v=20261015-story",
   "./story-share.js?v=20261015-story",
-  "./musiclib.js?v=20261030-background-queue",
+  "./musiclib-i18n.js?v=20261030-workspace",
+  "./musiclib-playlists.js?v=20261030-workspace",
+  "./musiclib-workspace.js?v=20261030-workspace",
+  "./musiclib-playback.js?v=20261030-workspace",
+  "./musiclib.js?v=20261030-workspace",
 ];
 
 let started = false;
