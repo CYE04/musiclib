@@ -229,7 +229,7 @@
     });
     return staffViewPromise;
   }
-  const ML_VER='20261031-spotify-touch';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20261031-menu-align5';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
@@ -562,10 +562,6 @@
         <button class="ml-side-link" type="button" data-nav="favorites">${icon('heart')}<span data-i18n="nav.favorites">收藏</span></button>
         <button class="ml-side-link ml-side-link-proj" id="ml-side-projection" type="button">${icon('projection')}<span data-i18n="nav.projection">投影模式</span></button>
       </nav>
-      <button id="ml-side-profile" type="button" data-i18n-label="theme.switch" aria-label="切换主题">
-        <span class="ml-profile-avatar">${icon('theme',17)}</span>
-        <span><strong data-i18n="theme.switch">主题切换</strong><small data-i18n="theme.options">跟随系统 / 浅色 / 深色</small></span>
-      </button>
     </aside>
     <div id="ml-header">
       <div id="ml-nav">
@@ -577,7 +573,6 @@
             <span class="ml-brand-sub" data-i18n="header.subtitle">敬拜练习 · 歌谱 · 音频</span>
           </span>
         </div>
-        <button id="ml-top-home" class="ml-nav-icon-btn" type="button" data-nav="home" data-i18n-label="nav.home" aria-label="首页">${icon('home',22)}</button>
         </div>
         <div id="ml-search-wrap">
           <span id="ml-search-icon">${icon('search')}</span>
@@ -585,7 +580,6 @@
           <button id="ml-search-clear" type="button" data-i18n-label="header.clearSearch" aria-label="清空搜索" hidden>${icon('close',16)}</button>
         </div>
         <div id="ml-nav-actions">
-          <button class="ml-nav-icon-btn" id="ml-nav-more" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="ml-dock-dialog" data-i18n-label="nav.more" aria-label="更多">${icon('more',22)}</button>
           <button class="ml-weather-pill" id="ml-weather-pill" type="button" data-i18n-label="header.weather" aria-label="今日天气">--°C</button>
           <button id="ml-hero-projection" class="ml-nav-icon-btn" type="button" aria-label="进入投影模式" title="进入投影模式">${icon('projection')}</button>
           <button class="ml-nav-icon-btn" id="ml-nav-search" type="button" aria-label="聚焦搜索">${icon('search')}</button>
@@ -966,6 +960,7 @@
         <button class="ml-bottom-link active" type="button" data-nav="home">${icon('home',24)}<span data-i18n="nav.home">首页</span></button>
         <button class="ml-bottom-link" type="button" data-nav="search">${icon('search',24)}<span data-i18n="nav.search">搜索</span></button>
         <button class="ml-bottom-link" type="button" data-nav="personal">${icon('library',24)}<span data-i18n="nav.yourLibrary">我的歌库</span></button>
+        <button class="ml-bottom-link" id="ml-nav-more" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="ml-dock-dialog" data-i18n-label="nav.more" aria-label="更多">${icon('more',24)}<span data-i18n="nav.more">更多</span></button>
       </div>
     </nav>
     <div id="ml-dock-sheet" hidden>
@@ -1261,7 +1256,6 @@
   });
   $('ml-nav-search')?.addEventListener('click',()=>handleNav('search'));
   $('ml-nav-settings')?.addEventListener('click',cycleMusicTheme);
-  $('ml-side-profile')?.addEventListener('click',cycleMusicTheme);
   $('ml-weather-pill')?.addEventListener('click',updateWorshipGreeting);
   $('ml-playlist-backdrop')?.addEventListener('click',()=>_mpSetPlaylistOpen(false));
   $('ml-playlist-close')?.addEventListener('click',()=>_mpSetPlaylistOpen(false));
@@ -5953,7 +5947,7 @@
     document.addEventListener('focusin',event=>{
       if(_dockSheetMode&&!$('ml-dock-dialog').contains(event.target))$('ml-dock-dialog').focus({preventScroll:true});
     });
-    const touchLayout=window.matchMedia('(max-width:1180px), (max-width:1400px) and (pointer:coarse)');
+    const touchLayout=window.matchMedia('(max-width:767.98px), (min-width:768px) and (max-width:1180px) and (orientation:portrait), (min-width:1181px) and (max-width:1400px) and (orientation:portrait) and (pointer:coarse), (max-width:1400px) and (max-height:599.98px) and (pointer:coarse)');
     touchLayout.addEventListener?.('change',()=>{if(_dockSheetMode)setDockSheet('');});
     syncDockUtilities();window.CecpMusiclibI18n?.apply(root);
   }

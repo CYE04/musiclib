@@ -22,7 +22,7 @@ const LEGACY_SCRIPTS = [
   "./musiclib-playlists.js?v=20261030-workspace",
   "./musiclib-workspace.js?v=20261031-spotify-touch",
   "./musiclib-playback.js?v=20261030-workspace",
-  "./musiclib.js?v=20261031-spotify-touch",
+  "./musiclib.js?v=20261031-menu-align5",
 ];
 
 let started = false;
