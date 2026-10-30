@@ -229,7 +229,7 @@
     });
     return staffViewPromise;
   }
-  const ML_VER='20261030-alignment';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20261031-spotify-touch';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
@@ -476,7 +476,7 @@
 
   // StudioLive-inspired console glyphs: one grid, square joins, 1.5px strokes.
   const CONSOLE_ICONS = {
-  "globe": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><path d=\"M3 12h18M12 3a18 18 0 0 1 0 18 18 18 0 0 1 0-18Z\"/>",
+  "globe": "<circle cx=\"12\" cy=\"12\" r=\"9\"/><ellipse cx=\"12\" cy=\"12\" rx=\"4\" ry=\"9\"/><path d=\"M3 12h18\"/>",
   "home": "<path d=\"M3 10 12 3l9 7M5 9v12h14V9M9 21v-7h6v7\"/>",
   "search": "<circle cx=\"10.5\" cy=\"10.5\" r=\"6.5\"/><path d=\"m15 15 6 6\"/>",
   "library": "<rect x=\"3\" y=\"4\" width=\"18\" height=\"16\"/><path d=\"M7 4v16M11 8h6M11 12h6M11 16h4\"/>",
@@ -569,6 +569,7 @@
     </aside>
     <div id="ml-header">
       <div id="ml-nav">
+        <div id="ml-nav-leading">
         <div id="ml-brand">
           <span class="ml-brand-dot"><img src="${LOGO_SRC}" alt="橄榄树团契"></span>
           <span class="ml-brand-copy">
@@ -577,16 +578,18 @@
           </span>
         </div>
         <button id="ml-top-home" class="ml-nav-icon-btn" type="button" data-nav="home" data-i18n-label="nav.home" aria-label="首页">${icon('home',22)}</button>
+        </div>
         <div id="ml-search-wrap">
           <span id="ml-search-icon">${icon('search')}</span>
           <input id="ml-search" type="search" data-i18n-placeholder="header.searchPlaceholder" placeholder="搜索歌名、拼音、歌手、歌词、主题..." autocomplete="off" autocorrect="off"/>
           <button id="ml-search-clear" type="button" data-i18n-label="header.clearSearch" aria-label="清空搜索" hidden>${icon('close',16)}</button>
         </div>
         <div id="ml-nav-actions">
+          <button class="ml-nav-icon-btn" id="ml-nav-more" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="ml-dock-dialog" data-i18n-label="nav.more" aria-label="更多">${icon('more',22)}</button>
           <button class="ml-weather-pill" id="ml-weather-pill" type="button" data-i18n-label="header.weather" aria-label="今日天气">--°C</button>
           <button id="ml-hero-projection" class="ml-nav-icon-btn" type="button" aria-label="进入投影模式" title="进入投影模式">${icon('projection')}</button>
           <button class="ml-nav-icon-btn" id="ml-nav-search" type="button" aria-label="聚焦搜索">${icon('search')}</button>
-          <button class="ml-nav-icon-btn" id="ml-nav-language" type="button" aria-haspopup="dialog" aria-controls="ml-dock-dialog" aria-expanded="false" data-i18n-label="nav.language" aria-label="语言">${icon('globe')}</button>
+          <button class="ml-nav-icon-btn" id="ml-nav-language" type="button" aria-haspopup="dialog" aria-controls="ml-dock-dialog" aria-expanded="false" data-i18n-label="nav.language" aria-label="语言">${icon('globe',22)}</button>
           <button class="ml-nav-icon-btn" id="ml-nav-theme" type="button" aria-label="切换深浅主题">${icon('system')}</button>
         </div>
       </div>
@@ -960,13 +963,9 @@
       </div>
     <nav id="ml-bottom-nav" aria-label="手机和平板导航" data-i18n-label="nav.label">
       <div class="ml-dock-pages">
-        <button class="ml-bottom-link active" type="button" data-nav="home">${icon('home')}<span data-i18n="nav.home">首页</span></button>
-        <button class="ml-bottom-link" type="button" data-nav="library">${icon('library')}<span data-i18n="nav.library">诗歌库</span></button>
-        <button class="ml-bottom-link" id="ml-nav-more" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="ml-dock-dialog">${icon('more')}<span data-i18n="nav.more">更多</span></button>
-      </div>
-      <div class="ml-dock-utilities">
-        <button class="ml-bottom-link" id="ml-dock-theme" type="button" data-i18n-label="theme.switch" aria-label="切换主题">${icon('system')}<span>跟随系统</span></button>
-        <button class="ml-bottom-link" id="ml-dock-language" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="ml-dock-dialog" data-i18n-label="nav.language" aria-label="语言">${icon('globe')}<span class="ml-language-code">cn</span></button>
+        <button class="ml-bottom-link active" type="button" data-nav="home">${icon('home',24)}<span data-i18n="nav.home">首页</span></button>
+        <button class="ml-bottom-link" type="button" data-nav="search">${icon('search',24)}<span data-i18n="nav.search">搜索</span></button>
+        <button class="ml-bottom-link" type="button" data-nav="personal">${icon('library',24)}<span data-i18n="nav.yourLibrary">我的歌库</span></button>
       </div>
     </nav>
     <div id="ml-dock-sheet" hidden>
@@ -974,6 +973,9 @@
       <section id="ml-dock-dialog" role="dialog" aria-modal="true" aria-labelledby="ml-dock-title" tabindex="-1">
         <header><h2 id="ml-dock-title" data-i18n="menu.title">更多</h2><button id="ml-dock-close" type="button" data-i18n-label="common.close" aria-label="关闭">${icon('close')}</button></header>
         <div id="ml-dock-links">
+          <button class="ml-dock-action" type="button" data-nav="library">${icon('library')}<span data-i18n="nav.library">诗歌库</span>${icon('chevronRight',14)}</button>
+          <button class="ml-dock-action" id="ml-dock-theme" type="button" data-i18n-label="theme.switch" aria-label="切换主题">${icon('system')}<span>跟随系统</span></button>
+          <button class="ml-dock-action" id="ml-dock-language" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="ml-dock-dialog" data-i18n-label="nav.language" aria-label="语言">${icon('globe',22)}<span data-i18n="nav.language">语言</span><small class="ml-language-code">cn</small></button>
           <button class="ml-dock-action" type="button" data-nav="playlist">${icon('queue')}<span data-i18n="nav.playlist">播放列表</span>${icon('chevronRight',14)}</button>
           <button class="ml-dock-action" type="button" data-nav="favorites">${icon('heart')}<span data-i18n="nav.favorites">收藏</span>${icon('chevronRight',14)}</button>
           <button class="ml-dock-action" id="ml-nav-tools" type="button" data-nav="tools" aria-haspopup="dialog" aria-expanded="false" aria-controls="ml-tools-dialog">${icon('tools')}<span data-i18n="nav.tools">工具箱</span>${icon('chevronRight',14)}</button>
@@ -5886,7 +5888,7 @@
   function syncDockSelection(){
     const mode=root.dataset.nav||'home';
     const more=$('ml-nav-more');
-    if(more)more.classList.toggle('active',!!_dockSheetMode||!['home','library','search'].includes(mode));
+    if(more)more.classList.toggle('active',!!_dockSheetMode);
   }
   function syncDockUtilities(){
     const mode=getStoredTheme(),language=window.CecpMusiclibI18n?.getLanguage()||'zh';
@@ -5958,7 +5960,9 @@
   function syncNavActive(mode){
     root.dataset.nav=mode||'home';
     root.querySelectorAll('#ml-side-nav [data-nav],#ml-bottom-nav [data-nav]').forEach(btn=>{
-      const selected=btn.dataset.nav===((mode==='search'&&btn.closest?.('#ml-bottom-nav'))?'library':(mode||'home'));
+      const inDock=!!btn.closest?.('#ml-bottom-nav');
+      const dockMode=['home','search'].includes(mode)?mode:'personal';
+      const selected=btn.dataset.nav===(inDock?dockMode:(mode||'home'));
       btn.classList.toggle('active',selected);
       const label=btn.querySelector('[data-i18n]');if(label){btn.setAttribute('aria-label',uiText(label.dataset.i18n,label.textContent));btn.title=btn.getAttribute('aria-label');}
       if(selected) btn.setAttribute('aria-current','page');
@@ -5978,7 +5982,8 @@
   function handleNav(mode){
     if(_dockSheetMode){
       setDockSheet('',false);
-      const target=['home','library'].includes(mode)?root.querySelector('#ml-bottom-nav [data-nav="'+mode+'"]'):$('ml-nav-more');
+      const dockMode=['home','search'].includes(mode)?mode:'personal';
+      const target=root.querySelector('#ml-bottom-nav [data-nav="'+dockMode+'"]');
       target?.focus({preventScroll:true});
     }
     if(mode==='personal'){_workspaceController?.open();return;}

@@ -136,6 +136,15 @@
       copy.appendChild(el('h1', '', selected ? selected.name : T('playlists.libraryTitle', '为每一次敬拜，留一份歌单')));
       header.append(copy, button(T('playlists.create', '新建歌单'), () => openCreate(), { className: 'ml-personal-primary', glyph: 'plus', disabled: !!readError }));
       page.append(header, localNote());
+      if (!selected) {
+        const libraryNav = el('nav', 'ml-personal-library-nav');
+        libraryNav.setAttribute('aria-label', T('nav.yourLibrary', '我的歌库'));
+        libraryNav.append(
+          button(T('nav.library', '诗歌库'), () => options.onNavigate?.('library'), { glyph: 'library' }),
+          button(T('nav.favorites', '收藏'), () => options.onNavigate?.('favorites'), { glyph: 'heart' })
+        );
+        page.appendChild(libraryNav);
+      }
       if (readError) { const message = el('p', 'ml-personal-error', readError); message.setAttribute('role', 'alert'); page.appendChild(message); return; }
       if (!selected) {
         const grid = el('div', 'ml-personal-grid');

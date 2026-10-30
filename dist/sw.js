@@ -3,10 +3,10 @@
    桶名带内容指纹 —— 任何资源变化都会换桶，activate 里的清理逻辑随即删掉旧桶，
    老用户不会卡在旧壳上，也不用再记得手动 bump 版本号。 */
 /* CECP-PRECACHE-BEGIN */
-const CACHE_NAME = "cecp-musiclib-pwa-956a3415cb";
+const CACHE_NAME = "cecp-musiclib-pwa-169f405699";
 const APP_SHELL = [
   "./?key=cecp2026",
-  "./assets/index-B0BQ5a1E.js",
+  "./assets/index-Cc-z44dL.js",
   "./bible-service.js?v=20260711-justify-rows",
   "./cecp-olive-logo.svg",
   "./fonts/MaShanZheng-Regular.ttf",
@@ -47,14 +47,14 @@ const APP_SHELL = [
   "./instrument-samples/piano/C7.mp3",
   "./instrument-samples/sources.json",
   "./manifest.webmanifest",
-  "./musiclib-i18n.js?v=20261030-workspace",
+  "./musiclib-i18n.js?v=20261031-spotify-touch",
   "./musiclib-playback.js?v=20261030-workspace",
   "./musiclib-playlists.js?v=20261030-workspace",
   "./musiclib-tools.css?v=20261014-console",
   "./musiclib-tools.js?v=20261027-sampler",
-  "./musiclib-workspace.js?v=20261030-alignment",
-  "./musiclib.css?v=20261030-alignment",
-  "./musiclib.js?v=20261030-alignment",
+  "./musiclib-workspace.js?v=20261031-spotify-touch",
+  "./musiclib.css?v=20261031-spotify-touch",
+  "./musiclib.js?v=20261031-spotify-touch",
   "./olive-fellowship-logo.png",
   "./pinyin-kai.woff2",
   "./pinyin-pro.js",

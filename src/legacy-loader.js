@@ -18,11 +18,11 @@ const LEGACY_SCRIPTS = [
   "./musiclib-tools.js?v=20261027-sampler",
   "./story-card.js?v=20261015-story",
   "./story-share.js?v=20261015-story",
-  "./musiclib-i18n.js?v=20261030-workspace",
+  "./musiclib-i18n.js?v=20261031-spotify-touch",
   "./musiclib-playlists.js?v=20261030-workspace",
-  "./musiclib-workspace.js?v=20261030-alignment",
+  "./musiclib-workspace.js?v=20261031-spotify-touch",
   "./musiclib-playback.js?v=20261030-workspace",
-  "./musiclib.js?v=20261030-alignment",
+  "./musiclib.js?v=20261031-spotify-touch",
 ];
 
 let started = false;
