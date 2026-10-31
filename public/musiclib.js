@@ -1896,8 +1896,20 @@
     return projState.songId?[{t:'song',id:projState.songId}]:[];
   }
   const PROJ_SETLIST_KEY='cecp:musiclib:projection:setlist:v1';
-  function projSaveSetlist(){ try{ localStorage.setItem(PROJ_SETLIST_KEY,JSON.stringify(projState.setlist||[]));return true; }catch(_){return false;} }
-  function projLoadSetlist(){ try{ const a=JSON.parse(localStorage.getItem(PROJ_SETLIST_KEY)||'[]'); return Array.isArray(a)?a.filter(x=>x&&['song','scripture','custom'].includes(x.t)).map(x=>({...x,uid:x.uid||projUid()})):[]; }catch(_){ return []; } }
+  function projSaveSetlist(){
+    try{
+      const value=JSON.stringify(projState.setlist||[]);localStorage.setItem(PROJ_SETLIST_KEY,value);
+      try{sessionStorage.setItem(PROJ_SETLIST_KEY,value);}catch(_){}
+      return true;
+    }catch(_){return false;}
+  }
+  function projLoadSetlist(){
+    try{
+      let own=null;try{own=sessionStorage.getItem(PROJ_SETLIST_KEY);}catch(_){}
+      const value=JSON.parse(own??localStorage.getItem(PROJ_SETLIST_KEY)??'[]');
+      return Array.isArray(value)?value.filter(item=>item&&['song','scripture','custom'].includes(item.t)).map(item=>({...item,uid:item.uid||projUid()})):[];
+    }catch(_){return [];}
+  }
   function projSetAudienceValue(key,value,options=projState.audience){
     const ranges={fontScale:[0.6,2.6],linesPerPage:[1,8],margin:[2,12],weight:[400,700],overlay:[0,0.8]};
     if(ranges[key]&&Number.isFinite(Number(value))){const [min,max]=ranges[key];options[key]=Math.max(min,Math.min(max,Number(value)));}

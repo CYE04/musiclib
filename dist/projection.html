@@ -6,7 +6,7 @@
   <meta name="robots" content="noindex,nofollow">
   <title>投影输出 · CECP 诗歌库</title>
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="stylesheet" href="./musiclib.css?v=20261028-white-score">
+  <link rel="stylesheet" href="./musiclib.css?v=20261031-content-editor">
   <style>
     /* 屏2 = 纯投影输出。无任何控制按钮; 内容由屏1(控制端)推送当前页, 这里只缩放铺满显示。 */
     html,body{height:100%;margin:0;background:#000;overflow:hidden;cursor:none;}
@@ -63,7 +63,8 @@
   <script>
   (function(){
     "use strict";
-    var CH_NAME='cecp:musiclib:projection:v1', BUS_KEY='cecp:musiclib:projection:bus:v1';
+    var session=new URLSearchParams(location.search).get('session')||'',suffix=/^[A-Za-z0-9_-]{1,80}$/.test(session)?':'+session:'';
+    var CH_NAME='cecp:musiclib:projection:v1'+suffix, BUS_KEY='cecp:musiclib:projection:bus:v1'+suffix;
     var lastV=-1, chordInjected=false, curAspect='16:9', curRefW=0, curRefH=0,lastHtml=null;
     var $=function(id){return document.getElementById(id);};
     var managed=new URLSearchParams(location.search).get('managed')==='1', targetDisplay=null, displayDetails=null;
@@ -113,14 +114,23 @@
       cont.style.setProperty('--pl-chord', String(L.chord||1));
       cont.style.setProperty('--pl-gap',   String(L.gap||1));
       cont.style.setProperty('--pl-n',String(L.n||1));
+      cont.style.setProperty('--pl-pinyin',String(L.pinyin||1));
       cont.style.setProperty('--pl-lyric',String(L.lyric||1));
       if(lastHtml!==(p.html||'')){lastHtml=p.html||'';cont.innerHTML=lastHtml;}
       var empty=!p.html;                                  // 歌单为空/无内容 -> 提示, 不留旧画面
       var hint=$('proj-hint'); hint.hidden=!empty; if(empty) hint.textContent='歌单为空，请在控制端加入诗歌或经文';
       var pn=$('proj-pageno');                            // 右下角小页码(空歌单不显示)
       if(pn) pn.textContent=(!empty&&p.total>0)?((p.idx+1)+' / '+p.total):'';
-      fit();
+      tickComponents();fit();
     }
+    function tickComponents(){
+      document.querySelectorAll('[data-proj-countdown]').forEach(function(node){
+        var seconds=Math.max(0,Math.ceil((Number(node.dataset.projCountdown)-Date.now())/1000));
+        node.textContent=String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');
+      });
+      document.querySelectorAll('[data-proj-clock]').forEach(function(node){node.textContent=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});});
+    }
+    setInterval(tickComponents,250);
     function fit(){
       var root=document.querySelector('.proj-root');
       var scale=$('proj-scale'), page=$('proj-page');

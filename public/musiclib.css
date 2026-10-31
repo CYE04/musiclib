@@ -12111,7 +12111,7 @@ html[data-resolved-theme="dark"] #music-library :is(#ml-brand,#ml-sidebar-brand)
 #music-library .ml-cast-studio .ml-ps-toolbar{justify-content:center;gap:6px;}
 #music-library .ml-cast-studio .ml-ps-head-actions{gap:6px;}
 #music-library .ml-cast-studio .ml-ps-x{padding:4px;width:34px;border:0;}
-#music-library .ml-cast-ribbon{position:relative;z-index:5;flex:0 0 auto;padding:9px 14px;background:#303136;border-bottom:1px solid var(--cast-line);display:grid;gap:7px;}
+#music-library .ml-cast-ribbon{position:relative;z-index:5;flex:0 0 auto;padding:9px 14px;background:var(--surface-secondary);border-bottom:1px solid var(--cast-line);display:grid;gap:7px;}
 #music-library .ml-cast-ribbon-row{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:7px;}
 #music-library .ml-cast-ribbon label{display:flex;align-items:center;gap:5px;color:var(--cast-muted);font-size:11px;white-space:nowrap;}
 #music-library .ml-cast-ribbon input[type=number]{width:64px;padding-inline:5px;}
@@ -12166,7 +12166,7 @@ html[data-resolved-theme="dark"] #music-library :is(#ml-brand,#ml-sidebar-brand)
 #music-library #ml-cast-draft-state{margin-left:auto;font-size:10px;color:var(--cast-muted);white-space:nowrap;}
 #music-library .ml-cast-canvas-area{display:flex;justify-content:center;align-items:flex-start;flex:1 0 auto;min-height:120px;}
 #music-library .ml-cast-canvas-area .ml-proj-preview{width:100%;height:0;flex:0 0 auto;border-radius:0!important;border:1px solid var(--cast-line);box-shadow:0 5px 20px #0003;margin:0;}
-#music-library .ml-cast-studio .ml-proj-preview.is-editing .proj-layout-object{outline-color:#c9d8ed50;}
+#music-library .ml-cast-studio .ml-proj-preview.is-editing .proj-layout-object{outline-color:var(--divider);}
 #music-library .ml-cast-studio .ml-proj-preview.is-editing .proj-layout-object.is-selected{outline:2px solid var(--accent);outline-offset:1px;}
 #music-library .ml-cast-resize{position:absolute;right:-8px;bottom:-8px;width:14px;height:14px;background:var(--cast-panel);border:2px solid var(--accent);box-sizing:border-box;cursor:nwse-resize;z-index:10;}
 #music-library .ml-cast-pagebar{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:10px;flex-shrink:0;}

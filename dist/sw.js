@@ -3,7 +3,7 @@
    桶名带内容指纹 —— 任何资源变化都会换桶，activate 里的清理逻辑随即删掉旧桶，
    老用户不会卡在旧壳上，也不用再记得手动 bump 版本号。 */
 /* CECP-PRECACHE-BEGIN */
-const CACHE_NAME = "cecp-musiclib-pwa-2bf8b18840";
+const CACHE_NAME = "cecp-musiclib-pwa-93adcfd5ad";
 const APP_SHELL = [
   "./?key=cecp2026",
   "./assets/index-B8tFX-5u.js",
@@ -180,7 +180,9 @@ self.addEventListener("fetch", (event) => {
     // （投影窗一直是在线的控制端开出来的，所以没暴露）。
     event.respondWith(
       fetch(request).catch(() =>
-        caches.match(request, MATCH_OPTS).then((hit) => hit || caches.match("./?key=cecp2026", MATCH_OPTS))
+        caches.match(request, MATCH_OPTS)
+          .then((hit) => hit || (url.pathname.endsWith('/projection.html') ? caches.match(url.origin + url.pathname, MATCH_OPTS) : null))
+          .then((hit) => hit || caches.match("./?key=cecp2026", MATCH_OPTS))
       )
     );
     return;
@@ -195,6 +197,6 @@ self.addEventListener("fetch", (event) => {
         }
         return response;
       })
-      .catch(() => caches.match(request, MATCH_OPTS))
+      .catch(() => caches.match(request, { ...MATCH_OPTS, ignoreSearch: url.pathname.endsWith('/musiclib.css') }))
   );
 });
