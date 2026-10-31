@@ -64,7 +64,7 @@ body.ml-story-lock{overflow:hidden!important}
   #music-library #ml-story-share{width:100%;max-width:none;max-height:96dvh;margin:auto auto 0;border-radius:22px 22px 0 0}
   #music-library .ml-story-header{padding:20px 20px 14px;gap:8px}
   #music-library #ml-story-title{font-size:18px}
-  #music-library .ml-story-layout{display:flex;flex-direction:column;gap:18px;padding:0 20px calc(24px + env(safe-area-inset-bottom,0px))}
+  #music-library .ml-story-layout{display:flex;flex-direction:column;gap:18px;padding:0 20px calc(24px + var(--ml-safe-bottom))}
   #music-library .ml-story-preview{width:100%;padding:15px;gap:10px}
   #music-library #ml-story-canvas{width:auto;height:min(36dvh,310px);max-width:100%}
   #music-library .ml-story-editor{gap:18px}

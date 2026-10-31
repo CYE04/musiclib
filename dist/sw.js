@@ -3,10 +3,10 @@
    桶名带内容指纹 —— 任何资源变化都会换桶，activate 里的清理逻辑随即删掉旧桶，
    老用户不会卡在旧壳上，也不用再记得手动 bump 版本号。 */
 /* CECP-PRECACHE-BEGIN */
-const CACHE_NAME = "cecp-musiclib-pwa-93adcfd5ad";
+const CACHE_NAME = "cecp-musiclib-pwa-da5a2440f7";
 const APP_SHELL = [
   "./?key=cecp2026",
-  "./assets/index-B8tFX-5u.js",
+  "./assets/index-D5ok9oTj.js",
   "./bible-service.js?v=20260711-justify-rows",
   "./cecp-olive-logo.svg",
   "./fonts/MaShanZheng-Regular.ttf",
@@ -50,18 +50,18 @@ const APP_SHELL = [
   "./musiclib-i18n.js?v=20261031-final-review",
   "./musiclib-playback.js?v=20261031-final-review",
   "./musiclib-playlists.js?v=20261030-workspace",
-  "./musiclib-tools.css?v=20261014-console",
+  "./musiclib-tools.css?v=20261031-pwa-system-safe",
   "./musiclib-tools.js?v=20261027-sampler",
   "./musiclib-workspace.js?v=20261031-final-review",
-  "./musiclib.css?v=20261031-ios-bottom",
-  "./musiclib.js?v=20261031-ios-bottom",
+  "./musiclib.css?v=20261031-pwa-system-safe",
+  "./musiclib.js?v=20261031-pwa-system-safe",
   "./olive-fellowship-logo.png",
   "./pinyin-kai.woff2",
   "./pinyin-pro.js",
   "./projection.html",
   "./soundtouch-processor.js",
   "./story-card.js?v=20261015-story",
-  "./story-share.css?v=20261015-story",
+  "./story-share.css?v=20261031-pwa-system-safe",
   "./story-share.js?v=20261015-story"
 ];
 /* CECP-PRECACHE-END */

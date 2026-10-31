@@ -16,7 +16,21 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="CECP诗歌库">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black">
+    <script id="ml-apple-viewport-policy">
+      (function () {
+        var standalone = navigator.standalone === true ||
+          (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+        var appleTouch = /iPad|iPhone|iPod/.test(navigator.userAgent || '') ||
+          (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+        if (!standalone || !appleTouch) return;
+        // Let iOS reserve system UI once, before the first app layout.
+        // No device heights, screen-size subtraction or negative offsets.
+        document.documentElement.classList.add('ml-apple-standalone');
+        var viewport = document.querySelector('meta[name="viewport"]');
+        viewport.content = viewport.content.replace('viewport-fit=cover', 'viewport-fit=contain');
+      })();
+    </script>
 
     <title>CECP诗歌库</title>
     <link rel="manifest" href="./manifest.webmanifest">
@@ -94,9 +108,9 @@
 
     <!-- musiclib.css 保持 <head> 静态 <link>(与原版同名 id、同 ?v=)：
          id="ml-style" 会让 musiclib.js L320 的自注入分支跳过，避免样式表被加载两次。 -->
-    <link id="ml-style" rel="stylesheet" href="./musiclib.css?v=20261031-ios-bottom">
-    <link rel="stylesheet" href="./musiclib-tools.css?v=20261014-console">
-    <link rel="stylesheet" href="./story-share.css?v=20261015-story">
+    <link id="ml-style" rel="stylesheet" href="./musiclib.css?v=20261031-pwa-system-safe">
+    <link rel="stylesheet" href="./musiclib-tools.css?v=20261031-pwa-system-safe">
+    <link rel="stylesheet" href="./story-share.css?v=20261031-pwa-system-safe">
   </head>
 
   <body>

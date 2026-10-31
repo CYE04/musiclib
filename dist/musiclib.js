@@ -229,7 +229,7 @@
     });
     return staffViewPromise;
   }
-  const ML_VER='20261031-ios-bottom';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20261031-pwa-system-safe';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
@@ -362,6 +362,7 @@
 
   const root=document.getElementById('music-library');
   if(!root)return;
+  let _viewportLayout=null;
   document.documentElement.classList.add('ml-fullscreen');
   if(document.body) document.body.classList.add('ml-fullscreen');
   root.setAttribute('data-ml-version',ML_VER);
@@ -914,6 +915,7 @@
       <div id="ml-audio-panel-time">00:00 / 00:00</div>
       <div id="ml-audio-panel-status">Start media...</div>
     </section>
+    <div id="ml-bottom-chrome">
     <div id="ml-nowbar" aria-label="正在播放">
       <div id="ml-nowbar-bg" aria-hidden="true"></div>
       <div class="ml-nowbar-track">
@@ -963,6 +965,7 @@
         <button class="ml-bottom-link" id="ml-nav-more" type="button" aria-haspopup="dialog" aria-expanded="false" aria-controls="ml-dock-dialog" data-i18n-label="nav.more" aria-label="更多">${icon('more',24)}<span data-i18n="nav.more">更多</span></button>
       </div>
     </nav>
+    </div>
     <div id="ml-dock-sheet" hidden>
       <button id="ml-dock-backdrop" type="button" tabindex="-1" data-i18n-label="common.close" aria-label="关闭"></button>
       <section id="ml-dock-dialog" role="dialog" aria-modal="true" aria-labelledby="ml-dock-title" tabindex="-1">
@@ -1144,14 +1147,7 @@
     window.addEventListener('scroll',onScroll,{passive:true});
     sync();
 
-    // 顶栏是 fixed 的，不占位；把它的实测高度喂给 --ml-navh，内容据此留出上边距
-    const nav=$('ml-nav');
-    if(nav){
-      const syncNavH=()=>root.style.setProperty('--ml-navh',nav.offsetHeight+'px');
-      syncNavH();
-      if(window.ResizeObserver) new ResizeObserver(syncNavH).observe(nav);
-      window.addEventListener('resize',syncNavH,{passive:true});
-    }
+    _viewportLayout=initViewportLayout();
   })();
 
   let _searchDebounce=0,_lastRenderedQuery=null;
@@ -6402,6 +6398,43 @@
     syncDockSelection();syncDockUtilities();
     $('ml-dock-dialog').focus({preventScroll:true});
   }
+  function initViewportLayout(){
+    const nav=$('ml-nav'),chrome=$('ml-bottom-chrome'),player=$('ml-nowbar');
+    let frame=null,last='',state=null;
+    const sync=()=>{
+      frame=null;
+      const viewportHeight=window.innerHeight;
+      const top=nav?Math.max(0,nav.getBoundingClientRect().bottom):0;
+      const chromeDisplay=chrome?window.getComputedStyle(chrome).display:'none';
+      const bottomElement=chromeDisplay!=='none'&&chromeDisplay!=='contents'?chrome:
+        player?.classList.contains('is-visible')&&window.getComputedStyle(player).display!=='none'?player:null;
+      const bottomRect=bottomElement?.getBoundingClientRect();
+      const bottom=bottomRect?.height>0?Math.max(0,viewportHeight-bottomRect.top):0;
+      state={viewportHeight,top,bottom,systemSafeArea:document.documentElement.classList.contains('ml-apple-standalone')};
+      const signature=top+':'+bottom;
+      if(signature===last)return;
+      last=signature;
+      root.style.setProperty('--ml-navh',top+'px');
+      root.style.setProperty('--ml-bottom-occupied',bottom+'px');
+    };
+    const schedule=()=>{if(frame===null)frame=requestAnimationFrame(sync);};
+    const resize=window.ResizeObserver?new ResizeObserver(schedule):null;
+    for(const element of [nav,chrome,player])if(element)resize?.observe(element);
+    const mutation=window.MutationObserver?new MutationObserver(schedule):null;
+    for(const element of [root,player])if(element)mutation?.observe(element,{attributes:true,attributeFilter:['class']});
+    for(const name of ['resize','orientationchange','pageshow'])window.addEventListener(name,schedule,{passive:true});
+    window.visualViewport?.addEventListener('resize',schedule,{passive:true});
+    const onVisibility=()=>{if(!document.hidden)schedule();};
+    document.addEventListener('visibilitychange',onVisibility);
+    sync();
+    return {refresh:schedule,getState:()=>state?{...state}:null,destroy(){
+      if(frame!==null)cancelAnimationFrame(frame);
+      resize?.disconnect();mutation?.disconnect();
+      for(const name of ['resize','orientationchange','pageshow'])window.removeEventListener(name,schedule);
+      window.visualViewport?.removeEventListener('resize',schedule);
+      document.removeEventListener('visibilitychange',onVisibility);
+    }};
+  }
   function initTouchDock(){
     $('ml-nav-more').addEventListener('click',()=>setDockSheet(_dockSheetMode==='more'?'':'more'));
     for(const id of ['ml-dock-language','ml-nav-language'])$(id)?.addEventListener('click',()=>setDockSheet(_dockSheetMode==='language'?'':'language'));
@@ -10722,7 +10755,7 @@ var ChordEngine=(function(){
         'max-height:min(86dvh,860px);box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;'+
         'background:linear-gradient(var(--ce-bg),var(--ce-bg)),var(--ce-solid-bg);color:var(--ce-text);border:1px solid var(--ce-border-md);border-bottom:none;'+
         'border-radius:18px 18px 0 0;box-shadow:0 -18px 60px rgba(0,0,0,.22);'+
-        'padding:10px 20px calc(22px + env(safe-area-inset-bottom,0px));'+
+        'padding:10px 20px calc(22px + var(--ml-safe-bottom));'+
         'transition:transform .24s cubic-bezier(.32,.72,.28,1);pointer-events:none}'+
       ':host(.open) .backdrop{opacity:1;pointer-events:auto}'+
       ':host(.open) .sheet{transform:translate(-50%,0);pointer-events:auto}'+
@@ -11213,8 +11246,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       '#cecp-scorezoom .czoom-content.czoom-img img{display:block;max-width:none;}',
       '#cecp-scorezoom .czoom-nav{position:fixed;top:50%;transform:translateY(-50%);width:44px;height:66px;border:none;border-radius:12px;background:rgba(0,0,0,.34);color:#fff;font-size:30px;line-height:1;cursor:pointer;z-index:3;display:none;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent;}',
       '#cecp-scorezoom .czoom-prev{left:10px;}#cecp-scorezoom .czoom-next{right:10px;}',
-      '#cecp-scorezoom .czoom-count{position:fixed;top:calc(14px + env(safe-area-inset-top,0px));left:0;right:0;text-align:center;font-size:13px;letter-spacing:1px;color:rgba(255,255,255,.62);font-family:"Noto Sans SC",sans-serif;pointer-events:none;display:none;z-index:3;}',
-      '#cecp-scorezoom .czoom-hint{position:fixed;left:0;right:0;bottom:calc(12px + env(safe-area-inset-bottom,0px));text-align:center;font-size:12px;letter-spacing:1px;color:var(--text3,rgba(140,140,150,.72));font-family:"Noto Sans SC",sans-serif;pointer-events:none;}',
+      '#cecp-scorezoom .czoom-count{position:fixed;top:calc(14px + var(--ml-safe-top));left:0;right:0;text-align:center;font-size:13px;letter-spacing:1px;color:rgba(255,255,255,.62);font-family:"Noto Sans SC",sans-serif;pointer-events:none;display:none;z-index:3;}',
+      '#cecp-scorezoom .czoom-hint{position:fixed;left:0;right:0;bottom:calc(12px + var(--ml-safe-bottom));text-align:center;font-size:12px;letter-spacing:1px;color:var(--text3,rgba(140,140,150,.72));font-family:"Noto Sans SC",sans-serif;pointer-events:none;}',
       '.sw-lb-zoomable{cursor:zoom-in;}'
     ].join('');
     (document.head||document.documentElement).appendChild(st);
@@ -12844,6 +12877,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     return {
       schema:1,appVersion:ML_VER,userAgent:navigator.userAgent,
       standalone:!!navigator.standalone||!!window.matchMedia?.('(display-mode: standalone)')?.matches,
+      viewport:_viewportLayout?.getState()||null,
       audioSession:navigator.audioSession?.type||'unavailable',
       mediaSession:navigator.mediaSession?.playbackState||'unavailable',
       recovery:_mpPlaybackController?.getState()||null,
@@ -15231,6 +15265,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     getSongs:()=>songs.slice(),
     getQuery:()=>query,
     getPlaybackDiagnostics:_mpPlaybackReport,
+    getViewportLayout:()=>_viewportLayout?.getState()||null,
     setQuery(value){
       query=String(value||'').trim();
       const input=$('ml-search');

@@ -8,7 +8,7 @@
 #music-library #ml-tools-title{margin:0;font-size:21px;line-height:1.4;font-weight:750;}
 #music-library .ml-tools-icon-button{display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;height:44px;border:1px solid var(--divider);border-radius:10px;background:var(--surface-secondary);color:var(--text-secondary);cursor:pointer;}
 #music-library .ml-tools-icon-button:hover{background:var(--accent-soft);color:var(--accent);border-color:var(--accent);}
-#music-library #ml-tools-content{flex:1;min-height:0;padding:28px 28px calc(28px + env(safe-area-inset-bottom,0px));overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable;}
+#music-library #ml-tools-content{flex:1;min-height:0;padding:28px 28px calc(28px + var(--ml-safe-bottom));overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;scrollbar-gutter:stable;}
 #music-library .ml-tools-intro{margin:0 0 24px;}
 #music-library .ml-tools-intro h3{margin:0 0 9px;font-size:22px;line-height:1.45;font-weight:750;}
 #music-library .ml-tools-intro p{color:var(--text-secondary);font-size:14px;line-height:1.8;}
@@ -101,13 +101,13 @@ html[data-resolved-theme="dark"] #music-library #ml-tools{--ml-tools-action-bg:v
 @keyframes ml-tools-enter{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
 @media(max-width:900px){
   #music-library #ml-tools-dialog{width:100%;height:100dvh;max-height:100dvh;margin:0;border:0;border-radius:0;}
-  #music-library .ml-tools-header{padding:calc(12px + env(safe-area-inset-top,0px)) max(24px,env(safe-area-inset-right,0px)) 12px max(24px,env(safe-area-inset-left,0px));min-height:80px;}
-  #music-library #ml-tools-content{padding:24px max(24px,env(safe-area-inset-right,0px)) calc(28px + env(safe-area-inset-bottom,0px)) max(24px,env(safe-area-inset-left,0px));}
+  #music-library .ml-tools-header{padding:calc(12px + var(--ml-safe-top)) max(24px,var(--ml-safe-right)) 12px max(24px,var(--ml-safe-left));min-height:80px;}
+  #music-library #ml-tools-content{padding:24px max(24px,var(--ml-safe-right)) calc(28px + var(--ml-safe-bottom)) max(24px,var(--ml-safe-left));}
   #music-library .ml-tools-card{gap:12px;padding:20px;}
 }
 @media(max-width:360px){
   #music-library #ml-tools-content{padding-left:16px;padding-right:16px;}
-  #music-library .ml-tools-header{padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));}
+  #music-library .ml-tools-header{padding-left:max(20px,var(--ml-safe-left));padding-right:max(20px,var(--ml-safe-right));}
   #music-library .ml-tools-card{grid-template-columns:44px minmax(0,1fr);gap:12px;padding:18px 20px;}
   #music-library .ml-tools-card-icon{width:44px;height:44px;}
   #music-library .ml-tools-card-arrow{display:none;}
