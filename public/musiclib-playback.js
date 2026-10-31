@@ -13,9 +13,11 @@
     const stallMs = options.stallMs || 15000;
     const maxReloads = options.maxReloads ?? 2;
     const maxPlayRetries = options.maxPlayRetries ?? 3;
+    const stableRecoveryMs = options.stableRecoveryMs ?? 30000;
     let wantsPlayback = false, phase = 'paused', blocked = false, destroyed = false;
     let generation = 0, request = 0, source = '', position = 0, lastProgress = now();
     let reloads = 0, playRetries = 0, nativePauseRetries = 0;
+    let healthySince = null, healthyPosition = 0;
     let timer = null, due = Infinity, pendingRestore = null, restoreGeneration = 0;
     let context = null, contextListener = null, resumePromise = null;
 
@@ -29,6 +31,25 @@
       };
     }
     function report(event) { try { options.onDiagnostic?.(event, getState()); } catch (_) {} }
+    function resetHealthyWindow() { healthySince = null; }
+    function recordHealthyProgress(current) {
+      if (!wantsPlayback || blocked || audio.paused || audio.error || audio.readyState < 3 ||
+          audio.seeking || systemInterrupted() || (context && context.state !== 'running')) {
+        resetHealthyWindow(); return;
+      }
+      if (healthySince === null || current < healthyPosition) {
+        healthySince = now(); healthyPosition = current; return;
+      }
+      // Retry limits belong to one interruption, not the whole song. A successful
+      // play promise alone is insufficient: require a stable wall-clock interval
+      // and genuine media progress before allowing recovery from a later event.
+      if (now() - healthySince >= stableRecoveryMs && current - healthyPosition >= 5 &&
+          (reloads || playRetries || nativePauseRetries)) {
+        reloads = 0; playRetries = 0; nativePauseRetries = 0;
+        healthySince = now(); healthyPosition = current;
+        report('recovery-budget-reset');
+      }
+    }
     function setPhase(next) {
       if (phase === next) return;
       phase = next;
@@ -63,6 +84,7 @@
       const next = audio.src || '';
       if (next === source) return;
       source = next; generation++; request++;
+      resetHealthyWindow();
       cancelRestore(); reloads = 0; playRetries = 0; nativePauseRetries = 0;
       position = Number(audio.currentTime) || 0; lastProgress = now();
     }
@@ -92,6 +114,7 @@
       context = next; resumePromise = null;
       if (!context?.addEventListener) return;
       contextListener = () => {
+        if (context.state !== 'running') resetHealthyWindow();
         report('context-state');
         if (wantsPlayback && !blocked) void recover('context-state');
       };
@@ -128,6 +151,7 @@
       if (destroyed || !audio.src) return Promise.resolve(false);
       syncSource();
       wantsPlayback = true; blocked = false;
+      resetHealthyWindow();
       reloads = 0; playRetries = 0; nativePauseRetries = 0;
       lastProgress = now(); position = Number(audio.currentTime) || 0;
       setPhase('loading'); schedule();
@@ -135,12 +159,14 @@
     }
     function pause(reason = 'user') {
       wantsPlayback = false; generation++; request++;
+      resetHealthyWindow();
       clearTimer(); cancelRestore();
       setPhase('paused'); report('pause-request:' + reason);
       audio.pause();
     }
     function prepareTrack(reason = 'track-change') {
       wantsPlayback = false; blocked = false; generation++; request++;
+      resetHealthyWindow();
       clearTimer(); cancelRestore();
       source = ''; reloads = 0; playRetries = 0; nativePauseRetries = 0;
       position = 0; lastProgress = now(); setPhase('paused'); report(reason);
@@ -152,6 +178,7 @@
         return Promise.resolve(false);
       }
       reloads++; playRetries++;
+      resetHealthyWindow();
       const selected = source, owner = generation, restoreOwner = ++restoreGeneration;
       const savedPosition = Number(audio.currentTime) || position;
       const rate = audio.playbackRate, volume = audio.volume, muted = audio.muted;
@@ -196,7 +223,7 @@
       if (!online()) { setPhase('offline'); return Promise.resolve(false); }
       if (pendingRestore && now() - lastProgress >= stallMs) cancelRestore();
       const current = Number(audio.currentTime) || 0;
-      if (Math.abs(current - position) > .05) { position = current; lastProgress = now(); }
+      if (Math.abs(current - position) > .05) { recordHealthyProgress(current); position = current; lastProgress = now(); }
       const code = audio.error?.code || 0;
       if (code === 3 || code === 4) {
         blocked = true; clearTimer(); cancelRestore(); setPhase('error'); report('unsupported-media:' + code);
@@ -206,7 +233,7 @@
       if (audio.paused) {
         // In-app and Media Session pause controls must call pause() first. A bare
         // native pause has no portable cause field: make at most one background
-        // attempt, then wait for a positive foreground/network/context signal.
+        // attempt per interruption. Confirmed healthy playback rearms this limit.
         const signal = ['pageshow', 'visible', 'online', 'canplay', 'context-state', 'manual'].includes(reason);
         if (playRetries >= maxPlayRetries || (!signal && nativePauseRetries >= 1)) return Promise.resolve(false);
         if (!signal) nativePauseRetries++;
@@ -219,22 +246,26 @@
     on(audio, 'playing', () => {
       if (!wantsPlayback) return;
       position = Number(audio.currentTime) || 0; lastProgress = now();
+      healthySince = now(); healthyPosition = position;
       setPhase('playing'); schedule();
     });
     on(audio, 'timeupdate', () => {
       const current = Number(audio.currentTime) || 0;
-      if (Math.abs(current - position) > .05) { position = current; lastProgress = now(); }
+      if (Math.abs(current - position) > .05) { recordHealthyProgress(current); position = current; lastProgress = now(); }
     });
     on(audio, 'pause', () => {
       if (!wantsPlayback || destroyed || audio.ended || pendingRestore || !audio.paused) return;
+      resetHealthyWindow();
       setPhase('interrupted'); report('native-pause'); schedule(1200);
     });
     for (const event of ['waiting', 'stalled']) on(audio, event, () => {
       if (!wantsPlayback || destroyed) return;
+      resetHealthyWindow();
       setPhase('buffering'); report(event); schedule();
     });
     on(audio, 'error', () => {
       if (!wantsPlayback || destroyed) return;
+      resetHealthyWindow();
       report('media-error'); schedule(500);
     });
     on(audio, 'canplay', () => { if (wantsPlayback && (audio.paused || audio.error)) void recover('canplay'); });
