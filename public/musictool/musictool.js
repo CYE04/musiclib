@@ -196,7 +196,7 @@ const jianpuHTML = `<!DOCTYPE html>
   --ink:rgba(255,255,255,0.88);--ink2:rgba(255,255,255,0.44);--ink3:rgba(255,255,255,0.18);
   --accent:#7c6af7;--accent2:#a89af9;--red:#f27c6a;--green:#6af2a8;--sel:#f0c040;
   /* 歌词分行配色：第 1 行主色，第 2/3/4 行蓝/绿/紫区分（暗底用提亮版） */
-  --ly2:#7FB0FF;--ly3:#52C994;--ly4:#C88FEC;
+  --ly2:#7FB0FF;--ly3:#52C994;--ly4:#C88FEC;--lyric-extra-lightness:73%;
   color-scheme:dark;
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -518,7 +518,7 @@ body.mt-resizing,body.mt-resizing *{user-select:none !important;}
 .p-lyric{min-height:var(--row-lyric-height,0px);font-family:'Noto Serif SC',serif;font-size:18px;font-weight:600;color:var(--ink);}
 /* 加粗＝真的更重一档。字体常只有 400/700，700→800 可能毫无变化，再叠一层极细横向 text-shadow 兜底。 */
 .p-lyric.bold{font-weight:800;text-shadow:.32px 0 0 currentColor,-.32px 0 0 currentColor;}
-.p-lyric2{margin-top:1px;color:var(--ly2);}.p-lyric3{margin-top:1px;color:var(--ly3);}.p-lyric4,.p-lyric-extra{margin-top:1px;color:var(--ly4);}
+.p-lyric2{margin-top:1px;color:var(--ly2);}.p-lyric3{margin-top:1px;color:var(--ly3);}.p-lyric4{margin-top:1px;color:var(--ly4);}.p-lyric-extra{margin-top:1px;color:hsl(var(--lyric-hue,25),65%,var(--lyric-extra-lightness,29%));}
 
 /* 音符结构 */
 .jp-wrap{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom;min-width:1em;}
@@ -677,7 +677,7 @@ body.mt-resizing,body.mt-resizing *{user-select:none !important;}
     --ink:rgba(17,24,39,0.92);--ink2:rgba(17,24,39,0.64);--ink3:rgba(17,24,39,0.40);
     --accent:#4a6cff;--accent2:#6d7dff;--red:#d95f5f;--green:#1f9f6c;--sel:#c08a10;
     /* 亮底：三种都要够深 */
-    --ly2:#123C8F;--ly3:#0E4F33;--ly4:#5C2178;
+    --ly2:#123C8F;--ly3:#0E4F33;--ly4:#5C2178;--lyric-extra-lightness:29%;
     color-scheme:light;
   }
   body{
@@ -1483,6 +1483,12 @@ function normalizeLyricLanes(row){
   row.querySelectorAll('.prev-seg').forEach(function(cell){
     var lyrics=Array.prototype.filter.call(cell.children,function(el){return el.classList.contains('p-lyric');});
     if(!lyrics.length)return;
+    lyrics.forEach(function(el,index){
+      if(index<4)return;
+      var hues=[25,185,345,75,255,200];
+      var hue=index<10?hues[index-4]:(25+(index-4)*137.508)%360;
+      el.style.setProperty('--lyric-hue',String(hue));
+    });
     cells.push({cell:cell,lyrics:lyrics});count=Math.max(count,lyrics.length);
   });
   cells.forEach(function(item){

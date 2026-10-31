@@ -7804,6 +7804,12 @@ function normalizeLyricLanes(row){
   row.querySelectorAll('.prev-seg').forEach(function(cell){
     var lyrics=Array.prototype.filter.call(cell.children,function(el){return el.classList.contains('p-lyric');});
     if(!lyrics.length)return;
+    lyrics.forEach(function(el,index){
+      if(index<4)return;
+      var hues=[25,185,345,75,255,200];
+      var hue=index<10?hues[index-4]:(25+(index-4)*137.508)%360;
+      el.style.setProperty('--lyric-hue',String(hue));
+    });
     cells.push({cell:cell,lyrics:lyrics});count=Math.max(count,lyrics.length);
   });
   cells.forEach(function(item){

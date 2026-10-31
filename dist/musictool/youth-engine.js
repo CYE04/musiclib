@@ -318,7 +318,7 @@ window.YouthEngine = {};
   --ym-capo:#0B6FE3;--ym-capo-bg:rgba(11,111,227,.08);--ym-capo-ln:rgba(11,111,227,.2);
   --ym-chord-ink:#0B6FE3;
   /* 歌词分行配色：第 1 行纯黑，第 2/3/4 行深蓝/深绿/深紫 —— 都要够深，别用浅色/降透明度 */
-  --ym-ly2:#123C8F;--ym-ly3:#0E4F33;--ym-ly4:#5C2178;
+  --ym-ly2:#123C8F;--ym-ly3:#0E4F33;--ym-ly4:#5C2178;--lyric-extra-lightness:29%;
   --yb:var(--ym-bg-elevated);--yt:var(--ym-text-primary);--ym:var(--ym-text-secondary);--ybr:var(--ym-separator);--ysh:rgba(20,30,55,.24);--ybk:rgba(15,20,35,.55);
 }
 @media(prefers-color-scheme:dark){
@@ -339,7 +339,7 @@ window.YouthEngine = {};
 
     --ym-bg:var(--ym-bg-base);--ym-card:var(--ym-bg-elevated);
     /* 暗色下同样三种色相，提亮到深底上看得清 */
-    --ym-ly2:#7FB0FF;--ym-ly3:#52C994;--ym-ly4:#C88FEC;
+    --ym-ly2:#7FB0FF;--ym-ly3:#52C994;--ym-ly4:#C88FEC;--lyric-extra-lightness:73%;
     --ym-ink:var(--ym-text-primary);--ym-ink2:var(--ym-text-secondary);--ym-ink3:var(--ym-text-tertiary);
     --ym-border:var(--ym-separator);--ym-border-md:var(--ym-separator-strong);--ym-soft:rgba(255,255,255,.06);
     --ym-glow:var(--ym-accent-subtle);--ym-warm:rgba(99,179,242,.14);--ym-mint:rgba(63,196,214,.12);
@@ -527,7 +527,7 @@ window.YouthEngine = {};
    所以再叠一层极细的横向 text-shadow 兜底（html2canvas 也认 text-shadow）。 */
 .p-lyric.bold{font-weight:800;text-shadow:.32px 0 0 currentColor,-.32px 0 0 currentColor}
 .p-lyric2,.p-lyric3,.p-lyric4{margin-top:1px}
-.p-lyric2{color:var(--ym-ly2)}.p-lyric3{color:var(--ym-ly3)}.p-lyric4,.p-lyric-extra{margin-top:1px;color:var(--ym-ly4)}
+.p-lyric2{color:var(--ym-ly2)}.p-lyric3{color:var(--ym-ly3)}.p-lyric4{margin-top:1px;color:var(--ym-ly4)}.p-lyric-extra{margin-top:1px;color:hsl(var(--lyric-hue,25),65%,var(--lyric-extra-lightness,29%))}
 .chord-gap,
 .lyric-gap{display:inline-block;white-space:pre;visibility:hidden;pointer-events:none;font:inherit;line-height:inherit}
 .prev-volta{display:inline-flex;align-items:flex-end;position:relative}
@@ -3042,6 +3042,12 @@ function normalizeLyricLanes(row){
   row.querySelectorAll('.prev-seg').forEach(function(cell){
     var lyrics=Array.prototype.filter.call(cell.children,function(el){return el.classList.contains('p-lyric');});
     if(!lyrics.length)return;
+    lyrics.forEach(function(el,index){
+      if(index<4)return;
+      var hues=[25,185,345,75,255,200];
+      var hue=index<10?hues[index-4]:(25+(index-4)*137.508)%360;
+      el.style.setProperty('--lyric-hue',String(hue));
+    });
     cells.push({cell:cell,lyrics:lyrics});count=Math.max(count,lyrics.length);
   });
   cells.forEach(function(item){

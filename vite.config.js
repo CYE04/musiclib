@@ -165,11 +165,13 @@ function editorAssets() {
     { name: 'musictool.js', source: '../musictool/musictool.js' },
     { name: 'musictool.css', source: '../musictool/musictool.css' },
     { name: '教程.html', source: '../musictool/教程.html' },
-    { name: 'youth-engine.js', source: '../youth-engine.js' },
+    // MusicLib keeps its tutorial engine with its own instrument features in public/.
+    { name: 'youth-engine.js', source: null },
   ];
   const packageFiles = ['index.html', 'theme-init.js', 'editor-adapter.js', 'editor-adapter.css', ...assets.map((asset) => asset.name)];
   const publicDirectory = path.resolve('public/musictool');
   const contentOf = (asset) => {
+    if (!asset.source) return null;
     const source = path.resolve(asset.source);
     if (!fs.existsSync(source)) return null;
     const content = fs.readFileSync(source);
