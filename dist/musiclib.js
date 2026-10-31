@@ -3589,6 +3589,64 @@
     if(line)lines.push(line);
     return lines;
   }
+  // Export only: recover the paper margins and, when needed, the empty space
+  // between music rows. Draw the original row pixels at ONE uniform scale, so
+  // lyrics, chords, beams, octave dots, annotations and ink keep their alignment.
+  function exportJianpuImageLayout(canvas,page,rect,cropTop,cropHeight,area){
+    const scale=canvas.width/rect.width;
+    const top=Math.max(0,Math.floor(cropTop));
+    const height=Math.min(canvas.height-top,Math.ceil(cropHeight));
+    const pixels=canvas.getContext('2d').getImageData(0,top,canvas.width,height).data;
+    const occupied=new Uint8Array(height);
+    let left=canvas.width,right=-1,first=height,last=-1;
+    for(let y=0;y<height;y++){
+      for(let x=0,offset=y*canvas.width*4;x<canvas.width;x++,offset+=4){
+        if(pixels[offset+3]>0&&Math.min(pixels[offset],pixels[offset+1],pixels[offset+2])<255){
+          occupied[y]=1;left=Math.min(left,x);right=Math.max(right,x);
+          first=Math.min(first,y);last=y;
+        }
+      }
+    }
+    if(right<left)return null;
+    // Keep a small safety gutter around antialiasing and handwritten strokes.
+    left=Math.max(0,left-6);right=Math.min(canvas.width,right+7);
+    first=Math.max(0,first-6);last=Math.min(height,last+7);
+    const width=right-left,naturalHeight=last-first;
+    const widthFit=Math.min(area.width/width,area.maxScale||Infinity);
+    const rows=Array.from(page.querySelectorAll('.sw-lrow'),row=>row.getBoundingClientRect())
+      .filter(box=>box.width>0&&box.height>0).sort((a,b)=>a.top-b.top);
+    const gaps=[];
+    for(let i=1;i<rows.length;i++){
+      const start=Math.max(first,Math.ceil((rows[i-1].bottom-rect.top)*scale-1e-6)-top);
+      const end=Math.min(last,Math.floor((rows[i].top-rect.top)*scale+1e-6)-top);
+      let run=start,bestStart=start,bestEnd=start;
+      for(let y=start;y<=end;y++){
+        if(y===end||occupied[y]){
+          if(y-run>bestEnd-bestStart){bestStart=run;bestEnd=y;}
+          run=y+1;
+        }
+      }
+      // Only remove verified white pixels OUTSIDE the row boxes. Section labels,
+      // repeat endings, long slurs and handwritten notes cannot be cut through.
+      const capacity=Math.max(0,bestEnd-bestStart-Math.ceil(36/widthFit));
+      if(capacity>0)gaps.push({start:bestStart,end:bestEnd,capacity});
+    }
+    const capacity=gaps.reduce((sum,gap)=>sum+gap.capacity,0);
+    const needed=Math.max(0,naturalHeight-area.height/widthFit);
+    const fraction=capacity?Math.min(1,needed/capacity):0;
+    const strips=[];let cursor=first,removed=0;
+    for(const gap of gaps){
+      const cut=Math.floor(gap.capacity*fraction+1e-6);
+      if(!cut)continue;
+      const cutStart=gap.start+Math.floor((gap.end-gap.start-cut)/2);
+      strips.push({top:top+cursor,height:cutStart-cursor});
+      cursor=cutStart+cut;removed+=cut;
+    }
+    strips.push({top:top+cursor,height:last-cursor});
+    const compactHeight=naturalHeight-removed;
+    return {left,width,height:compactHeight,strips,
+      scale:Math.min(widthFit,area.height/compactHeight)};
+  }
   async function exportRenderedScorePng(pages,opt={}){
     await document.fonts?.ready;
     const [capture,logo]=await Promise.all([loadHtml2Canvas(),loadImageForExport(LOGO_SRC)]);
@@ -3718,13 +3776,28 @@
           cropHeight=bottom-cropTop;
         }
       }
-      const fit=Math.min((output.height-headerHeight-footerHeight)/cropHeight,(output.width-80)/canvas.width);
-      const scoreX=(output.width-canvas.width*fit)/2;
-      outputCtx.drawImage(canvas,0,cropTop,canvas.width,cropHeight,scoreX,headerHeight,canvas.width*fit,cropHeight*fit);
+      const baseFit=Math.min((output.height-headerHeight-footerHeight)/cropHeight,(output.width-80)/canvas.width);
+      const scoreArea={width:output.width-128,height:output.height-headerHeight-footerHeight,maxScale:baseFit*1.2};
+      const candidate=notation?exportJianpuImageLayout(canvas,page,rect,cropTop,cropHeight,scoreArea):null;
+      // An already full-bleed/dense score must never get smaller just to meet the
+      // preferred new margins. Keep its previous composition in that case.
+      const compact=candidate&&candidate.scale>baseFit*1.005?candidate:null;
+      const fit=compact?compact.scale:baseFit;
+      const sourceLeft=compact?compact.left:0,sourceWidth=compact?compact.width:canvas.width;
+      const scoreX=(output.width-sourceWidth*fit)/2;
+      if(compact){
+        let y=headerHeight;
+        for(const strip of compact.strips){
+          if(strip.height>0)outputCtx.drawImage(canvas,sourceLeft,strip.top,sourceWidth,strip.height,scoreX,y,sourceWidth*fit,strip.height*fit);
+          y+=strip.height*fit;
+        }
+      }else{
+        outputCtx.drawImage(canvas,0,cropTop,canvas.width,cropHeight,scoreX,headerHeight,canvas.width*fit,cropHeight*fit);
+      }
       const edgeBoxes=Array.from(page.querySelectorAll(page.classList.contains('ml-staff-page')?'.abcjs-staff':'.sw-lrow'),node=>node.getBoundingClientRect()).filter(box=>box.width>0);
       const pageScale=canvas.width/rect.width;
-      const leftEdge=edgeBoxes.length?scoreX+(Math.min(...edgeBoxes.map(box=>box.left))-rect.left)*pageScale*fit:100;
-      const rightEdge=edgeBoxes.length?scoreX+(Math.max(...edgeBoxes.map(box=>box.right))-rect.left)*pageScale*fit:output.width-100;
+      const leftEdge=compact?scoreX:edgeBoxes.length?scoreX+(Math.min(...edgeBoxes.map(box=>box.left))-rect.left)*pageScale*fit:100;
+      const rightEdge=compact?scoreX+sourceWidth*fit:edgeBoxes.length?scoreX+(Math.max(...edgeBoxes.map(box=>box.right))-rect.left)*pageScale*fit:output.width-100;
       outputCtx.fillStyle='#241C17';outputCtx.textAlign='center';outputCtx.textBaseline='middle';
       center.forEach(line=>{outputCtx.font=line.font;outputCtx.fillText(line.text,output.width/2,line.y,output.width-240);});
       const metadata=['1='+(opt.key||song.origKey||'C'),song.timeSign||''].filter(Boolean).join('   ');
