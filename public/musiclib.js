@@ -1363,7 +1363,7 @@
     }
     const result=[];
     for(const part of parts){
-      const keys=['lyric','lyric2','lyric3','lyric4'];
+      const keys=songLyricKeys(Object.assign({},...part.rows.flat()));
       const lanes=keys.filter(key=>part.rows.some(row=>row.some(cell=>clean(cell[key]))));
       for(const key of lanes){
         const lines=part.rows.map(row=>row.map(cell=>clean(cell[key]??cell.lyric)).reduce((text,next)=>text+(/[a-z0-9]$/i.test(text)&&/^[a-z0-9]/i.test(next)?' ':'')+next,'').trim()).filter(Boolean);
@@ -1586,13 +1586,10 @@
     ensureStrictCssML();
     show=show||{chord:true,jianpu:true,lyric:true,pinyin:false};
     const toks=CecpStrictAlign.tokenizeN(seg.n||'');
-    const lyricFields=[seg.lyric||''];
-    if(seg.lyric2!=null)lyricFields.push(seg.lyric2);
-    if(seg.lyric3!=null)lyricFields.push(seg.lyric3);
-    if(seg.lyric4!=null)lyricFields.push(seg.lyric4);
+    const lyricFields=songLyricRows(seg);
     const aligned=CecpStrictAlign.alignRow(seg.n||'', seg.chord||'', lyricFields);
     const nLy=show.lyric?aligned.lyrics.length:0;
-    function lyCls(j){return 'p-lyric'+(j?' p-lyric'+(j+1):'')+(show.pinyin?' p-lyric-py':'')+(bold?' bold':'');}
+    function lyCls(j){return 'p-lyric'+(j?' p-lyric'+(j+1):'')+(j>=4?' p-lyric-extra':'')+(show.pinyin?' p-lyric-py':'')+(bold?' bold':'');}
     let slot=0, pendingSlurOpen=0, pendingSlurClose=0, pendingTupletN=0, lastSlotCol=null;
     toks.forEach(function(tok){
       if(tok==='!'){const lc=container.lastElementChild;if(lc)lc.setAttribute('data-bb','1');return;}  // 断梁标记
@@ -1807,14 +1804,13 @@
       if(tg.jianpu){
         segEl.appendChild(renderNStr(seg.n||'',{inlineTimeSign:getSegInlineTimeSign(seg)}));
       }
-      [['lyric','',1],['lyric2','2',2],['lyric3','3',3],['lyric4','4',4]].forEach(([k,suf,idx])=>{
-        const hasV = idx===1 ? true : (seg[k]!=null&&seg[k]!=='');
-        if(!hasV) return;
-        const text=String(seg[k]||'');
+      songLyricKeys(seg).forEach((k,j)=>{
+        const idx=j+1,suf=j?String(idx):'';
+        const text=String(seg[k]||String.fromCharCode(160));
         // 拼音开: 歌词用带声调拼音字体(每字上方自带拼音), 不再另起一行; 拼音关: 普通字体
         if(tg.lyric||tg.pinyin){
           const ly=document.createElement('div');
-          ly.className='p-lyric'+(suf?' p-lyric'+suf:'')+(tg.pinyin?' p-lyric-py':'')+((!isArr&&line.b)?' bold':'');
+          ly.className='p-lyric'+(suf?' p-lyric'+suf:'')+(idx>4?' p-lyric-extra':'')+(tg.pinyin?' p-lyric-py':'')+((!isArr&&line.b)?' bold':'');
           setLyricContentEx(ly,normLyricText(text),setLyricContent);
           segEl.appendChild(ly);
         }
@@ -1877,6 +1873,7 @@
   function projNormalizeRowHeights(scope){
     if(!scope)return;
     scope.querySelectorAll('.prev-row').forEach(row=>{
+      normalizeLyricLanes(row);
       row.style.setProperty('--row-note-height','0px');
       let maxH=0;
       row.querySelectorAll('.p-n').forEach(nl=>{ maxH=Math.max(maxH,Math.ceil(nl.getBoundingClientRect().height||0)); });
@@ -3061,8 +3058,7 @@
             const path=['sections',sectionIndex,'lines',lineIndex,...(isArray?[]:['line']),cellIndex];
             if(typeof cell.label==='string'){row.appendChild(projContentField('段落标记',cell.label,[...path,'label'],false));return;}
             const segment=document.createElement('div');segment.className='ml-cast-content-segment';
-            for(const [key,label] of [['n','简谱音符'],['chord','和弦（原调）'],['lyric','歌词'],['lyric2','第二段歌词'],['lyric3','第三段歌词'],['lyric4','第四段歌词']]){
-              if(['lyric2','lyric3','lyric4'].includes(key)&&cell[key]===undefined)continue;
+            for(const [key,label] of [['n','简谱音符'],['chord','和弦（原调）'],...songLyricKeys(cell).map((key,i)=>[key,i?'第 '+(i+1)+' 段歌词':'歌词'])]){
               const field=projContentField(label,cell[key],[...path,key]);segment.appendChild(field);
               if(current===target&&key==='lyric'&&!focus)focus=field.querySelector('textarea');
             }
@@ -5135,12 +5131,12 @@
     if(!verses){
       verses=[];
       for(const sec of s.sections||[]){
-        const lanes=['','','',''];
+        const lanes=[];
         for(const line of sec.lines||[]){
           const arr=Array.isArray(line)?line:(line.line||[]);
-          arr.forEach(seg=>['lyric','lyric2','lyric3','lyric4'].forEach((key,i)=>{
+          arr.forEach(seg=>songLyricKeys(seg).forEach((key,i)=>{
             const value=s.align==='strict'?CecpStrictAlign.strictLyricPlain(seg[key]):seg[key];
-            lanes[i]+=norm(value);
+            lanes[i]=(lanes[i]||'')+norm(value);
           }));
         }
         verses.push(...lanes.filter(Boolean));
@@ -7788,13 +7784,43 @@ function trChordEx(text,st,useFlat,trChordFn){
   }
   return out;
 }
+/* Keep lyric / lyric2 / lyricN compatible, including empty intermediate lanes. */
+function songLyricKeys(seg){
+  var last=1;
+  Object.keys(seg||{}).forEach(function(key){
+    if(/^lyric([2-9]|[1-9][0-9]+)$/.test(key))last=Math.max(last,Number(key.slice(5)));
+  });
+  var keys=['lyric'];
+  for(var i=2;i<=last;i++)keys.push('lyric'+i);
+  return keys;
+}
+function songLyricRows(seg){
+  return songLyricKeys(seg).map(function(key){return seg[key]==null?'':String(seg[key]);});
+}
+/* Equal lane counts keep notes and each stanza level across adjacent cells. */
+function normalizeLyricLanes(row){
+  row.querySelectorAll('[data-lyric-pad]').forEach(function(el){el.remove();});
+  var cells=[],count=0;
+  row.querySelectorAll('.prev-seg').forEach(function(cell){
+    var lyrics=Array.prototype.filter.call(cell.children,function(el){return el.classList.contains('p-lyric');});
+    if(!lyrics.length)return;
+    cells.push({cell:cell,lyrics:lyrics});count=Math.max(count,lyrics.length);
+  });
+  cells.forEach(function(item){
+    for(var i=item.lyrics.length;i<count;i++){
+      var el=document.createElement('div');
+      el.className='p-lyric p-lyric'+(i+1)+(i>=4?' p-lyric-extra':'')+(item.lyrics[0].classList.contains('bold')?' bold':'')+(item.lyrics[0].classList.contains('p-lyric-py')?' p-lyric-py':'');
+      el.textContent=String.fromCharCode(160);el.setAttribute('data-lyric-pad','');el.setAttribute('aria-hidden','true');item.cell.appendChild(el);
+    }
+  });
+}
 function segIsLabelBlock(seg){
   return !!seg&&typeof seg==='object'&&typeof seg.label==='string';
 }
 function segIsRenderableBlock(seg){
   if(!seg||typeof seg!=='object')return false;
   if(segIsLabelBlock(seg))return true;
-  return typeof seg.chord!=='undefined'||typeof seg.n!=='undefined'||typeof seg.lyric!=='undefined'||typeof seg.lyric2!=='undefined'||typeof seg.lyric3!=='undefined'||typeof seg.lyric4!=='undefined';
+  return typeof seg.chord!=='undefined'||typeof seg.n!=='undefined'||songLyricKeys(seg).some(function(key){return typeof seg[key]!=='undefined';});
 }
 var SEC_LABEL_COLORS=[
   ['pre-chorus','prechorus','pre chorus','前副歌','导歌','#0d9488'],
@@ -12524,14 +12550,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         const secondary=[];
         for(const seg of segs){
           if(!seg) continue;
-          const a=rd(seg.lyric);
-          const b=rd(seg.lyric2);
-          const c=rd(seg.lyric3);
-          const d=rd(seg.lyric4);
-          if(a) primary.push(a);
-          if(b) secondary.push(b);
-          if(c) secondary.push(c);
-          if(d) secondary.push(d);
+          songLyricRows(seg).forEach((value,i)=>{const text=rd(value);if(text)(i?secondary:primary).push(text);});
         }
         push(primary.join(''));
         for(const tx of secondary) push(tx);
@@ -14086,7 +14105,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
            只动留白不动字号：字号在这里改是白改，fitRows 随后会按比例缩放，改了等于没改。
            ⚠️ 规则挂在 .sw-page 下 → 导出克隆(搬到纸外面)天然不受影响，跟撑行距那条一样。 */
         '#music-library .sw-page .sw-lb.sw-a4-tight .p-lyric{line-height:1.12;}',
-        '#music-library .sw-page .sw-lb.sw-a4-tight .p-lyric2,#music-library .sw-page .sw-lb.sw-a4-tight .p-lyric3,#music-library .sw-page .sw-lb.sw-a4-tight .p-lyric4{margin-top:0;}',
+        '#music-library .sw-page .sw-lb.sw-a4-tight .p-lyric2,#music-library .sw-page .sw-lb.sw-a4-tight .p-lyric3,#music-library .sw-page .sw-lb.sw-a4-tight .p-lyric4,#music-library .sw-page .sw-lb.sw-a4-tight .p-lyric-extra{margin-top:0;}',
         '#music-library .sw-page .sw-lb.sw-a4-tight .p-chord{line-height:1.05;}',
         '#music-library .sw-page .sw-lb.sw-a4-tight .sw-lline{margin-bottom:4px;}',
         '#music-library .sw-page .sw-lb.sw-a4-tight .sw-lsec{margin-bottom:10px;}',
@@ -14172,6 +14191,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     };
     const normalizePreviewRowHeights=()=>{
       lbDiv.querySelectorAll('.prev-row').forEach(row=>{
+        normalizeLyricLanes(row);
         row.style.setProperty('--row-note-height','0px');
         let maxH=0;
         row.querySelectorAll('.p-n').forEach(noteLane=>{
@@ -15025,11 +15045,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
             chordChipDecorate(chord);
             segEl.appendChild(chord);
             segEl.appendChild(renderNStr(seg.n||'',{inlineTimeSign:getSegInlineTimeSign(seg)}));
-            const lyric=document.createElement('div');lyric.className='p-lyric'+((!Array.isArray(line)&&line.b)?' bold':'');setLyricContentEx(lyric,normLyricText(seg.lyric),setLyricContent);
-            segEl.appendChild(lyric);
-            if(seg.lyric2){const ly2=document.createElement('div');ly2.className='p-lyric p-lyric2'+((!Array.isArray(line)&&line.b)?' bold':'');setLyricContentEx(ly2,normLyricText(seg.lyric2),setLyricContent);segEl.appendChild(ly2);}
-            if(seg.lyric3){const ly3=document.createElement('div');ly3.className='p-lyric p-lyric3'+((!Array.isArray(line)&&line.b)?' bold':'');setLyricContentEx(ly3,normLyricText(seg.lyric3),setLyricContent);segEl.appendChild(ly3);}
-            if(seg.lyric4){const ly4=document.createElement('div');ly4.className='p-lyric p-lyric4'+((!Array.isArray(line)&&line.b)?' bold':'');setLyricContentEx(ly4,normLyricText(seg.lyric4),setLyricContent);segEl.appendChild(ly4);}
+            songLyricKeys(seg).forEach((key,j)=>{
+                  const ly=document.createElement('div');ly.className='p-lyric'+(j?' p-lyric'+(j+1):'')+(j>=4?' p-lyric-extra':'')+((!Array.isArray(line)&&line.b)?' bold':'');
+              setLyricContentEx(ly,normLyricText(seg[key]||String.fromCharCode(160)),setLyricContent);segEl.appendChild(ly);
+            });
             const _vn=getVoltaStartLabel(seg.n);
             if(_vn){
               row.classList.add('has-volta');

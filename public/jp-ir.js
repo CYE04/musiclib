@@ -34,6 +34,20 @@
 
   /* ── 常量 ─────────────────────────────────────────────────────────────── */
 
+/* Keep lyric / lyric2 / lyricN compatible, including empty intermediate lanes. */
+function songLyricKeys(seg){
+  var last=1;
+  Object.keys(seg||{}).forEach(function(key){
+    if(/^lyric([2-9]|[1-9][0-9]+)$/.test(key))last=Math.max(last,Number(key.slice(5)));
+  });
+  var keys=['lyric'];
+  for(var i=2;i<=last;i++)keys.push('lyric'+i);
+  return keys;
+}
+function songLyricRows(seg){
+  return songLyricKeys(seg).map(function(key){return seg[key]==null?'':String(seg[key]);});
+}
+
   var Q = 8;                                    // 四分音符 = 8 个 1/32 单位
   var LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
   var LETTER_PC = { C: 0, D: 2, E: 4, F: 5, G: 7, A: 9, B: 11 };
@@ -299,7 +313,7 @@
 
     /* ── 1. 把整首歌摊平成带出处的 token 流 ───────────────────────────── */
     var flat = [];
-    var cellLyrics = {};        // 'si/li/ci' -> [lyric, lyric2, lyric3, lyric4]（非 strict 后处理用）
+    var cellLyrics = {};        // 'si/li/ci' -> all lyric lanes（非 strict 后处理用）
     (song && song.sections || []).forEach(function (sec, si) {
       flat.push({ type: 'section', name: (sec && sec.name) || '', si: si });
       (sec && sec.lines || []).forEach(function (line, li) {
@@ -310,7 +324,7 @@
 
           var where = { si: si, li: li, ci: ci };
 
-          if (!isStrict) cellLyrics[si + '/' + li + '/' + ci] = [seg.lyric, seg.lyric2, seg.lyric3, seg.lyric4];
+          if (!isStrict) cellLyrics[si + '/' + li + '/' + ci] = songLyricRows(seg);
           var cellTs = SA._timeSign.normalizeTimeSignValue(seg.timeSign || seg.ts || seg.meter || '');
           if (cellTs) flat.push({ type: 'timesign', value: cellTs, where: where });
 
@@ -325,7 +339,7 @@
           var aligned = null;
           var looseChord = null;
           if (isStrict) {
-            aligned = SA.alignRow(seg.n, seg.chord || '', [seg.lyric || '', seg.lyric2 || '', seg.lyric3 || '', seg.lyric4 || '']);
+            aligned = SA.alignRow(seg.n, seg.chord || '', songLyricRows(seg));
           } else {
             /* 非 strict 歌没有下标语义（和弦靠 ㅤ 的测量宽度定位），但和弦对乐手太重要，
                不能整个丢掉。实测非 strict 的有和弦 cell 里 97.4% 只有一个和弦，
@@ -780,7 +794,7 @@
         var raw = cellLyrics[k];
         if (!raw) return;
         var rows = [];
-        for (var r = 0; r < 4; r++) {
+        for (var r = 0; r < raw.length; r++) {
           var txt = String(raw[r] == null ? '' : raw[r]).replace(/\{sp\}/g, '').replace(/[\u3164\u3000]/g, '');
           rows.push(txt.trim() ? SA.tokenizeLyric(txt) : []);
         }

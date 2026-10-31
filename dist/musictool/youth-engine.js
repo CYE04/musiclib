@@ -527,7 +527,7 @@ window.YouthEngine = {};
    所以再叠一层极细的横向 text-shadow 兜底（html2canvas 也认 text-shadow）。 */
 .p-lyric.bold{font-weight:800;text-shadow:.32px 0 0 currentColor,-.32px 0 0 currentColor}
 .p-lyric2,.p-lyric3,.p-lyric4{margin-top:1px}
-.p-lyric2{color:var(--ym-ly2)}.p-lyric3{color:var(--ym-ly3)}.p-lyric4{color:var(--ym-ly4)}
+.p-lyric2{color:var(--ym-ly2)}.p-lyric3{color:var(--ym-ly3)}.p-lyric4,.p-lyric-extra{margin-top:1px;color:var(--ym-ly4)}
 .chord-gap,
 .lyric-gap{display:inline-block;white-space:pre;visibility:hidden;pointer-events:none;font:inherit;line-height:inherit}
 .prev-volta{display:inline-flex;align-items:flex-end;position:relative}
@@ -3022,13 +3022,43 @@ function trChordEx(text,st,useFlat,trChordFn){
   }
   return out;
 }
+/* Keep lyric / lyric2 / lyricN compatible, including empty intermediate lanes. */
+function songLyricKeys(seg){
+  var last=1;
+  Object.keys(seg||{}).forEach(function(key){
+    if(/^lyric([2-9]|[1-9][0-9]+)$/.test(key))last=Math.max(last,Number(key.slice(5)));
+  });
+  var keys=['lyric'];
+  for(var i=2;i<=last;i++)keys.push('lyric'+i);
+  return keys;
+}
+function songLyricRows(seg){
+  return songLyricKeys(seg).map(function(key){return seg[key]==null?'':String(seg[key]);});
+}
+/* Equal lane counts keep notes and each stanza level across adjacent cells. */
+function normalizeLyricLanes(row){
+  row.querySelectorAll('[data-lyric-pad]').forEach(function(el){el.remove();});
+  var cells=[],count=0;
+  row.querySelectorAll('.prev-seg').forEach(function(cell){
+    var lyrics=Array.prototype.filter.call(cell.children,function(el){return el.classList.contains('p-lyric');});
+    if(!lyrics.length)return;
+    cells.push({cell:cell,lyrics:lyrics});count=Math.max(count,lyrics.length);
+  });
+  cells.forEach(function(item){
+    for(var i=item.lyrics.length;i<count;i++){
+      var el=document.createElement('div');
+      el.className='p-lyric p-lyric'+(i+1)+(i>=4?' p-lyric-extra':'')+(item.lyrics[0].classList.contains('bold')?' bold':'')+(item.lyrics[0].classList.contains('p-lyric-py')?' p-lyric-py':'');
+      el.textContent=String.fromCharCode(160);el.setAttribute('data-lyric-pad','');el.setAttribute('aria-hidden','true');item.cell.appendChild(el);
+    }
+  });
+}
 function segIsLabelBlock(seg){
   return !!seg&&typeof seg==='object'&&typeof seg.label==='string';
 }
 function segIsRenderableBlock(seg){
   if(!seg||typeof seg!=='object')return false;
   if(segIsLabelBlock(seg))return true;
-  return typeof seg.chord!=='undefined'||typeof seg.n!=='undefined'||typeof seg.lyric!=='undefined'||typeof seg.lyric2!=='undefined'||typeof seg.lyric3!=='undefined'||typeof seg.lyric4!=='undefined';
+  return typeof seg.chord!=='undefined'||typeof seg.n!=='undefined'||songLyricKeys(seg).some(function(key){return typeof seg[key]!=='undefined';});
 }
 var SEC_LABEL_COLORS=[
   ['pre-chorus','prechorus','pre chorus','前副歌','导歌','#0d9488'],
@@ -6062,7 +6092,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
            只动留白不动字号：字号在这里改是白改，fitRows 随后会按比例缩放，改了等于没改。
            ⚠️ 规则挂在 .sw-page 下 → 导出克隆(搬到纸外面)天然不受影响，跟撑行距那条一样。 */
         '.sw-page .sw-lb.sw-a4-tight .p-lyric{min-height:var(--row-lyric-height,0px);line-height:1.12;}',
-        '.sw-page .sw-lb.sw-a4-tight .p-lyric2,.sw-page .sw-lb.sw-a4-tight .p-lyric3,.sw-page .sw-lb.sw-a4-tight .p-lyric4{margin-top:0;}',
+        '.sw-page .sw-lb.sw-a4-tight .p-lyric2,.sw-page .sw-lb.sw-a4-tight .p-lyric3,.sw-page .sw-lb.sw-a4-tight .p-lyric4,.sw-page .sw-lb.sw-a4-tight .p-lyric-extra{margin-top:0;}',
         '.sw-page .sw-lb.sw-a4-tight .p-chord{line-height:1.05;}',
         '.sw-page .sw-lb.sw-a4-tight .sw-lline{margin-bottom:4px;}',
         '.sw-page .sw-lb.sw-a4-tight .sw-lsec{margin-bottom:10px;}',
@@ -6153,6 +6183,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
   }
     function normalizePreviewRowHeights(){
       lbDiv.querySelectorAll('.prev-row').forEach(function(row){
+        normalizeLyricLanes(row);
         row.style.setProperty('--row-note-height','0px');
         var maxH=0;
         row.querySelectorAll('.p-n').forEach(function(noteLane){
@@ -6313,10 +6344,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     function buildStrictSegColumns(seg, st, useFlat, bold, container){
       ensureStrictCss();
       var toks=CecpStrictAlign.tokenizeN(seg.n||'');
-      var lyricFields=[seg.lyric||''];
-      if(seg.lyric2!=null)lyricFields.push(seg.lyric2);
-      if(seg.lyric3!=null)lyricFields.push(seg.lyric3);
-      if(seg.lyric4!=null)lyricFields.push(seg.lyric4);
+      var lyricFields=songLyricRows(seg);
       var aligned=CecpStrictAlign.alignRow(seg.n||'', seg.chord||'', lyricFields);
       var slot=0, pendingSlurOpen=0, pendingSlurClose=0, pendingTupletN=0, lastSlotCol=null;
       toks.forEach(function(tok){
@@ -6352,7 +6380,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
           var nWrap=div('p-n');nWrap.appendChild(parseJpToken(tok));col.appendChild(nWrap);
           aligned.lyrics.forEach(function(arr,j){
             var lv=arr[slot];
-            var l=div('p-lyric'+(j?' p-lyric'+(j+1):'')+(bold?' bold':''));
+            var l=div('p-lyric'+(j?' p-lyric'+(j+1):'')+(j>=4?' p-lyric-extra':'')+(bold?' bold':''));
             if(lv==null){ setLyricContentEx(l,' ',setLyricContent); }
             else {
               var lsp=CecpStrictAlign.splitTrailingPunct(lv);   // 标点永远悬挂：对中点保留在字上；列级 p-punct-gap 在标点后留空隙防撞后字
@@ -6370,13 +6398,13 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
           var b=div('prev-seg p-slot p-barslot');
           var bc=div('p-chord empty');setChordContentEx(bc,' ',setChordContent);b.appendChild(bc);
           var bn=div('p-n');bn.appendChild(makeBarline(tok));b.appendChild(bn);
-          aligned.lyrics.forEach(function(_,j){var bl=div('p-lyric'+(j?' p-lyric'+(j+1):'')+(bold?' bold':''));setLyricContentEx(bl,' ',setLyricContent);b.appendChild(bl);});
+          aligned.lyrics.forEach(function(_,j){var bl=div('p-lyric'+(j?' p-lyric'+(j+1):'')+(j>=4?' p-lyric-extra':'')+(bold?' bold':''));setLyricContentEx(bl,' ',setLyricContent);b.appendChild(bl);});
           container.appendChild(b);
         } else if(extractInlineTimeSignToken(tok)){
           var t=div('prev-seg p-slot p-barslot');
           var tc=div('p-chord empty');t.appendChild(tc);
           var tn=div('p-n');tn.appendChild(makeTimeSignature(extractInlineTimeSignToken(tok)));t.appendChild(tn);
-          aligned.lyrics.forEach(function(_,j){var tl=div('p-lyric'+(j?' p-lyric'+(j+1):'')+(bold?' bold':''));setLyricContentEx(tl,' ',setLyricContent);t.appendChild(tl);});
+          aligned.lyrics.forEach(function(_,j){var tl=div('p-lyric'+(j?' p-lyric'+(j+1):'')+(j>=4?' p-lyric-extra':'')+(bold?' bold':''));setLyricContentEx(tl,' ',setLyricContent);t.appendChild(tl);});
           container.appendChild(t);
         } else if(tok==='('||tok==='(['){ pendingSlurOpen++; }
         else if(tok===')'||tok==='])'){ if(lastSlotCol)lastSlotCol.setAttribute('data-slur-close',((+lastSlotCol.getAttribute('data-slur-close'))||0)+1); }
@@ -6450,10 +6478,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
             chordChipDecorate(c);
             s.appendChild(c);
             s.appendChild(renderNStr(seg.n||'',{inlineTimeSign:getSegInlineTimeSign(seg)}));
-            var l=div('p-lyric'+((!Array.isArray(line)&&line.b)?' bold':''));setLyricContentEx(l,normLyricText(seg.lyric),setLyricContent);s.appendChild(l);
-            if(seg.lyric2){var l2=div('p-lyric p-lyric2'+((!Array.isArray(line)&&line.b)?' bold':''));setLyricContentEx(l2,normLyricText(seg.lyric2),setLyricContent);s.appendChild(l2);}
-            if(seg.lyric3){var l3=div('p-lyric p-lyric3'+((!Array.isArray(line)&&line.b)?' bold':''));setLyricContentEx(l3,normLyricText(seg.lyric3),setLyricContent);s.appendChild(l3);}
-            if(seg.lyric4){var l4=div('p-lyric p-lyric4'+((!Array.isArray(line)&&line.b)?' bold':''));setLyricContentEx(l4,normLyricText(seg.lyric4),setLyricContent);s.appendChild(l4);}
+            songLyricKeys(seg).forEach(function(key,j){
+                  var l=div('p-lyric'+(j?' p-lyric'+(j+1):'')+(j>=4?' p-lyric-extra':'')+((!Array.isArray(line)&&line.b)?' bold':''));
+              setLyricContentEx(l,normLyricText(seg[key]||String.fromCharCode(160)),setLyricContent);s.appendChild(l);
+            });
             var _vn=getVoltaStartLabel(seg.n);
             if(_vn){
               row.classList.add('has-volta');

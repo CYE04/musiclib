@@ -1366,7 +1366,7 @@ html,body,#music-library{
 #music-library .p-lyric2,#music-library .p-lyric3,#music-library .p-lyric4{margin-top:1px;}
 #music-library .p-lyric2{color:var(--ly2);}
 #music-library .p-lyric3{color:var(--ly3);}
-#music-library .p-lyric4{color:var(--ly4);}
+#music-library .p-lyric4,#music-library .p-lyric-extra{margin-top:1px;color:var(--ly4);}
 #music-library .chord-gap,
 #music-library .lyric-gap{display:inline-block;white-space:pre;visibility:hidden;pointer-events:none;font:inherit;line-height:inherit;}
 #music-library .prev-volta{display:inline-flex;align-items:flex-end;position:relative;}
