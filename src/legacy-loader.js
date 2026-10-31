@@ -22,7 +22,7 @@ const LEGACY_SCRIPTS = [
   "./musiclib-playlists.js?v=20261030-workspace",
   "./musiclib-workspace.js?v=20261031-final-review",
   "./musiclib-playback.js?v=20261031-final-review",
-  "./musiclib.js?v=20261031-export-readable",
+  "./musiclib.js?v=20261031-ios-bottom",
 ];
 
 let started = false;

@@ -11712,7 +11712,8 @@ html[data-resolved-theme="dark"] #music-library #ml-personal-dialog{background:#
 }
 @media (max-width:767.98px), (min-width:768px) and (max-width:1180px) and (orientation:portrait), (min-width:1181px) and (max-width:1400px) and (orientation:portrait) and (pointer:coarse), (max-width:1400px) and (max-height:599.98px) and (pointer:coarse){
   html.ml-fullscreen body.ml-fullscreen #music-library,#music-library{
-    --ml-dock-height:calc(64px + env(safe-area-inset-bottom,0px));--ml-dock-bottom:0px;--ml-touch-player-height:64px;
+    --ml-bottom-safe:env(safe-area-inset-bottom,0px);
+    --ml-dock-height:calc(64px + var(--ml-bottom-safe));--ml-dock-bottom:0px;--ml-touch-player-height:64px;
     row-gap:0 !important;padding-top:0 !important;
   }
   #music-library #ml-nav{
@@ -11734,10 +11735,10 @@ html[data-resolved-theme="dark"] #music-library #ml-personal-dialog{background:#
   #music-library #ml-bottom-nav{
     left:0 !important;right:0 !important;bottom:0 !important;transform:none !important;
     width:100% !important;max-width:none !important;height:var(--ml-dock-height) !important;
-    padding:4px max(12px,env(safe-area-inset-right,0px)) calc(4px + env(safe-area-inset-bottom,0px)) max(12px,env(safe-area-inset-left,0px)) !important;
+    padding:4px max(12px,env(safe-area-inset-right,0px)) calc(4px + var(--ml-bottom-safe)) max(12px,env(safe-area-inset-left,0px)) !important;
     border:0 !important;border-radius:0 !important;box-shadow:none !important;background:var(--bg) !important;
   }
-  #music-library #ml-bottom-nav .ml-dock-pages{display:grid !important;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;height:100%;gap:0;}
+  #music-library #ml-bottom-nav .ml-dock-pages{display:grid !important;grid-template-columns:repeat(4,minmax(0,1fr));width:100%;height:calc(var(--ml-dock-height) - var(--ml-bottom-safe) - 8px);flex:none;gap:0;}
   #music-library #ml-bottom-nav .ml-bottom-link{min-width:0 !important;min-height:52px !important;gap:4px !important;border-radius:0 !important;background:transparent !important;color:var(--text-secondary) !important;}
   #music-library #ml-bottom-nav .ml-bottom-link.active{background:var(--accent-soft) !important;color:var(--accent) !important;}
   #music-library #ml-bottom-nav .ml-bottom-link span{font-size:11px;line-height:14px;font-weight:500;}
@@ -12028,7 +12029,7 @@ html[data-resolved-theme="dark"] #music-library :is(#ml-brand,#ml-sidebar-brand)
 @media (orientation:landscape) and (max-height:599.98px) and (max-width:767.98px),
        (orientation:landscape) and (max-height:599.98px) and (max-width:1400px) and (pointer:coarse){
   html.ml-fullscreen body.ml-fullscreen #music-library,#music-library{
-    --ml-dock-height:calc(52px + env(safe-area-inset-bottom,0px));
+    --ml-dock-height:calc(52px + var(--ml-bottom-safe));
     --ml-touch-player-height:48px;
     --ml-landscape-player-width:clamp(272px,44vw,400px);
   }
@@ -12042,8 +12043,9 @@ html[data-resolved-theme="dark"] #music-library :is(#ml-brand,#ml-sidebar-brand)
   #music-library #ml-nav #ml-nav-actions{grid-column:3;grid-row:1;}
   #music-library .ml-home-tabs{padding-bottom:10px;}
   #music-library #ml-bottom-nav{
-    padding-top:2px !important;padding-bottom:calc(2px + env(safe-area-inset-bottom,0px)) !important;
+    padding-top:2px !important;padding-bottom:calc(2px + var(--ml-bottom-safe)) !important;
   }
+  #music-library #ml-bottom-nav .ml-dock-pages{height:48px;}
   #music-library #ml-bottom-nav .ml-bottom-link{min-height:44px !important;gap:2px !important;padding:2px !important;border-radius:10px !important;}
   #music-library #ml-bottom-nav .ml-console-icon{width:20px;height:20px;}
   #music-library #ml-bottom-nav .ml-bottom-link span{font-size:10px;line-height:12px;}
@@ -12065,7 +12067,223 @@ html[data-resolved-theme="dark"] #music-library :is(#ml-brand,#ml-sidebar-brand)
   }
   #music-library #ml-nowbar{
     left:auto !important;right:max(12px,env(safe-area-inset-right,0px)) !important;margin:0 !important;
-    bottom:calc(2px + env(safe-area-inset-bottom,0px)) !important;
+    bottom:calc(2px + var(--ml-bottom-safe)) !important;
     width:var(--ml-landscape-player-width) !important;border-radius:10px !important;z-index:1001 !important;
   }
 }
+
+/* iOS touch shell: use the fixed containing rectangle, not a second viewport
+   height. Earlier patches mix svh/lvh/fill-available and a negative safe inset;
+   in standalone WebKit that can reserve a second bottom strip. Only the dock
+   owns the Home-indicator padding; the player sits immediately above it. */
+@media (max-width:767.98px), (min-width:768px) and (max-width:1180px) and (orientation:portrait), (min-width:1181px) and (max-width:1400px) and (orientation:portrait) and (pointer:coarse), (max-width:1400px) and (max-height:599.98px) and (pointer:coarse){
+  @supports (-webkit-touch-callout:none){
+    html.ml-fullscreen{
+      height:100% !important;min-height:0 !important;overflow:hidden !important;
+    }
+    html.ml-fullscreen body.ml-fullscreen{
+      position:fixed !important;inset:0 !important;width:100% !important;
+      height:auto !important;min-height:0 !important;max-height:none !important;
+      margin:0 !important;padding:0 !important;overflow:hidden !important;
+    }
+    html.ml-fullscreen body.ml-fullscreen #music-library{
+      position:fixed !important;inset:0 !important;width:100% !important;
+      box-sizing:border-box !important;
+      height:auto !important;min-height:0 !important;max-height:none !important;
+      margin:0 !important;border-radius:0 !important;
+      overflow-x:hidden !important;overflow-y:auto !important;
+    }
+    html.ml-fullscreen body.ml-fullscreen #music-library::after{content:none !important;}
+  }
+}
+
+/* Projection studio v2 — desktop editing ribbon above a large staged canvas. */
+#music-library .ml-cast-studio{--cast-bg:var(--bg);--cast-panel:var(--surface);--cast-raised:var(--control-bg);--cast-line:var(--control-line);--cast-ink:var(--text-primary);--cast-muted:var(--text-secondary);--cast-blue:var(--accent);--cast-primary-ink:#fff;background:var(--bg);color-scheme:light;backdrop-filter:none;}
+#music-library .ml-cast-studio .ml-ps{background:var(--cast-bg);color:var(--cast-ink);font-family:'Noto Sans SC',sans-serif;}
+#music-library .ml-cast-studio button,#music-library .ml-cast-studio select,#music-library .ml-cast-studio input:not([type=range]):not([type=checkbox]),#music-library .ml-cast-studio summary{min-height:36px;box-sizing:border-box;border:1px solid var(--cast-line);border-radius:4px;background:var(--cast-raised);color:var(--cast-ink);padding:6px 10px;font:500 12px/1.4 'Noto Sans SC',sans-serif;cursor:pointer;white-space:nowrap;}
+#music-library .ml-cast-studio button:hover,#music-library .ml-cast-studio summary:hover{background:var(--surface-hover);border-color:var(--accent);}
+#music-library .ml-cast-studio :is(button,input,select,summary):focus-visible{outline:2px solid var(--cast-blue);outline-offset:2px;}
+#music-library .ml-cast-studio button:disabled,#music-library .ml-cast-studio input:disabled,#music-library .ml-cast-studio select:disabled{opacity:.35;cursor:default;}
+#music-library .ml-cast-studio .ml-ps-head{padding:8px 14px;gap:20px;min-height:62px;background:var(--cast-panel);border-bottom:1px solid var(--cast-line);}
+#music-library .ml-cast-brand{display:grid;gap:2px;flex:0 0 auto;}
+#music-library .ml-cast-brand strong{font-size:15px;font-weight:600;letter-spacing:.5px;}
+#music-library .ml-cast-brand span{font-size:10px;color:var(--cast-muted);letter-spacing:.4px;}
+#music-library .ml-cast-studio .ml-ps-toolbar{justify-content:center;gap:6px;}
+#music-library .ml-cast-studio .ml-ps-head-actions{gap:6px;}
+#music-library .ml-cast-studio .ml-ps-x{padding:4px;width:34px;border:0;}
+#music-library .ml-cast-ribbon{position:relative;z-index:5;flex:0 0 auto;padding:9px 14px;background:#303136;border-bottom:1px solid var(--cast-line);display:grid;gap:7px;}
+#music-library .ml-cast-ribbon-row{display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:7px;}
+#music-library .ml-cast-ribbon label{display:flex;align-items:center;gap:5px;color:var(--cast-muted);font-size:11px;white-space:nowrap;}
+#music-library .ml-cast-ribbon input[type=number]{width:64px;padding-inline:5px;}
+#music-library .ml-cast-ribbon input[type=color]{width:36px;padding:3px;}
+#music-library #ml-cast-selected{font-size:12px;min-width:126px;max-width:160px;overflow:hidden;text-overflow:ellipsis;color:var(--accent);}
+#music-library .ml-cast-advanced{position:static;}
+#music-library .ml-cast-advanced summary{color:var(--accent);border-color:var(--cast-line);list-style:none;}
+#music-library .ml-cast-advanced-panel{position:absolute;left:50%;transform:translateX(-50%);top:100%;margin-top:6px;padding:18px;width:min(820px,calc(100vw - 32px));max-height:55vh;overflow:auto;background:var(--cast-panel);border:1px solid var(--cast-line);box-shadow:0 15px 40px #0008;box-sizing:border-box;border-radius:6px;}
+#music-library .ml-cast-advanced-panel .ml-proj-presentation{display:grid;gap:12px;}
+#music-library .ml-cast-advanced-panel .ml-proj-audience-settings{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+#music-library .ml-cast-advanced-panel .ml-proj-layout-tools,#music-library .ml-cast-advanced-panel .ml-proj-layout-help{display:none;}
+#music-library .ml-cast-advanced-panel .ml-ps-fontrow{margin:4px 0;}
+#music-library .ml-cast-layer-tools{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px 20px;padding-block:12px;}
+#music-library .ml-cast-layer-tools input{width:100%;accent-color:var(--cast-blue);}
+#music-library .ml-cast-studio .ml-ps-pop{top:180px;left:50%;transform:translateX(-50%);border-radius:6px;width:min(560px,calc(100vw - 30px));background:var(--cast-panel);color:var(--cast-ink);z-index:12;box-shadow:0 16px 40px #0008;}
+#music-library .ml-cast-studio .ml-ps-pop[hidden]{display:none!important;}
+#music-library .ml-cast-studio .ml-ps-pop h3{font-size:14px;margin:0 0 14px;}
+#music-library .ml-cast-studio .ml-ps-pop p{font-size:12px;color:var(--cast-muted);line-height:1.6;}
+#music-library .ml-cast-studio #ml-ps-pop-template{display:flex;gap:10px;flex-wrap:wrap;}
+#music-library #ml-ps-pop-template h3{flex-basis:100%;}
+#music-library .ml-cast-workspace{display:grid;grid-template-columns:248px 220px minmax(0,1fr);flex:1;min-height:0;overflow:hidden;}
+#music-library .ml-cast-library,#music-library .ml-cast-flow{background:var(--cast-panel);border-right:1px solid var(--cast-line);display:flex;flex-direction:column;min-width:0;min-height:0;padding:12px;gap:8px;overflow:hidden;}
+#music-library .library-hidden .ml-cast-library{display:none;}
+#music-library .library-hidden .ml-cast-workspace{grid-template-columns:220px minmax(0,1fr);}
+#music-library .ml-cast-pane-title{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;min-height:26px;flex-shrink:0;}
+#music-library .ml-cast-pane-title strong{font-weight:600;}
+#music-library .ml-cast-pane-title span,#music-library .ml-cast-keyhint{font-size:10px;color:var(--cast-muted);}
+#music-library .ml-cast-studio .ml-ps-search{margin:0;background:var(--cast-bg)!important;border-radius:4px;padding:10px 8px!important;font-size:12px!important;}
+#music-library .ml-cast-studio .ml-ps-lib-list{margin-top:4px;gap:2px;}
+#music-library .ml-cast-studio .ml-ps-lib-item{border-radius:3px;padding:8px 7px;background:transparent;border:1px solid transparent;min-height:48px;}
+#music-library .ml-cast-studio .ml-ps-lib-item.search-active{background:var(--accent-soft);border-color:var(--accent);}
+#music-library .ml-cast-studio .ml-ps-lib-t{font-size:13px;line-height:1.6;}
+#music-library .ml-cast-studio .ml-ps-lib-t small{font-size:10px;color:var(--cast-muted);}
+#music-library .ml-cast-studio .ml-ps-lib-item button{width:auto;height:30px;min-height:30px;padding:3px 7px;color:var(--accent);background:var(--accent-soft);}
+#music-library .ml-cast-studio .ml-ps-lib-t .ml-cast-match{color:var(--accent);white-space:nowrap;max-width:138px;overflow:hidden;text-overflow:ellipsis;}
+#music-library .ml-cast-studio .ml-ps-set-list{flex:0 0 auto;max-height:30%;gap:4px;}
+#music-library .ml-cast-studio .ml-ps-set-item{border-radius:3px;flex-wrap:wrap;gap:6px;padding:8px;background:var(--cast-bg);border-left:3px solid transparent;cursor:pointer;}
+#music-library .ml-cast-studio .ml-ps-set-item.cur{background:var(--accent-soft);border-color:var(--cast-blue);}
+#music-library .ml-cast-studio .ml-ps-set-t{font-size:12px;}
+#music-library .ml-cast-studio .ml-ps-set-btns{margin-left:auto;display:none;}
+#music-library .ml-cast-studio .ml-ps-set-item:is(:hover,.cur,:focus-within) .ml-ps-set-btns{display:flex;}
+#music-library .ml-cast-studio .ml-ps-set-btns button{width:auto;min-height:26px;height:26px;padding:2px 5px;font-size:10px;}
+#music-library .ml-cast-flow .ml-ps-thumbs{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:minmax(0,1fr);gap:10px;align-content:start;padding:3px;}
+#music-library .ml-cast-studio .ml-ps-thumb{border-radius:3px;border:2px solid var(--cast-line);}
+#music-library .ml-cast-studio .ml-ps-thumb.on{border-color:var(--cast-blue);box-shadow:0 0 0 1px var(--cast-blue);}
+#music-library .ml-cast-studio .ml-ps-thumb.is-live::after{content:'现场';position:absolute;right:4px;top:4px;background:var(--danger);color:var(--cast-primary-ink);font-size:9px;padding:2px 5px;border-radius:2px;}
+#music-library .ml-cast-studio .ml-ps-sec-head{font-size:11px;padding:6px 0;color:var(--cast-muted);}
+#music-library .ml-cast-main{display:flex;flex-direction:column;min-width:0;min-height:0;padding:12px 18px 0;overflow:auto;}
+#music-library .ml-cast-stage-title{display:flex;align-items:center;gap:10px;min-height:32px;margin-bottom:10px;flex-shrink:0;}
+#music-library .ml-cast-draft-tag{font-size:10px;border:1px solid var(--accent);color:var(--accent);padding:2px 6px;border-radius:3px;}
+#music-library #ml-cast-selected-page{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#music-library #ml-cast-draft-state{margin-left:auto;font-size:10px;color:var(--cast-muted);white-space:nowrap;}
+#music-library .ml-cast-canvas-area{display:flex;justify-content:center;align-items:flex-start;flex:1 0 auto;min-height:120px;}
+#music-library .ml-cast-canvas-area .ml-proj-preview{width:100%;height:0;flex:0 0 auto;border-radius:0!important;border:1px solid var(--cast-line);box-shadow:0 5px 20px #0003;margin:0;}
+#music-library .ml-cast-studio .ml-proj-preview.is-editing .proj-layout-object{outline-color:#c9d8ed50;}
+#music-library .ml-cast-studio .ml-proj-preview.is-editing .proj-layout-object.is-selected{outline:2px solid var(--accent);outline-offset:1px;}
+#music-library .ml-cast-resize{position:absolute;right:-8px;bottom:-8px;width:14px;height:14px;background:var(--cast-panel);border:2px solid var(--accent);box-sizing:border-box;cursor:nwse-resize;z-index:10;}
+#music-library .ml-cast-pagebar{display:flex;align-items:center;flex-wrap:wrap;gap:7px;margin-top:10px;flex-shrink:0;}
+#music-library .ml-cast-pagebar input,#music-library .ml-cast-pagebar select{max-width:180px;min-width:0;}
+#music-library .ml-cast-pagebar label{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--cast-muted);}
+#music-library #ml-cast-minutes{width:48px;}
+#music-library .ml-cast-stage-footer{display:flex;align-items:center;gap:10px;min-height:64px;flex-shrink:0;}
+#music-library .ml-cast-stage-footer .ml-ps-pager{margin:0;gap:8px;font-size:11px;}
+#music-library .ml-cast-stage-footer>span{font-size:10px;color:var(--cast-muted);}
+#music-library #ml-cast-take{margin-left:auto;min-height:40px;padding:8px 18px;background:var(--accent);border-color:var(--accent);font-size:13px;color:var(--cast-primary-ink);}
+#music-library #ml-cast-take kbd{margin-left:12px;opacity:.65;font:10px 'Space Mono',monospace;}
+#music-library .ml-cast-output-strip{display:flex;flex-shrink:0;gap:16px;border-top:1px solid var(--cast-line);padding:12px 0;min-height:150px;}
+#music-library .ml-cast-live-monitor{width:220px;flex:0 0 220px;}
+#music-library .ml-cast-live-label{font-size:10px;color:var(--danger);margin-bottom:6px;display:flex;gap:10px;}
+#music-library #ml-cast-live-title{color:var(--cast-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+#music-library .ml-cast-live{position:relative;width:100%;aspect-ratio:16/9;background:black;border:1px solid var(--cast-line);overflow:hidden;}
+#music-library .ml-cast-live.is-blank::after{position:absolute;inset:0;background:#000;content:'';z-index:10;}
+#music-library .ml-cast-output-controls{flex:1;display:grid;gap:9px;align-content:start;min-width:0;}
+#music-library .ml-cast-output-buttons{display:flex;flex-wrap:wrap;gap:6px;}
+#music-library .ml-cast-output-controls .ml-proj-display{margin:0;grid-template-columns:minmax(0,1fr) auto;gap:5px;}
+#music-library .ml-cast-output-controls .ml-proj-display label{display:flex;align-items:center;gap:8px;font-size:10px;}
+#music-library .ml-cast-output-controls .ml-proj-display select{min-height:30px;font-size:11px;}
+#music-library .ml-cast-output-controls .ml-proj-display-note{font-size:10px;}
+#music-library .ml-cast-connection{display:flex;align-items:center;flex-wrap:wrap;gap:8px;}
+#music-library .ml-cast-connection .ml-ps-status{font-size:10px;}
+#music-library .ml-cast-connection .ml-ps-enter{margin-left:auto;background:var(--accent);border-color:var(--accent);}
+#music-library #ml-cast-text-dialog{width:min(620px,calc(100vw - 32px));box-sizing:border-box;border:1px solid var(--cast-line);border-radius:8px;background:var(--cast-panel);color:var(--cast-ink);padding:24px;}
+#music-library #ml-cast-text-dialog::backdrop{background:#0009;}
+#music-library #ml-cast-text-dialog h3{font-size:16px;margin:0 0 16px;}
+#music-library #ml-cast-text-dialog textarea{width:100%;box-sizing:border-box;resize:vertical;border:1px solid var(--cast-line);background:var(--cast-bg);color:var(--cast-primary-ink);border-radius:4px;padding:14px;font:18px/1.6 'Noto Sans SC',sans-serif;}
+#music-library #ml-cast-text-dialog p{color:var(--cast-muted);font-size:12px;}
+#music-library #ml-cast-text-dialog form>div{display:flex;justify-content:flex-end;gap:8px;}
+#music-library :is(.proj-score-measure,.proj-score-slide) .p-pinyin{font-size:calc(11px * var(--pl-pinyin,1));}
+#music-library .proj-custom-slide{text-shadow:0 2px 8px #0008;}
+@media(min-width:1500px){#music-library .ml-cast-workspace{grid-template-columns:270px 240px minmax(0,1fr);}#music-library .ml-cast-canvas-area{max-width:1200px;width:100%;margin-inline:auto;}}
+@media(max-width:1150px){#music-library .ml-cast-workspace{grid-template-columns:205px 170px minmax(0,1fr);}#music-library .ml-cast-studio .ml-ps-head{gap:12px;}#music-library .ml-cast-brand span{display:none;}#music-library .ml-cast-main{padding-inline:12px;}#music-library .ml-cast-stage-footer>span{display:none;}#music-library .ml-cast-live-monitor{width:165px;flex-basis:165px;}#music-library .ml-cast-stage-title{flex-wrap:wrap;}#music-library #ml-cast-draft-state{margin-left:0;}}
+@media(max-width:860px){#music-library .ml-cast-studio .ml-ps-head{flex-wrap:wrap;gap:8px;}#music-library .ml-cast-studio .ml-ps-toolbar{order:3;flex-basis:100%;justify-content:flex-start;}#music-library .ml-cast-studio .ml-ps-head-actions{margin-left:auto;}#music-library .ml-cast-ribbon{padding:7px;}#music-library .ml-cast-ribbon-row{flex-wrap:nowrap;justify-content:flex-start;overflow-x:auto;padding-bottom:3px;}#music-library .ml-cast-ribbon-row>*{flex-shrink:0;}#music-library .ml-cast-workspace{grid-template-columns:160px minmax(0,1fr);overflow:auto;}#music-library .ml-cast-library{display:none;}#music-library .ml-cast-studio.library-hidden .ml-cast-library{display:flex;position:absolute;z-index:8;left:0;bottom:0;top:220px;width:min(300px,80vw);box-sizing:border-box;box-shadow:10px 0 30px #0006;}#music-library .library-hidden .ml-cast-workspace{grid-template-columns:160px minmax(0,1fr);}#music-library .ml-cast-output-strip{flex-direction:column;}#music-library .ml-cast-live-monitor{width:180px;flex-basis:auto;}#music-library .ml-cast-studio .ml-ps-status{display:block;}#music-library .ml-cast-advanced-panel{width:calc(100vw - 20px);}#music-library .ml-cast-advanced-panel .ml-proj-audience-settings{grid-template-columns:repeat(2,minmax(0,1fr));}}
+@media(max-width:540px){#music-library .ml-cast-workspace,#music-library .library-hidden .ml-cast-workspace{grid-template-columns:100px minmax(0,1fr);}#music-library .ml-cast-flow{padding:6px;}#music-library .ml-cast-flow .ml-cast-pane-title span{display:none;}#music-library .ml-cast-studio .ml-ps-set-btns{flex-wrap:wrap;}#music-library .ml-cast-studio .ml-ps-set-t{font-size:10px;}#music-library .ml-cast-main{padding:8px;}#music-library .ml-cast-stage-title{margin-bottom:6px;}#music-library .ml-cast-stage-footer{flex-wrap:wrap;padding-block:8px;}#music-library #ml-cast-take{width:100%;margin:0;}#music-library .ml-cast-pagebar button,#music-library .ml-cast-output-buttons button{font-size:10px;padding-inline:5px;}#music-library .ml-cast-pagebar select{max-width:100%;}#music-library .ml-cast-layer-tools{grid-template-columns:repeat(2,minmax(0,1fr));}}
+/* Desktop editing layout inherits the existing MusicLib theme palette. */
+
+#music-library .ml-cast-studio button,#music-library .ml-cast-studio input:not([type=range]),#music-library .ml-cast-studio select,#music-library .ml-cast-studio summary{border-radius:3px!important;}
+#music-library .ml-cast-studio button:hover,#music-library .ml-cast-studio summary:hover{background:var(--accent-soft);border-color:var(--accent);}
+#music-library .ml-cast-studio .ml-ps-head{background:var(--cast-panel);border-bottom-color:var(--cast-line);}
+#music-library .ml-cast-ribbon{background:var(--surface-secondary);}
+#music-library #ml-cast-selected{color:var(--accent);}
+#music-library .ml-cast-advanced summary{color:var(--accent);border-color:var(--accent);}
+#music-library .ml-cast-studio .ml-ps-search{background:var(--cast-panel)!important;}
+#music-library .ml-cast-studio .ml-ps-lib-item.search-active,#music-library .ml-cast-studio .ml-ps-set-item.cur{background:var(--accent-soft);border-color:var(--accent);}
+#music-library .ml-cast-studio .ml-ps-lib-item button{color:var(--accent);background:var(--accent-soft);}
+#music-library .ml-cast-studio .ml-ps-lib-t .ml-cast-match{color:var(--accent);}
+#music-library .ml-cast-draft-tag{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);}
+#music-library .ml-cast-stage-title strong{color:var(--cast-ink);}
+#music-library .ml-cast-canvas-area{flex:1 0 auto;min-height:0;align-items:center;}
+#music-library .ml-cast-canvas-area .ml-proj-preview{height:auto!important;padding-bottom:0!important;border-color:var(--cast-line);}
+#music-library .ml-cast-live-label{color:var(--danger);}
+#music-library .ml-cast-connection .ml-ps-enter{background:var(--accent);border-color:var(--accent);color:var(--cast-primary-ink);}
+#music-library .ml-cast-stage-footer #ml-cast-take{background:var(--accent);border-color:var(--accent);}
+#music-library .ml-cast-studio .ml-proj-layout-selection,#music-library .ml-cast-studio .ml-proj-font-value{color:var(--cast-ink);}
+#music-library .ml-cast-studio .ml-ps-set-item.cur .ml-ps-set-t,#music-library .ml-cast-studio .ml-ps-set-item.cur .ml-ps-set-n{color:var(--accent);}
+#music-library .ml-cast-studio .ml-ps-tb.on{color:var(--cast-primary-ink);background:var(--accent);border-color:var(--accent);}
+#music-library .ml-cast-studio .ml-ps-thumb.on{border-color:var(--accent);}
+#music-library .ml-cast-studio #ml-cast-text-dialog{background:var(--cast-panel);color:var(--cast-ink);border-color:var(--cast-line);}
+#music-library .ml-cast-studio #ml-cast-text-dialog textarea{background:var(--cast-panel);color:var(--cast-ink);border-color:var(--cast-line);}
+@media(max-width:860px){#music-library .ml-cast-canvas-area .ml-proj-preview{min-width:0;}}
+/* Keep row actions stable while hovering so the click target never shifts. */
+#music-library .ml-cast-studio .ml-ps-set-btns{display:flex;flex:0 0 calc(100% - 24px);margin-left:24px;justify-content:flex-end;}
+#music-library .ml-cast-studio .ml-ps-set-item .ml-ps-set-t{flex:1 1 calc(100% - 32px);}
+#music-library .ml-cast-studio .ml-ps-set-list{max-height:34%;}
+#music-library .ml-cast-score-row{border-block:1px solid var(--cast-line);padding-block:6px;}
+#music-library .ml-cast-score-row>span{font-size:10px;color:var(--cast-muted);margin-left:6px;}
+#music-library .ml-cast-score-row input[type=number]{width:63px;min-height:32px;}
+#music-library .ml-cast-position-row:not(.has-selection)>:is(label,[data-object-align],#ml-cast-apply-scope,#ml-cast-apply-style){display:none;}
+#music-library .ml-cast-studio .ml-ps-pop{top:222px;}
+/* Both candidate and live controls stay visible in a short desktop window. */
+#music-library .ml-cast-main{display:grid;grid-template-rows:32px minmax(100px,1fr) 50px 120px;gap:8px;overflow:hidden;padding-bottom:0;}
+#music-library .ml-cast-stage-title{min-height:0;margin-bottom:0;}
+#music-library .ml-cast-canvas-area{min-height:0;min-width:0;height:100%;width:100%;}
+#music-library .ml-cast-stage-footer{min-height:0;}
+#music-library .ml-cast-output-strip{min-height:0;height:120px;box-sizing:border-box;align-items:start;padding:8px 0;gap:12px;}
+#music-library .ml-cast-live-monitor{width:152px;flex:0 0 152px;}
+#music-library .ml-cast-live-label{margin-bottom:4px;}
+#music-library .ml-cast-output-controls{gap:12px;}
+#music-library .ml-cast-output-controls .ml-cast-connection{min-height:36px;}
+#music-library .ml-cast-studio.focus-canvas .ml-cast-main{grid-template-rows:32px minmax(100px,1fr) 50px;}
+#music-library .ml-cast-studio.focus-canvas .ml-cast-output-strip{display:none;}
+#music-library .ml-cast-studio .ml-cast-pagebar{margin:0;gap:10px;}
+#music-library .ml-cast-studio #ml-ps-pop-components{width:min(680px,calc(100vw - 30px));}
+@media(max-width:860px){#music-library .ml-cast-main{display:flex;overflow:auto;gap:8px;}#music-library .ml-cast-canvas-area{flex:0 0 auto;height:auto;min-height:160px;}#music-library .ml-cast-canvas-area .ml-proj-preview{max-width:100%!important;}#music-library .ml-cast-stage-footer{min-height:50px;}#music-library .ml-cast-output-strip{height:auto;min-height:120px;}#music-library .ml-cast-output-strip .ml-cast-live-monitor{flex-basis:auto;}#music-library .ml-cast-studio .ml-ps-pop{top:235px;}}
+/* Content editing has an explicit entry independent of canvas selection. */
+#music-library .ml-cast-studio #ml-cast-edit-content{background:var(--accent);border-color:var(--accent);color:var(--cast-primary-ink);font-weight:600;}
+#music-library #ml-cast-content-dialog{width:min(960px,calc(100vw - 32px));max-height:calc(100dvh - 32px);padding:0;border:1px solid var(--cast-line);border-radius:8px;background:var(--cast-panel);color:var(--cast-ink);box-shadow:0 20px 60px #0004;}
+#music-library #ml-cast-content-dialog::backdrop{background:#0008;}
+#music-library #ml-cast-content-dialog form{display:flex;flex-direction:column;max-height:calc(100dvh - 34px);margin:0;}
+#music-library #ml-cast-content-dialog header,#music-library #ml-cast-content-dialog footer{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 20px;flex-shrink:0;}
+#music-library #ml-cast-content-dialog header{border-bottom:1px solid var(--cast-line);}
+#music-library #ml-cast-content-dialog h3{font-size:17px;margin:0;}
+#music-library #ml-cast-content-dialog footer{border-top:1px solid var(--cast-line);justify-content:flex-end;}
+#music-library #ml-cast-content-save{background:var(--accent);border-color:var(--accent);color:var(--cast-primary-ink);}
+#music-library .ml-cast-content-body{min-height:0;overflow:auto;overscroll-behavior:contain;padding:4px 20px 20px;display:grid;gap:14px;}
+#music-library .ml-cast-content-note,#music-library .ml-cast-content-help{font-size:12px;line-height:1.7;color:var(--cast-muted);margin:0;padding:12px 20px;flex-shrink:0;}
+#music-library .ml-cast-content-help{padding:0;}
+#music-library .ml-cast-content-section{display:grid;gap:12px;}
+#music-library .ml-cast-content-field{display:grid;gap:6px;min-width:0;font-size:12px;color:var(--cast-muted);}
+#music-library #ml-cast-content-dialog .ml-cast-content-field input,#music-library #ml-cast-content-dialog .ml-cast-content-field textarea{box-sizing:border-box;width:100%;max-width:100%;min-width:0;border:1px solid var(--cast-line);border-radius:4px;background:var(--cast-panel);color:var(--cast-ink);padding:10px;font:16px/1.6 'Noto Sans SC',sans-serif;}
+#music-library #ml-cast-content-dialog textarea{resize:vertical;min-height:68px;}
+#music-library .ml-cast-content-row{min-width:0;margin:0;padding:12px;border:1px solid var(--cast-line);border-radius:4px;display:grid;gap:12px;}
+#music-library .ml-cast-content-row legend{padding:0 5px;color:var(--accent);font-size:12px;}
+#music-library .ml-cast-content-segment{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px 14px;}
+#music-library .ml-cast-content-error{color:var(--danger);font-size:13px;margin:0;padding:0 20px 8px;min-height:0;}
+#music-library .ml-cast-content-error:empty{display:none;}
+@media(max-width:620px){#music-library .ml-cast-content-segment{grid-template-columns:minmax(0,1fr);}#music-library #ml-cast-content-dialog header,#music-library #ml-cast-content-dialog footer,#music-library .ml-cast-content-body{padding-inline:12px;}}
+
+html[data-resolved-theme="dark"] #music-library .ml-cast-studio{--cast-primary-ink:#241C17;color-scheme:dark;}
+#music-library .ml-cast-studio .ml-proj-preview:is(.is-snap-x,.is-snap-y)::before,#music-library .ml-cast-studio .ml-proj-preview.is-snap-y::after{background:var(--accent);}
+/* Host footer-hiding/reset rules must not hide dialog actions or remove native centering. */
+#music-library .ml-cast-studio :is(#ml-cast-content-dialog,#ml-cast-text-dialog){position:fixed;inset:0;margin:auto!important;background:var(--bg);color:var(--text-primary);}
+#music-library #ml-cast-content-dialog footer{display:flex!important;}
+#music-library #ml-cast-content-dialog header{display:flex!important;}
+#music-library .ml-cast-studio .ml-ps-pop{background:var(--bg);}
+#music-library .ml-cast-studio :is(#ml-cast-content-dialog,#ml-cast-text-dialog) :is(textarea,input):focus-visible{outline:2px solid var(--accent);outline-offset:2px;}

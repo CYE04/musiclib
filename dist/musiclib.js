@@ -229,7 +229,7 @@
     });
     return staffViewPromise;
   }
-  const ML_VER='20261031-final-review';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
+  const ML_VER='20261031-ios-bottom';   // ← 改 musiclib.css 就要跟 index.html 的 ?v= 一起 bump（宿主没给 #ml-style 时由它注入）
   const GITHUB_API='https://api.github.com/repos/CYE04/songs/contents';
   const RAW_BASE='https://raw.githubusercontent.com/CYE04/songs/main/';
   const HALO_BASE='https://cecp.it';
@@ -1284,7 +1284,7 @@
     const song=_mpCurrentSong||_mpSongs[_mpIdx];
     if(song) shareSong(song);
   });
-  $('ml-detail-projection')?.addEventListener('click',()=>{ensurePinyinPro();projOpenPanel();});
+  $('ml-detail-projection')?.addEventListener('click',()=>{ensurePinyinPro();const id=_activeDetailSongId;projOpenStudio();const index=projState.setlist.findIndex(item=>item.t==='song'&&item.id===id);if(index<0&&id)projAddToSetlist(id);else if(index>=0){projState.pendingItem=projState.setlist[index].uid;projRebuild();}});
   $('ml-side-projection')?.addEventListener('click',()=>{ensurePinyinPro();projOpenStudio();});
   $('ml-hero-projection')?.addEventListener('click',()=>{ensurePinyinPro();projOpenStudio();});
   document.addEventListener('visibilitychange',()=>{
@@ -1382,7 +1382,7 @@
   const PROJ_SETTINGS_KEY='cecp:musiclib:projection:settings:v1';
   const PROJ_BUS_KEY='cecp:musiclib:projection:bus:v1';
   const PROJ_TOGGLE_DEFS=[['chord','和弦'],['jianpu','简谱'],['lyric','歌词'],['pinyin','拼音']];
-  const PROJ_LAYER_DEFS=[['n','简谱',0.6,2],['lyric','歌词',0.6,2],['chord','和弦',0.4,3],['gap','行距',0.4,3]];
+  const PROJ_LAYER_DEFS=[['n','简谱',0.6,2],['lyric','歌词',0.6,2],['chord','和弦',0.4,3],['pinyin','拼音',0.5,2.5],['gap','行距',0.4,3]];
   const PROJ_BG_PRESETS={
     warm:{label:'暖阳',css:'linear-gradient(135deg,#8a4b2f 0%,#a86a44 28%,#7a6a72 60%,#3f4a5e 100%)'},
     night:{label:'深蓝',css:'linear-gradient(160deg,#0b1830 0%,#122844 55%,#0a1220 100%)'},
@@ -1394,7 +1394,7 @@
     toggles:{chord:true,jianpu:true,lyric:true,pinyin:true},
     aspect:'16:9',
     fontScale:1.3,
-    layer:{n:1,lyric:1,chord:1,gap:1},clockSize:32
+    layer:{n:1,lyric:1,chord:1,pinyin:1,gap:1},clockSize:32
   };
   const PROJ_AUDIENCE_DEFAULTS={fontScale:1.5,linesPerPage:4,textAlign:'center',verticalAlign:'center',margin:4,weight:600,overlay:0.3,showSection:true};
   const projState={
@@ -1408,6 +1408,7 @@
     audience:Object.assign({},PROJ_AUDIENCE_DEFAULTS),
     scoreLayout:Object.assign({},PROJ_AUDIENCE_DEFAULTS,{fontScale:1.3}),
     clockSize:32,layouts:{},editing:false,selectedObject:'',
+    sessionId:projUid(),livePayload:null,livePageKey:'',undo:[],redo:[],templates:[],scope:'item',
     screenDetails:null,screenPreference:'auto',screenMessage:'连接显示器后，可自动选择副屏。',
     activeScreen:null,projectorReady:false,projectorFullscreen:false,launching:false,
     bgImages:{}, // imgKey -> dataURL 内存缓存(真身在 IndexedDB)
@@ -1451,11 +1452,11 @@
       if(Number.isFinite(s.clockSize))projState.clockSize=Math.max(16,Math.min(72,s.clockSize));
       if(s.layouts&&typeof s.layouts==='object'){
         for(const [key,objects] of Object.entries(s.layouts).slice(-200)){
-          if(!/^p[\da-z]+$/.test(key)||!objects||typeof objects!=='object')continue;
+          if(!/^p[\w-]+$/.test(key)||!objects||typeof objects!=='object')continue;
           const clean={};
           for(const [id,value] of Object.entries(objects).slice(0,50)){
             if(!/^[\w-]+$/.test(id)||!value||!['dx','dy','scale'].every(k=>Number.isFinite(value[k])))continue;
-            clean[id]={dx:Math.max(-1000,Math.min(1000,value.dx)),dy:Math.max(-1000,Math.min(1000,value.dy)),scale:Math.max(.5,Math.min(2,value.scale))};
+            clean[id]=projCleanObjectEdit(value);
           }
           projState.layouts[key]=clean;
         }
@@ -1464,6 +1465,7 @@
     }catch(_){}
   }
   function projSaveSettings(){
+    if(projSaveSetlist()===false)return false;
     try{
       const prev=JSON.parse(localStorage.getItem(PROJ_SETTINGS_KEY)||'{}')||{};
       prev.toggles=Object.assign({},prev.toggles,projState.toggles);
@@ -1475,22 +1477,23 @@
       prev.scoreLayout=Object.assign({},projState.scoreLayout);prev.clockSize=projState.clockSize;
       prev.layouts=Object.fromEntries(Object.entries(projState.layouts).slice(-200));
       prev.screenPreference=projState.screenPreference;
-      localStorage.setItem(PROJ_SETTINGS_KEY,JSON.stringify(prev));
-    }catch(_){}
+      localStorage.setItem(PROJ_SETTINGS_KEY,JSON.stringify(prev));return true;
+    }catch(_){return false;}
   }
   function projMakeBus(){
+    const suffix=projState.sessionId?':'+projState.sessionId:'',channel=PROJ_CH_NAME+suffix,busKey=PROJ_BUS_KEY+suffix;
     let bc=null;
-    try{ if(typeof BroadcastChannel!=='undefined') bc=new BroadcastChannel(PROJ_CH_NAME); }catch(_){}
+    try{ if(typeof BroadcastChannel!=='undefined') bc=new BroadcastChannel(channel); }catch(_){}
     const listeners=new Set();
     function handle(msg){ if(msg&&msg.__cecpProj) listeners.forEach(fn=>{try{fn(msg);}catch(_){}}); }
     if(bc) bc.onmessage=e=>handle(e.data);
-    const onStorage=e=>{ if(e.key!==PROJ_BUS_KEY||!e.newValue)return; try{handle(JSON.parse(e.newValue));}catch(_){} };
+    const onStorage=e=>{ if(e.key!==busKey||!e.newValue)return; try{handle(JSON.parse(e.newValue));}catch(_){} };
     window.addEventListener('storage',onStorage);
     return {
       send(msg){
         msg.__cecpProj=true;
         if(bc){ try{bc.postMessage(msg);return;}catch(_){} }
-        try{ localStorage.setItem(PROJ_BUS_KEY,JSON.stringify(Object.assign({_ts:Date.now()},msg))); }catch(_){}
+        try{ localStorage.setItem(busKey,JSON.stringify(Object.assign({_ts:Date.now()},msg))); }catch(_){}
       },
       on(fn){ listeners.add(fn); return ()=>listeners.delete(fn); },
       close(){ try{bc&&bc.close();}catch(_){} window.removeEventListener('storage',onStorage); listeners.clear(); }
@@ -1508,7 +1511,7 @@
         projState.projectorReady=true;projState.projectorFullscreen=msg.fullscreen===true;
         projUpdateStatus();return;
       }
-      if(msg.t==='nav'){ projNav(msg.action==='prev'?-1:1); return; } // 投影屏自己翻页 -> 同步过来
+      if(msg.t==='nav'){ if(projState.studio?.classList.contains('open'))projLiveNav(msg.action==='prev'?-1:1);else projNav(msg.action==='prev'?-1:1); return; } // 投影屏自己翻页 -> 同步过来
       if(msg.t==='bye'){ projMarkProjectorGone(); return; }
     });
     projState.bus=bus;
@@ -1893,8 +1896,8 @@
     return projState.songId?[{t:'song',id:projState.songId}]:[];
   }
   const PROJ_SETLIST_KEY='cecp:musiclib:projection:setlist:v1';
-  function projSaveSetlist(){ try{ localStorage.setItem(PROJ_SETLIST_KEY,JSON.stringify(projState.setlist||[])); }catch(_){} }
-  function projLoadSetlist(){ try{ const a=JSON.parse(localStorage.getItem(PROJ_SETLIST_KEY)||'[]'); return Array.isArray(a)?a:[]; }catch(_){ return []; } }
+  function projSaveSetlist(){ try{ localStorage.setItem(PROJ_SETLIST_KEY,JSON.stringify(projState.setlist||[]));return true; }catch(_){return false;} }
+  function projLoadSetlist(){ try{ const a=JSON.parse(localStorage.getItem(PROJ_SETLIST_KEY)||'[]'); return Array.isArray(a)?a.filter(x=>x&&['song','scripture','custom'].includes(x.t)).map(x=>({...x,uid:x.uid||projUid()})):[]; }catch(_){ return []; } }
   function projSetAudienceValue(key,value,options=projState.audience){
     const ranges={fontScale:[0.6,2.6],linesPerPage:[1,8],margin:[2,12],weight:[400,700],overlay:[0,0.8]};
     if(ranges[key]&&Number.isFinite(Number(value))){const [min,max]=ranges[key];options[key]=Math.max(min,Math.min(max,Number(value)));}
@@ -1904,10 +1907,20 @@
   }
   function projAudiencePages(options=projState.audience,entries=projSetlist().map((item,itemIdx)=>({item,itemIdx}))){
     const pages=[];
+    for(const entry of entries){
+      const display=projDisplay(entry.item);
+      const opts=entry.item.style?(display.presentation==='lyrics'?display.audience:{...display.scoreLayout,fontScale:display.fontScale}):options;
+      pages.push(...projAudienceEntry(opts,entry,display.layer));
+    }
+    return pages;
+  }
+  function projAudienceEntry(options,{item,itemIdx},layer){
+    if(item.t==='custom')return [projCustomPage(item,itemIdx)];
+    const pages=[];
     const width=1000,height=width/projAspectRatio(),inset=width*options.margin/100;
     const fontSize=40*options.fontScale;
     const contentWidth=width-inset*2,contentHeight=height-inset*2-80;
-    const lineHeight=Math.min(contentHeight,fontSize*1.35*projState.layer.gap);
+    const lineHeight=Math.min(contentHeight,fontSize*1.35*layer.gap);
     const capacity=Math.max(1,Math.min(Math.round(options.linesPerPage),Math.floor(contentHeight/lineHeight)));
     const canvas=document.createElement('canvas'),ctx=canvas.getContext('2d');
     ctx.font=options.weight+' '+fontSize+'px "Noto Sans SC",sans-serif';
@@ -1926,8 +1939,8 @@
       }
       return lines.filter(Boolean);
     };
-    entries.forEach(({item,itemIdx})=>{
-      const song=item.t==='song'?songs.find(s=>s.id===item.id):null;
+    [{item,itemIdx}].forEach(({item,itemIdx})=>{
+      const song=item.t==='song'?projSong(item):null;
       const title=song?.title||item.title||'经文';
       const sections=song?buildLyricSections(song):[{name:item.ref||'',lines:(item.verses||[]).map(v=>[v.verse,v.primary,v.secondary].filter(Boolean).join(' '))}];
       for(const section of sections){
@@ -2001,32 +2014,35 @@
       return next;
     });
   }
-  async function projScorePages(generation){
+  async function projScorePages(generation,entries=projSetlist().map((item,itemIdx)=>({item,itemIdx}))){
     await document.fonts?.ready;
     if(generation!==_projSeq)return [];
-    const options=projState.scoreLayout,width=1000,height=width/projAspectRatio();
-    const inset=width*options.margin/100,available=width-inset*2;
-    // Notation includes octave marks, beams and several lyric lanes; reserve their vertical space.
-    const scale=(24/18)*projState.fontScale,naturalWidth=available/scale;
+    const width=1000,height=width/projAspectRatio();
     const stage=_div('sw-lb');stage.classList.add('proj-score-measure');
     stage.style.cssText='position:fixed;left:-99999px;top:0;visibility:hidden;display:flex;flex-direction:column;align-items:flex-start;width:max-content;';
-    projApplyLayerVars(stage);stage.style.setProperty('--proj-score-weight',String(options.weight));root.appendChild(stage);
+    root.appendChild(stage);
     const pages=[];
     try{
-      for(const [itemIdx,item] of projSetlist().entries()){
+      for(const {item,itemIdx} of entries){
+        const display=projDisplay(item),options=display.scoreLayout;
+        const inset=width*options.margin/100,available=width-inset*2;
+        const scale=(24/18)*display.fontScale,naturalWidth=available/scale;
+        projApplyLayerVars(stage,display.layer);stage.style.setProperty('--proj-score-weight',String(options.weight));
+        if(item.t==='custom'){pages.push(projCustomPage(item,itemIdx));continue;}
         if(item.t==='scripture'){
-          pages.push(...projAudiencePages(Object.assign({},options,{fontScale:projState.fontScale}),[{item,itemIdx}]));continue;
+          pages.push(...projAudiencePages(Object.assign({},options,{fontScale:display.fontScale}),[{item,itemIdx}]));continue;
         }
-        const song=songs.find(s=>s.id===item.id);if(!song)continue;
+        const song=projSong(item);if(!song)continue;
         const key=projCurKey(song),st=calcCapo(key,song.origKey||'C').st;
         const useFlat=FLAT_KEYS.has(parseKeyName(key).root);
         stage.replaceChildren();const rows=[];
         for(const section of song.sections||[])for(const line of section.lines||[]){
-          const row=projBuildRow(line,st,useFlat,projState.toggles,song.align);
+          const row=projBuildRow(line,st,useFlat,display.toggles,song.align);
           row.dataset.projSection=section.name&&section.name!==song.title?section.name:'';
           if(!row.children.length)continue;
           stage.appendChild(row);rows.push(row);
         }
+        stage.getBoundingClientRect();await document.fonts?.ready;if(generation!==_projSeq)return [];
         layoutStrictChordsAll(stage);
         const wrapped=[];
         rows.forEach((row,index)=>{
@@ -2081,38 +2097,73 @@
     page.baseHtml=template.innerHTML;
     let hash=2166136261;const signature=projState.presentation+'|'+index+'|'+page.itemIdx+'|'+page.baseHtml;
     for(let i=0;i<signature.length;i++)hash=Math.imul(hash^signature.charCodeAt(i),16777619);
-    page.layoutKey='p'+(hash>>>0).toString(36);projApplyPageLayout(page);return page;
+    const item=projState.setlist[page.itemIdx];
+    page.pageKey=page.presentation+'-'+page.localIndex;
+    page.layoutKey=item?.uid?'p'+item.uid+'-'+page.pageKey:'p'+(hash>>>0).toString(36);
+    if(!projState.layouts[page.layoutKey]&&projState.layouts['p'+(hash>>>0).toString(36)])projState.layouts[page.layoutKey]=projState.layouts['p'+(hash>>>0).toString(36)];
+    projApplyPageLayout(page);return page;
   }
   function projApplyPageLayout(page){
     const template=document.createElement('template');template.innerHTML=page.baseHtml;
     const objects=projState.layouts[page.layoutKey]||{};
+    const item=projState.setlist[page.itemIdx];
+    for(const extra of item?.additions?.[page.pageKey]||[])template.content.firstElementChild?.appendChild(projObjectNode(extra));
     template.content.querySelectorAll('[data-proj-object]').forEach(node=>{
       const value=objects[node.dataset.projObject];
-      if(value)node.style.transform='translate('+value.dx+'px,'+value.dy+'px) scale('+value.scale+')';
+      if(value){
+        if(value.color)node.style.setProperty('--proj-text',value.color);if(value.fontWeight)node.style.setProperty('--proj-score-weight',value.fontWeight);
+        node.style.transform='translate('+value.dx+'px,'+value.dy+'px) scale('+value.scale+') '+(node.dataset.projOriginalTransform||'');
+        if(value.text!==undefined&&!node.classList.contains('proj-score-row-frame'))node.textContent=value.text;
+        for(const key of ['color','fontSize','fontFamily','fontWeight','textAlign','width','height'])if(value[key]!==undefined)node.style[key]=['fontSize','width','height'].includes(key)?value[key]+'px':value[key];
+        if(value.hidden)node.style.display='none';
+      }
     });
     page.html=template.innerHTML;
   }
   async function projBuildPages(){
     const generation=_projSeq;await document.fonts?.ready;
-    const pages=projState.presentation==='lyrics'?projAudiencePages():await projScorePages(generation);
+    const pages=[];
+    for(const [itemIdx,item] of projSetlist().entries()){
+      if(!item.uid)item.uid=projUid();
+      const display=projDisplay(item);
+      const next=item.t==='custom'?[projCustomPage(item,itemIdx)]:display.presentation==='lyrics'?projAudiencePages(display.audience,[{item,itemIdx}]):await projScorePages(generation,[{item,itemIdx}]);
+      if(generation!==_projSeq)return;
+      next.forEach((pg,localIndex)=>pages.push(Object.assign(pg,{presentation:display.presentation,localIndex,layer:{...display.layer}})));
+    }
     if(generation!==_projSeq)return;
     projState.pages=pages.map(projPreparePageLayout);
     projState.pageIdx=Math.min(projState.pageIdx,Math.max(0,projState.pages.length-1));
   }
-  function projPushPage(){
+  function projDraftPayload(){
     const pg=projState.pages[projState.pageIdx];
-    const rb=projResolveBg(projItemBg(projCurrentItem())); // 当前这首歌自己的背景
-    projBusSend({t:'page',chordCss:projChordCss(),payload:{
-      html:pg?pg.html:'', refW:pg?(pg.refW||0):0, refH:pg?(pg.refH||0):0, aspect:projState.aspect, blank:projState.blank,
-      idx:projState.pageIdx, total:projState.pages.length, title:pg?pg.title:'', songId:pg?pg.songId:'',
-      bgCss:rb.css, bgImage:rb.image, bgVideo:rb.video||null, textColor:projTextColorValue(), layer:Object.assign({},projState.layer),
-      presentation:projState.presentation,clockSize:projState.clockSize
-    }});
+    const rb=projResolveBg(projItemBg(projCurrentItem()));
+    return {html:pg?.html||'',refW:pg?.refW||1000,refH:pg?.refH||1000/projAspectRatio(),aspect:projState.aspect,blank:projState.blank,
+      idx:projState.pageIdx,total:projState.pages.length,title:pg?.title||'',songId:pg?.songId||'',
+      bgCss:rb.css,bgImage:rb.image,bgVideo:rb.video||null,textColor:projTextColorValue(),layer:{...(pg?.layer||projState.layer)},presentation:pg?.presentation||projState.presentation,clockSize:projState.clockSize};
+  }
+  function projPushPage(){
+    // Only an explicit Take replaces the immutable live snapshot while the studio is open.
+    const studio=projState.studio?.classList.contains('open');
+    const payload=projState.livePayload||(studio?{...projDraftPayload(),html:'',title:'等待投放'}:projDraftPayload());
+    projBusSend({t:'page',chordCss:projChordCss(),payload:{...payload,blank:projState.blank,clockSize:projState.clockSize}});
+    projRenderLive();
+  }
+  function projTakeLive(){
+    const page=projState.pages[projState.pageIdx];if(!page)return;
+    projState.livePayload=JSON.parse(JSON.stringify(projDraftPayload()));projState.livePageKey=page.layoutKey;
+    projPushPage();projRenderThumbs();projSyncStudioEditor();
   }
   function projRebuild(){
     clearTimeout(_projRebuildTimer);
-    const seq=++_projSeq;
-    projBuildPages().then(()=>{ if(seq!==_projSeq) return; projRenderPager(); projRenderPreview(); projPushPage(); });
+    const anchor=projState.pages[projState.pageIdx],wanted=projState.restorePageKey||anchor?.layoutKey;
+    projState.restorePageKey='';const seq=++_projSeq;
+    projBuildPages().then(()=>{
+      if(seq!==_projSeq)return;
+      const restored=projState.pages.findIndex(page=>page.layoutKey===wanted);
+      if(restored>=0)projState.pageIdx=restored;
+      projRenderPager();projRenderPreview();projSyncControlButtons();projPushPage();
+      if(projState.pendingItem){const i=projState.setlist.findIndex(item=>item.uid===projState.pendingItem);projState.pendingItem='';projJumpToItem(i);}
+    }).catch(error=>{console.error('Projection build failed',error);showToast('投影排版失败，请调整字号后重试');});
   }
   function projNav(delta){
     const total=projState.pages.length; if(!total) return;
@@ -2144,8 +2195,8 @@
   }
   function projJumpToItem(i){ // 点本堂歌单 -> 跳到这项(歌/经文)的第一页
     const idx=projState.pages.findIndex(p=>p.itemIdx===i);
-    if(idx<0) return;
-    projState.pageIdx=idx; projSyncControlButtons(); projRenderPager(); projRenderPreview(); projPushPage();
+    if(idx<0){const item=projState.setlist[i];if(item)projState.pendingItem=item.uid;return;}
+    projState.selectedObject='';projState.pageIdx=idx;if(projState.studio)projState.studio.querySelector('.ml-cast-main').scrollTop=0; projSyncControlButtons(); projRenderPager(); projRenderPreview(); projPushPage();
   }
   function projHighlightCurrentItem(){ // 高亮"当前正在放"的那首/那段
     const st=projState.studio; if(!st) return;
@@ -2182,14 +2233,16 @@
     const rb=projResolveBg(curBg), bgCss=projBgCssValue(curBg);
     [[projState.panel,'#ml-proj-preview'],[projState.studio,'#ml-ps-preview']].forEach(([scope,sel])=>{
       if(!scope)return; const box=scope.querySelector(sel); if(!box)return;
-      box.style.paddingBottom=projAspectPad();          // 预览盒子按当前比例变形(4:3 更方 / 16:9 更宽)
+      box.style.paddingBottom=projAspectPad();
+      if(scope===projState.studio){box.style.paddingBottom='0';box.style.aspectRatio=projState.aspect==='4:3'?'4/3':'16/9';const area=box.parentElement;box.style.maxWidth=Math.max(100,Math.min(area.clientWidth,area.clientHeight*projAspectRatio()))+'px';}          // 预览盒子按当前比例变形(4:3 更方 / 16:9 更宽)
       let vid=box.querySelector('.ml-proj-bg-vid');   // 动态视频背景
       if(rb.video){ if(!vid){ vid=document.createElement('video'); vid.className='ml-proj-bg-vid'; vid.muted=true; vid.loop=true; vid.autoplay=true; vid.setAttribute('playsinline',''); box.insertBefore(vid,box.firstChild); } if(vid.getAttribute('src')!==rb.video){ vid.src=rb.video; if(vid.play)vid.play().catch(()=>{}); } box.style.background='#000'; }
       else { if(vid)vid.remove(); box.style.background=bgCss; }
       box.style.setProperty('--proj-text',projTextColorValue());
-      projApplyLayerVars(box);   // 预览要跟离屏同字号, 否则烘进 HTML 的连音弧 px 会错位
+      projApplyLayerVars(box,pg?.layer||projState.layer);   // 预览要跟离屏同字号, 否则烘进 HTML 的连音弧 px 会错位
       projFitPageInto(box,pg?pg.html:'',pg?pg.refW:0,pg?pg.refH:0);
     });
+    projSyncStudioEditor();
   }
   function projToggleBlank(){
     projState.blank=!projState.blank;
@@ -2208,7 +2261,7 @@
     if(pg&&typeof pg.itemIdx==='number') return projState.setlist[pg.itemIdx]||null;
     return null;
   }
-  function projItemBg(item){ return (item&&item.bg)?item.bg:projState.bg; }
+  function projItemBg(item,page=projState.pages[projState.pageIdx]){return (page&&projState.setlist[page.itemIdx]===item&&item?.pageBackgrounds?.[page.pageKey])||item?.bg||projState.bg;}
   function projResolveBg(bg){
     bg=bg||projState.bg;
     const dataOf=()=>bg.imgKey?(projState.bgImages[bg.imgKey]||null):(bg.image||null);
@@ -2219,32 +2272,35 @@
   function projBgCssValue(bg){ const r=projResolveBg(bg); return r.image?('#000 url('+r.image+') center/cover'):r.css; }
   /* 面板 + 演示台 共用: 同步控制按钮亮灭 */
   function projSyncControlButtons(){
-    const cur=projCurrentItem();
+    const cur=projCurrentItem(),display=projDisplay(cur);
     const curBgMode=projItemBg(cur).mode;                 // 背景按钮反映"当前这首歌"的背景
     const curTc=projItemTextColor(cur).toLowerCase();     // 字体色按钮反映"当前这首歌/这段经文"
     [projState.panel,projState.studio].forEach(scope=>{
       if(!scope)return;
-      scope.querySelectorAll('.ml-proj-tog').forEach(b=>{ const on=!!projState.toggles[b.dataset.k]; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false'); });
+      scope.querySelectorAll('.ml-proj-tog').forEach(b=>{ const on=!!display.toggles[b.dataset.k]; b.classList.toggle('on',on); b.setAttribute('aria-pressed',on?'true':'false'); });
       scope.querySelectorAll('.ml-proj-asp').forEach(b=>b.classList.toggle('on',b.dataset.ar===projState.aspect));
       scope.querySelectorAll('.ml-proj-bg').forEach(b=>b.classList.toggle('on',b.dataset.bg===curBgMode||(b.dataset.bg==='image'&&curBgMode==='video')));
       scope.querySelectorAll('.ml-proj-color[data-color]').forEach(b=>b.classList.toggle('on',b.dataset.color.toLowerCase()===curTc));
       const cp=scope.querySelector('#ml-ps-colorpick'); if(cp&&/^#[0-9a-f]{6}$/i.test(curTc))cp.value=curTc;
       projSyncPresentationControls(scope);
+      scope.querySelectorAll('.ml-proj-layer').forEach(input=>input.value=String(display.layer[input.dataset.layer]||1));
+      scope.querySelectorAll('.ml-cast-layer-number').forEach(input=>{if(input!==document.activeElement)input.value=String(Math.round((display.layer[input.dataset.layer]||1)*100));});
+      const mainFont=scope.querySelector('#ml-cast-main-font');if(mainFont&&mainFont!==document.activeElement)mainFont.value=String(Math.round((display.presentation==='lyrics'?display.audience.fontScale:display.fontScale)*100));
     });
   }
-  function projSetToggle(k){ if(!(k in projState.toggles))return; projState.toggles[k]=!projState.toggles[k]; projSyncControlButtons(); projSaveSettings(); projRebuild(); }
+  function projSetToggle(k){ if(!(k in projState.toggles))return;projRecordUndo();const style=projStyleTarget();style.toggles[k]=!style.toggles[k];projSaveSetlist(); projSyncControlButtons(); projSaveSettings(); projRebuild(); }
   function projSetAspect(ar){ projState.aspect=ar; projSyncControlButtons(); projSaveSettings(); projRebuild(); }
   function projAspectRatio(){ return projState.aspect==='4:3'?4/3:16/9; }        // 宽/高
   function projAspectPad(){ return (100/projAspectRatio())+'%'; }                 // 预览/缩略图盒子高度(4:3→75%, 16:9→56.25%)
   /* 把分层倍率写成 CSS 变量。必须在"离屏渲染/测量之前"套上去 ——
      简谱的连音弧(layoutJpArcs)是按实测 px 定位的, 字号变了得重新量, 所以离屏台/预览/缩略图/投影都要套同一份, 否则弧线错位。 */
-  function projApplyLayerVars(el){
+  function projApplyLayerVars(el,L=projState.layer){
     if(!el||!el.style)return;
-    const L=projState.layer;
     el.style.setProperty('--pl-chord',String(L.chord||1));
     el.style.setProperty('--pl-gap',String(L.gap||1));
     el.style.setProperty('--pl-lyric',String(L.lyric||1));
     el.style.setProperty('--pl-n',String(L.n||1));
+    el.style.setProperty('--pl-pinyin',String(L.pinyin||1));
   }
   /* 一键恢复默认显示参数: 四个开关 + 比例 + 字号 + 分层大小/行距。
      不动背景与字体色(那是每首歌各自设的, 抹掉会很意外), 也不动歌单。 */
@@ -2272,14 +2328,13 @@
   function projSetLayer(k,v){
     if(!(k in projState.layer))return;
     const def=PROJ_LAYER_DEFS.find(d=>d[0]===k)||[k,'',0.4,3];
-    projState.layer[k]=Math.max(def[2],Math.min(def[3],Number(v)||1));
+    projRecordUndo();const style=projStyleTarget();style.layer[k]=Math.max(def[2],Math.min(def[3],Number(v)||1));projSaveSetlist();
     [projState.panel,projState.studio].forEach(scope=>{ if(!scope)return; const s=scope.querySelector('.ml-proj-layer[data-layer="'+k+'"]'); if(s&&s.value!=String(projState.layer[k]))s.value=String(projState.layer[k]); });
     projSaveSettings(); projQueueRebuild();
   }
   function projSetFontScale(v){
     v=Math.max(0.6,Math.min(2.6,Number(v)||1));
-    if(projState.presentation==='lyrics')projState.audience.fontScale=v;
-    else projState.fontScale=v;
+    projRecordUndo();const style=projStyleTarget();if(style.presentation==='lyrics')style.audience.fontScale=v;else style.fontScale=v;projSaveSetlist();
     [projState.panel,projState.studio].forEach(scope=>{ if(!scope)return; const s=scope.querySelector('.ml-proj-font'); if(s&&s.value!=String(v))s.value=String(v); });
     projSyncControlButtons();projSaveSettings();projQueueRebuild();
   }
@@ -2288,7 +2343,7 @@
     if((mode==='image'||mode==='video')&&media){ const imgKey='bg'+Date.now(); projState.bgImages[imgKey]=media; projIdbPut(imgKey,media); bg={mode,imgKey}; }
     else bg={mode};
     const item=projCurrentItem();
-    if(item){ item.bg=bg; projSaveSetlist(); }         // 改的是"当前这首歌"的背景; 第二首各自设
+    if(item){const page=projState.pages[projState.pageIdx];if(page&&projState.studio?.querySelector('#ml-cast-bg-scope')?.value==='page'){item.pageBackgrounds=item.pageBackgrounds||{};item.pageBackgrounds[page.pageKey]=bg;}else{item.bg=bg;delete item.pageBackgrounds;}projSaveSetlist();}         // 改的是"当前这首歌"的背景; 第二首各自设
     else { projState.bg={mode,css:(PROJ_BG_PRESETS[mode]&&PROJ_BG_PRESETS[mode].css)||'#000',image:media||null}; projSaveSettings(); }
     projSyncControlButtons(); projRenderPreview(); projRenderThumbs(); projPushPage();
   }
@@ -2367,13 +2422,13 @@
       if(!projState.launching){projPositionOutput();projLaunchMessage(true,true);}
       try{projState.projWin.focus();}catch(_){}return;
     }
-    const url='./projection.html?managed=1';
+    const url='./projection.html?managed=1'+(projState.sessionId?'&session='+encodeURIComponent(projState.sessionId):'');
     const chrome='popup=yes,menubar=no,toolbar=no,location=no,status=no,scrollbars=no';
     const target=projChooseScreen(projState.screenDetails,projState.screenPreference)||window.screen;
     const feat=chrome+',left='+(target.availLeft??target.left??0)+',top='+(target.availTop??target.top??0)+',width='+(target.availWidth||window.innerWidth)+',height='+(target.availHeight||window.innerHeight);
     let win=null;
     // Open within the click before awaiting a permission prompt: popup activation is otherwise lost.
-    try{ win=window.open(url,'cecpProjection',feat); }catch(_){}
+    try{ win=window.open(url,'cecpProjection'+(projState.sessionId?'-'+projState.sessionId:''),feat); }catch(_){}
     if(!win){ showToast('无法打开投影窗口（可能被浏览器拦截）'); return; }
     projState.projWin=win;projState.projectorReady=false;projState.projectorFullscreen=false;projState.launching=true;
     projEnsureBus(); projUpdateStatus(); projWatchWindow();
@@ -2447,7 +2502,8 @@
     if(!box)return;
     box.classList.toggle('is-editing',projState.editing);
     box.querySelectorAll('.proj-layout-object').forEach(node=>{
-      node.classList.toggle('is-selected',projState.editing&&node.dataset.projObject===projState.selectedObject);
+      node.classList.toggle('is-selected',projState.editing&&node.dataset.projObject===projState.selectedObject);if(node.dataset.projObject!==projState.selectedObject)node.querySelector('.ml-cast-resize')?.remove();
+      if(box.closest('.ml-cast-studio')&&projState.editing&&node.dataset.projObject===projState.selectedObject&&!node.querySelector('.ml-cast-resize')){const handle=document.createElement('span');handle.className='ml-cast-resize';handle.setAttribute('aria-hidden','true');node.appendChild(handle);}
       node.tabIndex=projState.editing?0:-1;node.setAttribute('role','button');node.setAttribute('aria-label',node.dataset.projLabel||'投屏内容');
     });
     const scope=box.closest('.ml-ps-overlay,.ml-proj-overlay');if(!scope)return;
@@ -2457,13 +2513,13 @@
     const label=scope.querySelector('.ml-proj-layout-selection');if(label)label.textContent=selected?.dataset.projLabel||'点选预览中的内容';
   }
   function projLayoutGeometry(box,node,page){
-    const canvas=box.querySelector('.proj-score-slide,.proj-audience-slide');if(!canvas)return null;
+    const canvas=box.querySelector('.proj-score-slide,.proj-audience-slide,.proj-custom-slide');if(!canvas)return null;
     const c=canvas.getBoundingClientRect(),r=node.getBoundingClientRect(),k=c.width/page.refW;
     const value=projState.layouts[page.layoutKey]?.[node.dataset.projObject]||{dx:0,dy:0,scale:1};
     return {value,x:(r.left-c.left)/k-value.dx,y:(r.top-c.top)/k-value.dy,w:r.width/k/value.scale,h:r.height/k/value.scale,k,width:page.refW,height:page.refH};
   }
   function projMoveLayoutObject(box,node,page,geometry,value,snap=false){
-    const g=geometry,scale=Math.max(.5,Math.min(2,value.scale,g.width/g.w,g.height/g.h));
+    const g=geometry,scale=Math.max(.2,Math.min(4,value.scale,g.width/g.w,g.height/g.h));
     let dx=Math.max(-g.x,Math.min(g.width-g.x-g.w*scale,value.dx));
     let dy=Math.max(-g.y,Math.min(g.height-g.y-g.h*scale,value.dy));
     const snapX=snap&&Math.abs(g.x+dx+g.w*scale/2-g.width/2)<7;
@@ -2471,14 +2527,16 @@
     if(snapX)dx=(g.width-g.w*scale)/2-g.x;if(snapY)dy=(g.height-g.h*scale)/2-g.y;
     box.classList.toggle('is-snap-x',!!snapX);box.classList.toggle('is-snap-y',!!snapY);
     const layout=projState.layouts[page.layoutKey]||(projState.layouts[page.layoutKey]={});
-    layout[node.dataset.projObject]={dx,dy,scale};
+    layout[node.dataset.projObject]={...layout[node.dataset.projObject],dx,dy,scale};
     node.style.transform='translate('+dx+'px,'+dy+'px) scale('+scale+')';
   }
   function projCommitLayout(page,render=true){
-    projApplyPageLayout(page);projSaveSettings();projPushPage();projRenderThumbs();
+    projApplyPageLayout(page);projSaveSettings();projSaveSetlist();projPushPage();projRenderThumbs();
     if(render)projRenderPreview();
+    projSyncStudioEditor();
   }
   function projBindLayoutControls(scope){
+    if(scope.classList.contains('ml-cast-studio')){projBindCanvas(scope);return;}
     const box=scope.querySelector('.ml-proj-preview');if(!box)return;
     let drag=null,frame=0;
     scope.querySelector('.ml-proj-layout-edit')?.addEventListener('click',()=>{
@@ -2545,16 +2603,17 @@
     </section>`;
   }
   function projSyncPresentationControls(scope){
-    const audience=projState.presentation==='lyrics';
+    const display=projDisplay(projCurrentItem());
+    const audience=display.presentation==='lyrics';
     scope.querySelectorAll('[data-proj-presentation]').forEach(button=>{
-      const active=button.dataset.projPresentation===projState.presentation;
+      const active=button.dataset.projPresentation===display.presentation;
       button.classList.toggle('on',active);button.setAttribute('aria-pressed',String(active));
     });
-    const options=audience?projState.audience:projState.scoreLayout;
+    const options=audience?display.audience:display.scoreLayout;
     scope.querySelectorAll('.ml-proj-audience-settings').forEach(el=>el.hidden=false);
     scope.querySelectorAll('.ml-proj-layout-hint').forEach(el=>el.textContent=audience?'按段落换页；长句自动换行，放大字号后自动减少每页行数。':'放大后按小节换行、自动分页；简谱与对应歌词一起对齐。');
     scope.querySelectorAll('.ml-proj-setting').forEach(input=>{const value=options[input.dataset.setting];if(input.type==='checkbox')input.checked=value;else input.value=String(value);});
-    const font=audience?projState.audience.fontScale:projState.fontScale;
+    const font=audience?display.audience.fontScale:display.fontScale;
     scope.querySelectorAll('.ml-proj-font').forEach(input=>input.value=String(font));
     scope.querySelectorAll('.ml-proj-font-value').forEach(output=>output.textContent=Math.round(font*100)+'%');
     scope.querySelectorAll('.ml-proj-layer').forEach(input=>input.closest('.ml-ps-fontrow').hidden=audience&&input.dataset.layer!=='gap');
@@ -2567,12 +2626,12 @@
   }
   function projBindPresentationControls(scope){
     scope.querySelectorAll('[data-proj-presentation]').forEach(button=>button.addEventListener('click',()=>{
-      projState.presentation=button.dataset.projPresentation;projState.pageIdx=0;
+      projRecordUndo();const style=projStyleTarget();style.presentation=button.dataset.projPresentation;
       projSyncControlButtons();projSaveSettings();projRebuild();
     }));
     scope.querySelectorAll('.ml-proj-font').forEach(input=>input.addEventListener('input',()=>projSetFontScale(input.value)));
     scope.querySelectorAll('.ml-proj-setting').forEach(input=>input.addEventListener(input.type==='range'?'input':'change',()=>{
-      projSetAudienceValue(input.dataset.setting,input.type==='checkbox'?input.checked:input.value,projState.presentation==='lyrics'?projState.audience:projState.scoreLayout);
+      projRecordUndo();const display=projStyleTarget();projSetAudienceValue(input.dataset.setting,input.type==='checkbox'?input.checked:input.value,display.presentation==='lyrics'?display.audience:display.scoreLayout);projSaveSetlist();
       projSyncControlButtons();projSaveSettings();projQueueRebuild();
     }));
     projBindLayoutControls(scope);
@@ -2712,7 +2771,7 @@
   /* ─── App 级投影演示台(Setlist, 参考 pptlib) ─── */
   function projItemName(item){
     if(!item) return '';
-    return item.t==='scripture' ? ('📖 '+(item.title||'经文')) : (()=>{const s=songs.find(x=>x.id===item.id);return s?s.title:item.id;})();
+    return item.t==='custom'?(item.title||'自定义页面'):item.t==='scripture' ? ('经文 · '+(item.title||'经文')) : (()=>{const s=projSong(item);return s?s.title:item.id;})();
   }
   function projRenderThumbs(){
     const box=projState.studio&&projState.studio.querySelector('#ml-ps-thumbs');
@@ -2733,15 +2792,16 @@
       if(projState._collapsed[pg.itemIdx]) return;     // 折叠 -> 不渲染这节的幻灯片
       const card=document.createElement('button');
       card.type='button';
-      card.className='ml-ps-thumb'+(i===projState.pageIdx?' on':'');
+      card.className='ml-ps-thumb'+(i===projState.pageIdx?' on':'')+(pg.layoutKey===projState.livePageKey?' is-live':'');card.title='单击候播，双击投放';
       card.style.paddingBottom=projAspectPad();          // 缩略图按当前比例变形
       card.innerHTML='<div class="ml-ps-thumb-box" id="ml-ps-th-'+i+'"></div><div class="ml-ps-thumb-no">'+(i+1)+'</div>';
       card.addEventListener('click',()=>{ projState.pageIdx=i; projSyncControlButtons(); projRenderPager(); projRenderPreview(); projPushPage(); });
+      card.addEventListener('dblclick',()=>{projState.pageIdx=i;projTakeLive();});
       box.appendChild(card);
       const th=card.querySelector('#ml-ps-th-'+i);
-      th.style.background=projBgCssValue(projItemBg(projState.setlist[pg.itemIdx])); // 每张缩略图各自的歌背景
+      th.style.background=projBgCssValue(projItemBg(projState.setlist[pg.itemIdx],pg)); // 每张缩略图各自的歌背景
       th.style.setProperty('--proj-text',projItemTextColor(projState.setlist[pg.itemIdx])); // 各自的字体色
-      projApplyLayerVars(th);    // 缩略图同样套分层倍率, 跟离屏一致
+      projApplyLayerVars(th,pg.layer||projState.layer);    // 缩略图同样套分层倍率, 跟离屏一致
       projFitPageInto(th,pg.html,pg.refW,pg.refH);
     });
   }
@@ -2752,12 +2812,13 @@
     if(!list.length){ box.innerHTML='<div class="ml-ps-empty">从左侧诗歌库点「＋」加入歌曲</div>'; return; }
     box.innerHTML='';
     list.forEach((item,i)=>{
-      const label = item.t==='scripture' ? ('📖 '+(item.title||'经文')) : (()=>{const s=songs.find(x=>x.id===item.id);return s?s.title:item.id;})();
+      const label=projItemName(item);
       const row=document.createElement('div'); row.className='ml-ps-set-item'+(item.t==='scripture'?' is-scripture':'');
       row.innerHTML='<span class="ml-ps-set-n">'+(i+1)+'</span><span class="ml-ps-set-t">'+esc(label)+'</span>'+
         '<span class="ml-ps-set-btns"><button data-a="up" '+(i===0?'disabled':'')+'>↑</button>'+
         '<button data-a="down" '+(i===list.length-1?'disabled':'')+'>↓</button>'+
-        '<button data-a="del">✕</button></span>';
+        '<button data-a="copy" aria-label="复制项目">复制</button><button data-a="del" aria-label="删除项目">删除</button></span>';
+      row.querySelector('[data-a="copy"]').addEventListener('click',()=>projDuplicateItem(i));
       row.querySelector('[data-a="up"]').addEventListener('click',()=>projMoveSetlist(i,-1));
       row.querySelector('[data-a="down"]').addEventListener('click',()=>projMoveSetlist(i,1));
       row.querySelector('[data-a="del"]').addEventListener('click',()=>projRemoveFromSetlist(i));
@@ -2789,163 +2850,495 @@
     input.focus(); try{input.select();}catch(_){}
   }
   function projRenderLib(q){
-    const box=projState.studio&&projState.studio.querySelector('#ml-ps-lib-list');
-    if(!box) return;
+    const box=projState.studio?.querySelector('#ml-ps-lib-list');if(!box)return;
     const query=String(q||'').trim().toLowerCase();
-    const list=songs.filter(s=>hasRenderableScore(s)&&(!query||(s.title||'').toLowerCase().includes(query)||(s.displayArtist||s.artist||'').toLowerCase().includes(query)));
-    box.innerHTML='';
-    list.slice(0,200).forEach(s=>{
-      const row=document.createElement('div'); row.className='ml-ps-lib-item';
-      row.innerHTML='<span class="ml-ps-lib-t">'+esc(s.title||'')+'<small>'+esc(s.displayArtist||s.artist||'')+'</small></span><button type="button">＋</button>';
-      row.querySelector('button').addEventListener('click',()=>projAddToSetlist(s.id));
-      box.appendChild(row);
+    const list=songs.filter(song=>hasRenderableScore(song)&&(!query||[song.title,song.displayArtist,song.artist].some(v=>String(v||'').toLowerCase().includes(query))||hasLyricMatch(song,query)||pinyinQueryMatch(song,query)));
+    box.replaceChildren();projState.searchIndex=0;
+    list.slice(0,200).forEach(song=>{
+      const row=document.createElement('div');row.className='ml-ps-lib-item';
+      const lines=buildLyricSections(song).flatMap(section=>section.lines);const norm=v=>String(v||'').replace(/\s/g,'').toLowerCase();
+      const hit=query?lines.find(line=>norm(line).includes(norm(query))):'';
+      row.innerHTML='<span class="ml-ps-lib-t">'+esc(song.title||'')+'<small>'+esc(song.displayArtist||song.artist||'')+'</small>'+(hit?'<small class="ml-cast-match">'+esc(hit)+'</small>':'')+'</span><button type="button" aria-label="加入 '+esc(song.title||'')+'">加入</button>';
+      row.querySelector('button').addEventListener('click',()=>projAddToSetlist(song.id));box.appendChild(row);
     });
+    if(!list.length)box.innerHTML='<p class="ml-ps-empty">没有找到歌曲，试试歌名、歌词或拼音。</p>';
+    const count=projState.studio.querySelector('#ml-cast-search-count');if(count)count.textContent=list.length+' 首诗歌';
+    box.firstElementChild?.classList.add('search-active');
   }
   function projNewItemBg(){ return {mode:(projState.bg&&projState.bg.mode&&projState.bg.mode!=='image')?projState.bg.mode:'warm'}; }
   function projAddToSetlist(id){
     projState.setlist=projState.setlist||[];
-    projState.setlist.push({t:"song",id,bg:projNewItemBg()});
+    projRecordUndo();const item={t:'song',id,uid:projUid(),bg:projNewItemBg()};projState.setlist.push(item);projState.pendingItem=item.uid;
     if(!projState.songId) projState.songId=id;
     projSaveSetlist(); projRenderSetlist(); projRebuild();
   }
   function projAddScripture(p){
     projState.setlist=projState.setlist||[];
-    projState.setlist.push({t:'scripture',title:p.title||p.reference||'经文',ref:p.reference||'',primary:p.primary||'CUNPSS',verses:p.verses||[],bg:projNewItemBg()});
+    projRecordUndo();const uid=projUid();projState.pendingItem=uid;
+    projState.setlist.push({t:'scripture',uid,title:p.title||p.reference||'经文',ref:p.reference||'',primary:p.primary||'CUNPSS',verses:p.verses||[],bg:projNewItemBg()});
     projSaveSetlist(); projRenderSetlist(); projRebuild();
   }
   function projRemoveFromSetlist(i){
+    projRecordUndo();
     projState.setlist.splice(i,1);
     if(projState.pageIdx>0) projState.pageIdx=0;
     projSaveSetlist(); projRenderSetlist(); projRebuild();
   }
   function projMoveSetlist(i,dir){
     const j=i+dir; if(j<0||j>=projState.setlist.length)return;
-    const a=projState.setlist; const t=a[i]; a[i]=a[j]; a[j]=t;
+    projRecordUndo();const a=projState.setlist; const t=a[i]; a[i]=a[j]; a[j]=t;
     projSaveSetlist(); projRenderSetlist(); projRebuild();
   }
   function projMoveSetlistTo(from,to){
     const a=projState.setlist; if(from<0||from>=a.length||to<0||to>=a.length||from===to)return;
-    const it=a.splice(from,1)[0]; a.splice(to,0,it);
+    projRecordUndo();const it=a.splice(from,1)[0]; a.splice(to,0,it);
     projSaveSetlist(); projRenderSetlist(); projRebuild();
   }
   function projBgButtonsHTML(){
     return Object.keys(PROJ_BG_PRESETS).map(k=>'<button class="ml-proj-bg" data-bg="'+k+'" type="button">'+PROJ_BG_PRESETS[k].label+'</button>').join('')+
       '<button class="ml-proj-bg" data-bg="image" type="button">上传图/视频</button>';
   }
+  // Projection studio: staged editing and an explicit immutable live snapshot.
+  function projUid(){return 'u'+Date.now().toString(36)+Math.random().toString(36).slice(2,8);}
+  function projClone(value){return JSON.parse(JSON.stringify(value));}
+  function projDisplay(item){
+    const style=item?.style||{};
+    return {presentation:style.presentation||projState.presentation,fontScale:style.fontScale||projState.fontScale,
+      toggles:{...projState.toggles,...style.toggles},layer:{...projState.layer,...style.layer},
+      audience:{...projState.audience,...style.audience},scoreLayout:{...projState.scoreLayout,...style.scoreLayout}};
+  }
+  function projStyleTarget(){
+    const item=projCurrentItem();if(!item)return projState;
+    if(!item.style)item.style=projDisplay(item);return item.style;
+  }
+  function projCleanObjectEdit(value){
+    const result={dx:Math.max(-1500,Math.min(1500,Number(value.dx)||0)),dy:Math.max(-1500,Math.min(1500,Number(value.dy)||0)),scale:Math.max(.2,Math.min(4,Number(value.scale)||1))};
+    if(typeof value.text==='string')result.text=value.text.slice(0,12000);
+    if(/^#[\da-f]{6}$/i.test(value.color||''))result.color=value.color;
+    for(const [key,min,max] of [['fontSize',8,240],['width',20,1000],['height',20,1000]])if(Number.isFinite(value[key]))result[key]=Math.max(min,Math.min(max,value[key]));
+    if(['left','center','right'].includes(value.textAlign))result.textAlign=value.textAlign;
+    if(['400','600','700'].includes(String(value.fontWeight)))result.fontWeight=String(value.fontWeight);
+    if(['"Noto Sans SC",sans-serif','"Noto Serif SC",serif','"Space Mono",monospace'].includes(value.fontFamily))result.fontFamily=value.fontFamily;
+    if(value.hidden)result.hidden=true;return result;
+  }
+  function projRecordUndo(){
+    const snapshot=JSON.stringify({setlist:projState.setlist,layouts:projState.layouts,pageIdx:projState.pageIdx,templates:projState.templates||[],restorePageKey:projState.pages?.[projState.pageIdx]?.layoutKey||''});
+    if(projState.undo.at(-1)!==snapshot){projState.undo.push(snapshot);if(projState.undo.length>50)projState.undo.shift();projState.redo=[];}
+  }
+  function projUndo(redo=false){
+    const from=redo?projState.redo:projState.undo,to=redo?projState.undo:projState.redo;if(!from.length)return;
+    to.push(JSON.stringify({setlist:projState.setlist,layouts:projState.layouts,pageIdx:projState.pageIdx,templates:projState.templates||[],restorePageKey:projState.pages?.[projState.pageIdx]?.layoutKey||''}));
+    const value=JSON.parse(from.pop());Object.assign(projState,value);projState.selectedObject='';
+    projSaveSettings();if(projState.studio){try{localStorage.setItem(PROJ_TEMPLATE_KEY,JSON.stringify(projState.templates));}catch(_){}projLoadTemplates();}projRenderSetlist();projRebuild();
+  }
+  function projObjectNode(object){
+    const node=document.createElement('div');node.className='proj-layout-object proj-custom-object';
+    node.dataset.projObject=object.id;node.dataset.projLabel=object.type==='countdown'?'倒计时':object.type==='clock'?'时钟':'文字';
+    const n=(v,def,min,max)=>Math.max(min,Math.min(max,Number.isFinite(Number(v))?Number(v):def));
+    node.style.cssText='position:absolute;box-sizing:border-box;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.35;transform-origin:top left;';
+    Object.assign(node.style,{left:n(object.x,60,0,980)+'px',top:n(object.y,100,0,730)+'px',width:n(object.width,880,20,1000)+'px',
+      minHeight:'1.35em',fontSize:n(object.fontSize,48,8,240)+'px',fontWeight:String(object.weight||600),
+      fontFamily:'"Noto Sans SC",sans-serif',color:/^#[\da-f]{6}$/i.test(object.color||'')?object.color:'#ffffff',textAlign:['left','center','right'].includes(object.align)?object.align:'center'});
+    node.textContent=String(object.text||'');
+    if(object.type==='countdown'){node.dataset.projCountdown=String(object.endsAt||Date.now());node.textContent=projTimerText(Number(node.dataset.projCountdown));}
+    if(object.type==='clock'){node.dataset.projClock='true';node.textContent=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});}
+    return node;
+  }
+  function projTimerText(endsAt){const seconds=Math.max(0,Math.ceil((endsAt-Date.now())/1000));return String(Math.floor(seconds/60)).padStart(2,'0')+':'+String(seconds%60).padStart(2,'0');}
+  function projCustomPage(item,itemIdx){
+    const source=document.createElement('template');source.innerHTML=item.sourceHtml||'';
+    const slide=source.content.firstElementChild||document.createElement('article');slide.classList.add('proj-custom-slide');
+    if(!item.sourceHtml)slide.style.cssText='position:relative;box-sizing:border-box;overflow:hidden;width:1000px;height:'+(1000/projAspectRatio())+'px;color:#fff;font-family:"Noto Sans SC",sans-serif;';
+    slide.style.height=(1000/projAspectRatio())+'px';
+    for(const object of item.objects||[])slide.appendChild(projObjectNode(object));
+    return {html:slide.outerHTML,refW:1000,refH:1000/projAspectRatio(),itemIdx,title:item.title||'自定义页面',custom:true};
+  }
+  function projAddCustom(kind='blank'){
+    projRecordUndo();const item={t:'custom',uid:projUid(),title:kind==='welcome'?'欢迎页':kind==='countdown'?'会前倒计时':'自定义页面',bg:projNewItemBg(),objects:[]};
+    if(kind==='welcome')item.objects=[{id:projUid(),text:'欢迎来到我们的聚会',x:80,y:180,width:840,fontSize:60},{id:projUid(),text:'安静预备，一同敬拜',x:80,y:290,width:840,fontSize:28,color:'#c6cbd4'}];
+    if(kind==='countdown')item.objects=[{id:projUid(),text:'聚会即将开始',x:80,y:100,width:840,fontSize:42},{id:projUid(),type:'countdown',endsAt:Date.now()+5*60000,x:180,y:210,width:640,fontSize:120}];
+    if(kind==='blank')item.objects=[{id:projUid(),text:'双击修改标题',x:80,y:140,width:840,fontSize:64},{id:projUid(),text:'在这里写下你的内容',x:100,y:260,width:800,fontSize:36}];
+    projState.setlist.push(item);projState.pendingItem=item.uid;projState.selectedObject=item.objects[0].id;projState.editing=true;
+    projSaveSetlist();projRenderSetlist();projRebuild();
+  }
+  function projAddObject(type='text'){
+    const page=projState.pages[projState.pageIdx],item=projCurrentItem();if(!page||!item){projAddCustom(type==='countdown'?'countdown':'blank');return;}
+    projRecordUndo();const object={id:projUid(),type,text:'双击编辑文字',x:120,y:160,width:760,fontSize:48};
+    if(type==='countdown'){const minutes=Number(projState.studio.querySelector('#ml-cast-minutes')?.value)||5;object.endsAt=Date.now()+Math.max(1,Math.min(180,minutes))*60000;object.fontSize=100;}
+    if(item.t==='custom')item.objects.push(object);
+    else{item.additions=item.additions||{};(item.additions[page.pageKey]||(item.additions[page.pageKey]=[])).push(object);}
+    projState.selectedObject=object.id;projState.editing=true;projSaveSetlist();projRebuild();
+  }
+  function projDuplicateItem(index){
+    const item=projState.setlist[index];if(!item)return;projRecordUndo();
+    const copy=projClone(item),previous=copy.uid;copy.uid=projUid();
+    for(const [key,layout] of Object.entries(projState.layouts))if(key.startsWith('p'+previous+'-'))projState.layouts[key.replace('p'+previous+'-','p'+copy.uid+'-')]=projClone(layout);
+    projState.setlist.splice(index+1,0,copy);projState.pendingItem=copy.uid;projSaveSettings();projRenderSetlist();projRebuild();
+  }
+  function projDuplicatePage(){
+    const page=projState.pages[projState.pageIdx],item=projCurrentItem();if(!page||!item)return;
+    if(item.t==='custom'&&!item.sourceHtml){projDuplicateItem(page.itemIdx);return;}
+    projRecordUndo();const template=document.createElement('template');template.innerHTML=page.html;
+    template.content.querySelectorAll('[data-proj-object]').forEach(node=>{if(node.style.transform)node.dataset.projOriginalTransform=node.style.transform;});
+    const copy={t:'custom',uid:projUid(),title:page.title+' · 页面副本',bg:projClone(projItemBg(item)),style:projClone(projDisplay(item)),textColor:projItemTextColor(item),sourceHtml:template.innerHTML,objects:[]};
+    projState.setlist.splice(page.itemIdx+1,0,copy);projState.pendingItem=copy.uid;projSaveSetlist();projRenderSetlist();projRebuild();
+  }
+  function projSong(item){
+    return item?.songOverride||songs.find(song=>song.id===item?.id)||null;
+  }
+  function projLineCells(line){return Array.isArray(line)?line:Array.isArray(line?.line)?line.line:[];}
+  function projContentDraft(item,page){
+    if(item.t==='song')return {kind:'song',uid:item.uid,draft:projClone(projSong(item))};
+    const draft=projClone(item);
+    if(item.t==='custom'){
+      const objects=projState.layouts[page?.layoutKey]||{};
+      for(const object of draft.objects||[])if(typeof objects[object.id]?.text==='string')object.text=objects[object.id].text;
+      if(draft.sourceHtml){
+        const source=document.createElement('template');source.innerHTML=draft.sourceHtml;
+        source.content.querySelectorAll('[data-proj-object]').forEach(node=>{const text=objects[node.dataset.projObject]?.text;if(typeof text==='string'&&!node.classList.contains('proj-score-row-frame'))node.textContent=text;});
+        draft.sourceHtml=source.innerHTML;
+      }
+    }
+    return {kind:item.t,uid:item.uid,draft};
+  }
+  function projContentPath(target,path,value){
+    if(!Array.isArray(path)||!path.length||path.some(key=>['__proto__','constructor','prototype'].includes(String(key))))return;
+    let object=target;
+    for(const key of path.slice(0,-1)){if(!object||typeof object!=='object'||!(key in object))return;object=object[key];}
+    if(object&&typeof object==='object')object[path.at(-1)]=value;
+  }
+  function projApplyContentDraft(edit){
+    const item=projState.setlist.find(value=>value.uid===edit?.uid);
+    if(!item||item.t!==edit.kind||!edit.draft)return false;
+    const previous=projClone(item),oldLayouts=projClone(projState.layouts),oldUndo=projState.undo.slice(),oldRedo=projState.redo.slice();
+    projRecordUndo();
+    if(item.t==='song')item.songOverride=projClone(edit.draft);
+    else if(item.t==='scripture'){item.title=edit.draft.title;item.ref=edit.draft.ref;item.verses=projClone(edit.draft.verses||[]);}
+    else{item.title=edit.draft.title;item.objects=projClone(edit.draft.objects||[]);item.sourceHtml=edit.draft.sourceHtml||null;}
+    // Preserve geometry; content editing becomes the text source for every slide of this item.
+    for(const [key,objects] of Object.entries(projState.layouts))if(key.startsWith('p'+item.uid+'-'))for(const value of Object.values(objects))delete value.text;
+    if(projSaveSettings()===false){
+      for(const key of Object.keys(item))delete item[key];Object.assign(item,previous);projState.layouts=oldLayouts;projState.undo=oldUndo;projState.redo=oldRedo;
+      projSaveSettings();return false;
+    }
+    return true;
+  }
+  function projContentField(label,value,path,multiline=true){
+    const field=document.createElement('label');field.className='ml-cast-content-field';
+    const caption=document.createElement('span');caption.textContent=label;
+    const input=document.createElement(multiline?'textarea':'input');
+    if(multiline)input.rows=2;
+    input.value=String(value??'');input.dataset.contentPath=JSON.stringify(path);input.setAttribute('aria-label',label);
+    field.append(caption,input);return field;
+  }
+  function projOpenContentEditor(node){
+    const item=projCurrentItem(),page=projState.pages[projState.pageIdx];if(!item||!page){showToast('请先选择歌曲或页面');return;}
+    const edit=projContentDraft(item,page);if(!edit.draft)return;
+    projState.contentEdit=edit;
+    const dialog=projState.studio.querySelector('#ml-cast-content-dialog'),body=dialog.querySelector('.ml-cast-content-body');body.replaceChildren();
+    dialog.querySelector('h3').textContent=item.t==='song'?'编辑歌曲内容':item.t==='scripture'?'编辑经文内容':'编辑页面内容';
+    const titleLabel=item.t==='song'?'歌名':'页面名称';body.appendChild(projContentField(titleLabel,edit.draft.title,['title'],false));
+    let focus=null;
+    if(item.t==='song'){
+      let rowIndex=0;const targetRow=node?.dataset.projObject?.match(/^score-(\d+)-/);const target=targetRow?Number(targetRow[1]):-1;
+      const key=document.createElement('p');key.className='ml-cast-content-help';key.textContent='和弦按原调 '+(edit.draft.origKey||'C')+' 填写，投影会沿用当前移调。@ 保留音位空格；修改后自动重新排版。';body.appendChild(key);
+      (edit.draft.sections||[]).forEach((section,sectionIndex)=>{
+        const group=document.createElement('section');group.className='ml-cast-content-section';group.appendChild(projContentField('段落名称 '+(sectionIndex+1),section.name,['sections',sectionIndex,'name'],false));
+        (section.lines||[]).forEach((line,lineIndex)=>{
+          const cells=projLineCells(line),isArray=Array.isArray(line),current=rowIndex++;
+          const row=document.createElement('fieldset');row.className='ml-cast-content-row';row.dataset.scoreRow=String(current);
+          const legend=document.createElement('legend');legend.textContent='第 '+(current+1)+' 行';row.appendChild(legend);
+          cells.forEach((cell,cellIndex)=>{
+            if(!cell||typeof cell!=='object')return;
+            const path=['sections',sectionIndex,'lines',lineIndex,...(isArray?[]:['line']),cellIndex];
+            if(typeof cell.label==='string'){row.appendChild(projContentField('段落标记',cell.label,[...path,'label'],false));return;}
+            const segment=document.createElement('div');segment.className='ml-cast-content-segment';
+            for(const [key,label] of [['n','简谱音符'],['chord','和弦（原调）'],['lyric','歌词'],['lyric2','第二段歌词'],['lyric3','第三段歌词'],['lyric4','第四段歌词']]){
+              if(['lyric2','lyric3','lyric4'].includes(key)&&cell[key]===undefined)continue;
+              const field=projContentField(label,cell[key],[...path,key]);segment.appendChild(field);
+              if(current===target&&key==='lyric'&&!focus)focus=field.querySelector('textarea');
+            }
+            row.appendChild(segment);
+          });group.appendChild(row);
+        });body.appendChild(group);
+      });
+    }else if(item.t==='scripture'){
+      body.appendChild(projContentField('经文引用',edit.draft.ref,['ref'],false));
+      (edit.draft.verses||[]).forEach((verse,index)=>{
+        const row=document.createElement('fieldset');row.className='ml-cast-content-row';const legend=document.createElement('legend');legend.textContent='第 '+(verse.verse||index+1)+' 节';row.appendChild(legend);
+        row.appendChild(projContentField('经文 '+(index+1),verse.primary,['verses',index,'primary']));
+        if(verse.secondary!==undefined)row.appendChild(projContentField('第二语言 '+(index+1),verse.secondary,['verses',index,'secondary']));body.appendChild(row);
+      });
+    }else{
+      (edit.draft.objects||[]).forEach((object,index)=>{
+        if(object.type==='clock'||object.type==='countdown')return;
+        const field=projContentField('文字 '+(index+1),object.text,['objects',index,'text']);body.appendChild(field);
+        if(object.id===node?.dataset.projObject)focus=field.querySelector('textarea');
+      });
+      if(edit.draft.sourceHtml){
+        const template=document.createElement('template');template.innerHTML=edit.draft.sourceHtml;
+        template.content.querySelectorAll('[data-proj-object]').forEach(source=>{
+          if(source.classList.contains('proj-score-row-frame'))return;
+          const field=projContentField(source.dataset.projLabel||'文字',source.textContent,[]),input=field.querySelector('textarea');
+          delete input.dataset.contentPath;input.dataset.sourceObject=source.dataset.projObject;body.appendChild(field);
+        });
+      }
+    }
+    dialog.querySelector('.ml-cast-content-error').textContent='';dialog.showModal();body.scrollTop=0;
+    if(focus){focus.focus({preventScroll:true});focus.closest('fieldset,label')?.scrollIntoView({block:'center'});}else body.querySelector('input,textarea')?.focus();
+  }
+  function projSaveContentEditor(){
+    const dialog=projState.studio.querySelector('#ml-cast-content-dialog'),edit=projState.contentEdit;if(!edit)return;
+    dialog.querySelectorAll('[data-content-path]').forEach(input=>projContentPath(edit.draft,JSON.parse(input.dataset.contentPath),input.value));
+    if(edit.draft.sourceHtml){
+      const template=document.createElement('template');template.innerHTML=edit.draft.sourceHtml;
+      dialog.querySelectorAll('[data-source-object]').forEach(input=>{const node=Array.from(template.content.querySelectorAll('[data-proj-object]')).find(value=>value.dataset.projObject===input.dataset.sourceObject);if(node)node.textContent=input.value;});edit.draft.sourceHtml=template.innerHTML;
+    }
+    if(!String(edit.draft.title||'').trim()){dialog.querySelector('.ml-cast-content-error').textContent='请填写名称后再保存。';return;}
+    if(!projApplyContentDraft(edit)){dialog.querySelector('.ml-cast-content-error').textContent='保存失败，请检查浏览器存储空间后重试。';return;}
+    dialog.close();projState.selectedObject='';projRenderSetlist();projRebuild();showToast('内容已保存到本场投影，点击投放更新现场');
+  }
+  function projSelected(){
+    const page=projState.pages[projState.pageIdx];const box=projState.studio?.querySelector('#ml-ps-preview');
+    const node=Array.from(box?.querySelectorAll('[data-proj-object]')||[]).find(n=>n.dataset.projObject===projState.selectedObject);
+    return {page,box,node};
+  }
+  function projEditSelected(key,value){
+    const {page,box,node}=projSelected();if(!page||!node)return;
+    projRecordUndo();const objects=projState.layouts[page.layoutKey]||(projState.layouts[page.layoutKey]={});
+    const current=objects[projState.selectedObject]||{dx:0,dy:0,scale:1};if(current[key]===value)return;
+    if(key==='dx'||key==='dy'||key==='scale'){
+      const g=projLayoutGeometry(box,node,page);if(g)projMoveLayoutObject(box,node,page,g,{...current,[key]:Number(value)});
+    }else{objects[projState.selectedObject]=projCleanObjectEdit({...current,[key]:value});}
+    projCommitLayout(page);projSyncStudioEditor();
+  }
+  function projAlignSelected(axis){
+    const {page,box,node}=projSelected();if(!node||!page)return;const g=projLayoutGeometry(box,node,page);if(!g)return;
+    const v=g.value;projEditSelected(axis==='center'?'dx':'dy',axis==='center'?(g.width-g.w*v.scale)/2-g.x:(g.height-g.h*v.scale)/2-g.y);
+  }
+  function projSyncStudioEditor(){
+    const studio=projState.studio;if(!studio)return;
+    const {page,node}=projSelected();
+    studio.querySelector('#ml-cast-selected').textContent=node?.dataset.projLabel||'点击画布选择内容';
+    studio.querySelector('.ml-cast-position-row').classList.toggle('has-selection',!!node);
+    const custom=projCurrentItem()?.t==='custom',scorePage=page?.presentation==='score'&&projCurrentItem()?.t==='song';studio.querySelector('#ml-cast-main-font').disabled=custom;studio.querySelectorAll('.ml-cast-layer-number').forEach(input=>input.disabled=custom||(!scorePage&&input.dataset.layer!=='gap'));
+    studio.querySelectorAll('[data-object-prop],[data-object-align],#ml-cast-delete-object,#ml-cast-edit-text').forEach(el=>el.disabled=!node);
+    const edits=projState.layouts[page?.layoutKey]?.[projState.selectedObject]||{};
+    if(node){
+      const cs=getComputedStyle(node);
+      studio.querySelectorAll('[data-object-prop]').forEach(input=>{
+        if(input===document.activeElement)return;const key=input.dataset.objectProp;
+        const defaults={scale:1,dx:0,dy:0,fontSize:parseFloat(cs.fontSize)||48,width:parseFloat(cs.width)||300,fontWeight:cs.fontWeight,textAlign:cs.textAlign,fontFamily:'"Noto Sans SC",sans-serif',color:'#ffffff'};
+        input.value=String(edits[key]??defaults[key]);
+      });
+      const score=node.classList.contains('proj-score-row-frame'),dynamic=node.hasAttribute('data-proj-countdown')||node.hasAttribute('data-proj-clock');
+      studio.querySelector('#ml-cast-edit-text').disabled=dynamic;
+      studio.querySelector('[data-object-prop="fontSize"]').disabled=score;
+      studio.querySelector('[data-object-prop="fontFamily"]').disabled=score;studio.querySelector('[data-object-prop="width"]').disabled=score;
+    }
+    const name=studio.querySelector('#ml-cast-page-name');name.disabled=projCurrentItem()?.t!=='custom';if(name!==document.activeElement)name.value=projCurrentItem()?.title||page?.title||'';
+    const selected=studio.querySelector('#ml-cast-object-list');
+    const options=Array.from(studio.querySelectorAll('#ml-ps-preview [data-proj-object]')).filter(n=>n.style.display!=='none');
+    selected.replaceChildren(new Option('选择画布内容',''),...options.map(n=>new Option((n.dataset.projLabel||'文字')+' · '+(n.textContent||'').slice(0,16),n.dataset.projObject)));
+    selected.value=projState.selectedObject;
+    studio.querySelector('#ml-cast-undo').disabled=!projState.undo.length;studio.querySelector('#ml-cast-redo').disabled=!projState.redo.length;
+    studio.querySelector('#ml-cast-take').disabled=!page;studio.querySelector('#ml-cast-edit-content').disabled=!projCurrentItem();
+    const draft=projDraftPayload(),live=projState.livePayload;const dirty=page&&(page.layoutKey!==projState.livePageKey||draft.html!==live?.html||draft.bgCss!==live?.bgCss||draft.bgImage!==live?.bgImage||draft.bgVideo!==live?.bgVideo||draft.textColor!==live?.textColor||JSON.stringify(draft.layer)!==JSON.stringify(live?.layer));
+    studio.querySelector('#ml-cast-draft-state').textContent=dirty?'修改已保存 · 等待投放':'与现场同步';
+    studio.querySelector('#ml-cast-selected-page').textContent=page?.title||'选择诗歌或添加页面';
+    studio.querySelector('#ml-cast-live-title').textContent=projState.livePayload?.title||'尚未投放';
+  }
+  function projOpenTextEditor(node){
+    if(!node){projOpenContentEditor();return;}
+    if(node.classList.contains('proj-score-row-frame')){projOpenContentEditor(node);return;}
+    if(node.dataset.projCountdown||node.dataset.projClock)return;
+    projState.selectedObject=node.dataset.projObject;projSyncStudioEditor();
+    const dialog=projState.studio.querySelector('#ml-cast-text-dialog'),input=dialog.querySelector('textarea');
+    input.value=node.textContent;dialog.showModal();input.focus();
+  }
+  function projBindCanvas(scope){
+    const box=scope.querySelector('#ml-ps-preview');let drag=null;
+    box.addEventListener('dblclick',event=>projOpenTextEditor(event.target.closest('[data-proj-object]')));
+    box.addEventListener('pointerdown',event=>{
+      const node=event.target.closest('[data-proj-object]'),page=projState.pages[projState.pageIdx];if(!node||!page||event.button!==0)return;
+      event.preventDefault();projState.selectedObject=node.dataset.projObject;projState.editing=true;projSyncLayoutEditor(box);projSyncStudioEditor();
+      const geometry=projLayoutGeometry(box,node,page);if(!geometry)return;projRecordUndo();
+      drag={page,node,g:geometry,x:event.clientX,y:event.clientY,moved:false,resize:event.target.classList.contains('ml-cast-resize')};node.focus({preventScroll:true});
+    });
+    box.addEventListener('pointermove',event=>{
+      if(!drag)return;const {page,node,g,x,y,resize}=drag;
+      if(Math.hypot(event.clientX-x,event.clientY-y)<3&&!drag.moved)return;if(!drag.moved)box.setPointerCapture(event.pointerId);drag.moved=true;
+      const dx=(event.clientX-x)/g.k,dy=(event.clientY-y)/g.k;
+      const value=resize?{...g.value,scale:g.value.scale+Math.max(dx/g.w,dy/g.h)}:{...g.value,dx:g.value.dx+dx,dy:g.value.dy+dy};
+      projMoveLayoutObject(box,node,page,g,value,true);
+    });
+    const finish=()=>{if(!drag)return;const {page,moved}=drag;drag=null;box.classList.remove('is-snap-x','is-snap-y');if(moved)projCommitLayout(page);};
+    box.addEventListener('pointerup',finish);box.addEventListener('pointercancel',finish);
+    box.addEventListener('keydown',event=>{
+      const node=event.target.closest('[data-proj-object]');if(!node)return;
+      if(event.key==='Enter'){event.preventDefault();event.stopPropagation();projOpenTextEditor(node);return;}
+      if(event.key==='Delete'||event.key==='Backspace'){event.preventDefault();event.stopPropagation();projEditSelected('hidden',true);return;}
+      if(event.key.startsWith('Arrow')){
+        event.preventDefault();event.stopPropagation();const {page}=projSelected(),value=projState.layouts[page.layoutKey]?.[projState.selectedObject]||{dx:0,dy:0};
+        const horizontal=['ArrowLeft','ArrowRight'].includes(event.key),key=horizontal?'dx':'dy',sign=['ArrowLeft','ArrowUp'].includes(event.key)?-1:1;
+        projEditSelected(key,value[key]+sign*(event.shiftKey?10:1));
+      }
+    });
+  }
+  function projRenderLive(){
+    const box=projState.studio?.querySelector('#ml-cast-live');if(!box)return;
+    const p=projState.livePayload;
+    box.style.background=p?(p.bgImage?'#000 url('+p.bgImage+') center/cover':p.bgCss||'#000'):'#000';
+    box.style.setProperty('--proj-text',p?.textColor||'#fff');projApplyLayerVars(box,p?.layer||projState.layer);
+    box.classList.toggle('is-blank',projState.blank);box.style.aspectRatio=p?.aspect==='4:3'?'4/3':'16/9';
+    const key=JSON.stringify(p);if(box.dataset.rendered!==key){box.dataset.rendered=key;projFitPageInto(box,p?.html||'',p?.refW||1000,p?.refH||562.5);}
+  }
+  function projLiveNav(delta){
+    const index=projState.pages.findIndex(page=>page.layoutKey===projState.livePageKey);
+    if(index<0){showToast('现场页面已从流程中移除，请选择候播页后投放');return;}
+    projState.pageIdx=Math.max(0,Math.min(projState.pages.length-1,index+delta));projRenderPager();projRenderPreview();projTakeLive();
+  }
+  const PROJ_TEMPLATE_KEY='cecp:musiclib:projection:templates:v2';
+  function projLoadTemplates(){
+    try{const value=JSON.parse(localStorage.getItem(PROJ_TEMPLATE_KEY)||'[]');projState.templates=Array.isArray(value)?value:[];}catch(_){projState.templates=[];}
+    const select=projState.studio?.querySelector('#ml-cast-template');if(select)select.replaceChildren(new Option('选择保存的模板',''),...projState.templates.map(t=>new Option(t.name,t.id)));
+  }
+  function projSaveTemplate(){
+    const item=projCurrentItem();if(!item){showToast('请先添加诗歌或页面');return;}
+    const name=projState.studio.querySelector('#ml-cast-template-name').value.trim();if(!name){showToast('请填写模板名称');return;}
+    const entries={};for(const [key,value] of Object.entries(projState.layouts))if(key.startsWith('p'+item.uid+'-'))entries[key.slice(('p'+item.uid+'-').length)]=projClone(value);
+    if(item.t!=='custom')for(const edits of Object.values(entries))for(const value of Object.values(edits))delete value.text;
+    const template={id:projUid(),name,style:projClone(projDisplay(item)),bg:projClone(projItemBg(item)),textColor:projItemTextColor(item),layouts:entries,sourceHtml:item.t==='custom'?item.sourceHtml||null:null,objects:item.t==='custom'?projClone(item.objects):null};
+    projRecordUndo();projState.templates.push(template);try{localStorage.setItem(PROJ_TEMPLATE_KEY,JSON.stringify(projState.templates));projLoadTemplates();showToast('模板已保存');}catch(_){projState.templates.pop();showToast('存储空间不足，模板未保存');}
+  }
+  function projApplyTemplate(){
+    const id=projState.studio.querySelector('#ml-cast-template').value,template=projState.templates.find(t=>t.id===id),item=projCurrentItem();if(!template||!item)return;
+    projRecordUndo();item.style=projClone(template.style);item.bg=projClone(template.bg);item.textColor=template.textColor;
+    if(item.t==='custom'&&template.objects){item.objects=projClone(template.objects);item.sourceHtml=template.sourceHtml||null;}
+    for(const [key,value] of Object.entries(template.layouts||{})){const layoutKey='p'+item.uid+'-'+key,previous=projState.layouts[layoutKey]||{};for(const [id,edit] of Object.entries(value))previous[id]={...previous[id],...projClone(edit)};projState.layouts[layoutKey]=previous;}
+    projSaveSettings();projRebuild();showToast('模板已应用，点击投放后更新现场');
+  }
+  function projApplyObjectScope(){
+    const {page}=projSelected(),item=projCurrentItem(),scope=projState.studio.querySelector('#ml-cast-apply-scope').value;
+    if(!page||!item||scope==='page')return;
+    const source=projState.layouts[page.layoutKey]?.[projState.selectedObject];if(!source)return;
+    projRecordUndo();const kind=id=>id.startsWith('lyrics-')?'lyrics':id.startsWith('score-')?'score':id;
+    for(const target of projState.pages.filter(p=>p.itemIdx===page.itemIdx)){
+      const t=document.createElement('template');t.innerHTML=target.html;
+      t.content.querySelectorAll('[data-proj-object]').forEach(node=>{
+        if(kind(node.dataset.projObject)!==kind(projState.selectedObject))return;
+        const {text,hidden,...style}=source;const objects=projState.layouts[target.layoutKey]||(projState.layouts[target.layoutKey]={});
+        objects[node.dataset.projObject]={...objects[node.dataset.projObject],...style};
+      });projApplyPageLayout(target);
+    }
+    projSaveSettings();projRenderPreview();projRenderThumbs();showToast('样式已应用到整项；文字内容保持各页独立');
+  }
   function projBuildStudio(){
-    if(projState.studio&&projState.studio.isConnected) return projState.studio;
-    const ov=document.createElement('div'); ov.className='ml-ps-overlay';
-    ov.innerHTML=`
-      <div class="ml-ps">
-        <div class="ml-ps-head">
-          <strong class="ml-ps-title2">演示台</strong>
-          <div class="ml-ps-toolbar">
-            <button class="ml-ps-tb" data-pop="song" type="button">＋ 诗歌</button>
-            <button class="ml-ps-tb" data-pop="bible" type="button">＋ 圣经</button>
-            <button class="ml-ps-tb" data-pop="bg" type="button">背景</button>
-            <button class="ml-ps-tb" data-pop="color" type="button">字体色</button>
-          </div>
-          <div class="ml-ps-head-actions">
-            <span class="ml-ps-status" id="ml-ps-status">投影窗口：未开启</span>
-            <button class="ml-ps-enter" id="ml-ps-enter" type="button">开始放映</button>
-            <button class="ml-ps-closewin" id="ml-ps-closewin" type="button" hidden>结束放映</button>
-            <button class="ml-ps-x" id="ml-ps-x" type="button" aria-label="关闭">${icon('close',20)}</button>
-          </div>
+    if(projState.studio?.isConnected)return projState.studio;
+    const ov=document.createElement('div');ov.className='ml-ps-overlay ml-cast-studio';
+    ov.innerHTML=`<div class="ml-ps" role="dialog" aria-modal="true" aria-label="投影编排台">
+      <header class="ml-ps-head"><div class="ml-cast-brand"><strong>投影编排台</strong><span>CECP Music Library</span></div>
+        <nav class="ml-ps-toolbar" aria-label="添加与页面操作">
+          <button class="ml-ps-tb on" data-pop="song" type="button">诗歌库</button><button class="ml-ps-tb" data-pop="bible" type="button">圣经</button>
+          <button id="ml-cast-new" type="button">添加页面</button><button id="ml-cast-edit-content" class="ml-cast-content-button" type="button">编辑内容</button><button id="ml-cast-welcome" type="button">欢迎页</button><button id="ml-cast-copy-page" type="button">复制页面</button>
+          <button class="ml-ps-tb" data-pop="template" type="button">模板库</button></nav>
+        <div class="ml-ps-head-actions"><button id="ml-cast-undo" type="button">撤销</button><button id="ml-cast-redo" type="button">重做</button>
+          <button class="ml-ps-x" id="ml-ps-x" type="button" aria-label="退出投影编排台">${icon('close',20)}</button></div></header>
+      <div class="ml-cast-ribbon" aria-label="顶部编辑工具栏">
+        <div class="ml-cast-ribbon-row"><span id="ml-cast-selected">点击画布选择内容</span>
+          <button id="ml-cast-add-text" type="button">添加文字</button><button id="ml-cast-edit-text" type="button">编辑选中内容</button>
+          <label>字体<select data-object-prop="fontFamily" aria-label="选中内容字体"><option value='"Noto Sans SC",sans-serif'>黑体</option><option value='"Noto Serif SC",serif'>宋体</option><option value='"Space Mono",monospace'>等宽</option></select></label>
+          <label>字号<input data-object-prop="fontSize" aria-label="选中内容字号" type="number" min="8" max="240" value="48"></label>
+          <label>缩放<input data-object-prop="scale" aria-label="选中内容缩放" type="number" min="0.2" max="4" step="0.05" value="1"></label>
+          <label>颜色<input data-object-prop="color" aria-label="选中内容颜色" type="color" value="#ffffff"></label>
+          <label>字重<select data-object-prop="fontWeight" aria-label="选中内容字重"><option value="400">常规</option><option value="600">适中</option><option value="700">加粗</option></select></label>
+          <label>对齐<select data-object-prop="textAlign" aria-label="选中内容文字对齐"><option value="left">左对齐</option><option value="center">居中</option><option value="right">右对齐</option></select></label>
+          <button id="ml-cast-delete-object" type="button">删除内容</button><button id="ml-cast-reset-page" type="button">恢复本页</button>
         </div>
-        <div class="ml-ps-pop" id="ml-ps-pop-song" hidden>
-          <input id="ml-ps-search" class="ml-ps-search" placeholder="搜索歌名 / 歌手，点歌加入歌单">
-          <div class="ml-ps-lib-list" id="ml-ps-lib-list"></div>
+        <div class="ml-cast-ribbon-row ml-cast-score-row"><label>全曲字号 <input id="ml-cast-main-font" type="number" aria-label="整项字号百分比" min="60" max="260" step="5" value="100">%</label>${PROJ_LAYER_DEFS.map(([key,label,min,max])=>'<label>'+label+' <input class="ml-cast-layer-number" data-layer="'+key+'" aria-label="'+label+'大小百分比" type="number" min="'+Math.round(min*100)+'" max="'+Math.round(max*100)+'" step="5" value="100">%</label>').join('')}<span>独立调整 · 自动重新分页</span></div>
+        <div class="ml-cast-ribbon-row ml-cast-position-row">
+          <label>水平位移<input data-object-prop="dx" aria-label="水平位移" type="number" step="1"></label><label>垂直位移<input data-object-prop="dy" aria-label="垂直位移" type="number" step="1"></label>
+          <label>文字框宽<input data-object-prop="width" aria-label="文字框宽度" type="number" min="20" max="1000"></label>
+          <button data-object-align="center" type="button">水平居中</button><button data-object-align="middle" type="button">垂直居中</button>
+          <select id="ml-cast-apply-scope" aria-label="样式应用范围"><option value="page">当前页</option><option value="item">整首歌 / 整项</option></select><button id="ml-cast-apply-style" type="button">应用选中样式</button>
+          <button class="ml-ps-tb" data-pop="components" type="button">页面与组件</button><button class="ml-ps-tb" data-pop="screen" type="button">显示器</button><button id="ml-cast-focus" type="button">放大画布</button><button class="ml-ps-tb" data-pop="bg" type="button">页面背景</button><button class="ml-ps-tb" data-pop="color" type="button">整项文字色</button>
+          <details class="ml-cast-advanced"><summary>简谱 / 歌词大小与排版</summary><div class="ml-cast-advanced-panel">${projPresentationControlsHTML('ml-ps')}<div id="ml-ps-toggles" class="ml-proj-toggles"></div><div id="ml-ps-aspect"><button class="ml-proj-asp" data-ar="16:9" type="button">16:9</button><button class="ml-proj-asp" data-ar="4:3" type="button">4:3</button></div><button id="ml-ps-reset" type="button">恢复整项排版</button></div></details>
         </div>
-        <div class="ml-ps-pop" id="ml-ps-pop-bible" hidden>
-          <div class="ml-ps-bible">
-            <input id="ml-ps-bible-ref" class="ml-ps-search" placeholder="经文 如 诗篇 23:1-6">
-            <button id="ml-ps-bible-add" class="ml-ps-bible-btn" type="button">加经文</button>
-          </div>
-          <div class="ml-ps-pop-hint">支持中文经卷名/缩写；歌单里点经文标题可再修改</div>
-        </div>
-        <div class="ml-ps-pop" id="ml-ps-pop-bg" hidden>
-          <div class="ml-proj-bgs" id="ml-ps-bgs">${projBgButtonsHTML()}</div>
-          <input type="file" id="ml-ps-bgfile" accept="image/*,video/mp4" hidden>
-          <div class="ml-ps-pop-hint">背景以「整首歌/每段经文」为单位——翻到某首再改就改那一首</div>
-        </div>
-        <div class="ml-ps-pop" id="ml-ps-pop-color" hidden>
-          <div class="ml-proj-colors" id="ml-ps-colors">${projColorButtonsHTML()}<label class="ml-proj-color ml-proj-color-custom" title="自定义颜色">自定义<input type="color" id="ml-ps-colorpick"></label></div>
-          <div class="ml-ps-pop-hint">默认白色+阴影（万能，任何背景都清晰）；也可自选颜色</div>
-        </div>
-        <div class="ml-ps-body3">
-          <div class="ml-ps-left">
-            <div class="ml-ps-col-title">本堂歌单</div>
-            <div class="ml-ps-set-list" id="ml-ps-set-list"></div>
-          </div>
-          <div class="ml-ps-mid">
-            <div class="ml-ps-col-title">幻灯片（点击跳页）</div>
-            <div class="ml-ps-thumbs" id="ml-ps-thumbs"></div>
-          </div>
-          <div class="ml-ps-right">
-            <div class="ml-ps-col-title">当前输出</div>
-            ${projScreenControlsHTML()}
-            <div class="ml-proj-preview" id="ml-ps-preview"></div>
-            <div class="ml-ps-pager">
-              <button class="ml-proj-pg" id="ml-ps-prev" type="button">${icon('chevronLeft',22)}</button>
-              <div class="ml-proj-pageno" id="ml-ps-pageno">第 0 页 / 共 — 页</div>
-              <button class="ml-proj-pg ml-proj-pg-next" id="ml-ps-next" type="button">${icon('chevronLeft',22)}</button>
-            </div>
-            <div class="ml-ps-controls">
-              ${projPresentationControlsHTML('ml-ps')}
-              <div class="ml-ps-ctrl-row">
-                <span class="ml-ps-sec">显示</span>
-                <div class="ml-proj-toggles" id="ml-ps-toggles"></div>
-                <div class="ml-proj-aspect" id="ml-ps-aspect">
-                  <button class="ml-proj-asp" data-ar="16:9" type="button">16:9</button>
-                  <button class="ml-proj-asp" data-ar="4:3" type="button">4:3</button>
-                </div>
-                <button class="ml-proj-s2" id="ml-ps-black" type="button">黑屏</button>
-                <button class="ml-proj-s2" id="ml-ps-fs" type="button">投影全屏</button>
-                <button class="ml-proj-s2" id="ml-ps-reset" type="button">恢复默认</button>
-              </div>
-              <div class="ml-ps-ctrl-row ml-ps-ctrl-sliders">
-                ${projLayerSlidersHTML()}
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>`;
-    root.appendChild(ov);
-    // 顶部工具栏 popover 开合
-    ov.querySelectorAll('.ml-ps-tb').forEach(b=>b.addEventListener('click',e=>{
-      e.stopPropagation();
-      const pop=ov.querySelector('#ml-ps-pop-'+b.dataset.pop); const wasOpen=pop&&!pop.hidden;
-      ov.querySelectorAll('.ml-ps-pop').forEach(p=>p.hidden=true);
-      ov.querySelectorAll('.ml-ps-tb').forEach(x=>x.classList.remove('on'));
-      if(pop&&!wasOpen){ pop.hidden=false; b.classList.add('on'); const inp=pop.querySelector('input:not([type=color]):not([type=file])'); if(inp)setTimeout(()=>inp.focus(),0); }
+      </div>
+      <div class="ml-ps-pop" id="ml-ps-pop-components" hidden><h3>页面与组件</h3><div class="ml-cast-pagebar"><input id="ml-cast-page-name" aria-label="自定义页面名称" placeholder="页面名称"><select id="ml-cast-object-list" aria-label="选择页面内容"></select><button id="ml-cast-new-countdown" type="button">倒计时页面</button><label>分钟<input id="ml-cast-minutes" aria-label="倒计时分钟" type="number" min="1" max="180" value="5"></label><button id="ml-cast-timer" type="button">插入倒计时</button><button id="ml-cast-clock" type="button">插入时钟</button></div></div>
+      <div class="ml-ps-pop" id="ml-ps-pop-bible" hidden><h3>添加经文</h3><div class="ml-ps-bible"><input id="ml-ps-bible-ref" class="ml-ps-search" placeholder="经文 如 诗篇 23:1-6"><button id="ml-ps-bible-add" type="button">加经文</button></div><p>使用现有圣经服务，添加后在候播画布调整。</p></div>
+      <div class="ml-ps-pop" id="ml-ps-pop-bg" hidden><h3>页面背景</h3><label>应用范围 <select id="ml-cast-bg-scope"><option value="item">整首歌 / 整项</option><option value="page">当前页</option></select></label><div id="ml-ps-bgs" class="ml-proj-bgs">${projBgButtonsHTML()}</div><input id="ml-ps-bgfile" type="file" accept="image/*,video/mp4" hidden><p>背景应用到当前整项；点击投放后更新现场。</p></div>
+      <div class="ml-ps-pop" id="ml-ps-pop-screen" hidden><h3>放映显示器</h3>${projScreenControlsHTML()}</div>
+      <div class="ml-ps-pop" id="ml-ps-pop-color" hidden><h3>整项文字颜色</h3><div class="ml-proj-colors">${projColorButtonsHTML()}<input type="color" id="ml-ps-colorpick" aria-label="整项文字颜色" value="#ffffff"></div></div>
+      <div class="ml-ps-pop" id="ml-ps-pop-template" hidden><h3>显示模板</h3><input id="ml-cast-template-name" placeholder="模板名称，如：主日敬拜简谱"><button id="ml-cast-save-template" type="button">保存当前版式</button><select id="ml-cast-template" aria-label="显示模板"></select><button id="ml-cast-apply-template" type="button">应用到当前整项</button><button id="ml-cast-delete-template" type="button">删除所选模板</button></div>
+      <div class="ml-cast-workspace">
+        <aside class="ml-cast-library" id="ml-ps-pop-song"><div class="ml-cast-pane-title"><strong>诗歌库</strong><span id="ml-cast-search-count"></span></div><input id="ml-ps-search" class="ml-ps-search" placeholder="搜索歌名、歌词、作者或拼音" aria-label="搜索投影诗歌"><small class="ml-cast-keyhint">上下键选择 · 回车加入</small><div class="ml-ps-lib-list" id="ml-ps-lib-list"></div></aside>
+        <aside class="ml-cast-flow"><div class="ml-cast-pane-title"><strong>本场流程</strong><button id="ml-cast-new-small" type="button" aria-label="新增页面">新增</button></div><div id="ml-ps-set-list" class="ml-ps-set-list"></div><div class="ml-cast-pane-title"><strong>页面</strong><span>单击候播 · 双击投放</span></div><div id="ml-ps-thumbs" class="ml-ps-thumbs"></div></aside>
+        <main class="ml-cast-main"><div class="ml-cast-stage-title"><span class="ml-cast-draft-tag">候播</span><strong id="ml-cast-selected-page"></strong><span id="ml-cast-draft-state"></span></div>
+          <div class="ml-cast-canvas-area"><div class="ml-proj-preview" id="ml-ps-preview"></div></div>
+
+          <div class="ml-cast-stage-footer"><div class="ml-ps-pager"><button id="ml-ps-prev" class="ml-proj-pg" type="button" aria-label="候播上一页">${icon('chevronLeft',20)}</button><span id="ml-ps-pageno"></span><button id="ml-ps-next" class="ml-proj-pg" type="button" aria-label="候播下一页">${icon('chevronRight',20)}</button></div><span>双击文字编辑 · 拖动定位 · 方向键微调</span><button id="ml-cast-take" type="button">投放当前页 <kbd>Enter</kbd></button></div>
+          <section class="ml-cast-output-strip"><div class="ml-cast-live-monitor"><div class="ml-cast-live-label">现场输出 <span id="ml-cast-live-title">尚未投放</span></div><div id="ml-cast-live" class="ml-cast-live"></div></div><div class="ml-cast-output-controls"><div class="ml-cast-output-buttons"><button id="ml-cast-live-prev" type="button">现场上一页</button><button id="ml-cast-live-next" type="button">现场下一页</button><button id="ml-ps-black" type="button">黑屏 / 恢复</button><button id="ml-ps-fs" type="button">投影全屏</button></div><div class="ml-cast-connection"><span id="ml-ps-status" class="ml-ps-status">放映未开始</span><button id="ml-ps-enter" class="ml-ps-enter" type="button">打开投影窗口</button><button id="ml-ps-closewin" class="ml-ps-closewin" type="button" hidden>结束放映</button></div></div></section>
+        </main>
+      </div>
+      <dialog id="ml-cast-content-dialog"><form><header><h3>编辑内容</h3><button type="button" class="ml-cast-content-cancel" aria-label="关闭内容编辑器">关闭</button></header><p class="ml-cast-content-note">修改保存在本场投影，保存后可继续预览，点击「投放」才更新现场。</p><div class="ml-cast-content-body"></div><p class="ml-cast-content-error" role="alert"></p><footer><button type="button" class="ml-cast-content-cancel">取消</button><button id="ml-cast-content-save" type="submit">保存本场内容</button></footer></form></dialog>
+      <dialog id="ml-cast-text-dialog"><form method="dialog"><h3>编辑文字</h3><textarea aria-label="页面文字内容" rows="6"></textarea><p>内容仅修改当前页。换行会保留。</p><div><button value="cancel">取消</button><button id="ml-cast-text-save" value="save">保存文字</button></div></form></dialog>
+    </div>`;
+    root.appendChild(ov);projState.studio=ov;
+    const bind=(id,fn)=>ov.querySelector('#'+id).addEventListener('click',fn);
+    ov.querySelectorAll('.ml-ps-tb').forEach(button=>button.addEventListener('click',()=>{
+      if(button.dataset.pop==='song'){ov.classList.toggle('library-hidden');projRenderPreview();return;}
+      const pop=ov.querySelector('#ml-ps-pop-'+button.dataset.pop),wasOpen=pop&&!pop.hidden;
+      ov.querySelectorAll('.ml-ps-pop').forEach(p=>p.hidden=true);if(pop)pop.hidden=wasOpen;
+      pop?.querySelector('input:not([type=file]):not([type=color])')?.focus();
     }));
-    ov.addEventListener('click',e=>{ if(!e.target.closest('.ml-ps-pop')&&!e.target.closest('.ml-ps-tb')){ ov.querySelectorAll('.ml-ps-pop').forEach(p=>p.hidden=true); ov.querySelectorAll('.ml-ps-tb').forEach(x=>x.classList.remove('on')); } });
-    // toggles
-    const tg=ov.querySelector('#ml-ps-toggles');
-    PROJ_TOGGLE_DEFS.forEach(([k,label])=>{ const b=document.createElement('button'); b.className='ml-proj-tog'; b.type='button'; b.dataset.k=k; b.textContent=label; b.addEventListener('click',()=>projSetToggle(k)); tg.appendChild(b); });
-    ov.querySelectorAll('.ml-proj-asp').forEach(b=>b.addEventListener('click',()=>projSetAspect(b.dataset.ar)));
-    ov.querySelectorAll('.ml-proj-bg').forEach(b=>b.addEventListener('click',()=>{ if(b.dataset.bg==='image'){ ov.querySelector('#ml-ps-bgfile').click(); return; } projSetBg(b.dataset.bg); }));
-    ov.querySelector('#ml-ps-bgfile').addEventListener('change',e=>{ const f=e.target.files&&e.target.files[0]; if(!f)return; const isVid=/^video\//.test(f.type||''); if(f.size>(isVid?60:8)*1024*1024){ showToast(isVid?'视频太大，请选 60MB 以内':'图片太大，请选 8MB 以内'); e.target.value=''; return; } const rd=new FileReader(); rd.onload=()=>projSetBg(isVid?'video':'image',String(rd.result||'')); rd.readAsDataURL(f); e.target.value=''; });
-    ov.querySelectorAll('.ml-proj-color[data-color]').forEach(b=>b.addEventListener('click',()=>projSetTextColor(b.dataset.color)));
-    ov.querySelector('#ml-ps-colorpick').addEventListener('input',e=>projSetTextColor(e.target.value));
-    ov.querySelector('#ml-ps-prev').addEventListener('click',()=>projNav(-1));
-    ov.querySelector('#ml-ps-next').addEventListener('click',()=>projNav(1));
-    ov.querySelector('#ml-ps-black').addEventListener('click',()=>projToggleBlank());
-    ov.querySelector('#ml-ps-fs').addEventListener('click',()=>projRequestFullscreen());
-    projBindPresentationControls(ov);
-    projBindScreenControls(ov);
-    ov.querySelectorAll('.ml-proj-layer').forEach(s=>s.addEventListener('input',e=>projSetLayer(e.target.dataset.layer,e.target.value)));
-    ov.querySelector('#ml-ps-reset').addEventListener('click',()=>projResetDefaults());
-    ov.querySelector('#ml-ps-enter').addEventListener('click',()=>projEnterProjection());
-    ov.querySelector('#ml-ps-closewin').addEventListener('click',()=>projCloseProjector());
-    ov.querySelector('#ml-ps-x').addEventListener('click',()=>projCloseStudio());
-    const search=ov.querySelector('#ml-ps-search'); search.addEventListener('input',()=>projRenderLib(search.value));
-    const bref=ov.querySelector('#ml-ps-bible-ref');
-    ov.querySelector('#ml-ps-bible-add').addEventListener('click',()=>projAddScriptureFromInput(bref));
-    bref.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); projAddScriptureFromInput(bref); } });
-    projState.studio=ov;
-    projInitScreenControls();
-    return ov;
+    ov.addEventListener('click',event=>{if(!event.target.closest('.ml-ps-pop,.ml-ps-tb'))ov.querySelectorAll('.ml-ps-pop').forEach(pop=>pop.hidden=true);});
+    bind('ml-cast-focus',()=>{ov.classList.toggle('focus-canvas');ov.querySelector('#ml-cast-focus').textContent=ov.classList.contains('focus-canvas')?'显示现场预览':'放大画布';requestAnimationFrame(()=>{projRenderPreview();const live=ov.querySelector('#ml-cast-live');delete live.dataset.rendered;projRenderLive();});});
+    bind('ml-cast-new',()=>projAddCustom());bind('ml-cast-new-small',()=>projAddCustom());bind('ml-cast-welcome',()=>projAddCustom('welcome'));bind('ml-cast-new-countdown',()=>projAddCustom('countdown'));
+    bind('ml-cast-add-text',()=>projAddObject());bind('ml-cast-timer',()=>projAddObject('countdown'));bind('ml-cast-clock',()=>projAddObject('clock'));
+    bind('ml-cast-edit-content',()=>projOpenContentEditor());
+    const contentDialog=ov.querySelector('#ml-cast-content-dialog');contentDialog.querySelector('form').addEventListener('submit',event=>{event.preventDefault();projSaveContentEditor();});
+    contentDialog.querySelectorAll('.ml-cast-content-cancel').forEach(button=>button.addEventListener('click',()=>contentDialog.close()));
+    ov.querySelectorAll('dialog').forEach(dialog=>dialog.addEventListener('keydown',event=>event.stopPropagation()));
+    bind('ml-cast-copy-page',projDuplicatePage);bind('ml-cast-undo',()=>projUndo());bind('ml-cast-redo',()=>projUndo(true));
+    bind('ml-cast-reset-page',()=>{const {page}=projSelected();if(!page)return;projRecordUndo();delete projState.layouts[page.layoutKey];projCommitLayout(page);});
+    bind('ml-cast-edit-text',()=>projOpenTextEditor(projSelected().node));bind('ml-cast-delete-object',()=>projEditSelected('hidden',true));
+    ov.querySelectorAll('[data-object-prop]').forEach(input=>{
+      const apply=()=>{const key=input.dataset.objectProp;if(input.type==='number'&&input.value==='')return;projEditSelected(key,['dx','dy','scale','fontSize','width'].includes(key)?Number(input.value):input.value);};
+      input.addEventListener(input.tagName==='SELECT'?'change':'input',apply);
+    });
+    ov.querySelectorAll('[data-object-align]').forEach(button=>button.addEventListener('click',()=>projAlignSelected(button.dataset.objectAlign)));
+    bind('ml-cast-delete-template',()=>{const id=ov.querySelector('#ml-cast-template').value;if(!id)return;projRecordUndo();projState.templates=projState.templates.filter(template=>template.id!==id);try{localStorage.setItem(PROJ_TEMPLATE_KEY,JSON.stringify(projState.templates));projLoadTemplates();showToast('模板已删除，可撤销');}catch(_){showToast('模板删除未能保存');}});
+    bind('ml-cast-apply-style',projApplyObjectScope);bind('ml-cast-save-template',projSaveTemplate);bind('ml-cast-apply-template',projApplyTemplate);
+    const dialog=ov.querySelector('#ml-cast-text-dialog');dialog.addEventListener('close',()=>{if(dialog.returnValue==='save')projEditSelected('text',dialog.querySelector('textarea').value);});
+    ov.querySelector('#ml-cast-object-list').addEventListener('change',event=>{projState.selectedObject=event.target.value;projSyncLayoutEditor(ov.querySelector('#ml-ps-preview'));projSyncStudioEditor();});
+    ov.querySelector('#ml-cast-page-name').addEventListener('change',event=>{const item=projCurrentItem();if(item?.t==='custom'){projRecordUndo();item.title=event.target.value.trim()||'自定义页面';projSaveSetlist();projRenderSetlist();projRebuild();}});
+    const tg=ov.querySelector('#ml-ps-toggles');PROJ_TOGGLE_DEFS.forEach(([key,label])=>{const button=document.createElement('button');button.type='button';button.className='ml-proj-tog';button.dataset.k=key;button.textContent=label;button.addEventListener('click',()=>projSetToggle(key));tg.appendChild(button);});
+    ov.querySelectorAll('.ml-proj-asp').forEach(button=>button.addEventListener('click',()=>projSetAspect(button.dataset.ar)));
+    ov.querySelectorAll('.ml-proj-bg').forEach(button=>button.addEventListener('click',()=>{if(button.dataset.bg==='image'){ov.querySelector('#ml-ps-bgfile').click();return;}projRecordUndo();projSetBg(button.dataset.bg);}));
+    ov.querySelector('#ml-ps-bgfile').addEventListener('change',event=>{
+      const file=event.target.files?.[0];if(!file)return;const video=file.type.startsWith('video/');if(file.size>(video?60:8)*1024*1024){showToast('文件过大，图片限 8MB，视频限 60MB');event.target.value='';return;}
+      const reader=new FileReader();reader.onload=()=>{projRecordUndo();projSetBg(video?'video':'image',String(reader.result||''));};reader.readAsDataURL(file);event.target.value='';
+    });
+    ov.querySelectorAll('.ml-proj-color[data-color]').forEach(button=>button.addEventListener('click',()=>{projRecordUndo();projSetTextColor(button.dataset.color);}));
+    ov.querySelector('#ml-ps-colorpick').addEventListener('input',event=>{projRecordUndo();projSetTextColor(event.target.value);});
+    bind('ml-ps-prev',()=>projNav(-1));bind('ml-ps-next',()=>projNav(1));bind('ml-cast-take',projTakeLive);
+    bind('ml-cast-live-prev',()=>projLiveNav(-1));bind('ml-cast-live-next',()=>projLiveNav(1));bind('ml-ps-black',projToggleBlank);bind('ml-ps-fs',projRequestFullscreen);
+    projBindPresentationControls(ov);projBindScreenControls(ov);
+    ov.querySelectorAll('.ml-proj-layer').forEach(input=>input.addEventListener('input',()=>projSetLayer(input.dataset.layer,input.value)));
+    ov.querySelector('#ml-cast-main-font').addEventListener('input',event=>{if(event.target.value)projSetFontScale(Number(event.target.value)/100);});
+    ov.querySelectorAll('.ml-cast-layer-number').forEach(input=>input.addEventListener('input',()=>{if(input.value)projSetLayer(input.dataset.layer,Number(input.value)/100);}));
+    bind('ml-ps-reset',()=>{projRecordUndo();const item=projCurrentItem();if(item)delete item.style;projSaveSetlist();projSyncControlButtons();projRebuild();});
+    bind('ml-ps-enter',()=>{if(!projState.livePayload)projTakeLive();projEnterProjection();});bind('ml-ps-closewin',projCloseProjector);bind('ml-ps-x',projCloseStudio);
+    const search=ov.querySelector('#ml-ps-search');search.addEventListener('input',()=>projRenderLib(search.value));search.addEventListener('focus',ensurePinyinPro);
+    search.addEventListener('keydown',event=>{
+      const rows=Array.from(ov.querySelectorAll('#ml-ps-lib-list .ml-ps-lib-item'));if(!rows.length)return;
+      if(['ArrowUp','ArrowDown'].includes(event.key)){event.preventDefault();projState.searchIndex=Math.max(0,Math.min(rows.length-1,(projState.searchIndex||0)+(event.key==='ArrowUp'?-1:1)));rows.forEach((row,i)=>row.classList.toggle('search-active',i===projState.searchIndex));rows[projState.searchIndex].scrollIntoView({block:'nearest'});}
+      if(event.key==='Enter'){event.preventDefault();rows[projState.searchIndex||0].querySelector('button').click();}
+    });
+    const ref=ov.querySelector('#ml-ps-bible-ref');bind('ml-ps-bible-add',()=>projAddScriptureFromInput(ref));ref.addEventListener('keydown',event=>{if(event.key==='Enter')projAddScriptureFromInput(ref);});
+    if(!projState.componentTimer)projState.componentTimer=setInterval(()=>{if(!ov.classList.contains('open'))return;ov.querySelectorAll('[data-proj-countdown]').forEach(node=>{const text=projTimerText(Number(node.dataset.projCountdown));if(node.firstChild?.nodeType===3)node.firstChild.nodeValue=text;});ov.querySelectorAll('[data-proj-clock]').forEach(node=>{const text=new Date().toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});if(node.firstChild?.nodeType===3)node.firstChild.nodeValue=text;});},500);
+    projInitScreenControls();return ov;
   }
   const PROJ_COLOR_PRESETS=[['#ffffff','白'],['#ffe08a','金'],['#ffd0d0','粉'],['#cfe8ff','蓝'],['#1a1a1a','黑']];
   function projColorButtonsHTML(){
@@ -2983,11 +3376,11 @@
   function projOpenStudio(){
     projLoadSettings();
     projState.setlist=projLoadSetlist(); // 恢复上次的本堂歌单(覆盖单曲入口的临时歌单)
-    projState.pageIdx=0;
-    const ov=projBuildStudio();
+    projState.pageIdx=0;projState.editing=true;projState.selectedObject='';
+    const ov=projBuildStudio();projLoadTemplates();
     projPreloadSetlistBgImages();      // 预载各歌单项的背景图
     projSyncControlButtons();
-    projSyncPresentationControls(ov);
+    projSaveSetlist();projSyncPresentationControls(ov);
     projInitScreenControls();
     ov.querySelectorAll('.ml-proj-layer').forEach(s=>{ s.value=String(projState.layer[s.dataset.layer]||1); });
     const tc=projTextColorValue();
@@ -3011,15 +3404,19 @@
   window.addEventListener('resize',()=>{
     if(!(projState.studio&&projState.studio.classList.contains('open')))return;
     clearTimeout(_projRzT);
-    _projRzT=setTimeout(()=>{ projRenderPreview(); projRenderThumbs(); },180);
+    _projRzT=setTimeout(()=>{ projRenderPreview(); projRenderThumbs();const live=projState.studio?.querySelector('#ml-cast-live');if(live)delete live.dataset.rendered;projRenderLive(); },180);
   });
   function projStudioKeydown(e){
     if(!(projState.studio&&projState.studio.classList.contains('open')))return;
-    if(e.key==='F5'){e.preventDefault();if(!e.shiftKey){projState.pageIdx=0;projRenderPager();projRenderPreview();projPushPage();}projEnterProjection();return;}
+    if(e.key==='F5'){e.preventDefault();if(!e.shiftKey){projState.pageIdx=0;projRenderPager();projRenderPreview();}projTakeLive();projEnterProjection();return;}
+    if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&!e.target?.closest('input,textarea,[contenteditable]')){e.preventDefault();projUndo(e.shiftKey);return;}
     if(e.key==='Escape'&&projState.projWin&&!projState.projWin.closed){e.preventDefault();projCloseProjector();return;}
     const tag=(e.target&&e.target.tagName)||'';
     if(tag==='INPUT'||tag==='TEXTAREA'||tag==='SELECT'||tag==='BUTTON'||e.target?.isContentEditable)return;
-    if(e.key==='ArrowLeft'){ e.preventDefault(); projNav(-1); }
+    if(e.key==='Enter'){e.preventDefault();projTakeLive();}
+    else if(e.key==='PageDown'){e.preventDefault();projLiveNav(1);}
+    else if(e.key==='PageUp'){e.preventDefault();projLiveNav(-1);}
+    else if(e.key==='ArrowLeft'){ e.preventDefault(); projNav(-1); }
     else if(e.key==='ArrowRight'||e.key===' '){ e.preventDefault(); projNav(1); }
     else if(e.key==='Escape'){ projCloseStudio(); }
     else if(e.key.toLowerCase&&e.key.toLowerCase()==='b'){ projToggleBlank(); }
