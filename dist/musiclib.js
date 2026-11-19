@@ -4178,7 +4178,7 @@
         }
       }
       const baseFit=Math.min((output.height-headerHeight-footerHeight)/cropHeight,(output.width-80)/canvas.width);
-      const scoreArea={width:output.width-128,height:output.height-headerHeight-footerHeight,maxScale:baseFit*1.2};
+      const scoreArea={width:output.width-128,height:output.height-headerHeight-footerHeight,maxScale:baseFit*1.6};
       const candidate=notation?exportJianpuImageLayout(canvas,page,rect,cropTop,cropHeight,scoreArea):null;
       // An already full-bleed/dense score must never get smaller just to meet the
       // preferred new margins. Keep its previous composition in that case.
@@ -7863,6 +7863,7 @@ var SEC_LABEL_TOP_GAP_PX=3;
 const secLabelTags=scope=>((scope&&scope.querySelectorAll)?scope.querySelectorAll('.strict-label-row .sec-label'):[]);
 const secLabelsReset=scope=>{
   secLabelTags(scope).forEach(tag=>{
+    if(tag.parentElement&&tag.parentElement.classList.contains('strict-label-row'))tag.parentElement.style.height='';
     if(!tag.hasAttribute('data-a4-l0'))return;
     tag.style.left=tag.getAttribute('data-a4-l0')+'px';
     tag.style.top=tag.getAttribute('data-a4-t0')+'px';
@@ -7879,7 +7880,7 @@ const secLabelsSnapshot=scope=>{
       tag.setAttribute('data-a4-t0',(parseFloat(tag.style.top)||0));
     }
     const rr=row.getBoundingClientRect(),tr=tag.getBoundingClientRect();
-    const x=tr.left-rr.left;
+    const x=tr.left-rr.left,w=tr.width;
     const cols=row.querySelectorAll('.prev-seg');
     let col=null,frac=0,cr;
     for(let i=0;i<cols.length;i++){
@@ -7887,9 +7888,17 @@ const secLabelsSnapshot=scope=>{
       if(cr.left-rr.left<=x||i===0)col=cols[i];else break;
     }
     if(col){cr=col.getBoundingClientRect();frac=cr.width?((x-(cr.left-rr.left))/cr.width):0;}
-    const note=row.querySelector('.p-n');
-    marks.push({tag,row,col,frac,x,rowW:row.offsetWidth||1,
-                note,gap:note?(tr.top-note.getBoundingClientRect().top):null});
+    const isJump=tag.classList.contains('sec-label-jump');
+    const note=isJump?null:(row.querySelector('.jp-num,.jp-plain-sym')||row.querySelector('.p-n'));
+    let chordFloor=Infinity;
+    row.querySelectorAll('.p-chord:not(.empty)').forEach(ch=>{
+      const rg=document.createRange();rg.selectNodeContents(ch);const r=rg.getBoundingClientRect();
+      if(r.height>0)chordFloor=Math.min(chordFloor,r.top);
+    });
+    const refTop=isJump?(isFinite(chordFloor)?chordFloor:rr.top):(note?note.getBoundingClientRect().top:rr.top);
+    const prevLine=line.previousElementSibling;
+    marks.push({tag,line,prevLine,row,col,frac,x,w,rowW:row.offsetWidth||1,nearEnd:(x+w>=rr.width-24),
+                isJump,note,gap:tr.top-refTop});
   });
   return marks;
 };
@@ -7899,11 +7908,43 @@ const secLabelsRestore=marks=>{
     const rr=m.row.getBoundingClientRect();
     let x=m.x;
     if(m.col){const cr=m.col.getBoundingClientRect();x=(cr.left-rr.left)+m.frac*cr.width;}
-    else x=m.x*(m.row.offsetWidth||1)/m.rowW;      // 没有音位列可锚(纯记号行)：按行宽等比挪
+    else x=m.x*(m.row.offsetWidth||1)/m.rowW;
+    if(m.nearEnd && x+(m.w||0)>rr.width) x=Math.max(0,rr.width-(m.w||0));
     m.tag.style.left=x.toFixed(1)+'px';
-    if(m.note&&m.gap!=null){
-      const now=m.tag.getBoundingClientRect().top-m.note.getBoundingClientRect().top;
-      m.tag.style.top=((parseFloat(m.tag.style.top)||0)+(m.gap-now)).toFixed(1)+'px';
+    if(m.gap!=null){
+      let refTop=rr.top;
+      if(m.isJump){
+        let chordFloor=Infinity;
+        m.row.querySelectorAll('.p-chord:not(.empty)').forEach(ch=>{
+          const rg=document.createRange();rg.selectNodeContents(ch);const r=rg.getBoundingClientRect();
+          if(r.height>0)chordFloor=Math.min(chordFloor,r.top);
+        });
+        refTop=isFinite(chordFloor)?chordFloor:rr.top;
+      }else if(m.note){
+        refTop=m.note.getBoundingClientRect().top;
+      }
+      const now=m.tag.getBoundingClientRect().top-refTop;
+      let newTop=(parseFloat(m.tag.style.top)||0)+(m.gap-now);
+      m.tag.style.top=newTop.toFixed(1)+'px';
+      if(m.prevLine){
+        const tr=m.tag.getBoundingClientRect();
+        let prevBottom=-Infinity;
+        m.prevLine.querySelectorAll('.p-lyric:not([data-lyric-pad])').forEach(ly=>{
+          const rg=document.createRange();rg.selectNodeContents(ly);const r=rg.getBoundingClientRect();
+          if(r.width>0&&r.left<tr.right+4&&r.right>tr.left-4)prevBottom=Math.max(prevBottom,r.bottom);
+        });
+        if(isFinite(prevBottom)&&tr.top<prevBottom+3){
+          const need=prevBottom+3-tr.top;
+          if(m.isJump){
+            const lw=m.tag.parentElement;
+            if(lw&&lw.classList.contains('strict-label-row')){
+              lw.style.height=((parseFloat(getComputedStyle(lw).height)||0)+need).toFixed(1)+'px';
+            }
+          }else{
+            m.tag.style.top=(newTop+need).toFixed(1)+'px';
+          }
+        }
+      }
     }
   });
 };
@@ -14116,7 +14157,16 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         '#music-library .sw-page .sw-lb.sw-a4-tight .sw-lline{margin-bottom:4px;}',
         '#music-library .sw-page .sw-lb.sw-a4-tight .sw-lsec{margin-bottom:10px;}',
         '#music-library .sw-page .sw-lb.sw-a4-tight .sw-lsec-name{margin-bottom:4px;}',
-        '#music-library .sw-page .sw-lb.sw-a4-tight .prev-row.has-volta{--volta-rail:12px;}'
+        '#music-library .sw-page .sw-lb.sw-a4-tight .prev-row.has-volta{--volta-rail:6px;}',
+        '#music-library .sw-page .sw-lb.sw-a4-tight .prev-row{margin-bottom:3px;padding-bottom:0;}',
+        '#music-library .sw-page .sw-lb.sw-a4-tight .sw-lline{margin-bottom:3px;}',
+        '#music-library .sw-page .sw-lb.sw-a4-tight .strict-label-row{height:0;margin:0;overflow:visible;}',
+        '#music-library .sw-page .sw-lb.sw-a4-tight .strict-label-row:has(.sec-label-jump){height:16px;margin-bottom:2px;}',
+        '#music-library .sw-page .sw-lb.sw-a4-tight .jp-plain-bot,#music-library .sw-page .sw-lb.sw-a4-tight .jp-bar-bot{height:8px !important;}',
+        '#music-library .sw-page .sw-lb.sw-a4-tight .jp-plain-top,#music-library .sw-page .sw-lb.sw-a4-tight .jp-bar-top{height:8px !important;}',
+        '#music-library .sw-page .sw-lb.sw-a4-tight .prev-seg.p-slot{margin:0 1px;min-width:17.2px;}',
+        '#music-library .sw-page .sw-lb.sw-a4-tight .prev-seg.p-barslot{margin:0 2px;}',
+        '#music-library .sw-page .sw-lb.sw-a4-tight .prev-seg.p-slot:has(.jp-aug){margin-right:8px;}'
       ].join('')+chip;
       document.head.appendChild(st);
     };
@@ -15138,17 +15188,14 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       if(natural.width*ch<natural.height*cw){
         const labelMarks=secLabelsSnapshot(lbDiv); // 压紧/拉宽前记下段落标记指着哪一拍、离音符多高
         lbDiv.classList.add('sw-a4-tight');
+        normalizePreviewRowHeights();
+        if(s.align==='strict')layoutStrictChordsAll(lbDiv);
+        if(ML_JUSTIFY_ROWS)justifyScoreRows(lbDiv.querySelectorAll('.sw-lrow'),{ratio:0.45});
         const tightNat=measureNaturalScore();
         if(tightNat)natural=tightNat;
         natural.height=relayoutRowExtras()||natural.height;
-        const targetW=Math.min(natural.height*cw/ch,natural.width*STRETCH_MAX);
-        if(ML_JUSTIFY_ROWS&&targetW>natural.width+1){
-          justifyScoreRows(lbDiv.querySelectorAll('.sw-lrow'),{targetWidth:targetW,ratio:STRETCH_RATIO});
-          const wideNat=measureNaturalScore();
-          if(wideNat)natural=wideNat;
-          natural.height=relayoutRowExtras()||natural.height;
-        }
-        secLabelsRestore(labelMarks);            // 段落标记放回原来那一拍(只动 relative 定位，不影响排版)
+        secLabelsRestore(labelMarks);
+        natural.height=lbDiv.scrollHeight||natural.height;            // 段落标记放回原来那一拍(只动 relative 定位，不影响排版)
       }
 
       /* 单参数 scale = 等比：横竖同一个比例，简谱/和弦/歌词的形状与对位一律不变。
