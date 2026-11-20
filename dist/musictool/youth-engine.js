@@ -570,8 +570,8 @@ window.YouthEngine = {};
 .jp-tie{display:inline-flex;width:0;height:0;position:relative;overflow:visible;pointer-events:none}
 .jp-tie::before{content:'';position:absolute;left:var(--tie-l,-0.75em);top:var(--tie-t,-34px);width:var(--tie-w,1.5em);height:8px;border-top:1.5px solid var(--ym-ink);border-left:1.5px solid var(--ym-ink);border-right:1.5px solid var(--ym-ink);border-radius:50% 50% 0 0/100% 100% 0 0}
 .jp-tuplet{display:inline-flex;align-items:flex-end;position:relative;padding-top:var(--slur-pad,12px);margin-right:1px}
-.jp-tuplet-br{position:absolute;top:2px;left:2px;right:2px;height:8px;border-top:1.5px solid var(--ym-ink);border-left:1.5px solid var(--ym-ink);border-right:1.5px solid var(--ym-ink);border-radius:3px 3px 0 0;pointer-events:none}
-.jp-tuplet-num{position:absolute;top:-1px;left:50%;transform:translateX(-50%);font-size:8px;line-height:1;padding:0 3px;background:var(--ym-bg);color:var(--ym-ink);pointer-events:none}
+.jp-tuplet-br{position:absolute;top:var(--jp-nav-arc-top,2px);left:15%;right:15%;height:8px;border-top:1.5px solid var(--ym-ink);border-left:1.5px solid var(--ym-ink);border-right:1.5px solid var(--ym-ink);border-radius:50% 50% 0 0/100% 100% 0 0;pointer-events:none}
+.jp-tuplet-num{position:absolute;top:-2px;left:50%;transform:translateX(-50%);font-size:9px;font-weight:600;line-height:1;padding:0 3px;background:var(--ym-bg);color:var(--ym-ink);pointer-events:none}
 .jp-timesig{display:inline-flex;flex-direction:column;align-items:center;justify-content:flex-end;vertical-align:bottom;flex-shrink:0;min-width:1.42em;margin:0 5px 0 2px;position:relative;top:-1px;line-height:1}
 .jp-timesig-pad{display:block;width:100%;flex-shrink:0}
 .jp-timesig-pad-top{height:2px}
@@ -1299,8 +1299,8 @@ hr.ym-hr{border:none;margin:1.2rem 0;background:none}
         '.jp-slur-open::before{top:var(--jp-nav-arc-top,3px)!important;left:12%!important;right:-4px!important;height:11px!important;border-top:2.4px solid #111!important;border-left:2.4px solid #111!important;background:transparent!important;z-index:2!important;}',
         '.jp-slur-close::before{top:var(--jp-nav-arc-top,3px)!important;left:-4px!important;right:12%!important;height:11px!important;border-top:2.4px solid #111!important;border-right:2.4px solid #111!important;background:transparent!important;z-index:2!important;}',
         '.jp-tie::before{height:11px!important;border-top:2.4px solid #111!important;border-left:2.4px solid #111!important;border-right:2.4px solid #111!important;background:transparent!important;z-index:2!important;}',
-        '.jp-tuplet-br{top:3px!important;left:2px!important;right:2px!important;height:11px!important;border-top:2.4px solid #111!important;border-left:2.4px solid #111!important;border-right:2.4px solid #111!important;background:transparent!important;z-index:1!important;}',
-        '.jp-tuplet-num{top:-4px!important;font-size:10px!important;line-height:1!important;padding:0 5px!important;background:#fff!important;color:#111!important;-webkit-text-fill-color:#111!important;z-index:4!important;}'
+        '.jp-tuplet-br{top:var(--jp-nav-arc-top,3px)!important;left:12%!important;right:12%!important;height:11px!important;border-top:2.4px solid #111!important;border-left:2.4px solid #111!important;border-right:2.4px solid #111!important;border-radius:50% 50% 0 0/100% 100% 0 0!important;background:transparent!important;z-index:2!important;}',
+        '.jp-tuplet-num{top:-3px!important;font-size:10px!important;font-weight:600!important;line-height:1!important;padding:0 5px!important;background:#fff!important;color:#111!important;-webkit-text-fill-color:#111!important;z-index:4!important;}'
       ].join('\n');
       scope.insertBefore(style,scope.firstChild);
     }
@@ -2605,22 +2605,26 @@ layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);j
       toks.push(rawToks[ti]);
       ti++;
     }
-    var i=0;
-    while(i<toks.length){
-      var t=toks[i];
-      var inlineTs=extractInlineTimeSignToken(t);
-      if(inlineTs){d.appendChild(makeTimeSignature(inlineTs));i++;continue;}
-      var tieSpan=jpTieSpan(t);
-      if(tieSpan){d.appendChild(makeJpTie(tieSpan));hasTie=true;i++;continue;}
-      var _nnav=noteNavOf(t);if(_nnav){attachNoteNavMark(d.lastElementChild,_nnav);i++;continue;}   // *coda/*segno/… 挂在前一个音符上方
-      if(t==='('){var sl=document.createElement('span');sl.className='jp-slur';i++;while(i<toks.length&&toks[i]!==')')appendRenderedTok(sl,toks[i++]);d.appendChild(sl);i++;continue;}
-      if(t==='(['){var so=document.createElement('span');so.className='jp-slur-open';i++;while(i<toks.length&&toks[i]!=='])')appendRenderedTok(so,toks[i++]);if(i<toks.length)i++;d.appendChild(so);continue;}
-      if(t==='])'){var sc=document.createElement('span');sc.className='jp-slur-close';i++;if(i<toks.length)appendRenderedTok(sc,toks[i++]);d.appendChild(sc);continue;}
-      if(t==='[v1'||t==='[v2'||t===']v'||/^\[v:(.+)\]$/.test(t)){i++;continue;} // volta handled at row level
-      var tm2=t.match(/^\{(3|5)$/);if(tm2){var tn=parseInt(tm2[1],10);var tp=makeTuplet(tn);i++;while(i<toks.length&&toks[i]!=='}')appendRenderedTok(tp,toks[i++]);d.appendChild(tp);i++;continue;}
-      if(t==='}'){i++;continue;}
-      appendRenderedTok(d,t);i++;
+    function renderSlice(parent,stopTok){
+      while(i<toks.length){
+        var t=toks[i];
+        if(stopTok&&t===stopTok){i++;return;}
+        var inlineTs=extractInlineTimeSignToken(t);
+        if(inlineTs){parent.appendChild(makeTimeSignature(inlineTs));i++;continue;}
+        var tieSpan=jpTieSpan(t);
+        if(tieSpan){parent.appendChild(makeJpTie(tieSpan));hasTie=true;i++;continue;}
+        var _nnav=noteNavOf(t);if(_nnav){attachNoteNavMark(parent.lastElementChild,_nnav);i++;continue;}   // *coda/*segno/… 挂在前一个音符上方
+        if(t==='('){var sl=document.createElement('span');sl.className='jp-slur';i++;renderSlice(sl,')');parent.appendChild(sl);continue;}
+        if(t==='(['){var so=document.createElement('span');so.className='jp-slur-open';i++;renderSlice(so,'])');parent.appendChild(so);continue;}
+        if(t==='])'){var sc=document.createElement('span');sc.className='jp-slur-close';i++;if(i<toks.length)appendRenderedTok(sc,toks[i++]);parent.appendChild(sc);continue;}
+        if(t==='[v1'||t==='[v2'||t===']v'||/^\[v:(.+)\]$/.test(t)){i++;continue;} // volta handled at row level
+        var tm2=t.match(/^\{(3|5)$/);if(tm2){var tn=parseInt(tm2[1],10);var tp=makeTuplet(tn);i++;renderSlice(tp,'}');parent.appendChild(tp);continue;}
+        if(t==='}'||t===')'){i++;continue;}
+        appendRenderedTok(parent,t);i++;
+      }
     }
+    var i=0;
+    renderSlice(d,null);
     if(hasTie&&typeof requestAnimationFrame==='function'){
       requestAnimationFrame(function(){layoutJpArcs(d);});
     }
@@ -2649,58 +2653,95 @@ layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);j
     });
   }
 
-  /* 严格对位：连音线弧 + 三连音括号（读列上 data-slur/tuplet，栈式配对，画 SVG 覆盖层）。 */
+  function computeStrictArcLifts(sgroups,tgroups){
+    sgroups.forEach(function(g){g._d=0;sgroups.forEach(function(h){if(h===g)return;if(h.s<=g.s&&g.e<=h.e&&(h.e-h.s)>(g.e-g.s))g._d++;});});
+    var maxD=0;sgroups.forEach(function(g){if(g._d>maxD)maxD=g._d;});
+    sgroups.forEach(function(g){g._lift=maxD-g._d;});
+    tgroups.forEach(function(t){
+      var minL=0;
+      sgroups.forEach(function(g){
+        if(g.tie&&t.s<=g.e&&g.s<=t.e)minL=Math.max(minL,g._lift+1);
+        else if(!g.tie&&t.s<=g.s&&g.e<=t.e&&(t.e-t.s)>(g.e-g.s))minL=Math.max(minL,g._lift+1);
+      });
+      t._lift=minL;
+    });
+    if(tgroups.length){
+      sgroups.forEach(function(g){
+        if(g.tie)return;
+        tgroups.forEach(function(t){
+          if(g.s<=t.s&&t.e<=g.e&&(g.e-g.s)>(t.e-t.s))g._lift=Math.max(g._lift,t._lift+1);
+        });
+      });
+    }
+    return maxD;
+  }
+  function appendStrictTupletArc(host,L,W,top,num,ARCH,STK){
+    if(W<8)W=8;
+    var gapW=W<28?Math.max(8,W*0.35):12;
+    var armW=Math.max(3,(W-gapW)/2);
+    var base='position:absolute;box-sizing:border-box;pointer-events:none;top:'+top.toFixed(1)+'px;height:'+ARCH+'px;border:'+STK+'px solid currentColor;border-bottom:none;';
+    var ld=document.createElement('div');
+    ld.style.cssText=base+'left:'+L.toFixed(1)+'px;width:'+armW.toFixed(1)+'px;border-right:none;border-radius:100% 0 0 0/100% 0 0 0;';
+    var rd=document.createElement('div');
+    rd.style.cssText=base+'left:'+(L+W-armW).toFixed(1)+'px;width:'+armW.toFixed(1)+'px;border-left:none;border-radius:0 100% 0 0/0 100% 0 0;';
+    var nm=document.createElement('div');
+    nm.className='strict-tup-num';
+    nm.style.cssText='position:absolute;pointer-events:none;left:'+(L+W/2).toFixed(1)+'px;top:'+(top-5).toFixed(1)+'px;transform:translateX(-50%);font-size:10px;font-weight:600;line-height:1;color:currentColor;';
+    nm.textContent=String(num);
+    host.appendChild(ld);host.appendChild(rd);host.appendChild(nm);
+  }
+
+  /* 严格对位：连音线弧 + 三连音圆弧（读列上 data-slur/tuplet/tie，栈式配对）。 */
   function layoutStrictArcs(row){
     if(!row)return;
     var prev=row.querySelector('.strict-arc-svg');if(prev)prev.remove();
     [].forEach.call(row.querySelectorAll('.prev-seg.p-slot .p-chord'),function(ch){ch.style.marginBottom='';});  // 清上次抬升
     var slots=[].slice.call(row.querySelectorAll('.prev-seg.p-slot')).filter(function(c){return !c.classList.contains('p-barslot');});
     if(!slots.length)return;
-    var stack=[],groups=[],tupOpen=null,tups=[];
-    slots.forEach(function(col){
+    var stack=[],ystack=[],groups=[],tstack=[],tups=[];
+    slots.forEach(function(col,i){
       var so=(+col.getAttribute('data-slur-open'))||0, sc=(+col.getAttribute('data-slur-close'))||0;
       var to=(+col.getAttribute('data-tuplet-open'))||0, tc=col.getAttribute('data-tuplet-close'),k;
-      for(k=0;k<so;k++)stack.push(col);
-      for(k=0;k<sc;k++){var st=stack.pop();if(st)groups.push({start:st,end:col});}
-      if(to)tupOpen={start:col,n:to};
-      if(tc&&tupOpen){tups.push({start:tupOpen.start,end:col,n:tupOpen.n});tupOpen=null;}
+      for(k=0;k<so;k++)stack.push(i);
+      for(k=0;k<sc;k++){var st=stack.pop();if(st!=null)groups.push({s:st,e:i});}
+      var yc=(+col.getAttribute('data-tie-close'))||0, yo=(+col.getAttribute('data-tie-open'))||0;
+      for(k=0;k<yc;k++){var yt=ystack.pop();if(yt!=null)groups.push({s:yt,e:i,tie:1});}
+      for(k=0;k<yo;k++)ystack.push(i);
+      if(to)tstack.push({i:i,n:to});
+      if(tc){var tt=tstack.pop();if(tt)tups.push({s:tt.i,e:i,n:tt.n});}
     });
     if(!groups.length&&!tups.length)return;
     var probe=slots[0].querySelector('.jp-num'),scale=1;
     if(probe&&probe.offsetWidth){var pr=probe.getBoundingClientRect();scale=pr.width/probe.offsetWidth;}
     if(!scale)scale=1;
-    var rr=row.getBoundingClientRect();
-    function box(col){var el=col.querySelector('.jp-num')||col.querySelector('.jp-plain-sym')||col.querySelector('.p-n')||col;var r=el.getBoundingClientRect(),rr=row.getBoundingClientRect();var _t=r.top,_od=col.querySelector('.jp-dot-top');if(_od){var _or=_od.getBoundingClientRect();if(_or.height&&_or.top<_t)_t=_or.top;}   // 高音点在数字上方：弧线要抬到点之上,免得压住看不清
+    function box(col){var el=col.querySelector('.jp-num')||col.querySelector('.jp-plain-sym')||col.querySelector('.p-n')||col;var r=el.getBoundingClientRect(),rr=row.getBoundingClientRect();var _t=r.top,_od=col.querySelector('.jp-dot-top');if(_od){var _or=_od.getBoundingClientRect();if(_or.height&&_or.top<_t)_t=_or.top;}
       return {cx:(r.left+r.width/2-rr.left)/scale,top:(_t-rr.top)/scale};}
-    function ix(c){return slots.indexOf(c);}
-    var NS='http://www.w3.org/2000/svg';
-    var svg=document.createElementNS(NS,'svg');svg.setAttribute('class','strict-arc-svg');
-    svg.style.cssText='position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:4;';
-    var maxD=0;
-    groups.forEach(function(g){var gs=ix(g.start),ge=ix(g.end);g._d=0;groups.forEach(function(h){if(h===g)return;var hs=ix(h.start),he=ix(h.end);if(hs<=gs&&ge<=he&&(he-hs)>(ge-gs))g._d++;});if(g._d>maxD)maxD=g._d;});
-    var STEP=7,BASE=9,reserve=0;
-    if(groups.length)reserve=Math.max(reserve,15+maxD*STEP);
-    if(tups.length)reserve=Math.max(reserve,20);
-    [].forEach.call(row.querySelectorAll('.prev-seg.p-slot .p-chord'),function(ch){if(reserve)ch.style.marginBottom=reserve+'px';});  // 整行和弦统一抬到弧线之上
+    computeStrictArcLifts(groups,tups);
+    var ARCH=9,STK=1.5,GAP=2,ASTEP=8,reserve=0;
+    groups.forEach(function(g){reserve=Math.max(reserve,13+g._lift*ASTEP);});
+    tups.forEach(function(g){reserve=Math.max(reserve,18+g._lift*ASTEP);});
+    [].forEach.call(row.querySelectorAll('.prev-seg.p-slot .p-chord'),function(ch){if(reserve)ch.style.marginBottom=reserve+'px';});
+    var host=document.createElement('div');host.className='strict-arc-svg';
+    host.style.cssText='position:absolute;left:0;top:0;width:0;height:0;overflow:visible;pointer-events:none;z-index:4;color:currentColor;';
     groups.forEach(function(g){
-      var lift=maxD-g._d,arcH=BASE+lift*STEP;
-      var a=box(g.start),b=box(g.end),y=Math.min(a.top,b.top)-2;
-      var p=document.createElementNS(NS,'path');
-      p.setAttribute('d','M '+a.cx.toFixed(1)+' '+y.toFixed(1)+' Q '+((a.cx+b.cx)/2).toFixed(1)+' '+(y-arcH*2).toFixed(1)+' '+b.cx.toFixed(1)+' '+y.toFixed(1));
-      p.setAttribute('fill','none');p.setAttribute('stroke','currentColor');p.setAttribute('stroke-width','1.4');p.setAttribute('stroke-linecap','round');
-      svg.appendChild(p);
+      var a=box(slots[g.s]),b=box(slots[g.e]),L=a.cx,W=b.cx-a.cx,nt=Math.min(a.top,b.top);
+      for(var _k=g.s+1;_k<g.e;_k++){var _mt=box(slots[_k]).top;if(_mt<nt)nt=_mt;}
+      if(W<8)W=8;
+      var top=nt-GAP-ARCH-g._lift*ASTEP;
+      var div=document.createElement('div');
+      div.style.cssText='position:absolute;box-sizing:border-box;pointer-events:none;left:'+L.toFixed(1)+'px;top:'+top.toFixed(1)+'px;width:'+W.toFixed(1)+'px;height:'+ARCH+'px;border:'+STK+'px solid currentColor;border-bottom:none;border-radius:50% 50% 0 0/100% 100% 0 0;';
+      host.appendChild(div);
     });
     tups.forEach(function(g){
-      var a=box(g.start),b=box(g.end),x1=a.cx-4,x2=b.cx+4,y=Math.min(a.top,b.top)-7;
-      var p=document.createElementNS(NS,'path');
-      p.setAttribute('d','M '+x1.toFixed(1)+' '+(y+4)+' L '+x1.toFixed(1)+' '+y+' L '+x2.toFixed(1)+' '+y+' L '+x2.toFixed(1)+' '+(y+4));
-      p.setAttribute('fill','none');p.setAttribute('stroke','currentColor');p.setAttribute('stroke-width','1.2');svg.appendChild(p);
-      var t=document.createElementNS(NS,'text');t.setAttribute('x',((x1+x2)/2).toFixed(1));t.setAttribute('y',(y-2).toFixed(1));t.setAttribute('text-anchor','middle');t.setAttribute('font-size','11');t.setAttribute('fill','currentColor');t.textContent=g.n;svg.appendChild(t);
+      var a=box(slots[g.s]),b=box(slots[g.e]),L=a.cx,W=b.cx-a.cx,nt=Math.min(a.top,b.top);
+      for(var _k=g.s+1;_k<g.e;_k++){var _mt=box(slots[_k]).top;if(_mt<nt)nt=_mt;}
+      var top=nt-GAP-ARCH-g._lift*ASTEP;
+      appendStrictTupletArc(host,L,W,top,g.n,ARCH,STK);
     });
-    row.style.position='relative';row.appendChild(svg);
+    row.style.position='relative';row.appendChild(host);
   }
 
-  /* 整首级连音弧：栈跨 row 配对（支持跨行连音——上行画开口弧、下行画收口弧）+ 三连音括号。
+  /* 整首级连音弧：栈跨 row 配对（支持跨行连音——上行画开口弧、下行画收口弧）+ 三连音圆弧。
      逐行算 reserve 抬升整行和弦到弧上（一行一个高度）。缩放前跑，box 每次重测 row rect。 */
   function layoutStrictArcsAll(scope){
     if(!scope)return;
@@ -2723,9 +2764,7 @@ layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);j
     });
     var dangles=[];while(sstack.length){var _ds=sstack.pop();if(_ds!=null)dangles.push(_ds);}while(ystack.length){var _dy=ystack.pop();if(_dy!=null)dangles.push(_dy);}   // 未闭合的 ( ：先画到行尾的开口半弧，边写边可见
     if(!sgroups.length&&!tgroups.length&&!dangles.length)return;
-    sgroups.forEach(function(g){g._d=0;sgroups.forEach(function(h){if(h===g)return;if(h.s<=g.s&&g.e<=h.e&&(h.e-h.s)>(g.e-g.s))g._d++;});});
-    var maxD=0;sgroups.forEach(function(g){if(g._d>maxD)maxD=g._d;});
-    var NS='http://www.w3.org/2000/svg';
+    computeStrictArcLifts(sgroups,tgroups);
     function rIx(r){return rows.indexOf(r);}
     rows.forEach(function(row){
       var here=[];
@@ -2735,23 +2774,24 @@ layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);j
         else if(er===row)here.push({g:g,m:'close'});
         else if(ri>si&&ri<ei)here.push({g:g,m:'thru'});
       });
-      dangles.forEach(function(_ds){if(all[_ds].row===row)here.push({g:{s:_ds,e:_ds,_d:0},m:'open'});});
+      dangles.forEach(function(_ds){if(all[_ds].row===row)here.push({g:{s:_ds,e:_ds,_lift:0},m:'open'});});
       var tHere=tgroups.filter(function(g){return all[g.s].row===row&&all[g.e].row===row;});
       if(!here.length&&!tHere.length)return;
-      var reserve=0;if(here.length)reserve=Math.max(reserve,13+maxD*8);if(tHere.length)reserve=Math.max(reserve,20);
+      var ARCH=9,STK=1.5,GAP=2,ASTEP=8,reserve=0;
+      here.forEach(function(it){reserve=Math.max(reserve,13+it.g._lift*ASTEP);});
+      tHere.forEach(function(g){reserve=Math.max(reserve,18+g._lift*ASTEP);});
       [].forEach.call(row.querySelectorAll('.prev-seg.p-slot .p-chord'),function(ch){if(reserve)ch.style.marginBottom=reserve+'px';});
       var cols=[].slice.call(row.querySelectorAll('.prev-seg.p-slot')).filter(function(c){return !c.classList.contains('p-barslot');});
       var probe=cols[0]&&cols[0].querySelector('.jp-num'),scale=1;
       if(probe&&probe.offsetWidth){var pr=probe.getBoundingClientRect();scale=pr.width/probe.offsetWidth;}if(!scale)scale=1;
       function box(col){var el=col.querySelector('.jp-num')||col.querySelector('.jp-plain-sym')||col.querySelector('.p-n')||col;var r=el.getBoundingClientRect(),rr=row.getBoundingClientRect();var _t=r.top,_od=col.querySelector('.jp-dot-top');if(_od){var _or=_od.getBoundingClientRect();if(_or.height&&_or.top<_t)_t=_or.top;}   // 高音点在数字上方：弧线要抬到点之上,免得压住看不清
       return {cx:(r.left+r.width/2-rr.left)/scale,top:(_t-rr.top)/scale};}
-      function rowW(){return row.getBoundingClientRect().width/scale;}
-      // 旧渲染器 .jp-slur 同款：CSS 边框拱形(border-top/left/right + border-radius:50%/100% = 半椭圆拱)。全=拱、open=左半(左圆右平)、close=右半。三连音括号仍用 SVG。
+      // 旧渲染器 .jp-slur 同款：CSS 边框拱形(border-top/left/right + border-radius:50%/100% = 半椭圆拱)。全=拱、open=左半(左圆右平)、close=右半；三连音用对称双半弧+中间数字。
       var host=document.createElement('div');host.className='strict-arc-svg';host.style.cssText='position:absolute;left:0;top:0;width:0;height:0;overflow:visible;pointer-events:none;z-index:4;color:currentColor;';
-      var ARCH=9,STK=1.5,GAP=2,ASTEP=8,firstCol=cols[0],lastCol=cols[cols.length-1];
+      var firstCol=cols[0],lastCol=cols[cols.length-1];
       function edge(col,side){var el=col.querySelector('.jp-num')||col.querySelector('.jp-plain-sym')||col.querySelector('.p-n')||col;var r=el.getBoundingClientRect(),rr=row.getBoundingClientRect();return ((side==='r'?r.right:r.left)-rr.left)/scale;}
       here.forEach(function(it){
-        var g=it.g,lift=maxD-g._d,L,W,nt,cls;
+        var g=it.g,lift=g._lift,L,W,nt,cls;
         if(it.m==='full'){var a=box(all[g.s].col),b=box(all[g.e].col);var pad=0;   /* 端点一律精确对音位中心：相邻弧共享同一坐标才能无缝(slur 原来探出 2px 会跟 tie 重叠) */L=a.cx-pad;W=(b.cx-a.cx)+pad*2;nt=Math.min(a.top,b.top);for(var _k=g.s+1;_k<g.e;_k++){var _mt=box(all[_k].col).top;if(_mt<nt)nt=_mt;}cls='f';}
         else if(it.m==='open'){var a2=box(all[g.s].col);L=a2.cx;W=(edge(lastCol,'r')+4)-a2.cx;nt=a2.top;cls='o';}
         else if(it.m==='close'){var b2=box(all[g.e].col);L=edge(firstCol,'l')-4;W=b2.cx-L;nt=b2.top;cls='c';}
@@ -2765,11 +2805,12 @@ layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);j
         else css+='border-left:none;border-right:none;';
         var div=document.createElement('div');div.style.cssText=css;host.appendChild(div);
       });
-      if(tHere.length){
-        var svg=document.createElementNS(NS,'svg');svg.setAttribute('class','strict-arc-tup');svg.style.cssText='position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:4;';
-        tHere.forEach(function(g){var a=box(all[g.s].col),b=box(all[g.e].col),x1=a.cx-4,x2=b.cx+4,y=Math.min(a.top,b.top)-7;var p=document.createElementNS(NS,'path');p.setAttribute('d','M '+x1.toFixed(1)+' '+(y+4)+' L '+x1.toFixed(1)+' '+y+' L '+x2.toFixed(1)+' '+y+' L '+x2.toFixed(1)+' '+(y+4));p.setAttribute('fill','none');p.setAttribute('stroke','currentColor');p.setAttribute('stroke-width','1.2');svg.appendChild(p);var t=document.createElementNS(NS,'text');t.setAttribute('x',((x1+x2)/2).toFixed(1));t.setAttribute('y',(y-2).toFixed(1));t.setAttribute('text-anchor','middle');t.setAttribute('font-size','11');t.setAttribute('fill','currentColor');t.textContent=g.n;svg.appendChild(t);});
-        host.appendChild(svg);
-      }
+      tHere.forEach(function(g){
+        var a=box(all[g.s].col),b=box(all[g.e].col),L=a.cx,W=b.cx-a.cx,nt=Math.min(a.top,b.top);
+        for(var _k=g.s+1;_k<g.e;_k++){var _mt=box(all[_k].col).top;if(_mt<nt)nt=_mt;}
+        var top=nt-GAP-ARCH-g._lift*ASTEP;
+        appendStrictTupletArc(host,L,W,top,g.n,ARCH,STK);
+      });
       row.style.position='relative';row.appendChild(host);
     });
   }
@@ -4179,9 +4220,10 @@ var ChordEngine=(function(){
   /* 吉他标准调弦（低音弦 -> 高音弦）的音级与 MIDI 音高 */
   var GUITAR_STRING_PC=[4,9,2,7,11,4];
   var GUITAR_STRING_MIDI=[40,45,50,55,59,64];
-  var BASS_STRING_MIDI=[28,33,38,43];
   /* 试听参数 */
   var STRUM_STAGGER_MS=48;      /* 吉他扫弦相邻弦触发间隔 */
+  var PIANO_NOTE_SECONDS=1.9;   /* 钢琴音衰减时长 */
+  var GUITAR_NOTE_SECONDS=1.5;  /* 吉他音衰减时长 */
   var FLASH_MS=420;             /* 按键/指法点按下反馈时长 */
 
   /* ───────────────────────── 极简 Store ─────────────────────────
@@ -4653,68 +4695,6 @@ var ChordEngine=(function(){
     return out.slice(0,4);
   }
 
-  function bassPositionsFor(tones){
-    var positions=[];
-    BASS_STRING_MIDI.forEach(function(open,index){
-      for(var fret=0;fret<=12;fret++){
-        var midi=open+fret,tone=tones.find(function(note){return note.pc===midi%12;});
-        if(tone)positions.push(Object.assign({},tone,{midi:midi,string:4-index,fret:fret}));
-      }
-    });
-    return positions;
-  }
-  function bassPattern(options){
-    var windowStart=-1,previous=null;
-    for(var base=0;base<=9;base++){
-      if(options.midis.every(function(midi){return options.positions.some(function(note){return note.midi===midi&&(note.fret===0||(note.fret>=base&&note.fret<=base+3));});})){windowStart=base;break;}
-    }
-    var notes=options.midis.map(function(midi){
-      var candidates=options.positions.filter(function(note){return note.midi===midi&&(windowStart<0||note.fret===0||(note.fret>=windowStart&&note.fret<=windowStart+3));});
-      function cost(note){return previous?Math.abs(note.fret-previous.fret)+Math.abs(note.string-previous.string)*1.5+note.fret*.1:note.fret;}
-      candidates.sort(function(a,b){return cost(a)-cost(b);});previous=candidates[0];
-      return Object.assign({},previous,{beats:options.beats});
-    });
-    var fretted=notes.filter(function(note){return note.fret>0;}),firstFret=Math.min.apply(null,fretted.map(function(note){return note.fret;}));
-    notes.forEach(function(note){note.finger=note.fret?note.fret-firstFret+1:0;});
-    return {id:options.id,label:options.label,description:options.description,notes:notes};
-  }
-  function bassFor(def,scaleMode){
-    if(!def)return null;
-    var anchor=def.bassNote||def.notes[0];
-    var tones=def.notes.map(function(note){return {name:note.name,pc:note.pc,degree:note.degree,role:note.role};});
-    if(def.bassNote){
-      tones=tones.filter(function(note){return note.pc!==anchor.pc;});
-      tones.unshift({name:anchor.name,pc:anchor.pc,degree:'低音',role:'bass'});
-    }
-    var minor=scaleMode==='minor'||(scaleMode!=='major'&&def.quality.intervals.indexOf(3)>=0);
-    var intervals=minor?[0,3,5,7,10]:[0,2,4,7,9],degrees=minor?['1','b3','4','5','b7']:['1','2','3','5','6'];
-    var scaleTones=intervals.map(function(interval,index){
-      return {name:index?spellChordTone(def.root,interval,degrees[index],def.useFlat):def.root,pc:(def.rootPc+interval)%12,degree:degrees[index],role:index?'ext':'root'};
-    });
-    var positions=bassPositionsFor(tones),scalePositions=bassPositionsFor(scaleTones),allPositions=positions.concat(scalePositions);
-    var low=28+(anchor.pc-28%12+12)%12;
-    var upper=positions.map(function(note){return note.midi;}).filter(function(midi){
-      return midi>low&&midi<low+12&&def.notes.some(function(note){return note.pc===midi%12;});
-    }).filter(function(midi,index,list){return list.indexOf(midi)===index;}).sort(function(a,b){return a-b;});
-    function pattern(id,label,description,midis,beats){
-      return bassPattern({id:id,label:label,description:description,midis:midis,beats:beats,positions:allPositions});
-    }
-    var rootLow=28+(def.rootPc-28%12+12)%12;
-    var pentatonic=[low,rootLow+intervals[1],rootLow+intervals[2],rootLow+intervals[3],rootLow+intervals[4],rootLow+intervals[3],rootLow+intervals[2],low];
-    var scale={id:minor?'minor':'major',label:minor?'小调五声':'大调五声',tones:scaleTones,positions:scalePositions};
-    var ascending=intervals.concat([12]).map(function(interval){return rootLow+interval;});
-    scale.demos=[
-      bassPattern({id:'scale-up',label:'五声上行示范',description:'一拍一个音，跟着亮点从低到高弹。',midis:ascending,beats:1,positions:scalePositions}),
-      bassPattern({id:'scale-down',label:'五声下行示范',description:'一拍一个音，跟着亮点从高到低弹。',midis:ascending.slice().reverse(),beats:1,positions:scalePositions})
-    ];
-    return {anchor:{name:anchor.name,midi:low},positions:positions,scale:scale,patterns:[
-      pattern('steady','稳拍低音','每拍一个低音，先把节奏弹稳。',[low,low,low,low],1),
-      pattern('octave','八度变化','低音与高八度交替，保持相同节奏。',[low,low+12,low,low+12],1),
-      pattern('fill','两拍和弦音加花','四个八分音符；句尾参考，下一拍回到伴奏。',[low,upper[0]||low,upper[1]||low+12,low+12],.5),
-      pattern('pentatonic',scale.label+'加花','八个八分音符，四拍练习；首尾先稳住当前低音。',pentatonic,.5)
-    ]};
-  }
-
   /* ───────────────────────── Repository ─────────────────────────
      统一入口：符号 -> {def, guitar}，Map 缓存避免重复解析/计算。 */
   var repoCache=new Map();
@@ -4734,18 +4714,11 @@ var ChordEngine=(function(){
     return entry;
   }
 
-  var SAMPLE_NOTES={piano:[['C2',36],['C3',48],['C4',60],['C5',72],['C6',84],['C7',96]],
-    guitar:[['E2',40],['A2',45],['D3',50],['G3',55],['B3',59],['E4',64],['A4',69],['D5',74]],
-    bass:[['E1',28],['A1',33],['D2',38],['G2',43],['C3',48],['G3',55]]};
-  var SAMPLE_BASE=(function(){
-    if(typeof document==='undefined')return './instrument-samples/';
-    var script=new URL(document.currentScript&&document.currentScript.src||location.href);
-    return new URL(script.pathname.indexOf('/musictool/')>=0?'../instrument-samples/':'./instrument-samples/',script).href;
-  })();
-  // Bundled FluidR3 samples keep playback local and work with the PWA offline cache.
+  /* ───────────────────────── 音频引擎（Web Audio 合成） ─────────────────────────
+     MVP 用振荡器合成，零音频文件、天然离线、低延迟。
+     接口化设计：将来可用同接口换成真实采样音色。 */
   var AudioEngine={
-    _ctx:null,_master:null,_bassVoices:new Set(),_voices:new Map(),_encoded:new Map(),_decoded:new Map(),
-    _requests:{piano:0,guitar:0,bass:0},
+    _ctx:null,_master:null,
     /** 懒初始化 AudioContext（必须由用户手势触发的调用链进入）。 */
     _ensure:function(){
       if(typeof window==='undefined')return null;
@@ -4753,121 +4726,68 @@ var ChordEngine=(function(){
       if(!AC)return null;
       if(!this._ctx){
         this._ctx=new AC();
+        /* 压限器兜底，多音齐奏不削波 */
         this._master=this._ctx.createDynamicsCompressor();
-        this._master.threshold.value=-10;this._master.ratio.value=8;
+        this._master.threshold.value=-16;
         this._master.connect(this._ctx.destination);
       }
-      if(this._ctx.state==='suspended'){try{this._ctx.resume().catch(function(){});}catch(e){}}
+      if(this._ctx.state==='suspended'){try{this._ctx.resume();}catch(e){}}
       return this._ctx;
     },
-    prepare:function(instrument){
-      var self=this;
-      if(!SAMPLE_NOTES[instrument])return Promise.reject(new Error('Unknown instrument'));
-      if(!this._encoded.has(instrument)){
-        var pending=Promise.all(SAMPLE_NOTES[instrument].map(async function(sample){
-          var response=await fetch(SAMPLE_BASE+instrument+'/'+sample[0]+'.mp3');
-          if(!response.ok)throw new Error('Instrument sample unavailable: '+response.status);
-          return {midi:sample[1],bytes:await response.arrayBuffer()};
-        })).catch(function(error){self._encoded.delete(instrument);throw error;});
-        this._encoded.set(instrument,pending);
-      }
-      return this._encoded.get(instrument);
-    },
-    _ready:function(instrument){
-      var self=this;
-      if(!this._decoded.has(instrument)){
-        var pending=this.prepare(instrument).then(samples=>Promise.all(samples.map(async sample=>{
-          var buffer=await self._ctx.decodeAudioData(sample.bytes.slice(0)),peak=0;
-          for(var c=0;c<buffer.numberOfChannels;c++){
-            var data=buffer.getChannelData(c);for(var i=0;i<data.length;i++)peak=Math.max(peak,Math.abs(data[i]));
-          }
-          return {midi:sample.midi,buffer:buffer,level:1/Math.max(.25,peak)};
-        }))).catch(function(error){self._decoded.delete(instrument);throw error;});
-        this._decoded.set(instrument,pending);
-      }
-      return this._decoded.get(instrument);
-    },
-    _voice:function(instrument,event,when,samples,volume){
-      var ctx=this._ctx,self=this;
-      var sample=samples.reduce(function(best,item){return Math.abs(item.midi-event.midi)<Math.abs(best.midi-event.midi)?item:best;});
-      var source=ctx.createBufferSource(),gain=ctx.createGain(),rate=Math.pow(2,(event.midi-sample.midi)/12);
-      var duration=Math.min(event.duration,sample.buffer.duration/rate),level=volume*sample.level;
-      source.buffer=sample.buffer;source.playbackRate.value=rate;
-      gain.gain.setValueAtTime(.0001,when);gain.gain.linearRampToValueAtTime(level,when+.004);
-      gain.gain.setValueAtTime(level,when+Math.max(.005,duration-.07));gain.gain.linearRampToValueAtTime(.0001,when+duration);
-      source.connect(gain);gain.connect(this._master);
-      this._voices.set(source,{gain:gain,instrument:instrument});
-      if(instrument==='bass')this._bassVoices.add(source);
-      source.onended=function(){source.disconnect();gain.disconnect();self._voices.delete(source);self._bassVoices.delete(source);};
-      source.start(when);source.stop(when+duration+.005);
-    },
-    stop:function(instrument){
-      this._requests[instrument]++;
-      if(instrument==='bass'&&this._bassFrame){cancelAnimationFrame(this._bassFrame);this._bassFrame=null;}
-      var now=this._ctx?this._ctx.currentTime:0;
-      this._voices.forEach((voice,source)=>{
-        if(voice.instrument!==instrument)return;
-        voice.gain.gain.cancelScheduledValues(now);voice.gain.gain.setTargetAtTime(.0001,now,.004);
-        try{source.stop(now+.025);}catch(e){}
-        this._voices.delete(source);this._bassVoices.delete(source);
-      });
-    },
-    stopAll:function(){['piano','guitar','bass'].forEach(instrument=>this.stop(instrument));},
-    _watchBass:function(events,start,token,options){
-      var self=this,last=-1,end=events[events.length-1].offset+events[events.length-1].duration;
-      function tick(){
-        if(token!==self._requests.bass)return;
-        var elapsed=self._ctx.currentTime-start,index=-1;
-        for(var i=0;i<events.length;i++)if(events[i].offset<=elapsed)index=i;
-        if(index>=0&&index!==last){last=index;if(options.onNote)options.onNote(events[index],index,events.length);}
-        if(elapsed>=end){self._bassFrame=null;if(options.onEnd)options.onEnd();return;}
-        self._bassFrame=requestAnimationFrame(tick);
-      }
-      this._bassFrame=requestAnimationFrame(tick);
-    },
-    _play:function(instrument,events,options){
-      var ctx=this._ensure(),self=this;options=options||{};
-      if(!ctx||!events.length)return false;
-      this.stopAll();var token=this._requests[instrument];
-      this._ready(instrument).then(function(samples){
-        if(token!==self._requests[instrument])return;
-        if(ctx.state!=='running')throw new Error('Audio context unavailable');
-        var when=ctx.currentTime+.04,volume=instrument==='piano'?.4/Math.sqrt(events.length):instrument==='guitar'?.28:.45;
-        events.forEach(function(event){self._voice(instrument,event,when+event.offset,samples,volume);});
-        if(options.onStart)options.onStart();
-        if(instrument==='bass')self._watchBass(events,when,token,options);
-      }).catch(function(error){
-        if(token!==self._requests[instrument])return;
-        self.stop(instrument);if(options.onError)options.onError(error);
-      });
-      return true;
+    _midiFreq:function(m){return 440*Math.pow(2,(m-69)/12);},
+    /** 单音合成：双振荡器 + 低通 + 指数衰减包络。timbre: 'piano'|'guitar' */
+    _voice:function(midi,when,timbre){
+      var ctx=this._ctx,freq=this._midiFreq(midi);
+      var isG=timbre==='guitar';
+      var dur=isG?GUITAR_NOTE_SECONDS:PIANO_NOTE_SECONDS;
+      var lp=ctx.createBiquadFilter();
+      lp.type='lowpass';
+      lp.frequency.value=isG?2300:3800;
+      lp.Q.value=0.6;
+      var gain=ctx.createGain();
+      gain.gain.setValueAtTime(0.0001,when);
+      gain.gain.linearRampToValueAtTime(isG?0.30:0.26,when+0.006);
+      gain.gain.exponentialRampToValueAtTime(0.0008,when+dur);
+      var o1=ctx.createOscillator();
+      o1.type=isG?'sawtooth':'triangle';
+      o1.frequency.value=freq;
+      var o2=ctx.createOscillator();
+      o2.type=isG?'triangle':'sine';
+      o2.frequency.value=freq*(isG?1:2);
+      o2.detune.value=isG?4:2;
+      var g2=ctx.createGain();
+      g2.gain.value=isG?0.5:0.35;
+      o1.connect(lp);o2.connect(g2);g2.connect(lp);
+      lp.connect(gain);gain.connect(this._master);
+      o1.start(when);o2.start(when);
+      o1.stop(when+dur+0.05);o2.stop(when+dur+0.05);
     },
     /**
      * 钢琴式播放：组成音同时触发。
      * @param {number[]} midis MIDI 音高列表
      * @returns {boolean} 环境不支持 Web Audio 时返回 false
      */
-    playChord:function(midis,options){
-      return this._play('piano',(midis||[]).map(midi=>({midi:midi,offset:0,duration:2.8})),options);
+    playChord:function(midis){
+      var ctx=this._ensure();
+      if(!ctx||!midis||!midis.length)return false;
+      var t=ctx.currentTime+0.02;
+      for(var i=0;i<midis.length;i++)this._voice(midis[i],t,'piano');
+      return true;
     },
     /**
      * 吉他扫弦：各弦按 STRUM_STAGGER_MS 间隔依次触发。
      * @param {number[]} midis 低音弦->高音弦的 MIDI 列表
      * @returns {number[]} 各音相对触发延时（ms），供 UI 同步动画；不支持时返回 []
      */
-    strumGuitar:function(midis,options){
-      var events=(midis||[]).map((midi,index)=>({midi:midi,offset:index*STRUM_STAGGER_MS/1000,duration:2.2}));
-      return this._play('guitar',events,options)?events.map(event=>event.offset*1000):[];
-    },
-    stopBass:function(){
-      this.stop('bass');
-    },
-    playBass:function(notes,bpm,options){
-      var beat=60/Math.max(40,Math.min(180,Number(bpm)||90)),offset=0;
-      var events=(notes||[]).map(function(note){
-        var duration=(note.beats||1)*beat,event=Object.assign({},note,{offset:offset,duration:duration});offset+=duration;return event;
-      });
-      return this._play('bass',events,options);
+    strumGuitar:function(midis){
+      var ctx=this._ensure();
+      if(!ctx||!midis||!midis.length)return [];
+      var t=ctx.currentTime+0.02,delays=[];
+      for(var i=0;i<midis.length;i++){
+        this._voice(midis[i],t+i*STRUM_STAGGER_MS/1000,'guitar');
+        delays.push(i*STRUM_STAGGER_MS);
+      }
+      return delays;
     }
   };
 
@@ -4877,7 +4797,6 @@ var ChordEngine=(function(){
     parseChord:parseChord,
     getChord:getChord,
     guitarPositionsFor:guitarPositionsFor,
-    bassFor:bassFor,
     cleanChordText:cleanChordText,
     createStore:createStore,
     audio:AudioEngine,
@@ -4901,7 +4820,6 @@ var ChordEngine=(function(){
     }
     /* [引擎变量名, 宿主候选变量, 回退键] */
     var THEME_VAR_MAP=[
-      ['--ce-solid-bg',['--bg'],'bg'],
       ['--ce-bg',['--surface','--bg2'],'bg'],
       ['--ce-bg2',['--surface-secondary','--bg3'],'bg2'],
       ['--ce-bg3',['--surface-hover'],'bg3'],
@@ -5276,7 +5194,7 @@ var ChordEngine=(function(){
       '.backdrop{position:absolute;inset:0;background:rgba(18,13,9,.42);opacity:0;transition:opacity .22s ease;pointer-events:none}'+
       '.sheet{position:absolute;left:50%;bottom:0;transform:translate(-50%,103%);width:min(720px,100%);'+
         'max-height:min(86dvh,860px);box-sizing:border-box;overflow-y:auto;overscroll-behavior:contain;'+
-        'background:linear-gradient(var(--ce-bg),var(--ce-bg)),var(--ce-solid-bg);color:var(--ce-text);border:1px solid var(--ce-border-md);border-bottom:none;'+
+        'background:var(--ce-bg);color:var(--ce-text);border:1px solid var(--ce-border-md);border-bottom:none;'+
         'border-radius:18px 18px 0 0;box-shadow:0 -18px 60px rgba(0,0,0,.22);'+
         'padding:10px 20px calc(22px + env(safe-area-inset-bottom,0px));'+
         'transition:transform .24s cubic-bezier(.32,.72,.28,1);pointer-events:none}'+
@@ -5286,7 +5204,7 @@ var ChordEngine=(function(){
       '.head{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;padding-right:38px}'+
       '.name{font-size:30px;font-weight:700;line-height:1.1}'+
       '.qual{font-size:13px;color:var(--ce-text2)}'+
-      '.close{position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:10px;'+
+      '.close{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;'+
         'border:1px solid var(--ce-border);background:var(--ce-bg2);color:var(--ce-text2);'+
         'font-size:15px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center}'+
       '.close:hover{background:var(--ce-bg3)}'+
@@ -5300,7 +5218,7 @@ var ChordEngine=(function(){
       '.sec{margin-top:20px}'+
       '.sec-h{display:flex;align-items:center;gap:10px;margin-bottom:10px}'+
       '.sec-t{font-size:12px;font-weight:600;letter-spacing:.08em;color:var(--ce-text3)}'+
-      '.play{width:36px;height:36px;flex-shrink:0;border-radius:10px;border:1px solid var(--ce-border-md);cursor:pointer;'+
+      '.play{width:30px;height:30px;border-radius:50%;border:1px solid var(--ce-border-md);cursor:pointer;'+
         'background:var(--ce-accent-soft);color:var(--ce-accent);display:flex;align-items:center;justify-content:center;'+
         'transition:transform .12s ease}'+
       '.play:active{transform:scale(.9)}'+
@@ -5311,29 +5229,7 @@ var ChordEngine=(function(){
       '.gmeta{display:flex;align-items:center;justify-content:space-between;gap:6px}'+
       '.glabel{font-size:11.5px;color:var(--ce-text2);font-weight:600}'+
       '.gempty{font-size:12.5px;color:var(--ce-text3);padding:6px 2px}'+
-      '.sample-credit{font-size:10px;color:var(--ce-text3);margin:18px 0 0}.sample-credit a{color:inherit}'+
-      '[hidden]{display:none!important}button,input{font:inherit}button:focus-visible,input:focus-visible{outline:2px solid var(--ce-accent);outline-offset:3px}'+
-      '.instruments{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:18px;padding:4px;border:1px solid var(--ce-border);border-radius:12px;background:var(--ce-bg2)}'+
-      '.instrument{min-height:42px;border:1px solid transparent;border-radius:9px;background:transparent;color:var(--ce-text2);cursor:pointer;font-size:14px;font-weight:600}'+
-      '.instrument[aria-selected=true]{border-color:var(--ce-border-md);background:var(--ce-bg);color:var(--ce-accent)}'+
-      '.bass-hint,.bass-status,.pattern-desc{font-size:12px;line-height:1.6;color:var(--ce-text2);margin:8px 0}.bass-status{min-height:20px}'+
-      '.bass-scroll{overflow-x:auto;padding:10px 0;border:1px solid var(--ce-border);border-radius:12px;background:var(--ce-bg2)}'+
-      '.bass-board{display:grid;grid-template-columns:26px repeat(13,minmax(30px,1fr));grid-auto-rows:38px;align-items:center;justify-items:center;min-width:440px;padding:0 8px}'+
-      '.fret-label,.string-label{font-size:11px;color:var(--ce-text3)}.string-label{font-weight:700;color:var(--ce-text2)}'+
-      '.bass-cell{box-sizing:border-box;width:100%;height:38px;display:flex;align-items:center;justify-content:center;background:linear-gradient(transparent calc(50% - .5px),var(--ce-border-md) 50%,transparent calc(50% + .5px));border-right:1px solid var(--ce-border)}'+
-      '.bass-dot{width:28px;height:28px;padding:0;border:1px solid var(--ce-border-md);border-radius:8px;background:var(--ce-bg);color:var(--ce-text);cursor:pointer;font-size:11px;font-weight:600}'+
-      '.bass-dot.root,.bass-dot.bass{color:var(--ce-accent);border-color:var(--ce-accent)}.bass-dot.bass{border-width:2px}.bass-dot.third{color:var(--ce-third)}.bass-dot.ext{color:var(--ce-ext)}'+
-      '.bass-dot{position:relative}.bass-dot.is-playing{background:var(--ce-accent);border-color:var(--ce-accent);color:var(--ce-bg);box-shadow:0 0 0 4px var(--ce-accent-soft)}.bass-dot.is-playing:after{content:attr(data-step);position:absolute;right:-7px;top:-9px;min-width:14px;height:14px;line-height:14px;border-radius:5px;background:var(--ce-text);color:var(--ce-solid-bg);font-size:9px}'+
-      '.bass-demo{padding:12px;border:1px solid var(--ce-border);border-radius:12px;background:var(--ce-bg2);margin:12px 0}.bass-demo-actions{display:flex;gap:6px;flex-wrap:wrap}.bass-demo-actions button{min-height:38px;padding:6px 12px;border:1px solid var(--ce-border-md);border-radius:9px;background:var(--ce-bg);color:var(--ce-text);cursor:pointer;font-size:12px}.bass-demo-actions button:first-child{color:var(--ce-accent);border-color:var(--ce-accent)}'+
-      '.bass-now{font-size:13px;line-height:1.6;min-height:22px;margin:10px 0 0;color:var(--ce-text)}.bass-demo-steps{list-style:none;padding:0;margin:10px 0 0;display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px}.bass-demo-steps button{width:100%;min-height:52px;padding:6px 2px;border:1px solid var(--ce-border);border-radius:8px;background:var(--ce-bg);color:var(--ce-text);cursor:pointer}.bass-demo-steps b{display:block;font-size:12px}.bass-demo-steps small{display:block;font-size:10px;color:var(--ce-text2);margin-top:4px}.bass-demo-steps [aria-current=step]{border-color:var(--ce-accent);background:var(--ce-accent-soft)}.audio-status{font-size:12px;color:var(--ce-text2);line-height:1.5}.audio-status:empty{display:none}'+
-      '.bass-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-top:18px}.bass-controls label{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ce-text2)}'+
-      '.bass-controls input{width:110px;accent-color:var(--ce-accent)}.bass-controls output{min-width:58px;font-variant-numeric:tabular-nums}'+
-      '.bass-map-controls{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:12px 0}.bass-map-controls button,.bass-map-controls select{min-height:36px;padding:5px 10px;border:1px solid var(--ce-border-md);border-radius:9px;background:var(--ce-bg2);color:var(--ce-text2);font-size:12px;cursor:pointer}.bass-map-controls button[aria-pressed=true]{color:var(--ce-accent);border-color:var(--ce-accent)}.bass-map-controls select{margin-left:auto}.bass-scale-notes{font-size:12px;color:var(--ce-text2);line-height:1.6}'+
-      '.patterns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}.pattern{border:1px solid var(--ce-border);border-radius:12px;background:var(--ce-bg2);padding:12px;min-width:0}'+
-      '.pattern-head{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:13px;font-weight:600}.pattern-notes{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;list-style:none;padding:0;margin:12px 0 0;text-align:center}'+
-      '.pattern-notes b{display:block;color:var(--ce-text);font-size:15px}.pattern-notes small{display:block;font-size:10px;color:var(--ce-text3);margin-top:4px}.bass-stop{border:1px solid var(--ce-border-md);border-radius:9px;background:var(--ce-bg2);color:var(--ce-text2);min-height:36px;padding:4px 12px;cursor:pointer}'+
-      '@media(prefers-reduced-motion:reduce){.sheet,.backdrop,.play{transition:none}}'+
-      '@media (max-width:480px){.name{font-size:26px}.gcard{flex-basis:138px}.patterns{grid-template-columns:1fr}.bass-demo-steps{grid-template-columns:repeat(3,minmax(0,1fr))}}';
+      '@media (max-width:480px){.name{font-size:26px}.gcard{flex-basis:138px}}';
     var PLAY_SVG='<svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 1.6c0-.5.55-.8.98-.55l7.02 4.4c.4.25.4.85 0 1.1l-7.02 4.4a.65.65 0 0 1-.98-.55z"/></svg>';
 
     /**
@@ -5348,7 +5244,6 @@ var ChordEngine=(function(){
         super();
         var self=this;
         this._store=createStore({entry:null,visible:false});
-        this._instrument='piano';this._bassBpm=90;this._bassView='chord';this._bassScale='auto';
         this._shadow=this.attachShadow({mode:'open'});
         this._shadow.innerHTML=
           '<style>'+EXPLORER_CSS+'</style>'+
@@ -5359,25 +5254,11 @@ var ChordEngine=(function(){
             '<div class="head"><span class="name"></span><span class="qual"></span></div>'+
             '<div class="tones"></div>'+
             '<div class="bassnote" hidden></div>'+
-            '<div class="instruments" role="tablist" aria-label="选择乐器">'+
-              '<button type="button" class="instrument" role="tab" id="ce-tab-piano" data-instrument="piano" aria-controls="ce-panel-piano" aria-selected="true">钢琴</button>'+
-              '<button type="button" class="instrument" role="tab" id="ce-tab-guitar" data-instrument="guitar" aria-controls="ce-panel-guitar" aria-selected="false" tabindex="-1">吉他</button>'+
-              '<button type="button" class="instrument" role="tab" id="ce-tab-bass" data-instrument="bass" aria-controls="ce-panel-bass" aria-selected="false" tabindex="-1">贝斯</button></div>'+
-            '<p class="audio-status" role="status" aria-live="polite"></p>'+
-            '<div class="sec" id="ce-panel-piano" role="tabpanel" aria-labelledby="ce-tab-piano"><div class="sec-h"><span class="sec-t">钢琴</span>'+
+            '<div class="sec"><div class="sec-h"><span class="sec-t">钢琴</span>'+
               '<button class="play piano-play" aria-label="钢琴试听">'+PLAY_SVG+'</button></div>'+
               '<div class="piano-card"><chord-piano></chord-piano></div></div>'+
-            '<div class="sec" id="ce-panel-guitar" role="tabpanel" aria-labelledby="ce-tab-guitar" hidden><div class="sec-h"><span class="sec-t">吉他把位</span></div>'+
+            '<div class="sec"><div class="sec-h"><span class="sec-t">吉他把位</span></div>'+
               '<div class="gwrap"></div><div class="gempty" hidden>该和弦性质的吉他把位暂未收录，可参考上方钢琴组成音。</div></div>'+
-            '<div class="sec" id="ce-panel-bass" role="tabpanel" aria-labelledby="ce-tab-bass" hidden>'+
-              '<div class="sec-h"><span class="sec-t">四弦贝斯 · E A D G</span></div>'+
-              '<p class="bass-hint bass-summary"></p><div class="bass-map-controls"><button type="button" data-bass-view="chord" aria-pressed="true">和弦音</button><button type="button" data-bass-view="pentatonic" aria-pressed="false">五声音阶</button><select class="bass-scale" aria-label="五声音阶类型"><option value="auto">跟随和弦</option><option value="major">大调五声</option><option value="minor">小调五声</option></select></div><p class="bass-scale-notes"></p>'+
-              '<div class="bass-stage"><div class="bass-demo"><div class="bass-demo-actions"><button type="button" data-demo="scale-up">上行示范</button><button type="button" data-demo="scale-down">下行示范</button><button type="button" data-demo="step">单步跟弹</button></div><p class="bass-now">选择示范，跟着指板上的亮点弹。</p><ol class="bass-demo-steps" aria-label="示范弹奏顺序"></ol></div><div class="bass-scroll"><div class="bass-board" role="group" aria-label="贝斯指板"></div></div></div>'+
-              '<p class="bass-hint">上方是细弦 G，下方是粗弦 E。横向查看 0–12 品，点音名试听。</p>'+
-              '<p class="bass-hint">左手 1 食指、2 中指、3 无名指、4 小指；右手食指与中指交替拨弦。先慢速跟亮点，再逐渐提速。</p>'+
-              '<div class="bass-controls"><span class="sec-t">伴奏与加花</span><label>速度 <input class="bass-tempo" type="range" min="50" max="150" step="5" value="90" aria-label="贝斯试听速度"><output>90 BPM</output></label><button type="button" class="bass-stop">停止试听</button></div>'+
-              '<div class="patterns"></div><p class="bass-hint">这些是练习示例，并非原版编配；加花放在乐句空隙，优先跟稳鼓点。</p><p class="bass-status" role="status" aria-live="polite"></p></div>'+
-            '<p class="sample-credit">音色：FluidR3 / Frank Wen · <a href="'+SAMPLE_BASE+'LICENSE.txt" target="_blank" rel="noopener">CC BY 3.0</a></p>'+
           '</div>';
         this._els={
           backdrop:this._shadow.querySelector('.backdrop'),
@@ -5390,66 +5271,15 @@ var ChordEngine=(function(){
           pianoPlay:this._shadow.querySelector('.piano-play'),
           gwrap:this._shadow.querySelector('.gwrap'),
           gempty:this._shadow.querySelector('.gempty'),
-          tabs:this._shadow.querySelector('.instruments'),
-          board:this._shadow.querySelector('.bass-board'),
-          patterns:this._shadow.querySelector('.patterns'),
-          bassSummary:this._shadow.querySelector('.bass-summary'),
-          bassScaleNotes:this._shadow.querySelector('.bass-scale-notes'),
-          bassTempo:this._shadow.querySelector('.bass-tempo'),
-          bassStatus:this._shadow.querySelector('.bass-status'),
-          bassNow:this._shadow.querySelector('.bass-now'),
-          demoSteps:this._shadow.querySelector('.bass-demo-steps'),
-          audioStatus:this._shadow.querySelector('.audio-status'),
           close:this._shadow.querySelector('.close')
         };
         this._els.backdrop.addEventListener('click',function(){self.close();});
         this._els.close.addEventListener('click',function(){self.close();});
-        this._els.tabs.addEventListener('click',function(e){var tab=e.target.closest('[data-instrument]');if(tab)self._selectInstrument(tab.dataset.instrument);});
-        this._els.tabs.addEventListener('keydown',function(e){
-          if(['ArrowLeft','ArrowRight','Home','End'].indexOf(e.key)<0)return;
-          var tabs=Array.from(self._els.tabs.children),index=tabs.indexOf(e.target);
-          if(index<0)return;
-          e.preventDefault();index=e.key==='Home'?0:e.key==='End'?2:(index+(e.key==='ArrowRight'?1:2))%3;
-          self._selectInstrument(tabs[index].dataset.instrument);tabs[index].focus();
-        });
-        this._els.board.addEventListener('click',function(e){
-          var button=e.target.closest('[data-midi]');
-          if(button)self._previewBass([{midi:Number(button.dataset.midi),string:Number(button.dataset.string),fret:Number(button.dataset.fret),name:button.textContent,beats:1}],button.getAttribute('aria-label'));
-        });
-        this._els.patterns.addEventListener('click',function(e){
-          var button=e.target.closest('[data-pattern]');
-          var pattern=button&&self._bassModel.patterns.find(function(item){return item.id===button.dataset.pattern;});
-          if(pattern)self._previewBass(pattern.notes,pattern.label,{pentatonic:pattern.id==='pentatonic'});
-        });
-        this._shadow.querySelector('.bass-demo-actions').addEventListener('click',function(e){
-          var button=e.target.closest('[data-demo]');if(!button)return;
-          if(button.dataset.demo==='step'){self._stepBass();return;}
-          var demo=self._bassModel.scale.demos.find(function(item){return item.id===button.dataset.demo;});
-          self._previewBass(demo.notes,demo.label,{pentatonic:true});
-        });
-        this._els.demoSteps.addEventListener('click',function(e){
-          var button=e.target.closest('[data-step-index]');if(button)self._stepBass(Number(button.dataset.stepIndex));
-        });
-        this._els.bassTempo.addEventListener('input',function(){
-          self._stopBass();self._bassBpm=Number(this.value);this.nextElementSibling.textContent=this.value+' BPM';
-        });
-        this._shadow.querySelector('.bass-map-controls').addEventListener('click',function(e){
-          var button=e.target.closest('[data-bass-view]');
-          if(button){self._stopBass();self._bassView=button.dataset.bassView;self._renderBass(self._store.getState().entry.def);}
-        });
-        this._shadow.querySelector('.bass-scale').addEventListener('change',function(){
-          self._stopBass();self._bassScale=this.value;self._renderBass(self._store.getState().entry.def);
-        });
-        this._shadow.querySelector('.bass-stop').addEventListener('click',function(){self._stopBass();});
         this._onKey=function(e){if(e.key==='Escape')self.close();};
         this._els.pianoPlay.addEventListener('click',function(){
           var st=self._store.getState();
           if(!st.entry)return;
-          self._els.audioStatus.textContent='正在准备钢琴音色…';
-          if(!AudioEngine.playChord(st.entry.def.pianoMidis,{
-            onStart:function(){self._els.audioStatus.textContent='';self._els.piano.flash(st.entry.def.pianoMidis);},
-            onError:function(){self._els.audioStatus.textContent='音色未能加载，请点击试听重试。';}
-          }))self._els.audioStatus.textContent='此浏览器暂时无法试听。';
+          if(AudioEngine.playChord(st.entry.def.pianoMidis))self._els.piano.flash(st.entry.def.pianoMidis);
         });
         this._unsub=this._store.subscribe(this._render.bind(this));
         /* 宿主主题切换时同步变量并重绘 */
@@ -5472,7 +5302,6 @@ var ChordEngine=(function(){
       open(symbol){
         var entry=getChord(symbol);
         if(!entry)return false;
-        this._stopBass();
         syncThemeVars(this);
         this._store.setState({entry:entry,visible:true});
         document.addEventListener('keydown',this._onKey);
@@ -5482,122 +5311,14 @@ var ChordEngine=(function(){
       /** 关闭面板。 */
       close(){
         if(!this._store.getState().visible)return;
-        this._stopBass();
-        AudioEngine.stopAll();
         this._store.setState({visible:false});
         document.removeEventListener('keydown',this._onKey);
         this.dispatchEvent(new CustomEvent('chord-close',{detail:null}));
       }
-      _stopBass(){
-        AudioEngine.stopBass();this._bassStepIndex=-1;
-        this._els.board.querySelectorAll('.is-playing').forEach(note=>note.classList.remove('is-playing'));
-        this._els.demoSteps.querySelectorAll('[aria-current]').forEach(step=>step.removeAttribute('aria-current'));
-        this._els.bassStatus.textContent='';
-        this._els.bassNow.textContent='选择示范，跟着指板上的亮点弹。';
-      }
-      _previewBass(notes,label,options){
-        options=options||{};this._stopBass();
-        this._bassLesson=options.sequence||notes;
-        if(options.pentatonic)this._bassView='pentatonic';
-        this._renderBassBoard(notes);this._renderBassSteps(this._bassLesson);
-        this._shadow.querySelector('.bass-stage').scrollIntoView({block:'nearest'});
-        this._els.bassStatus.textContent='正在准备贝斯音色…';
-        try{
-          if(!AudioEngine.playBass(notes,this._bassBpm,{
-            onStart:()=>{this._els.bassStatus.textContent='正在示范：'+label;},
-            onNote:(note,index)=>this._showBassNote(note,index+(options.stepOffset||0),this._bassLesson.length),
-            onEnd:()=>{this._els.bassStatus.textContent='示范结束，可单步跟弹或重新播放。';},
-            onError:()=>{this._els.bassStatus.textContent='音色未能加载，请点击示范重试。';}
-          })){this._els.bassStatus.textContent='暂时无法试听，请检查浏览器声音权限。';return;}
-        }catch(e){this._els.bassStatus.textContent='试听未能播放，请重试。';}
-      }
-      _stepBass(index){
-        var notes=this._bassLesson||this._bassModel.scale.demos[0].notes;
-        if(index==null)index=((this._bassStepIndex??-1)+1)%notes.length;
-        this._previewBass([notes[index]],'单步跟弹',{sequence:notes,stepOffset:index,pentatonic:this._bassView==='pentatonic'});
-      }
-      _showBassNote(note,index,total){
-        this._bassStepIndex=index;
-        this._els.board.querySelectorAll('.is-playing').forEach(dot=>dot.classList.remove('is-playing'));
-        var dot=this._els.board.querySelector('[data-string="'+note.string+'"][data-fret="'+note.fret+'"]');
-        if(dot){
-          dot.classList.add('is-playing');dot.dataset.step=index+1;
-          var scroll=this._els.board.parentElement,box=dot.getBoundingClientRect(),view=scroll.getBoundingClientRect();
-          if(box.left<view.left+10)scroll.scrollLeft-=view.left+10-box.left;
-          else if(box.right>view.right-10)scroll.scrollLeft+=box.right-view.right+10;
-        }
-        this._els.demoSteps.querySelectorAll('button').forEach((step,i)=>{if(i===index)step.setAttribute('aria-current','step');else step.removeAttribute('aria-current');});
-        this._els.bassNow.textContent='第 '+(index+1)+' / '+total+' 音：'+note.name+' · 第'+note.string+'弦 '+(note.fret?note.fret+'品':'空弦')+(note.finger>0&&note.finger<=4?' · 左手'+note.finger+'指':'');
-      }
-      _renderBassSteps(notes){
-        this._els.demoSteps.replaceChildren();
-        notes.forEach((note,index)=>{
-          var step=document.createElement('li'),button=document.createElement('button');button.type='button';button.dataset.stepIndex=index;
-          button.innerHTML='<b></b><small></small>';button.querySelector('b').textContent=(index+1)+'. '+note.name;
-          button.querySelector('small').textContent=note.string+'弦'+(note.fret?note.fret+'品':'空弦');
-          button.setAttribute('aria-label','跟弹第'+(index+1)+'音 '+note.name+' 第'+note.string+'弦 '+(note.fret?note.fret+'品':'空弦'));
-          step.appendChild(button);this._els.demoSteps.appendChild(step);
-        });
-      }
-      _selectInstrument(instrument){
-        this._stopBass();AudioEngine.stopAll();this._instrument=instrument;this._els.audioStatus.textContent='';
-        AudioEngine.prepare(instrument).catch(function(){});
-        Array.from(this._els.tabs.children).forEach(tab=>{
-          var selected=tab.dataset.instrument===instrument;
-          tab.setAttribute('aria-selected',String(selected));tab.tabIndex=selected?0:-1;
-          this._shadow.getElementById(tab.getAttribute('aria-controls')).hidden=!selected;
-        });
-        if(instrument==='bass'&&this._store.getState().entry)this._renderBass(this._store.getState().entry.def);
-      }
-      _renderBass(def){
-        var bass=this._bassModel=bassFor(def,this._bassScale);
-        this._bassLesson=bass.scale.demos[0].notes;
-        this._shadow.querySelectorAll('[data-bass-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bassView===this._bassView)));
-        this._els.bassScaleNotes.textContent=def.root+' '+bass.scale.label+'：'+bass.scale.tones.map(function(note){return note.name;}).join(' · ')+(def.quality.intervals.indexOf(7)<0?'；此和弦含变化音，伴奏时优先参考和弦音。':'');
-        this._els.bassSummary.textContent='当前低音 '+bass.anchor.name+(def.bassNote?' · '+def.symbol+' 先弹斜杠后的 '+bass.anchor.name:' · 优先稳住根音')+'，其余圆点是和弦音。';
-        this._renderBassBoard();this._renderBassSteps(this._bassLesson);
-        this._renderBassPatterns(bass);
-      }
-      _renderBassBoard(extraNotes){
-        var bass=this._bassModel,board=this._els.board;
-        var positions=(this._bassView==='pentatonic'?bass.scale.positions:bass.positions).concat(extraNotes||[]);
-        this._shadow.querySelectorAll('[data-bass-view]').forEach(button=>button.setAttribute('aria-pressed',String(button.dataset.bassView===this._bassView)));
-        board.replaceChildren();
-        for(var fret=-1;fret<=12;fret++){
-          var label=document.createElement('span');label.className='fret-label';label.textContent=fret<0?'':String(fret);board.appendChild(label);
-        }
-        for(var string=1;string<=4;string++){
-          var name=document.createElement('span');name.className='string-label';name.textContent=['G','D','A','E'][string-1];board.appendChild(name);
-          for(var f=0;f<=12;f++){
-            var cell=document.createElement('span');cell.className='bass-cell';
-            var note=positions.find(function(position){return position.string===string&&position.fret===f;});
-            if(note){
-              var button=document.createElement('button');button.type='button';button.className='bass-dot '+note.role;button.textContent=note.name;button.dataset.midi=note.midi;
-              button.dataset.string=string;button.dataset.fret=f;
-              button.setAttribute('aria-label',note.name+' · 第'+string+'弦 '+(f?f+'品':'空弦'));cell.appendChild(button);
-            }
-            board.appendChild(cell);
-          }
-        }
-      }
-      _renderBassPatterns(bass){
-        this._els.patterns.replaceChildren();
-        bass.patterns.forEach(pattern=>{
-          var card=document.createElement('div');card.className='pattern';
-          card.innerHTML='<div class="pattern-head"><span></span><button type="button" class="play">'+PLAY_SVG+'</button></div><ol class="pattern-notes"></ol><p class="pattern-desc"></p>';
-          card.querySelector('.pattern-head span').textContent=pattern.label;
-          var play=card.querySelector('button');play.dataset.pattern=pattern.id;play.setAttribute('aria-label','贝斯试听 '+pattern.label);
-          pattern.notes.forEach(function(note){
-            var step=document.createElement('li');step.innerHTML='<b></b><small></small>';
-            step.querySelector('b').textContent=note.name;step.querySelector('small').textContent=note.string+'弦'+(note.fret?note.fret+'品':'空弦');card.querySelector('ol').appendChild(step);
-          });
-          card.querySelector('.pattern-desc').textContent=pattern.description;this._els.patterns.appendChild(card);
-        });
-      }
       _render(state){
         var els=this._els,self=this;
         this.classList.toggle('open',!!state.visible);
-        if(!state.entry||!state.visible)return;
+        if(!state.entry)return;
         var def=state.entry.def,positions=state.entry.guitar;
         els.name.textContent=def.root+def.quality.id+(def.bass?'/'+def.bass:'');
         els.qual.textContent=def.quality.zh+' · '+def.quality.name;
@@ -5639,11 +5360,8 @@ var ChordEngine=(function(){
             btn.setAttribute('aria-label','吉他试听 '+pos.label);
             btn.innerHTML=PLAY_SVG;
             btn.addEventListener('click',function(){
-              self._els.audioStatus.textContent='正在准备吉他音色…';
-              AudioEngine.strumGuitar(pos.midis,{
-                onStart:function(){self._els.audioStatus.textContent='';diagram.flashStrings(pos.midis.map(function(_,index){return index*STRUM_STAGGER_MS;}));},
-                onError:function(){self._els.audioStatus.textContent='音色未能加载，请点击试听重试。';}
-              });
+              var delays=AudioEngine.strumGuitar(pos.midis);
+              if(delays.length)diagram.flashStrings(delays);
             });
             meta.appendChild(label);
             meta.appendChild(btn);
@@ -5653,7 +5371,6 @@ var ChordEngine=(function(){
             diagram.setPosition(pos);
           })(positions[p]);
         }
-        this._selectInstrument(this._instrument);
       }
     }
     if(!customElements.get('chord-explorer'))customElements.define('chord-explorer',ChordExplorerEl);
