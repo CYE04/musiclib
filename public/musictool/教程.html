@@ -1,10 +1,9 @@
 <!doctype html>
-<html lang="zh-CN" class="cecp-editor-tutorial">
+<html lang="zh-CN">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>简谱记号图鉴 · 带实时预览</title>
-<script src="./theme-init.js"></script>
 <style>
   :root{
     --bg:#f6f7f9; --card:#fff; --ink:#1c2430; --ink2:#6b7686; --line:#e6e9ef;
@@ -57,12 +56,10 @@
   footer{margin-top:40px;color:var(--ink2);font-size:12.5px;text-align:center;}
   .err{color:#d33;font-size:12px;}
 </style>
-<link rel="stylesheet" href="./editor-adapter.css">
 </head>
 <body>
 <div class="wrap">
   <header class="top">
-    <a class="cecp-tutorial-return" href="./index.html?tool=jf">← 返回简谱编辑器</a>
     <h1>简谱记号图鉴 <span style="color:var(--ink2);font-size:15px;">· 带实时预览</span></h1>
     <p>每个记号旁边就是它真正渲染出来的样子 —— 用的是 musiclib / 青年页 / 简谱编辑器同一套渲染器，所见即所得。</p>
     <div class="toc" id="toc"></div>
@@ -77,7 +74,7 @@
 <!-- 离屏渲染台：迷你歌在这里渲染，再把每行 .sw-lrow 提取到上面的预览盒 -->
 <div id="stage" style="position:absolute;left:-99999px;top:0;width:900px;"></div>
 
-<script src="./youth-engine.js?v=20261014-chord2"></script>
+<script src="../youth-engine.js?v=20261014-chord2"></script>
 <script>
 /* ══════════════════════════════════════════════════════════════
    教程内容 —— 数据驱动。block 类型：
@@ -129,7 +126,8 @@ var C = [
   {ex:{title:'可调跨音连 ~N', syntax:'n: 1 2 3 ~3 4', n:'1 2 3 ~3 4', note:'连接左侧第 3 个音位（1）到右侧下一个音（4）。跨音连按钮旁可改「往前」数字，Shift+N 也用这个数；~12 同样有效，普通 N 仍是相邻连音。'}},
   {ex:{title:'多段连线无缝衔接', strict:true, syntax:'n: 1 - - ~3 1 - - - ~4 1', n:'1 - - ~3 1 - - - ~4 1', note:'两条弧在中间的 1 上衔接。延音横线 - 也算音位；sp、小节线和导航记号不计。不要用 ( 1 ) 套中间的音，那会额外画一条小弧。'}},
   {callout:'<b>数字怎么算？</b><br><code>~</code> = 左边第 1 个音位 + 右边下一个音，共 2 个；<code>~2</code>（或 <code>~~</code>）共 3 个；<code>~3</code> 共 4 个。数字不是「总共连接几个音」，也不是音高。<br>例如 <code>1 - - ~3 1</code>，从 ~ 往左数：横线、横线、1，所以选 3。<code>~12</code> 同理。每个音和记号之间保留空格。'},
-  {ex:{title:'三连音 {3 }', syntax:'n: {3 3_ 2_ 1_ } 5', n:'{3 3_ 2_ 1_ } 5', note:'括号上方标 3。五连音用 {5。'}},
+  {ex:{title:'三连音 {3 }', syntax:'n: {3 3_ 2_ 1_ } 5', n:'{3 3_ 2_ 1_ } 5', note:'圆弧上方标 3，五连音用 {5；可与 ~ 无缝衔接。'}},
+  {ex:{title:'三连音 + 连音 ~ 无缝衔接', strict:true, syntax:'n: {3 2 3 4 } ~ 2', n:'{3 2 3 4 } ~ 2', note:'三连音圆弧与 ~ 同高衔接；若 ~ 在三连音内部（如 {3 1 ~ 2 3 }），三连音圆弧会自动抬高一层。'}},
   {ex:{title:'谱中变拍号 [ts:3/4]', syntax:'n: [ts:3/4] 1 2 3', n:'[ts:3/4] 1 2 3', note:'在谱中途插入新拍号。也可以用格子的 timeSign 键。'}},
   {ex:{title:'房子线（1./2. 括号） [v1 … ]v', syntax:'n: [v1 1 2 3 ]v', n:'[v1 1 2 3 ]v', note:'第 1 房子线。第 2 用 [v2，自定义用 [v:1.3。]v 收尾。'}},
   {ex:{title:'跨行/跨小节连线 ([ … ])', syntax:'一格末尾 ([ ，下一格开头 ])', line:[{chord:'',n:'1 2 ([ 3'},{chord:'',n:']) 3 2 | 1'}], note:'半弧跨过小节线，两个半弧读作一条连线。'}},
@@ -258,7 +256,7 @@ var CHEAT = [
     var box=el('div','try');
     box.innerHTML=''
       +'<h3>✍️ 自己试一试</h3>'
-      +'<div class="opts"><span>连音示例：</span><button type="button" class="try-preset" data-tie-example="1 ~ 1 ~ 1">相邻衔接</button><button type="button" class="try-preset" data-tie-example="1 2 3 ~3 4">往前 3 音位</button><button type="button" class="try-preset" data-tie-example="1 - - ~3 1 - - - ~4 1">延音衔接</button></div>'
+      +'<div class="opts"><span>连音示例：</span><button type="button" class="try-preset" data-tie-example="1 ~ 1 ~ 1">相邻衔接</button><button type="button" class="try-preset" data-tie-example="1 2 3 ~3 4">往前 3 音位</button><button type="button" class="try-preset" data-tie-example="1 - - ~3 1 - - - ~4 1">延音衔接</button><button type="button" class="try-preset" data-tie-example="{3 2 3 4 } ~ 2">三连音+连音</button></div>'
       +'<div class="opts"><label><input type="checkbox" id="t-strict"> 严格对位</label>'
       +'<label><input type="checkbox" id="t-bold"> 副歌加粗</label></div>'
       +'<div class="row">'
@@ -300,7 +298,7 @@ var CHEAT = [
 
   function boot(){
     if(typeof YouthEngine==='undefined'||!YouthEngine.renderSongObjects){
-      content.insertAdjacentHTML('afterbegin','<div class="callout warn">没能加载渲染器 <code>youth-engine.js</code>。请确认它跟本页在同一处可访问（本页默认从 <code>./youth-engine.js</code> 加载）。</div>');
+      content.insertAdjacentHTML('afterbegin','<div class="callout warn">没能加载渲染器 <code>youth-engine.js</code>。请确认它跟本页在同一处可访问（本页默认从 <code>../youth-engine.js</code> 加载）。</div>');
       return;
     }
     renderGroup(false).then(function(){return renderGroup(true);}).then(function(){ bindTry(); renderTry(); });

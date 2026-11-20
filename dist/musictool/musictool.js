@@ -3940,7 +3940,7 @@ function layoutJpArcs(lane){
       if(cn.indexOf('jp-slur')>=0||cn.indexOf('jp-tuplet')>=0){
         var s0=atoms.length;
         walk(c);
-        if(atoms.length>s0)groups.push({el:c,start:s0,end:atoms.length-1});
+        if(atoms.length>s0)groups.push({el:c,start:s0,end:atoms.length-1,isTuplet:cn.indexOf('jp-tuplet')>=0});
         continue;
       }
       if(cn.indexOf('jp-wrap')>=0||cn.indexOf('jp-plain')>=0||cn.indexOf('jp-dual')>=0)atoms.push(c);
@@ -3954,10 +3954,11 @@ function layoutJpArcs(lane){
     t.el.style.display='';
     arcs.push({kind:'tie',el:t.el,start:s,end:e,layer:0});
   });
-  groups.forEach(function(g){arcs.push({kind:'group',el:g.el,start:g.start,end:g.end,layer:0});});
-  // tie 之间只算内部重叠（共享端点=同层，链式弧并排）；组与 tie 相接（含共享端点）即算重叠
+  groups.forEach(function(g){arcs.push({kind:'group',el:g.el,start:g.start,end:g.end,isTuplet:g.isTuplet,layer:0});});
+  // tie 之间及 tie 与 tuplet 之间只算内部重叠（共享端点=同层，链式弧并排）；圆滑线组与 tie 相接即算重叠
   function overlaps(a,b){
     if(a.kind==='tie'&&b.kind==='tie')return a.start<b.end&&b.start<a.end;
+    if((a.kind==='tie'&&b.isTuplet)||(b.kind==='tie'&&a.isTuplet))return a.start<b.end&&b.start<a.end;
     return a.start<=b.end&&b.start<=a.end;
   }
   // 先放全部 ~（窄→宽），再放组（窄→宽）：组永远压在与其重叠的 ~ 之上
@@ -4245,7 +4246,7 @@ function computeStrictArcLifts(sgroups,tgroups){
   tgroups.forEach(function(t){
     var minL=0;
     sgroups.forEach(function(g){
-      if(g.tie&&t.s<=g.e&&g.s<=t.e)minL=Math.max(minL,g._lift+1);
+      if(g.tie&&t.s<g.e&&g.s<t.e)minL=Math.max(minL,g._lift+1);
       else if(!g.tie&&t.s<=g.s&&g.e<=t.e&&(t.e-t.s)>(g.e-g.s))minL=Math.max(minL,g._lift+1);
     });
     t._lift=minL;

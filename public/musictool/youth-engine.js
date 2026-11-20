@@ -2510,7 +2510,7 @@ layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);j
         if(cn.indexOf('jp-slur')>=0||cn.indexOf('jp-tuplet')>=0){
           var s0=atoms.length;
           walk(c);
-          if(atoms.length>s0)groups.push({el:c,start:s0,end:atoms.length-1});
+          if(atoms.length>s0)groups.push({el:c,start:s0,end:atoms.length-1,isTuplet:cn.indexOf('jp-tuplet')>=0});
           continue;
         }
         if(cn.indexOf('jp-wrap')>=0||cn.indexOf('jp-plain')>=0||cn.indexOf('jp-dual')>=0)atoms.push(c);
@@ -2524,9 +2524,10 @@ layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);j
       t.el.style.display='';
       arcs.push({kind:'tie',el:t.el,start:s,end:e,layer:0});
     });
-    groups.forEach(function(g){arcs.push({kind:'group',el:g.el,start:g.start,end:g.end,layer:0});});
+    groups.forEach(function(g){arcs.push({kind:'group',el:g.el,start:g.start,end:g.end,isTuplet:g.isTuplet,layer:0});});
     function overlaps(a,b){
       if(a.kind==='tie'&&b.kind==='tie')return a.start<b.end&&b.start<a.end;
+      if((a.kind==='tie'&&b.isTuplet)||(b.kind==='tie'&&a.isTuplet))return a.start<b.end&&b.start<a.end;
       return a.start<=b.end&&b.start<=a.end;
     }
     var order=arcs.slice().sort(function(a,b){
@@ -2660,7 +2661,7 @@ layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);j
     tgroups.forEach(function(t){
       var minL=0;
       sgroups.forEach(function(g){
-        if(g.tie&&t.s<=g.e&&g.s<=t.e)minL=Math.max(minL,g._lift+1);
+        if(g.tie&&t.s<g.e&&g.s<t.e)minL=Math.max(minL,g._lift+1);
         else if(!g.tie&&t.s<=g.s&&g.e<=t.e&&(t.e-t.s)>(g.e-g.s))minL=Math.max(minL,g._lift+1);
       });
       t._lift=minL;
