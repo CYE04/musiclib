@@ -4239,11 +4239,39 @@
       const candidate=notation?exportJianpuImageLayout(canvas,page,rect,cropTop,cropHeight,scoreArea):null;
       // An already full-bleed/dense score must never get smaller just to meet the
       // preferred new margins. Keep its previous composition in that case.
-      const compact=candidate&&candidate.scale>baseFit*1.005?candidate:null;
-      const fit=compact?compact.scale:baseFit;
-      const sourceLeft=compact?compact.left:0,sourceWidth=compact?compact.width:canvas.width;
+      const availH=output.height-headerHeight-footerHeight;
+      const compact=candidate&&(candidate.scale>baseFit*1.005)?candidate:null;
+      const drawnH0=compact?compact.height*compact.scale:cropHeight*baseFit;
+      const isShortSong=notation&&(drawnH0<availH*0.86);
+      const useCrop=compact||(isShortSong&&candidate);
+      const maxFit=isShortSong&&useCrop?(output.width-300)/useCrop.width:Infinity;
+      const fit=useCrop?Math.min(useCrop.scale,maxFit):baseFit;
+      const sourceLeft=useCrop?useCrop.left:0,sourceWidth=useCrop?useCrop.width:canvas.width;
       const scoreX=(output.width-sourceWidth*fit)/2;
-      if(compact){
+      if(isShortSong&&useCrop){
+        const scale=canvas.width/rect.width,top=Math.max(0,Math.floor(cropTop));
+        const rBoxes=Array.from(page.querySelectorAll('.sw-lrow'),r=>r.getBoundingClientRect()).filter(b=>b.width>0&&b.height>0).sort((a,b)=>a.top-b.top);
+        const sTop=useCrop.strips[0].top,sEnd=useCrop.strips[useCrop.strips.length-1].top+useCrop.strips[useCrop.strips.length-1].height;
+        if(rBoxes.length>1){
+          const rowSlices=[];let cur=sTop;
+          for(let i=1;i<rBoxes.length;i++){
+            const mid=Math.round((((rBoxes[i-1].bottom+rBoxes[i].top)/2)-rect.top)*scale);
+            const cut=Math.max(cur+1,Math.min(sEnd-1,mid));
+            rowSlices.push({top:cur,height:cut-cur});cur=cut;
+          }
+          rowSlices.push({top:cur,height:sEnd-cur});
+          const totalH=rowSlices.reduce((s,r)=>s+r.height,0)*fit;
+          const slack=Math.max(0,availH-totalH);
+          const extraGap=Math.min(115,slack/(rBoxes.length+0.6));
+          let y=headerHeight+Math.min(54,extraGap*0.45);
+          for(const sl of rowSlices){
+            if(sl.height>0)outputCtx.drawImage(canvas,sourceLeft,sl.top,sourceWidth,sl.height,scoreX,y,sourceWidth*fit,sl.height*fit);
+            y+=sl.height*fit+extraGap;
+          }
+        }else{
+          outputCtx.drawImage(canvas,sourceLeft,sTop,sourceWidth,sEnd-sTop,scoreX,headerHeight+36,sourceWidth*fit,(sEnd-sTop)*fit);
+        }
+      }else if(compact){
         let y=headerHeight;
         for(const strip of compact.strips){
           if(strip.height>0)outputCtx.drawImage(canvas,sourceLeft,strip.top,sourceWidth,strip.height,scoreX,y,sourceWidth*fit,strip.height*fit);
@@ -4254,8 +4282,8 @@
       }
       const edgeBoxes=Array.from(page.querySelectorAll(page.classList.contains('ml-staff-page')?'.abcjs-staff':'.sw-lrow'),node=>node.getBoundingClientRect()).filter(box=>box.width>0);
       const pageScale=canvas.width/rect.width;
-      const leftEdge=compact?scoreX:edgeBoxes.length?scoreX+(Math.min(...edgeBoxes.map(box=>box.left))-rect.left)*pageScale*fit:100;
-      const rightEdge=compact?scoreX+sourceWidth*fit:edgeBoxes.length?scoreX+(Math.max(...edgeBoxes.map(box=>box.right))-rect.left)*pageScale*fit:output.width-100;
+      const leftEdge=useCrop?scoreX:edgeBoxes.length?scoreX+(Math.min(...edgeBoxes.map(box=>box.left))-rect.left)*pageScale*fit:100;
+      const rightEdge=useCrop?scoreX+sourceWidth*fit:edgeBoxes.length?scoreX+(Math.max(...edgeBoxes.map(box=>box.right))-rect.left)*pageScale*fit:output.width-100;
       outputCtx.fillStyle='#241C17';outputCtx.textAlign='center';outputCtx.textBaseline='middle';
       center.forEach(line=>{outputCtx.font=line.font;outputCtx.fillText(line.text,output.width/2,line.y,output.width-240);});
       const metadata=['1='+(opt.key||song.origKey||'C'),song.timeSign||''].filter(Boolean).join('   ');
@@ -15468,7 +15496,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
          压紧之后若反过来变成以宽定缩放，剩下的高度也照旧由 fillScoreHeight 撑回行距里
          —— 留白从行内挪到行与行之间，正是它该待的地方。
          段落标记(严格模式那种绝对定位的徽章)由 secLabelsSnapshot/Restore 钉在原来那一拍上。 */
-      if(natural.width*ch<natural.height*cw){
+      const rowCount=lbDiv.querySelectorAll(".sw-lrow").length;if(rowCount>7&&natural.width*ch<natural.height*cw){
         const labelMarks=secLabelsSnapshot(lbDiv); // 压紧/拉宽前记下段落标记指着哪一拍、离音符多高
         lbDiv.classList.add('sw-a4-tight');
         normalizePreviewRowHeights();
