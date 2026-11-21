@@ -4047,6 +4047,42 @@
     if(line)lines.push(line);
     return lines;
   }
+  function computeA4HeaderMetrics(song,titleFallback,isOriginalImage,measureCtx){
+    song=song||{};
+    let ctx=measureCtx;
+    if(!ctx){
+      if(!computeA4HeaderMetrics._ctx){
+        const c=document.createElement('canvas');
+        computeA4HeaderMetrics._ctx=c.getContext('2d');
+      }
+      ctx=computeA4HeaderMetrics._ctx;
+    }
+    const center=[];let centerY=60;
+    // Original raster scores already contain their own title and author information.
+    const headingRows=isOriginalImage?[]:[
+      [song.title||titleFallback||'','700 58px "Noto Serif SC","Songti SC",serif',70,'title'],
+      [song.titleEn,'500 30px "Noto Sans SC",sans-serif',40,'en'],
+      [song.artist,'500 27px "Noto Sans SC","PingFang SC",sans-serif',38,'artist'],
+      [song.sub,'400 24px "Noto Sans SC","PingFang SC",sans-serif',32,'sub']
+    ];
+    for(const [text,font,height,kind] of headingRows){
+      if(!text)continue;
+      if(ctx)ctx.font=font;
+      const lines=ctx?exportTextLines(ctx,text,2000-240):[String(text)];
+      for(const line of lines){center.push({text:line,font,y:centerY,kind});centerY+=height;}
+    }
+    if(ctx)ctx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
+    const authors=songCreditLines(song).flatMap(line=>ctx?exportTextLines(ctx,line,650):[line]);
+    // Side blocks (key/time/bpm on the left, credits on the right) share one row rhythm and
+    // are bottom-aligned with the last centred heading line, so they sit beside the heading
+    // instead of below it and leave more height for the score.
+    const sideGap=36,lastCenterY=center.length?center[center.length-1].y:60;
+    const leftRows=song.bpm?2:1,sideRows=Math.max(leftRows,authors.length,1);
+    const metadataY=Math.max(66,lastCenterY-(sideRows-1)*sideGap);
+    const sideBottomY=metadataY+(sideRows-1)*sideGap;
+    const headerHeight=isOriginalImage?40:Math.max(lastCenterY,sideBottomY)+48;
+    return {center,authors,sideGap,lastCenterY,metadataY,headerHeight,footerHeight:112};
+  }
   // Export only: recover the paper margins and, when needed, the empty space
   // between music rows. Draw the original row pixels at ONE uniform scale, so
   // lyrics, chords, beams, octave dots, annotations and ink keep their alignment.
@@ -4141,7 +4177,7 @@
         },
         // html2canvas clips nested responsive SVG transforms. Paint these natively below.
         // Image-score cards: drop the「打开原图」link and page caption, they are screen UI only.
-        ignoreElements:element=>(page.classList.contains('ml-staff-page')&&!!element.closest('.ml-staff-canvas'))||
+        ignoreElements:element=>element.matches?.('.sw-page-head,.sw-page-foot,.sw-page-wm')||(page.classList.contains('ml-staff-page')&&!!element.closest('.ml-staff-canvas'))||
           (element.matches?.('.ml-score-image-actions,.ml-score-image-error')||(element.tagName==='FIGCAPTION'&&page.classList.contains('ml-score-image-page')))
       });
       let canvas=captured;
@@ -4180,36 +4216,15 @@
       if(!outputCtx)throw new Error('canvas unavailable');
       const isOriginalImage=page.classList.contains('ml-score-image-page');
       if(isOriginalImage)output.height=Math.round(output.width*297/210);
-      const center=[];let centerY=60;
-      // Original raster scores already contain their own title and author information.
-      const headingRows=isOriginalImage?[]:[
-        [song.title||opt.title||'','700 58px "Noto Serif SC","Songti SC",serif',70],
-        [song.titleEn,'500 30px "Noto Sans SC",sans-serif',40],
-        [song.artist,'500 27px "Noto Sans SC","PingFang SC",sans-serif',38],
-        [song.sub,'400 24px "Noto Sans SC","PingFang SC",sans-serif',32]
-      ];
-      for(const [text,font,height] of headingRows){
-        if(!text)continue;
-        outputCtx.font=font;
-        for(const line of exportTextLines(outputCtx,text,output.width-240)){center.push({text:line,font,y:centerY});centerY+=height;}
-      }
-      outputCtx.font='500 24px "Noto Sans SC","PingFang SC",sans-serif';
-      const authors=songCreditLines(song).flatMap(line=>exportTextLines(outputCtx,line,650));
-      // Side blocks (key/time/bpm on the left, credits on the right) share one row rhythm and
-      // are bottom-aligned with the last centred heading line, so they sit beside the heading
-      // instead of below it and leave more height for the score.
-      const sideGap=36,lastCenterY=center.length?center[center.length-1].y:60;
-      const leftRows=song.bpm?2:1,sideRows=Math.max(leftRows,authors.length,1);
-      const metadataY=Math.max(66,lastCenterY-(sideRows-1)*sideGap);
-      const sideBottomY=metadataY+(sideRows-1)*sideGap;
-      const headerHeight=isOriginalImage?40:Math.max(lastCenterY,sideBottomY)+48,footerHeight=112;
+      const {center,authors,sideGap,metadataY,headerHeight,footerHeight}=computeA4HeaderMetrics(song,opt.title,isOriginalImage,outputCtx);
       outputCtx.fillStyle='#ffffff';outputCtx.fillRect(0,0,output.width,output.height);
       let cropTop=0,cropHeight=canvas.height;
       const notation=page.querySelector('.sw-lb');
       if(notation){
         const box=notation.getBoundingClientRect(),scale=canvas.width/rect.width;
-        cropTop=Math.max(0,Math.floor((box.top-rect.top)*scale));
-        cropHeight=Math.min(canvas.height-cropTop,Math.ceil(box.height*scale));
+        cropTop=Math.max(0,Math.floor((box.top-rect.top)*scale)-24);
+        const cropBot=Math.min(canvas.height,Math.ceil((box.bottom-rect.top)*scale)+24);
+        cropHeight=Math.max(1,cropBot-cropTop);
       }
       if(isOriginalImage){
         const image=page.querySelector('img'),original=await loadImageForExport(image.currentSrc||image.src);
@@ -4234,46 +4249,23 @@
           cropHeight=bottom-cropTop;
         }
       }
-      const baseFit=Math.min((output.height-headerHeight-footerHeight)/cropHeight,(output.width-80)/canvas.width);
-      const scoreArea={width:output.width-128,height:output.height-headerHeight-footerHeight,maxScale:baseFit*1.6};
+      const availH=output.height-headerHeight-footerHeight;
+      const isShortSong=!!(notation&&page.dataset.scoreMode==='short');
+      const sideMargin=isShortSong?150:64;
+      const baseFit=Math.min(availH/cropHeight,(output.width-80)/canvas.width);
+      const scoreArea={width:output.width-sideMargin*2,height:availH,maxScale:isShortSong?1.08:baseFit*1.6};
       const candidate=notation?exportJianpuImageLayout(canvas,page,rect,cropTop,cropHeight,scoreArea):null;
       // An already full-bleed/dense score must never get smaller just to meet the
       // preferred new margins. Keep its previous composition in that case.
-      const availH=output.height-headerHeight-footerHeight;
       const compact=candidate&&(candidate.scale>baseFit*1.005)?candidate:null;
-      const drawnH0=compact?compact.height*compact.scale:cropHeight*baseFit;
-      const isShortSong=notation&&(drawnH0<availH*0.86);
       const useCrop=compact||(isShortSong&&candidate);
-      const maxFit=isShortSong&&useCrop?(output.width-300)/useCrop.width:Infinity;
-      const fit=useCrop?Math.min(useCrop.scale,maxFit):baseFit;
+      const fit=useCrop?useCrop.scale:baseFit;
       const sourceLeft=useCrop?useCrop.left:0,sourceWidth=useCrop?useCrop.width:canvas.width;
       const scoreX=(output.width-sourceWidth*fit)/2;
-      if(isShortSong&&useCrop){
-        const scale=canvas.width/rect.width,top=Math.max(0,Math.floor(cropTop));
-        const rBoxes=Array.from(page.querySelectorAll('.sw-lrow'),r=>r.getBoundingClientRect()).filter(b=>b.width>0&&b.height>0).sort((a,b)=>a.top-b.top);
-        const sTop=useCrop.strips[0].top,sEnd=useCrop.strips[useCrop.strips.length-1].top+useCrop.strips[useCrop.strips.length-1].height;
-        if(rBoxes.length>1){
-          const rowSlices=[];let cur=sTop;
-          for(let i=1;i<rBoxes.length;i++){
-            const mid=Math.round((((rBoxes[i-1].bottom+rBoxes[i].top)/2)-rect.top)*scale);
-            const cut=Math.max(cur+1,Math.min(sEnd-1,mid));
-            rowSlices.push({top:cur,height:cut-cur});cur=cut;
-          }
-          rowSlices.push({top:cur,height:sEnd-cur});
-          const totalH=rowSlices.reduce((s,r)=>s+r.height,0)*fit;
-          const slack=Math.max(0,availH-totalH);
-          const extraGap=Math.min(115,slack/(rBoxes.length+0.6));
-          let y=headerHeight+Math.min(54,extraGap*0.45);
-          for(const sl of rowSlices){
-            if(sl.height>0)outputCtx.drawImage(canvas,sourceLeft,sl.top,sourceWidth,sl.height,scoreX,y,sourceWidth*fit,sl.height*fit);
-            y+=sl.height*fit+extraGap;
-          }
-        }else{
-          outputCtx.drawImage(canvas,sourceLeft,sTop,sourceWidth,sEnd-sTop,scoreX,headerHeight+36,sourceWidth*fit,(sEnd-sTop)*fit);
-        }
-      }else if(compact){
-        let y=headerHeight;
-        for(const strip of compact.strips){
+      if(useCrop){
+        const maxStartY=Math.max(headerHeight,output.height-footerHeight-useCrop.height*fit);
+        let y=isShortSong?Math.min(maxStartY,Math.max(headerHeight,useCrop.strips[0].top)):headerHeight;
+        for(const strip of useCrop.strips){
           if(strip.height>0)outputCtx.drawImage(canvas,sourceLeft,strip.top,sourceWidth,strip.height,scoreX,y,sourceWidth*fit,strip.height*fit);
           y+=strip.height*fit;
         }
@@ -14447,7 +14439,21 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         'box-shadow:0 12px 32px rgba(0,0,0,.24);}',
         '@media (prefers-color-scheme:dark){html:not([data-resolved-theme="light"]) #music-library .sw-page{',
         'background:#f4efe7;box-shadow:0 12px 32px rgba(0,0,0,.24);}}',
-        '#music-library .sw-page>.sw-lb{background:transparent !important;}',
+        '#music-library .sw-page>.sw-lb{background:transparent !important;position:relative;z-index:1;}',
+        '#music-library .sw-page-wm{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:60%;max-height:40%;object-fit:contain;opacity:0.09;pointer-events:none;z-index:0;}',
+        '#music-library .sw-page-head{position:absolute;top:0;left:0;width:2000px;transform-origin:left top;pointer-events:none;z-index:1;color:#241C17;}',
+        '#music-library .sw-page-head-line{position:absolute;left:50%;transform:translate(-50%,-50%);max-width:1760px;white-space:nowrap;text-align:center;line-height:1;}',
+        '#music-library .sw-page-head-line.is-title{font-family:"Noto Serif SC","Songti SC",serif;font-weight:700;font-size:58px;}',
+        '#music-library .sw-page-head-line.is-en{font-family:"Noto Sans SC",sans-serif;font-weight:500;font-size:30px;}',
+        '#music-library .sw-page-head-line.is-artist{font-family:"Noto Sans SC","PingFang SC",sans-serif;font-weight:500;font-size:27px;}',
+        '#music-library .sw-page-head-line.is-sub{font-family:"Noto Sans SC","PingFang SC",sans-serif;font-weight:400;font-size:24px;}',
+        '#music-library .sw-page-head-left,#music-library .sw-page-head-right{position:absolute;transform:translateY(-50%);font-family:"Noto Sans SC","PingFang SC",sans-serif;font-weight:500;font-size:24px;line-height:1;white-space:nowrap;}',
+        '#music-library .sw-page-head-left{text-align:left;}',
+        '#music-library .sw-page-head-right{text-align:right;}',
+        '#music-library .sw-page-foot{position:absolute;left:0;bottom:0;width:2000px;height:112px;transform-origin:left bottom;pointer-events:none;z-index:1;color:#51483f;font-family:"Noto Sans SC","PingFang SC",sans-serif;font-weight:400;}',
+        '#music-library .sw-page-foot-1,#music-library .sw-page-foot-2{position:absolute;left:50%;transform:translate(-50%,-50%);white-space:nowrap;line-height:1;text-align:center;}',
+        '#music-library .sw-page-foot-1{top:34px;font-size:24px;}',
+        '#music-library .sw-page-foot-2{top:68px;font-size:22px;}',
         /* CECP-A4-PAGE v2：长歌压紧纵向留白(只在纸里、只在高瘦歌上加 .sw-a4-tight)。
            特异度要压得过严格模式那套 .prev-seg.p-slot .p-lyric —— 这里连 #music-library
            一起写死，(1,4,0) 稳过。
@@ -14480,8 +14486,19 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
          overflow:hidden 的玻璃卡，纸要比它宽(对齐原图卡片)会被裁。 */
       pg=document.createElement('div');
       pg.className='sw-page';
+      const wm=document.createElement('img');
+      wm.className='sw-page-wm';wm.src=LOGO_SRC;wm.alt='';wm.setAttribute('aria-hidden','true');
+      const head=document.createElement('div');
+      head.className='sw-page-head';head.setAttribute('aria-hidden','true');
+      head.innerHTML='';
+      const foot=document.createElement('div');
+      foot.className='sw-page-foot';foot.setAttribute('aria-hidden','true');
+      foot.innerHTML='<div class="sw-page-foot-1">YuEn 制谱｜依据原版音频及歌谱整理</div><div class="sw-page-foot-2">仅供非商业使用 · 请勿转载或翻印</div>';
+      pg.appendChild(wm);
+      pg.appendChild(head);
       panel.appendChild(pg);
       pg.appendChild(lbDiv);
+      pg.appendChild(foot);
       return pg;
     };
     /* 把 slack 像素均匀分到行与行之间(用 paddingBottom,不覆盖 CSS 的 margin 规则)。
@@ -14537,7 +14554,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       lbDiv.style.transformOrigin='';
       lbDiv.style.width='';
       lbDiv.style.marginBottom='';
-      lbDiv.style.padding='8px 18px 16px 8px';
+      lbDiv.style.padding='4px 12px 12px 12px';
       lbDiv.style.boxSizing='border-box';
       lbDiv.classList.remove('sw-a4-tight');   // v2 压紧幂等：每次 fit 都从松的基线重新判断
       secLabelsReset(lbDiv);                   // 段落标记回到作者拖的原始 dx/dy(同上，防补偿量叠加)
@@ -15346,6 +15363,8 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     function updateTranspositionInfo(){
       const info=calcCapo(curKey,s.origKey||'C');
       kPill.textContent='1 = '+curKey;
+      const pgKey=panel?.querySelector('.sw-page-head-key');
+      if(pgKey)pgKey.textContent=['1='+curKey,s.timeSign||''].filter(Boolean).join('   ');
       if(curKey===(s.origKey||'C')){
         capoEl.className='sw-capo plain';
         capoEl.querySelector('.sw-capo-t').textContent='原调演奏';
@@ -15370,7 +15389,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
       lbDiv.innerHTML='';
       for(const sec of s.sections||[]){
         const se=_div('sw-lsec');
-        const sn=_div('sw-lsec-name');sn.textContent=sec.name||'';se.appendChild(sn);
+        const sn=_div('sw-lsec-name');sn.textContent=sec.name||'';if((sec.name||'').trim()===(s.title||'').trim())sn.style.display='none';se.appendChild(sn);
         for(const line of sec.lines||[]){
           const le=_div('sw-lline');const row=_div('sw-lrow prev-row'+((!Array.isArray(line)&&line.b)?' bold':''));
           const segs=Array.isArray(line)?line:(line.line||[]);
@@ -15462,6 +15481,9 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         panelInner.style.marginLeft=padL+'px';panelInner.style.marginRight=padR+'px';
       }
       const host=panel;                     // 纸的宽度基准 = 撑到 wrap 全宽的 panel
+      const inkCvs=lbDiv.querySelector('.cecp-ink-layer');
+      if(inkCvs)inkCvs.style.display='none';
+      try{
       resetScoreFit();
       normalizePreviewRowHeights();
 
@@ -15478,26 +15500,25 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
          桌面宽屏因为容器≈自然宽所以看不出来。 */
       natural.height=relayoutRowExtras()||natural.height;   // 梁/弧(或段落标记)——见函数上的顺序警告
 
-      /* ── CECP-A4-PAGE：纸撑满容器宽(同原图卡片)，正好一张 A4，整首歌装在这一张上 ── */
+      /* ── CECP-A4-PAGE：纸撑满容器宽(同原图卡片)，正好一张 A4，含与下载图一致的页眉/页脚/水印 ── */
       const pageW=Math.max(1,host.clientWidth||natural.width);
       const pageH=pageW*A4_RATIO;
-      const cw=Math.max(1,pageW-PAGE_MX*2);
-      const ch=Math.max(1,pageH-PAGE_MY*2);
+      const pScale=pageW/2000;
+      const hdr=computeA4HeaderMetrics(s,s.title,false);
+      const headerH2000=hdr.headerHeight;
+      const footerH2000=hdr.footerHeight;
+      const availH2000=Math.max(1,2000*A4_RATIO-headerH2000-footerH2000);
+      const rowCount=lbDiv.querySelectorAll('.sw-lrow').length;
+      const looseInnerW=Math.max(1,natural.width-24);
+      // Deterministic, viewport-independent short-song check measured BEFORE fillScoreHeight.
+      const unspreadFillAtShort=(natural.height*(1700/looseInnerW))/availH2000;
+      const isShort=rowCount>0&&unspreadFillAtShort<0.72;
+      const sidePad2000=isShort?150:64;
+      const targetContentW=(2000-sidePad2000*2)*pScale;
+      const ch=Math.max(1,availH2000*pScale);
 
-      /* ── CECP-A4-PAGE v2：长歌「先压紧、再拉宽」 ──
-         高瘦的歌(行数多、每行还叠着和弦和三四段歌词)是**以高定缩放**：纸的高度用满了，
-         宽度却剩一大截白边，整首谱被缩得很小(怜悯的爱实测只占纸宽 71%，两边各留 15%)。
-         把这截白边换成谱面，两步：
-         ① 压紧纵向留白(.sw-a4-tight：歌词行距/和弦行高/行间距/段落间距/反复记号轨)——
-            只动留白不动字号，同一张纸于是能装下更大的谱；
-         ② 还剩白边就把每行拉宽到刚好填满纸宽(justify 的 targetWidth，音位间距均匀变大)，
-            跟下面那张原图谱一样满幅；最多拉到自然宽的 STRETCH_MAX 倍，再宽音符就散了。
-         矮胖的歌(以宽定缩放)一步都不走，仍旧是原来的「行距撑开填页」；
-         压紧之后若反过来变成以宽定缩放，剩下的高度也照旧由 fillScoreHeight 撑回行距里
-         —— 留白从行内挪到行与行之间，正是它该待的地方。
-         段落标记(严格模式那种绝对定位的徽章)由 secLabelsSnapshot/Restore 钉在原来那一拍上。 */
-      const rowCount=lbDiv.querySelectorAll(".sw-lrow").length;if(rowCount>7&&natural.width*ch<natural.height*cw){
-        const labelMarks=secLabelsSnapshot(lbDiv); // 压紧/拉宽前记下段落标记指着哪一拍、离音符多高
+      if(!isShort&&looseInnerW*ch<natural.height*targetContentW){
+        const labelMarks=secLabelsSnapshot(lbDiv);
         lbDiv.classList.add('sw-a4-tight');
         normalizePreviewRowHeights();
         if(s.align==='strict')layoutStrictChordsAll(lbDiv);
@@ -15506,25 +15527,88 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         if(tightNat)natural=tightNat;
         natural.height=relayoutRowExtras()||natural.height;
         secLabelsRestore(labelMarks);
-        natural.height=lbDiv.scrollHeight||natural.height;            // 段落标记放回原来那一拍(只动 relative 定位，不影响排版)
+        natural.height=lbDiv.scrollHeight||natural.height;
       }
 
-      /* 单参数 scale = 等比：横竖同一个比例，简谱/和弦/歌词的形状与对位一律不变。
-         min(宽比,高比) → 整首歌完整落在这一张 A4 里，跟下面那张原图谱一模一样的看法：
-         纸比屏幕高就上下滚，字小就点谱放大(CECP-SCORE-ZOOM)。 */
-      let scale=Math.min(cw/natural.width,ch/natural.height);
+      const innerW=Math.max(1,natural.width-24);
+      let scale=Math.min(targetContentW/innerW,ch/natural.height);
       if(!isFinite(scale)||scale<=0)scale=1;
 
-      // 内容不够高：把剩下的高度均匀撑到行与行之间（字号不动），把整页填满
-      natural.height=fillScoreHeight(natural.height,ch/scale);
+      let offY=headerH2000*pScale;
+      if(isShort){
+        const unspreadH2000=natural.height*(scale/pScale);
+        const slack2000=Math.max(0,availH2000-unspreadH2000);
+        const topGap2000=Math.min(54,slack2000*0.06);
+        const botGap2000=Math.max(120,Math.min(260,slack2000*0.22));
+        const gapBudget2000=Math.max(0,slack2000-topGap2000-botGap2000);
+        const maxExtraTotal2000=Math.max(0,rowCount-1)*185;
+        const targetH2000=unspreadH2000+Math.min(gapBudget2000,maxExtraTotal2000);
+        natural.height=fillScoreHeight(natural.height,targetH2000*pScale/scale);
+        offY=(headerH2000+topGap2000)*pScale;
+      }else{
+        const targetH2000=Math.max(0,availH2000-24);
+        if(natural.height*(scale/pScale)<targetH2000){
+          natural.height=fillScoreHeight(natural.height,targetH2000*pScale/scale);
+        }
+      }
 
       pageEl.style.width=pageW.toFixed(1)+'px';
       pageEl.style.height=pageH.toFixed(1)+'px';
-      const offX=PAGE_MX+Math.max(0,(cw-natural.width*scale)/2);
-      const offY=PAGE_MY+Math.max(0,(ch-natural.height*scale)/2);
+      pageEl.dataset.scoreMode=isShort?'short':'full';
+      const offX=(pageW-natural.width*scale)/2;
       lbDiv.style.transformOrigin='left top';
       lbDiv.style.transform='translate('+offX.toFixed(1)+'px,'+offY.toFixed(1)+'px) scale('+scale+')';
       lbDiv.style.width=natural.width+'px';
+
+      const headEl=pageEl.querySelector('.sw-page-head');
+      if(headEl){
+        const pgRect=pageEl.getBoundingClientRect();
+        const rowRects=Array.from(lbDiv.querySelectorAll('.sw-lrow'),r=>r.getBoundingClientRect()).filter(b=>b.width>0);
+        const scoreLeft2000=rowRects.length?Math.max(40,(Math.min(...rowRects.map(b=>b.left))-pgRect.left)/pScale):sidePad2000;
+        const scoreRight2000=rowRects.length?Math.max(40,(pgRect.right-Math.max(...rowRects.map(b=>b.right)))/pScale):sidePad2000;
+        headEl.replaceChildren();
+        headEl.style.height=headerH2000+'px';
+        headEl.style.transform='scale('+pScale+')';
+        for(const line of hdr.center){
+          const el=document.createElement('div');
+          el.className='sw-page-head-line is-'+line.kind;
+          el.textContent=line.text;
+          el.style.top=line.y+'px';
+          headEl.appendChild(el);
+        }
+        const keyEl=document.createElement('div');
+        keyEl.className='sw-page-head-left sw-page-head-key';
+        keyEl.textContent=['1='+curKey,s.timeSign||''].filter(Boolean).join('   ');
+        keyEl.style.left=scoreLeft2000.toFixed(1)+'px';
+        keyEl.style.top=hdr.metadataY+'px';
+        headEl.appendChild(keyEl);
+        if(s.bpm){
+          const bpmEl=document.createElement('div');
+          bpmEl.className='sw-page-head-left sw-page-head-bpm';
+          bpmEl.textContent='♩ = '+s.bpm;
+          bpmEl.style.left=scoreLeft2000.toFixed(1)+'px';
+          bpmEl.style.top=(hdr.metadataY+hdr.sideGap)+'px';
+          headEl.appendChild(bpmEl);
+        }
+        hdr.authors.forEach((line,idx)=>{
+          const rEl=document.createElement('div');
+          rEl.className='sw-page-head-right';
+          rEl.textContent=line;
+          rEl.style.right=scoreRight2000.toFixed(1)+'px';
+          rEl.style.top=(hdr.metadataY+idx*hdr.sideGap)+'px';
+          headEl.appendChild(rEl);
+        });
+      }
+      const footEl=pageEl.querySelector('.sw-page-foot');
+      if(footEl){
+        footEl.style.transform='scale('+pScale+')';
+      }
+      }finally{
+        if(inkCvs){
+          inkCvs.style.display='';
+          if(typeof inkCtl!=='undefined'&&inkCtl)inkCtl.attach();
+        }
+      }
     }
     if(hasRenderedScore&&!hasImageScore){
       renderScore();
