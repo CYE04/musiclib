@@ -3,10 +3,10 @@
    桶名带内容指纹 —— 任何资源变化都会换桶，activate 里的清理逻辑随即删掉旧桶，
    老用户不会卡在旧壳上，也不用再记得手动 bump 版本号。 */
 /* CECP-PRECACHE-BEGIN */
-const CACHE_NAME = "cecp-musiclib-pwa-215e944f79";
+const CACHE_NAME = "cecp-musiclib-pwa-78511263e7";
 const APP_SHELL = [
   "./?key=cecp2026",
-  "./assets/index-C__UfCBL.js",
+  "./assets/index-BMWIqUue.js",
   "./bible-service.js?v=20260711-justify-rows",
   "./cecp-olive-logo.svg",
   "./fonts/MaShanZheng-Regular.ttf",
@@ -54,7 +54,7 @@ const APP_SHELL = [
   "./musiclib-tools.js?v=20261027-sampler",
   "./musiclib-workspace.js?v=20261031-final-review",
   "./musiclib.css?v=20261031-lyric-colors",
-  "./musiclib.js?v=20261031-lyric-colors",
+  "./musiclib.js?v=20261121-a4-refresh",
   "./olive-fellowship-logo.png",
   "./pinyin-kai.woff2",
   "./pinyin-pro.js",
@@ -76,7 +76,15 @@ const MATCH_OPTS = { ignoreVary: true };
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        APP_SHELL.map((url) =>
+          fetch(url, { cache: "no-cache" })
+            .then((res) => (res && res.ok ? cache.put(url, res) : undefined))
+            .catch(() => undefined)
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -105,11 +113,14 @@ self.addEventListener("fetch", (event) => {
   const isSongList =
     url.hostname === "api.github.com" &&
     /^\/repos\/CYE04\/songs\/contents\/?$/.test(url.pathname);
-  const isSongJson =
+  const songJsonMatch =
     url.hostname === "raw.githubusercontent.com" &&
-    /^\/CYE04\/songs\/main\/[^/]+\.json$/i.test(url.pathname);
+    url.pathname.match(/^\/CYE04\/songs\/(main|[0-9a-f]{40})\/([^/]+\.json)$/i);
+  const isSongJson = !!songJsonMatch;
   if (isSongList || isSongJson) {
-    const keyUrl = url.origin + url.pathname;
+    const keyUrl = isSongJson
+      ? url.origin + "/CYE04/songs/main/" + songJsonMatch[2]
+      : url.origin + url.pathname;
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -189,7 +200,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    fetch(request)
+    fetch(request, { cache: "no-cache" })
       .then((response) => {
         if (response && response.ok) {
           const copy = response.clone();

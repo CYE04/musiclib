@@ -20,7 +20,15 @@ const MATCH_OPTS = { ignoreVary: true };
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then((cache) =>
+      Promise.all(
+        APP_SHELL.map((url) =>
+          fetch(url, { cache: "no-cache" })
+            .then((res) => (res && res.ok ? cache.put(url, res) : undefined))
+            .catch(() => undefined)
+        )
+      )
+    )
   );
   self.skipWaiting();
 });
@@ -49,11 +57,14 @@ self.addEventListener("fetch", (event) => {
   const isSongList =
     url.hostname === "api.github.com" &&
     /^\/repos\/CYE04\/songs\/contents\/?$/.test(url.pathname);
-  const isSongJson =
+  const songJsonMatch =
     url.hostname === "raw.githubusercontent.com" &&
-    /^\/CYE04\/songs\/main\/[^/]+\.json$/i.test(url.pathname);
+    url.pathname.match(/^\/CYE04\/songs\/(main|[0-9a-f]{40})\/([^/]+\.json)$/i);
+  const isSongJson = !!songJsonMatch;
   if (isSongList || isSongJson) {
-    const keyUrl = url.origin + url.pathname;
+    const keyUrl = isSongJson
+      ? url.origin + "/CYE04/songs/main/" + songJsonMatch[2]
+      : url.origin + url.pathname;
     event.respondWith(
       fetch(request)
         .then((response) => {
@@ -133,7 +144,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    fetch(request)
+    fetch(request, { cache: "no-cache" })
       .then((response) => {
         if (response && response.ok) {
           const copy = response.clone();

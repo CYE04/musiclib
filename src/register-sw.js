@@ -1,10 +1,40 @@
-/* Service Worker 注册 —— 逐字保留原 index.html 末尾内联 script 的行为。
-   dev 模式不注册:Vite 开发服务器不产出 dist,SW 预缓存清单会命中不存在的 /assets/*,
-   而且旧 SW 会拦截 HMR 请求。离线能力在 `npm run build && npm run preview` 下验证。 */
+/* Service Worker 注册与自动更新：
+   - updateViaCache: "none" 让浏览器始终向服务器核对最新 sw.js（不吃旧 HTTP 缓存）
+   - 切回页面或恢复联网时节流检查更新（至少间隔 60 秒）
+   - 新版 SW 接管旧版 SW 时自动刷新一次，让用户直接拿到最新 musiclib.js / 样式 */
 export function registerServiceWorker() {
   if (import.meta.env.DEV) return;
   if (!("serviceWorker" in navigator)) return;
+
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || reloading) return;
+    try {
+      const last = Number(sessionStorage.getItem("cecp:sw-reloaded-at") || "0");
+      if (Date.now() - last < 15000) return;
+      sessionStorage.setItem("cecp:sw-reloaded-at", String(Date.now()));
+    } catch (_) {}
+    reloading = true;
+    window.location.reload();
+  });
+
   window.addEventListener("load", () => {
-    navigator.serviceWorker.register("./sw.js?v=20260801-home17").catch(() => {});
+    navigator.serviceWorker
+      .register("./sw.js", { updateViaCache: "none" })
+      .then((reg) => {
+        let lastCheck = Date.now();
+        const checkUpdate = (minGap) => {
+          if (navigator.onLine === false) return;
+          if (Date.now() - lastCheck < minGap) return;
+          lastCheck = Date.now();
+          reg.update().catch(() => {});
+        };
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) checkUpdate(60000);
+        });
+        window.addEventListener("online", () => checkUpdate(10000));
+      })
+      .catch(() => {});
   });
 }
