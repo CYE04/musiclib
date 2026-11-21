@@ -668,7 +668,11 @@ function songLyricRows(seg){
 
       var gracePitches = null;
       if (parsed && parsed.graces && parsed.graces.length) {
-        gracePitches = parsed.graces.map(function (g) { return pitchOf(g, keyInfo); });
+        gracePitches = parsed.graces.map(function (g) {
+          var gp = pitchOf(g, keyInfo);
+          gp.underlines = g.underlines || 2;
+          return gp;
+        });
       }
       var evObj = {
         kind: pitches.length > 1 ? 'chordstack' : (pitches.length ? 'note' : 'rest'),

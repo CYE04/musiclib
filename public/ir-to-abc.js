@@ -171,7 +171,9 @@
               var gHave = (accState[gp.step + gOct] !== undefined) ? accState[gp.step + gOct] : keySigAlter(key, gp.step);
               var gAcc = '';
               if (gWant !== gHave) { gAcc = accSymbol(gWant); accState[gp.step + gOct] = gWant; }
-              return gAcc + abcNoteName(gp.step, gOct);
+              /* abcjs 对倚音固定按 default_length 归一化为 8 分音符；双下划线（16分倚音）需写 /2 才会画出双符尾/双连梁 */
+              var gDur = (gp.underlines && gp.underlines < 2) ? '' : '/2';
+              return gAcc + abcNoteName(gp.step, gOct) + gDur;
             }).join('');
             body += '{' + gNotes + '}';
           }
