@@ -11592,6 +11592,15 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
   }
   let _mpAudio=null,_mpSongs=[],_mpIdx=-1,_mpLoop=false,_mpShuffle=false,_mpLrc=[],_mpLrcIdx=-1,_mpLrcTimed=false,_mpCurrentSong=null,_mpCoverFallback='',_mpExpanded=false,_mpSideMode='song',_mpSideCollapsed=false,_mpLyricsOpen=true,_mpPlayRequestId=0,_mpReturnUrl='';
   const MP_PLAYBACK_KEY='cecp:musiclib:playback:v1';
+  const AUTO_QUEUE_EXCLUDED_ARTISTS=new Set(['诗歌本']);
+  function _mpIsExcludedFromAutoQueue(song){
+    if(!song)return false;
+    const artist=String(song.artist||song.displayArtist||'').trim();
+    return AUTO_QUEUE_EXCLUDED_ARTISTS.has(artist);
+  }
+  function _mpIsAutoQueueEligible(song){
+    return hasSongAudio(song)&&!_mpIsExcludedFromAutoQueue(song);
+  }
   const _mpShufflePlayed=new Set();
   let _mpQueueOrigin='auto',_mpPlaybackReady=false,_mpRestoring=false,_mpLastSavedAt=0;
   function _mpSavePlayback(force=false){
@@ -11615,6 +11624,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpSongs=[...new Set(saved.queueIds.slice(0,2000))].map(id=>byId.get(id)).filter(Boolean);
     if(!_mpSongs.length){_mpSavePlayback(true);return;}
     _mpQueueOrigin=saved.origin==='manual'?'manual':'auto';
+    if(_mpQueueOrigin!=='manual'){
+      _mpSongs=_mpSongs.filter(song=>_mpIsAutoQueueEligible(song)||song.id===saved.currentId);
+      if(!_mpSongs.length){_mpSavePlayback(true);return;}
+    }
     _mpLoop=saved.repeat===true;_mpShuffle=saved.shuffle===true;
     if(_mpShuffle)_mpEnsureShuffleQueue();
     if(_mpShuffle&&Array.isArray(saved.shufflePlayedIds))saved.shufflePlayedIds.filter(id=>byId.has(id)).forEach(id=>_mpShufflePlayed.add(id));
@@ -12241,13 +12254,19 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     }
     if(_mpShuffle){
       _mpEnsureShuffleQueue();
-      _mpPlayIdx(_mpSongs.findIndex(item=>item.id===song.id),true);return;
+      let idx=_mpSongs.findIndex(item=>item.id===song.id);
+      if(idx<0){
+        // 手动点播被自动队列排除的歌曲时，仅临时加入当前播放，不把同作者其他歌拉进默认队列
+        _mpSongs=[song,..._mpSongs];
+        idx=0;
+      }
+      _mpPlayIdx(idx,true);return;
     }
-    const eligible=getFilteredSongs().filter(hasSongAudio);
+    const eligible=getFilteredSongs().filter(_mpIsAutoQueueEligible);
     const byId=new Map(eligible.map(item=>[item.id,item]));
     const visible=[...$('ml-list').querySelectorAll('.ml-song-card[data-id]')].map(card=>byId.get(card.dataset.id)).filter(Boolean);
     let context=visible.length===eligible.length?visible:eligible;
-    if(!context.some(item=>item.id===song.id))context=[song];
+    if(!context.some(item=>item.id===song.id))context=[song,...context];
     _mpSongs=context;_mpQueueOrigin='auto';
     _mpPlayIdx(context.findIndex(item=>item.id===song.id),true);
   }
@@ -12521,7 +12540,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
   }
   function _mpEnsureShuffleQueue(){
     if(_mpQueueOrigin==='manual'&&_mpSongs.length)return;
-    _mpSongs=songs.filter(hasSongAudio);
+    _mpSongs=songs.filter(_mpIsAutoQueueEligible);
     _mpQueueOrigin='auto';
     _mpIdx=_mpSongs.findIndex(song=>song.id===_mpCurrentSong?.id);
   }
