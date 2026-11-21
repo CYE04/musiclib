@@ -122,14 +122,56 @@ function songLyricRows(seg){
      附点允许出现在下划线前或后（曲库两种写法都有：`5·_` 与 `5_·`）。 */
   var NOTE_RE = /^([#b=♯♭♮]?)([0-7])([',’]*)(·?)(_{0,2})(·?)(\^?)$/;
 
+  function parseGracePrefixIR(raw) {
+    var s = String(raw || ''), out = [], i = 0;
+    while (i < s.length) {
+      var ch = s.charAt(i);
+      if (ch.charCodeAt(0) <= 32 || ch === '/') { i++; continue; }
+      var acc = '';
+      if (ch === '#' || ch === 'b' || ch === '=' || ch === '♯' || ch === '♭' || ch === '♮') {
+        acc = ch.replace('♯', '#').replace('♭', 'b').replace('♮', '=');
+        i++;
+        if (i >= s.length) break;
+        ch = s.charAt(i);
+      }
+      if (ch < '1' || ch > '7') { i++; continue; }
+      var degree = +ch; i++;
+      var oct = 0, uline = 0, hasU = false;
+      while (i < s.length) {
+        var c = s.charAt(i);
+        if (c === "'" || c === '’') { oct++; i++; }
+        else if (c === ',') { oct--; i++; }
+        else if (c === '_') { uline++; hasU = true; i++; }
+        else if (c === '·') { i++; }
+        else break;
+      }
+      if (!hasU) uline = 2;
+      out.push({ degree: degree, octaveMarks: oct, accidental: acc, underlines: uline > 2 ? 2 : uline });
+    }
+    return out;
+  }
+
   /**
    * 解析一个音位 token。返回 null 表示无法识别（调用方要记 warning）。
    * @returns {{kind:'note'|'rest'|'spacer'|'dash', units:number, dots:0|1,
-   *            degree?:number, octaveMarks?:number, accidental?:string, fermata?:boolean}}
+   *            degree?:number, octaveMarks?:number, accidental?:string, fermata?:boolean,
+   *            graces?:Array<{degree:number,octaveMarks:number,accidental:string,underlines:number}>}}
    */
   function parseSlotToken(tok) {
     var t = String(tok == null ? '' : tok).trim();
     if (!t) return null;
+    var graces = null;
+    if (t.charAt(0) === '{') {
+      var gEnd = t.indexOf('}');
+      if (gEnd > 1) {
+        var gList = parseGracePrefixIR(t.slice(1, gEnd));
+        if (gList.length) {
+          graces = gList;
+          t = t.slice(gEnd + 1).trim();
+          if (!t) return { kind: 'spacer', units: 0, dots: 0, underlines: 0, graces: graces };
+        }
+      }
+    }
     if (t === '-') return { kind: 'dash', units: Q, dots: 0 };
 
     var m = t.match(/^sp(_{0,2})$/);
@@ -149,12 +191,14 @@ function songLyricRows(seg){
     var oct = 0;
     for (var i = 0; i < octStr.length; i++) oct += (octStr[i] === ',') ? -1 : 1;
 
-    return {
+    var res = {
       kind: degree === 0 ? 'rest' : 'note',
       units: units, dots: dots, degree: degree, octaveMarks: oct,
       accidental: acc.replace('♯', '#').replace('♭', 'b').replace('♮', '='),
       fermata: fermata
     };
+    if (graces) res.graces = graces;
+    return res;
   }
 
   /** 音级 + 八度 + 临时记号 → 绝对音高。主音落在第 4 八度。 */
@@ -622,14 +666,20 @@ function songLyricRows(seg){
         if (parsed.kind === 'note') pitches.push(pitchOf(parsed, keyInfo));
       }
 
-      pushEvent({
+      var gracePitches = null;
+      if (parsed && parsed.graces && parsed.graces.length) {
+        gracePitches = parsed.graces.map(function (g) { return pitchOf(g, keyInfo); });
+      }
+      var evObj = {
         kind: pitches.length > 1 ? 'chordstack' : (pitches.length ? 'note' : 'rest'),
         pitches: pitches, units: units, dots: dots,
         tieStart: false, tieStop: false, fermata: fermata,
         chordSymbol: trSym(item.chord) || null,
         lyrics: item.lyrics || null,
         src: item.where
-      });
+      };
+      if (gracePitches) evObj.gracePitches = gracePitches;
+      pushEvent(evObj);
     });
     if (curMeasure) closeMeasure('|', null);
 

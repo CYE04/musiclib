@@ -1818,15 +1818,21 @@
     const isArr=Array.isArray(line);
     const row=_div('sw-lrow prev-row'+((!isArr&&line.b)?' bold':''));
     const segs=isArr?line:(line.line||[]);
-    let voltaWrap=null;
-    for(const seg of segs){
+    let voltaWrap=null,voltaWaitEnd=false;
+    for(let sgi=0;sgi<segs.length;sgi++){
+      const seg=segs[sgi];
       if(!segIsRenderableBlock(seg))continue;
       if(segIsLabelBlock(seg)){ continue; } // 投影不显示 chorus/bridge/pre-chorus/to chorus 等段落标记
       if(align==='strict'){
         const _vs=getVoltaStartLabel(seg.n);
-        if(_vs){ row.classList.add('has-volta'); voltaWrap=document.createElement('span'); voltaWrap.className='prev-volta'; voltaWrap.setAttribute('data-v',_vs+'.'); }
+        if(_vs){
+          if(voltaWrap){row.appendChild(voltaWrap);voltaWrap=null;}
+          row.classList.add('has-volta');voltaWrap=document.createElement('span');voltaWrap.className='prev-volta';voltaWrap.setAttribute('data-v',_vs+'.');
+          voltaWaitEnd=voltaHasMatchingEnd(segs,sgi);
+        }
         buildStrictSegColumnsML(seg,st,useFlat,(!isArr&&line.b),(voltaWrap||row),{chord:tg.chord,jianpu:tg.jianpu,lyric:(tg.lyric||tg.pinyin),pinyin:tg.pinyin});
-        if(voltaWrap&&hasVoltaEnd(seg.n)){ voltaWrap.classList.add('closed'); row.appendChild(voltaWrap); voltaWrap=null; }
+        if(voltaWrap&&hasVoltaEnd(seg.n)){ voltaWrap.classList.add('closed'); row.appendChild(voltaWrap); voltaWrap=null; voltaWaitEnd=false; }
+        else if(voltaWrap&&!voltaWaitEnd){ row.appendChild(voltaWrap); voltaWrap=null; }
         continue;
       }
       const segEl=_div('prev-seg');
@@ -1852,9 +1858,14 @@
         }
       });
       const _vn=getVoltaStartLabel(seg.n);
-      if(_vn){ row.classList.add('has-volta'); voltaWrap=document.createElement('span'); voltaWrap.className='prev-volta'; voltaWrap.setAttribute('data-v',_vn+'.'); }
+      if(_vn){
+        if(voltaWrap){row.appendChild(voltaWrap);voltaWrap=null;}
+        row.classList.add('has-volta'); voltaWrap=document.createElement('span'); voltaWrap.className='prev-volta'; voltaWrap.setAttribute('data-v',_vn+'.');
+        voltaWaitEnd=voltaHasMatchingEnd(segs,sgi);
+      }
       (voltaWrap||row).appendChild(segEl);
-      if(voltaWrap&&hasVoltaEnd(seg.n)){ voltaWrap.classList.add('closed'); row.appendChild(voltaWrap); voltaWrap=null; }
+      if(voltaWrap&&hasVoltaEnd(seg.n)){ voltaWrap.classList.add('closed'); row.appendChild(voltaWrap); voltaWrap=null; voltaWaitEnd=false; }
+      else if(voltaWrap&&!voltaWaitEnd){ row.appendChild(voltaWrap); voltaWrap=null; }
     }
     if(voltaWrap)row.appendChild(voltaWrap);
     return row;
@@ -6938,6 +6949,19 @@
   function hasVoltaEnd(nStr){
     return !!(nStr&&nStr.indexOf(']v')>=0);
   }
+  /* 检查从 startIdx 起的房子线是否在当前格或后续格（遇到下一个房子线起点前）有显式 ]v 收口；
+     若无 ]v 收口，则房子线只覆盖当前打开它的这一格，且保持未关闭状态（右侧不画下折线）。 */
+  function voltaHasMatchingEnd(segs,startIdx){
+    if(!segs||startIdx<0||startIdx>=segs.length)return false;
+    if(hasVoltaEnd(segs[startIdx]&&segs[startIdx].n))return true;
+    for(var k=startIdx+1;k<segs.length;k++){
+      var sg=segs[k];
+      if(!sg||!segIsRenderableBlock(sg)||segIsLabelBlock(sg))continue;
+      if(getVoltaStartLabel(sg.n))return false;
+      if(hasVoltaEnd(sg.n))return true;
+    }
+    return false;
+  }
   function normalizeTimeSignValue(sig){
     const m=String(sig||'').trim().replace(/\s+/g,'').replace(/\uFF0F/g,'/').match(/^(\d{1,2})\/(\d{1,2})$/);
     return m?(m[1]+'/'+m[2]):'';
@@ -7037,7 +7061,7 @@ function scoreResetChordHeight(scope){
 }
 function scoreHeightObstacles(row){
   var rects=[];
-  [].forEach.call(row.querySelectorAll('.jp-num,.jp-plain-sym,.jp-dot-top > span,.jp-navmark svg,[data-jp-nav-above="1"] .jp-bar-top svg,.strict-arc-svg > div,.strict-arc-svg path,.strict-arc-svg text,.strict-arc-tup text'),function(el){var r=el.getBoundingClientRect();if(r.width&&r.height)rects.push(r);});
+  [].forEach.call(row.querySelectorAll('.jp-num,.jp-plain-sym,.jp-dot-top > span,.jp-grace-num,.jp-grace-dot-top > span,.jp-navmark svg,[data-jp-nav-above="1"] .jp-bar-top svg,.strict-arc-svg > div,.strict-arc-svg path,.strict-arc-svg text,.strict-arc-tup text'),function(el){var r=el.getBoundingClientRect();if(r.width&&r.height)rects.push(r);});
   [].forEach.call(row.querySelectorAll('.jp-slur,.jp-slur-open,.jp-slur-close,.jp-tie'),function(group){
     var r=group.getBoundingClientRect(),s=scoreHeightScale(group),ps=getComputedStyle(group,'::before');
     if(ps.content==='none')return;
@@ -7048,14 +7072,21 @@ function scoreHeightObstacles(row){
   return rects;
 }
 function scoreHeightHouses(row,obstacles){
-  var rails=[];
+  var rails=[],items=[];
   [].slice.call(row.querySelectorAll('.prev-volta,.jp-volta')).reverse().forEach(function(house){
     var r=house.getBoundingClientRect(),s=scoreHeightScale(house),ceiling=Infinity;
     obstacles.concat(rails).forEach(function(o){if(o.left<r.right&&o.right>r.left)ceiling=Math.min(ceiling,o.top);});
     if(!isFinite(ceiling)||!s)return;
     var top=ceiling-12*s;
-    house.style.setProperty(house.classList.contains('jp-volta')?'--jp-volta-top':'--volta-top',((top-r.top)/s).toFixed(3)+'px');
+    items.push({house:house,r:r,s:s,top:top});
     rails.push({left:r.left,right:r.right,top:top});
+  });
+  if(!items.length)return rails;
+  var unifiedTop=Infinity;
+  items.forEach(function(it){if(it.top<unifiedTop)unifiedTop=it.top;});
+  items.forEach(function(it,idx){
+    it.house.style.setProperty(it.house.classList.contains('jp-volta')?'--jp-volta-top':'--volta-top',((unifiedTop-it.r.top)/it.s).toFixed(3)+'px');
+    rails[idx].top=unifiedTop;
   });
   return rails;
 }
@@ -7361,12 +7392,145 @@ layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);j
     const b=document.createElement('span');b.className='jp-dual-bot';b.appendChild(parseJpToken(pair.bot,{inDual:true}));w.appendChild(b);
     return w;
   }
+  /* ── 倚音（前倚音）：写法 = {倚音}主音，如 {1}3、{1__}3、{#4'_}5、{1__2__}3 ──
+     倚音与主音合为一个 token，不单独占音位（strict 模式下 chord/lyric 无需多写 @，也不计入小节拍数）。
+     括号内若未显式写下划线 _，默认按简谱规范画双减时线（16分音符 __）；写 _ 则画单减时线。 */
+  function splitJpGracePrefix(tok){
+    var s=String(tok||'');
+    if(s.charAt(0)!=='{')return null;
+    var end=s.indexOf('}');
+    if(end<=1)return null;
+    var list=parseJpGraceList(s.slice(1,end));
+    if(!list.length)return null;
+    return {list:list,rest:s.slice(end+1)};
+  }
+  function parseJpGraceList(raw){
+    var s=String(raw||''),out=[],i=0;
+    while(i<s.length){
+      var ch=s.charAt(i);
+      if(ch.charCodeAt(0)<=32||ch==='/'){i++;continue;}
+      var acc='';
+      if(ch==='#'||ch==='b'||ch==='='||ch==='♯'||ch==='♭'||ch==='♮'){
+        acc=ch==='#'?'♯':ch==='b'?'♭':ch==='='?'♮':ch;
+        i++;
+        if(i>=s.length)break;
+        ch=s.charAt(i);
+      }
+      if(ch<'1'||ch>'7'){i++;continue;}
+      var num=ch;i++;
+      var isHigh=0,isLow=0,uline=0,hasU=false;
+      while(i<s.length){
+        var c=s.charAt(i);
+        if(c==="'"){isHigh++;i++;}
+        else if(c===','){isLow++;i++;}
+        else if(c==='_'){uline++;hasU=true;i++;}
+        else if(c==='·'){i++;}
+        else break;
+      }
+      if(!hasU)uline=2;
+      if(uline>2)uline=2;
+      out.push({acc:acc,num:num,isHigh:isHigh>2?2:isHigh,isLow:isLow>2?2:isLow,uline:uline});
+    }
+    return out;
+  }
+  function makeJpGraceDotCol(cnt,isTop){
+    var d=document.createElement('span');
+    d.className=isTop?'jp-grace-dot-top':'jp-grace-dot-bot';
+    d.style.cssText='display:flex;flex-direction:column;align-items:center;justify-content:'+(isTop?'flex-end':'flex-start')+';gap:1px;min-height:'+(cnt>0?(cnt*3.5)+'px':'0px')+';pointer-events:none;';
+    for(var i=0;i<cnt;i++){
+      var dot=document.createElement('span');
+      dot.style.cssText='display:block;width:2.6px;height:2.6px;border-radius:50%;background:currentColor;flex:0 0 auto;';
+      d.appendChild(dot);
+    }
+    return d;
+  }
+  function makeJpGraceEl(graceList,mainHasAcc){
+    var box=document.createElement('span');
+    box.className='jp-grace';
+    var rightOff=mainHasAcc?'calc(100% + 5px)':'100%';
+    box.style.cssText='position:absolute;right:'+rightOff+';top:-5px;margin-right:-1px;display:inline-flex;flex-direction:column;align-items:center;pointer-events:none;line-height:1;z-index:2;';
+    var notesRow=document.createElement('span');
+    notesRow.className='jp-grace-notes';
+    notesRow.style.cssText='display:inline-flex;flex-direction:row;align-items:flex-end;gap:1px;';
+    var maxU=0,maxLow=0;
+    for(var i=0;i<graceList.length;i++){
+      var g=graceList[i];
+      if(g.uline>maxU)maxU=g.uline;
+      if(g.isLow>maxLow)maxLow=g.isLow;
+      var col=document.createElement('span');
+      col.className='jp-grace-col';
+      col.style.cssText='display:inline-flex;flex-direction:column;align-items:center;';
+      if(g.isHigh>0)col.appendChild(makeJpGraceDotCol(g.isHigh,true));
+      var nr=document.createElement('span');
+      nr.style.cssText='display:inline-flex;align-items:flex-start;justify-content:center;position:relative;';
+      if(g.acc){
+        var ac=document.createElement('span');
+        ac.className='jp-grace-acc';
+        ac.textContent=g.acc;
+        ac.style.cssText='font-size:8px;font-weight:700;line-height:1;margin-right:0.5px;position:relative;top:-1px;';
+        nr.appendChild(ac);
+      }
+      var nm=document.createElement('span');
+      nm.className='jp-grace-num';
+      nm.textContent=g.num;
+      nm.style.cssText='font-size:11px;font-weight:700;line-height:1;display:inline-block;';
+      nr.appendChild(nm);
+      col.appendChild(nr);
+      notesRow.appendChild(col);
+    }
+    box.appendChild(notesRow);
+    var uWrap=document.createElement('span');
+    uWrap.className='jp-grace-lines';
+    uWrap.style.cssText='display:flex;flex-direction:column;width:100%;min-width:9px;gap:1.4px;margin-top:1.2px;';
+    for(var u=1;u<=maxU;u++){
+      var ul=document.createElement('span');
+      ul.className='jp-grace-u'+u;
+      ul.style.cssText='display:block;width:100%;height:1.25px;background:currentColor;';
+      uWrap.appendChild(ul);
+    }
+    box.appendChild(uWrap);
+    if(maxLow>0){
+      var lowRow=document.createElement('span');
+      lowRow.style.cssText='display:inline-flex;flex-direction:row;align-items:flex-start;justify-content:space-around;width:100%;margin-top:1px;';
+      for(var j=0;j<graceList.length;j++){
+        lowRow.appendChild(makeJpGraceDotCol(graceList[j].isLow,false));
+      }
+      box.appendChild(lowRow);
+    }
+    var arc=document.createElement('span');
+    arc.className='jp-grace-arc';
+    arc.style.cssText='display:block;line-height:0;margin-top:0.5px;align-self:flex-start;margin-left:2px;';
+    arc.innerHTML='<svg viewBox="0 0 14 7" width="12" height="6" style="display:block;overflow:visible"><path d="M 1.4 0.8 C 2.2 5.6, 8.2 6.3, 13.2 3.5" fill="none" stroke="currentColor" stroke-width="1.35" stroke-linecap="round"/></svg>';
+    box.appendChild(arc);
+    return box;
+  }
+  function attachJpGrace(wrapEl,graceList,mainHasAcc){
+    if(!wrapEl||!graceList||!graceList.length)return wrapEl;
+    var lw=wrapEl.querySelector('.jp-lines-wrap')||wrapEl;
+    lw.style.position='relative';
+    lw.style.overflow='visible';
+    lw.appendChild(makeJpGraceEl(graceList,mainHasAcc));
+    wrapEl.className+=' has-grace';
+    var accExtra=0;
+    for(var i=0;i<graceList.length;i++){if(graceList[i].acc)accExtra+=5;}
+    var ml=(graceList.length*9+2+accExtra+(mainHasAcc?4:0));
+    wrapEl.style.marginLeft=ml+'px';
+    return wrapEl;
+  }
   function parseJpToken(tok,opts){
     opts=opts||{};
     tok=String(tok||'');
     if(isBarlineTok(tok))return makeBarline(tok);
     const dual=!opts.inDual?parseDualJpToken(tok):null;
     if(dual)return makeDualJpToken(dual);
+    var gracePref=splitJpGracePrefix(tok),graceList=gracePref?gracePref.list:null;
+    if(gracePref){
+      tok=gracePref.rest;
+      if(!tok){
+        var gw=parseJpToken('sp');
+        return attachJpGrace(gw,graceList,false);
+      }
+    }
     if(!tok||tok==='-'||tok===' ')return makeJpPlain(tok);
     var hasFermata=false;
     if(tok.slice(-1)==='^'){hasFermata=true;tok=tok.slice(0,-1);}
@@ -7415,6 +7579,7 @@ layoutJpArcs=function(lane){jpResetNavigation(lane);jpBaseLayoutNoteArcs(lane);j
     if(uline===2)lw2.appendChild(makeJpUnderlineLine(2));
     w.appendChild(lw2);
     var bot=document.createElement('span');bot.className='jp-dot-bot';setDots(bot,isLow>=2?2:isLow);w.appendChild(bot);
+    if(graceList)attachJpGrace(w,graceList,!!acc);
     if(hasFermata){var fw=document.createElement('span');fw.className='jp-fermata';fw.appendChild(w);return fw;}
     return w;
   }
@@ -11592,6 +11757,15 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
   }
   let _mpAudio=null,_mpSongs=[],_mpIdx=-1,_mpLoop=false,_mpShuffle=false,_mpLrc=[],_mpLrcIdx=-1,_mpLrcTimed=false,_mpCurrentSong=null,_mpCoverFallback='',_mpExpanded=false,_mpSideMode='song',_mpSideCollapsed=false,_mpLyricsOpen=true,_mpPlayRequestId=0,_mpReturnUrl='';
   const MP_PLAYBACK_KEY='cecp:musiclib:playback:v1';
+  const AUTO_QUEUE_EXCLUDED_ARTISTS=new Set(['诗歌本']);
+  function _mpIsExcludedFromAutoQueue(song){
+    if(!song)return false;
+    const artist=String(song.artist||song.displayArtist||'').trim();
+    return AUTO_QUEUE_EXCLUDED_ARTISTS.has(artist);
+  }
+  function _mpIsAutoQueueEligible(song){
+    return hasSongAudio(song)&&!_mpIsExcludedFromAutoQueue(song);
+  }
   const _mpShufflePlayed=new Set();
   let _mpQueueOrigin='auto',_mpPlaybackReady=false,_mpRestoring=false,_mpLastSavedAt=0;
   function _mpSavePlayback(force=false){
@@ -11615,6 +11789,10 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     _mpSongs=[...new Set(saved.queueIds.slice(0,2000))].map(id=>byId.get(id)).filter(Boolean);
     if(!_mpSongs.length){_mpSavePlayback(true);return;}
     _mpQueueOrigin=saved.origin==='manual'?'manual':'auto';
+    if(_mpQueueOrigin!=='manual'){
+      _mpSongs=_mpSongs.filter(song=>_mpIsAutoQueueEligible(song)||song.id===saved.currentId);
+      if(!_mpSongs.length){_mpSavePlayback(true);return;}
+    }
     _mpLoop=saved.repeat===true;_mpShuffle=saved.shuffle===true;
     if(_mpShuffle)_mpEnsureShuffleQueue();
     if(_mpShuffle&&Array.isArray(saved.shufflePlayedIds))saved.shufflePlayedIds.filter(id=>byId.has(id)).forEach(id=>_mpShufflePlayed.add(id));
@@ -12241,13 +12419,19 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
     }
     if(_mpShuffle){
       _mpEnsureShuffleQueue();
-      _mpPlayIdx(_mpSongs.findIndex(item=>item.id===song.id),true);return;
+      let idx=_mpSongs.findIndex(item=>item.id===song.id);
+      if(idx<0){
+        // 手动点播被自动队列排除的歌曲时，仅临时加入当前播放，不把同作者其他歌拉进默认队列
+        _mpSongs=[song,..._mpSongs];
+        idx=0;
+      }
+      _mpPlayIdx(idx,true);return;
     }
-    const eligible=getFilteredSongs().filter(hasSongAudio);
+    const eligible=getFilteredSongs().filter(_mpIsAutoQueueEligible);
     const byId=new Map(eligible.map(item=>[item.id,item]));
     const visible=[...$('ml-list').querySelectorAll('.ml-song-card[data-id]')].map(card=>byId.get(card.dataset.id)).filter(Boolean);
     let context=visible.length===eligible.length?visible:eligible;
-    if(!context.some(item=>item.id===song.id))context=[song];
+    if(!context.some(item=>item.id===song.id))context=[song,...context];
     _mpSongs=context;_mpQueueOrigin='auto';
     _mpPlayIdx(context.findIndex(item=>item.id===song.id),true);
   }
@@ -12521,7 +12705,7 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
   }
   function _mpEnsureShuffleQueue(){
     if(_mpQueueOrigin==='manual'&&_mpSongs.length)return;
-    _mpSongs=songs.filter(hasSongAudio);
+    _mpSongs=songs.filter(_mpIsAutoQueueEligible);
     _mpQueueOrigin='auto';
     _mpIdx=_mpSongs.findIndex(song=>song.id===_mpCurrentSong?.id);
   }
@@ -15113,8 +15297,9 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         for(const line of sec.lines||[]){
           const le=_div('sw-lline');const row=_div('sw-lrow prev-row'+((!Array.isArray(line)&&line.b)?' bold':''));
           const segs=Array.isArray(line)?line:(line.line||[]);
-          let voltaWrap=null;
-          for(const seg of segs){
+          let voltaWrap=null,voltaWaitEnd=false;
+          for(let sgi=0;sgi<segs.length;sgi++){
+            const seg=segs[sgi];
             if(!segIsRenderableBlock(seg))continue;
             if(segIsLabelBlock(seg)){
               if(s.align==='strict'){   // 严格模式：段落标记独立一行(不与弧线/和弦挤)
@@ -15130,9 +15315,14 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
             }
             if(s.align==='strict'){
               const _vs=getVoltaStartLabel(seg.n);
-              if(_vs){row.classList.add('has-volta');voltaWrap=document.createElement('span');voltaWrap.className='prev-volta';voltaWrap.setAttribute('data-v',_vs+'.');}
+              if(_vs){
+                if(voltaWrap){row.appendChild(voltaWrap);voltaWrap=null;}
+                row.classList.add('has-volta');voltaWrap=document.createElement('span');voltaWrap.className='prev-volta';voltaWrap.setAttribute('data-v',_vs+'.');
+                voltaWaitEnd=voltaHasMatchingEnd(segs,sgi);
+              }
               buildStrictSegColumnsML(seg,st,useFlat,(!Array.isArray(line)&&line.b),(voltaWrap||row),{chord:true,jianpu:true,lyric:true,pinyin:false});
-              if(voltaWrap&&hasVoltaEnd(seg.n)){voltaWrap.classList.add('closed');row.appendChild(voltaWrap);voltaWrap=null;}
+              if(voltaWrap&&hasVoltaEnd(seg.n)){voltaWrap.classList.add('closed');row.appendChild(voltaWrap);voltaWrap=null;voltaWaitEnd=false;}
+              else if(voltaWrap&&!voltaWaitEnd){row.appendChild(voltaWrap);voltaWrap=null;}
               continue;
             }
             const segEl=_div('prev-seg');
@@ -15148,13 +15338,16 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
             });
             const _vn=getVoltaStartLabel(seg.n);
             if(_vn){
+              if(voltaWrap){row.appendChild(voltaWrap);voltaWrap=null;}
               row.classList.add('has-volta');
               voltaWrap=document.createElement('span');
               voltaWrap.className='prev-volta';
               voltaWrap.setAttribute('data-v',_vn+'.');
+              voltaWaitEnd=voltaHasMatchingEnd(segs,sgi);
             }
             (voltaWrap||row).appendChild(segEl);
-            if(voltaWrap&&hasVoltaEnd(seg.n)){voltaWrap.classList.add('closed');row.appendChild(voltaWrap);voltaWrap=null;}
+            if(voltaWrap&&hasVoltaEnd(seg.n)){voltaWrap.classList.add('closed');row.appendChild(voltaWrap);voltaWrap=null;voltaWaitEnd=false;}
+            else if(voltaWrap&&!voltaWaitEnd){row.appendChild(voltaWrap);voltaWrap=null;}
           }
           if(voltaWrap)row.appendChild(voltaWrap);
           le.appendChild(row);se.appendChild(le);

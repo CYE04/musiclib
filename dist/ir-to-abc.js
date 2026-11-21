@@ -164,6 +164,17 @@
           }
           (e.slurStarts || []).forEach(function () { body += '('; });
           if (e.fermata) body += 'H';                        // ABC 的装饰记号是**前缀**
+          if (e.gracePitches && e.gracePitches.length) {
+            var gNotes = e.gracePitches.map(function (gp) {
+              var gOct = gp.octave + shift;
+              var gWant = gp.alter;
+              var gHave = (accState[gp.step + gOct] !== undefined) ? accState[gp.step + gOct] : keySigAlter(key, gp.step);
+              var gAcc = '';
+              if (gWant !== gHave) { gAcc = accSymbol(gWant); accState[gp.step + gOct] = gWant; }
+              return gAcc + abcNoteName(gp.step, gOct);
+            }).join('');
+            body += '{' + gNotes + '}';
+          }
 
           e.pieces.forEach(function (piece, pi) {
             var head = '';
