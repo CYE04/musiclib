@@ -1884,17 +1884,27 @@
         const palette=getComputedStyle(house.closest('.prev-row')||scope);
         house.style.setProperty('--volta-ink',palette.getPropertyValue(verse==='1'?'--text':'--ly'+verse).trim());
       }
-      const atoms=house.querySelectorAll('.jp-wrap,.jp-plain,.jp-bar');
-      const last=atoms[atoms.length-1];
+      const allAtoms=house.querySelectorAll('.jp-wrap,.jp-plain,.jp-bar');
+      let first=null,last=null;
+      for(let fi=0;fi<allAtoms.length;fi++){if(!allAtoms[fi].classList.contains('jp-sp')){first=allAtoms[fi];break;}}
+      for(let ai=allAtoms.length-1;ai>=0;ai--){if(!allAtoms[ai].classList.contains('jp-sp')){last=allAtoms[ai];break;}}
       const strokes=last?.classList.contains('jp-bar')?last.querySelectorAll('.jp-bar-stroke'):[];
-      const stroke=strokes[strokes.length-1];
       const box=house.getBoundingClientRect(),scale=scoreHeightScale(house);
-      let inset=0;
-      if(stroke&&scale){
-        const bar=stroke.getBoundingClientRect();
-        const closed=house.classList.contains('closed')||house.classList.contains('v-close');
-        inset=Math.max(0,(box.right-(bar.left+bar.right)/2)/scale-(closed?0.75:0));
+      let leftIn=0,inset=0;
+      if(first&&first!==last&&first.classList.contains('jp-bar')&&scale){
+        const fs=first.querySelectorAll('.jp-bar-stroke');
+        if(fs.length){
+          const fs0=fs[0].getBoundingClientRect(),fs1=fs[fs.length-1].getBoundingClientRect();
+          leftIn=Math.max(0,((fs0.left+fs1.right)/2-box.left)/scale-0.75);
+        }
       }
+      if(strokes.length&&scale){
+        const s0=strokes[0].getBoundingClientRect(),s1=strokes[strokes.length-1].getBoundingClientRect();
+        const barCenterX=(s0.left+s1.right)/2;
+        const closed=house.classList.contains('closed')||house.classList.contains('v-close');
+        inset=Math.max(0,(box.right-barCenterX)/scale-(closed?0.75:0));
+      }
+      house.style.setProperty('--volta-left',leftIn.toFixed(3)+'px');
       house.style.setProperty('--volta-right',inset.toFixed(3)+'px');
     });
     scoreHeightRows(scope).forEach(row=>{
@@ -7073,6 +7083,45 @@ function scoreHeightObstacles(row){
 }
 function scoreHeightHouses(row,obstacles){
   var rails=[],items=[];
+  var houses=[].slice.call(row.querySelectorAll('.prev-volta,.jp-volta')).filter(function(h){
+    return !h.parentElement||!h.parentElement.closest('.prev-volta,.jp-volta');
+  });
+  houses.forEach(function(house){
+    delete house.dataset.joined;
+    var allAtoms=house.querySelectorAll('.jp-wrap,.jp-plain,.jp-bar');
+    var first=null,last=null;
+    for(var fi=0;fi<allAtoms.length;fi++){if(!allAtoms[fi].classList.contains('jp-sp')){first=allAtoms[fi];break;}}
+    for(var ai=allAtoms.length-1;ai>=0;ai--){if(!allAtoms[ai].classList.contains('jp-sp')){last=allAtoms[ai];break;}}
+    var box=house.getBoundingClientRect(),scale=scoreHeightScale(house);
+    var leftIn=0,rightIn=0;
+    if(first&&first!==last&&first.classList.contains('jp-bar')&&scale){
+      var fs=first.querySelectorAll('.jp-bar-stroke');
+      if(fs.length){
+        var fs0=fs[0].getBoundingClientRect(),fs1=fs[fs.length-1].getBoundingClientRect();
+        leftIn=Math.max(0,((fs0.left+fs1.right)/2-box.left)/scale-0.75);
+      }
+    }
+    var strokes=(last&&last.classList.contains('jp-bar'))?last.querySelectorAll('.jp-bar-stroke'):[];
+    if(strokes.length&&scale){
+      var s0=strokes[0].getBoundingClientRect(),s1=strokes[strokes.length-1].getBoundingClientRect();
+      var barCenterX=(s0.left+s1.right)/2;
+      var closed=house.classList.contains('closed')||house.classList.contains('v-close');
+      rightIn=Math.max(0,(box.right-barCenterX)/scale-(closed?0.75:0));
+    }
+    house.style.setProperty('--volta-left',leftIn.toFixed(3)+'px');
+    house.style.setProperty('--volta-right',rightIn.toFixed(3)+'px');
+  });
+  houses.forEach(function(house,index){
+    if(!index)return;
+    var previous=houses[index-1],scale=scoreHeightScale(house);
+    if(previous&&previous.nextElementSibling===house&&scale){
+      var before=getComputedStyle(previous,'::before'),previousScale=scoreHeightScale(previous)||1;
+      var divider=parseFloat(before.borderRightWidth)||0;
+      var join=previous.getBoundingClientRect().right-((parseFloat(before.right)||0)+divider/2)*previousScale;
+      house.style.setProperty('--volta-left',((join-house.getBoundingClientRect().left)/scale-(divider?0:0.75)).toFixed(3)+'px');
+      if(divider)house.dataset.joined='1';
+    }
+  });
   [].slice.call(row.querySelectorAll('.prev-volta,.jp-volta')).reverse().forEach(function(house){
     var r=house.getBoundingClientRect(),s=scoreHeightScale(house),ceiling=Infinity;
     obstacles.concat(rails).forEach(function(o){if(o.left<r.right&&o.right>r.left)ceiling=Math.min(ceiling,o.top);});

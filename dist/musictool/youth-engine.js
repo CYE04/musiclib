@@ -531,9 +531,10 @@ window.YouthEngine = {};
 .chord-gap,
 .lyric-gap{display:inline-block;white-space:pre;visibility:hidden;pointer-events:none;font:inherit;line-height:inherit}
 .prev-volta{display:inline-flex;align-items:flex-end;position:relative}
-.prev-volta::before{content:'';position:absolute;top:calc(var(--volta-top,2px) - var(--volta-rail,0px));left:0;right:0;height:10px;border-top:1.5px solid var(--ym-ink2);border-left:1.5px solid var(--ym-ink2);pointer-events:none;box-sizing:border-box}
+.prev-volta::before{content:'';position:absolute;top:calc(var(--volta-top,2px) - var(--volta-rail,0px));left:var(--volta-left,0px);right:var(--volta-right,0px);height:10px;border-top:1.5px solid var(--ym-ink2);border-left:1.5px solid var(--ym-ink2);pointer-events:none;box-sizing:border-box}
 .prev-volta.closed::before{border-right:1.5px solid var(--ym-ink2)}
-.prev-volta::after{content:attr(data-v);position:absolute;top:calc(var(--volta-top,2px) + 1px - var(--volta-rail,0px));left:3px;font-size:8px;line-height:1;color:var(--ym-ink2);pointer-events:none;font-family:'DM Mono',monospace}
+.prev-volta[data-joined="1"]::before{border-left:0}
+.prev-volta::after{content:attr(data-v);position:absolute;top:calc(var(--volta-top,2px) + 1px - var(--volta-rail,0px));left:calc(var(--volta-left,0px) + 3px);font-size:8px;line-height:1;color:var(--ym-ink2);pointer-events:none;font-family:'DM Mono',monospace}
 .jp-wrap{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom;min-width:1em}
 .jp-plain{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom;min-width:1em}
 .jp-plain-top{height:12px}.jp-plain-sym{font-size:15px;line-height:1;text-align:center;display:inline-flex;align-items:center;justify-content:center;width:1em;height:1em}.jp-plain-sym.is-dash{position:relative;top:-0.12em}.jp-plain-bot{height:16px}
@@ -2123,6 +2124,45 @@ function scoreHeightObstacles(row){
 }
 function scoreHeightHouses(row,obstacles){
   var rails=[],items=[];
+  var houses=[].slice.call(row.querySelectorAll('.prev-volta,.jp-volta')).filter(function(h){
+    return !h.parentElement||!h.parentElement.closest('.prev-volta,.jp-volta');
+  });
+  houses.forEach(function(house){
+    delete house.dataset.joined;
+    var allAtoms=house.querySelectorAll('.jp-wrap,.jp-plain,.jp-bar');
+    var first=null,last=null;
+    for(var fi=0;fi<allAtoms.length;fi++){if(!allAtoms[fi].classList.contains('jp-sp')){first=allAtoms[fi];break;}}
+    for(var ai=allAtoms.length-1;ai>=0;ai--){if(!allAtoms[ai].classList.contains('jp-sp')){last=allAtoms[ai];break;}}
+    var box=house.getBoundingClientRect(),scale=scoreHeightScale(house);
+    var leftIn=0,rightIn=0;
+    if(first&&first!==last&&first.classList.contains('jp-bar')&&scale){
+      var fs=first.querySelectorAll('.jp-bar-stroke');
+      if(fs.length){
+        var fs0=fs[0].getBoundingClientRect(),fs1=fs[fs.length-1].getBoundingClientRect();
+        leftIn=Math.max(0,((fs0.left+fs1.right)/2-box.left)/scale-0.75);
+      }
+    }
+    var strokes=(last&&last.classList.contains('jp-bar'))?last.querySelectorAll('.jp-bar-stroke'):[];
+    if(strokes.length&&scale){
+      var s0=strokes[0].getBoundingClientRect(),s1=strokes[strokes.length-1].getBoundingClientRect();
+      var barCenterX=(s0.left+s1.right)/2;
+      var closed=house.classList.contains('closed')||house.classList.contains('v-close');
+      rightIn=Math.max(0,(box.right-barCenterX)/scale-(closed?0.75:0));
+    }
+    house.style.setProperty('--volta-left',leftIn.toFixed(3)+'px');
+    house.style.setProperty('--volta-right',rightIn.toFixed(3)+'px');
+  });
+  houses.forEach(function(house,index){
+    if(!index)return;
+    var previous=houses[index-1],scale=scoreHeightScale(house);
+    if(previous&&previous.nextElementSibling===house&&scale){
+      var before=getComputedStyle(previous,'::before'),previousScale=scoreHeightScale(previous)||1;
+      var divider=parseFloat(before.borderRightWidth)||0;
+      var join=previous.getBoundingClientRect().right-((parseFloat(before.right)||0)+divider/2)*previousScale;
+      house.style.setProperty('--volta-left',((join-house.getBoundingClientRect().left)/scale-(divider?0:0.75)).toFixed(3)+'px');
+      if(divider)house.dataset.joined='1';
+    }
+  });
   [].slice.call(row.querySelectorAll('.prev-volta,.jp-volta')).reverse().forEach(function(house){
     var r=house.getBoundingClientRect(),s=scoreHeightScale(house),ceiling=Infinity;
     obstacles.concat(rails).forEach(function(o){if(o.left<r.right&&o.right>r.left)ceiling=Math.min(ceiling,o.top);});

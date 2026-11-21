@@ -358,9 +358,10 @@ body.mt-resizing,body.mt-resizing *{user-select:none !important;}
 
 /* ── 跨格子房子线（preview 层） ── */
 .prev-volta{display:inline-flex;align-items:flex-end;position:relative;}
-.prev-volta::before{content:'';position:absolute;top:calc(var(--volta-top,2px) - var(--volta-rail,0px));left:0;right:0;height:10px;border-top:1.5px solid var(--accent2);border-left:1.5px solid var(--accent2);pointer-events:none;box-sizing:border-box;}
+.prev-volta::before{content:'';position:absolute;top:calc(var(--volta-top,2px) - var(--volta-rail,0px));left:var(--volta-left,0px);right:var(--volta-right,0px);height:10px;border-top:1.5px solid var(--accent2);border-left:1.5px solid var(--accent2);pointer-events:none;box-sizing:border-box;}
 .prev-volta.closed::before{border-right:1.5px solid var(--accent2);}
-.prev-volta::after{content:attr(data-v);position:absolute;top:calc(var(--volta-top,2px) + 1px - var(--volta-rail,0px));left:3px;font-size:8px;color:var(--accent2);pointer-events:none;font-family:'Space Mono',monospace;}
+.prev-volta[data-joined="1"]::before,.jp-volta[data-joined="1"]::before{border-left:0;}
+.prev-volta::after{content:attr(data-v);position:absolute;top:calc(var(--volta-top,2px) + 1px - var(--volta-rail,0px));left:calc(var(--volta-left,0px) + 3px);font-size:8px;color:var(--accent2);pointer-events:none;font-family:'Space Mono',monospace;}
 
 /* 状态栏 */
 /* ── 输入状态栏（总音符/八度/时值/附点/段落/房子线） ── */
@@ -376,9 +377,9 @@ body.mt-resizing,body.mt-resizing *{user-select:none !important;}
 
 /* ── 房子线（token 式，和连音线一样） ── */
 .jp-volta{display:inline-flex;align-items:flex-end;position:relative;padding-top:0;}
-.jp-volta::before{content:'';position:absolute;top:var(--jp-volta-top,3px);left:0;right:0;height:10px;border-top:1.5px solid var(--accent2);border-left:1.5px solid var(--accent2);pointer-events:none;box-sizing:border-box;}
+.jp-volta::before{content:'';position:absolute;top:var(--jp-volta-top,3px);left:var(--volta-left,0px);right:var(--volta-right,0px);height:10px;border-top:1.5px solid var(--accent2);border-left:1.5px solid var(--accent2);pointer-events:none;box-sizing:border-box;}
 .jp-volta.v-close::before{border-right:1.5px solid var(--accent2);}
-.jp-volta::after{content:attr(data-v);position:absolute;top:calc(var(--jp-volta-top,3px) + 1px);left:3px;font-size:10px;line-height:1;color:var(--accent2);pointer-events:none;font-family:'Space Mono',monospace;}
+.jp-volta::after{content:attr(data-v);position:absolute;top:calc(var(--jp-volta-top,3px) + 1px);left:calc(var(--volta-left,0px) + 3px);font-size:10px;line-height:1;color:var(--accent2);pointer-events:none;font-family:'Space Mono',monospace;}
 
 .kbd-label{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;}
 /* 导航记号是独立一个 .kbd-group，靠 .kbd-func-grid 的两列网格自然落到右列
@@ -1015,8 +1016,9 @@ body.mt-resizing,body.mt-resizing *{user-select:none !important;}
             </div>
           </div>
           <div class="kbd-group">
-            <div class="kbd-label">连音 · 连音符 · 拍号</div>
+            <div class="kbd-label">连音 · 连音符 · 拍号 · 倚音</div>
             <div class="kbd-row">
+              <button class="kbd-btn slur-btn" id="grace-btn-2" onclick="toggleGrace()" title="前倚音：开启后点击数字 1-7（可配合八度/升降/8分或16分，默认16分双下划线），再点主音即自动合成 {1__}3；也可先点选已有主音再开启点数字直接挂上倚音" style="padding:6px 8px;">⌒ 倚音 关<span class="shortcut">G</span></button>
               <button class="kbd-btn" onclick="appendInlineTimeSignToken()" style="padding:6px 8px;">拍号记号</button>
               <button class="kbd-btn slur-btn" id="slur-btn" onclick="toggleSlur()" style="padding:6px 8px;">( ) 连音<span class="shortcut">[ / S</span></button>
               <button class="kbd-btn slur-btn" onclick="appendTok('~')" title="双连音线：插在两个音之间，弧线连接左右相邻两音" style="padding:6px 8px;">⌒ 双连音<span class="shortcut">N</span></button>
@@ -2833,11 +2835,13 @@ function syncToggleUI(){
     fermataBtn.classList.toggle('on',fermataOn);
     fermataBtn.innerHTML='𝄐 延长号 '+(fermataOn?'开':'关')+'<span class="shortcut">F</span>';
   }
-  var graceBtn=document.getElementById('grace-btn');
-  if(graceBtn){
-    graceBtn.classList.toggle('on',graceOn);
-    graceBtn.innerHTML='⌒ 倚音 '+(graceOn?'开':'关')+'<span class="shortcut">G</span>';
-  }
+  ['grace-btn','grace-btn-2'].forEach(function(id){
+    var graceBtn=document.getElementById(id);
+    if(graceBtn){
+      graceBtn.classList.toggle('on',graceOn);
+      graceBtn.innerHTML='⌒ 倚音 '+(graceOn?'开':'关')+'<span class="shortcut">G</span>';
+    }
+  });
   var dotPill=document.getElementById('is-dot-pill');
   if(dotPill){
     dotPill.classList.toggle('active',dotOn);
@@ -3614,6 +3618,45 @@ function scoreHeightObstacles(row){
 }
 function scoreHeightHouses(row,obstacles){
   var rails=[],items=[];
+  var houses=[].slice.call(row.querySelectorAll('.prev-volta,.jp-volta')).filter(function(h){
+    return !h.parentElement||!h.parentElement.closest('.prev-volta,.jp-volta');
+  });
+  houses.forEach(function(house){
+    delete house.dataset.joined;
+    var allAtoms=house.querySelectorAll('.jp-wrap,.jp-plain,.jp-bar');
+    var first=null,last=null;
+    for(var fi=0;fi<allAtoms.length;fi++){if(!allAtoms[fi].classList.contains('jp-sp')){first=allAtoms[fi];break;}}
+    for(var ai=allAtoms.length-1;ai>=0;ai--){if(!allAtoms[ai].classList.contains('jp-sp')){last=allAtoms[ai];break;}}
+    var box=house.getBoundingClientRect(),scale=scoreHeightScale(house);
+    var leftIn=0,rightIn=0;
+    if(first&&first!==last&&first.classList.contains('jp-bar')&&scale){
+      var fs=first.querySelectorAll('.jp-bar-stroke');
+      if(fs.length){
+        var fs0=fs[0].getBoundingClientRect(),fs1=fs[fs.length-1].getBoundingClientRect();
+        leftIn=Math.max(0,((fs0.left+fs1.right)/2-box.left)/scale-0.75);
+      }
+    }
+    var strokes=(last&&last.classList.contains('jp-bar'))?last.querySelectorAll('.jp-bar-stroke'):[];
+    if(strokes.length&&scale){
+      var s0=strokes[0].getBoundingClientRect(),s1=strokes[strokes.length-1].getBoundingClientRect();
+      var barCenterX=(s0.left+s1.right)/2;
+      var closed=house.classList.contains('closed')||house.classList.contains('v-close');
+      rightIn=Math.max(0,(box.right-barCenterX)/scale-(closed?0.75:0));
+    }
+    house.style.setProperty('--volta-left',leftIn.toFixed(3)+'px');
+    house.style.setProperty('--volta-right',rightIn.toFixed(3)+'px');
+  });
+  houses.forEach(function(house,index){
+    if(!index)return;
+    var previous=houses[index-1],scale=scoreHeightScale(house);
+    if(previous&&previous.nextElementSibling===house&&scale){
+      var before=getComputedStyle(previous,'::before'),previousScale=scoreHeightScale(previous)||1;
+      var divider=parseFloat(before.borderRightWidth)||0;
+      var join=previous.getBoundingClientRect().right-((parseFloat(before.right)||0)+divider/2)*previousScale;
+      house.style.setProperty('--volta-left',((join-house.getBoundingClientRect().left)/scale-(divider?0:0.75)).toFixed(3)+'px');
+      if(divider)house.dataset.joined='1';
+    }
+  });
   [].slice.call(row.querySelectorAll('.prev-volta,.jp-volta')).reverse().forEach(function(house){
     var r=house.getBoundingClientRect(),s=scoreHeightScale(house),ceiling=Infinity;
     obstacles.concat(rails).forEach(function(o){if(o.left<r.right&&o.right>r.left)ceiling=Math.min(ceiling,o.top);});

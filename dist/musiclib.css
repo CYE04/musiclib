@@ -1381,7 +1381,7 @@ html,body,#music-library{
 #music-library :is(.prev-volta,.jp-volta)[data-verse] .p-lyric{color:var(--volta-ink) !important;}
 #music-library :is(.prev-volta,.jp-volta)[data-verse]::before{opacity:.85;}
 #music-library :is(.prev-volta,.jp-volta)[data-verse]::after{left:calc(var(--volta-left,0px) + 3px);color:var(--text);opacity:1;}
-#music-library .prev-volta::after{content:attr(data-v);position:absolute;top:calc(var(--volta-top,2px) + 1px - var(--volta-rail,0px));left:3px;font-size:8px;line-height:1;color:var(--text);opacity:0.65;pointer-events:none;font-family:'DM Mono',monospace;}
+#music-library .prev-volta::after{content:attr(data-v);position:absolute;top:calc(var(--volta-top,2px) + 1px - var(--volta-rail,0px));left:calc(var(--volta-left,0px) + 3px);font-size:8px;line-height:1;color:var(--text);opacity:0.65;pointer-events:none;font-family:'DM Mono',monospace;}
 #music-library .jp-wrap{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom;min-width:1em;}
 #music-library .jp-plain{display:inline-flex;flex-direction:column;align-items:center;vertical-align:bottom;min-width:1em;}
 #music-library .jp-plain-top{height:calc(12px * var(--pl-n,1));}
