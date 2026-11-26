@@ -358,13 +358,44 @@ function songLyricRows(seg){
     /* ── 1. 把整首歌摊平成带出处的 token 流 ───────────────────────────── */
     var flat = [];
     var cellLyrics = {};        // 'si/li/ci' -> all lyric lanes（非 strict 后处理用）
+    var rawLabelsBySec = {};    // si -> [{ text, style, si, li, ci, dx, dy, isStrict, measureNo, atEnd }]
+    function getVoltaOpenLabel(tk) {
+      if (tk === '[v1' || tk === '[v2') return tk.slice(2);
+      var m = String(tk || '').match(/^\[v:(.+)\]$/);
+      return m ? m[1] : null;
+    }
+    function isSoundingSlot(tk) {
+      return SA.isDualAtom(tk) && !/^sp(_{0,2})?$/.test(tk);
+    }
     (song && song.sections || []).forEach(function (sec, si) {
       flat.push({ type: 'section', name: (sec && sec.name) || '', si: si });
       (sec && sec.lines || []).forEach(function (line, li) {
         var segs = Array.isArray(line) ? line : ((line && line.line) || []);
         segs.forEach(function (seg, ci) {
           if (!seg || typeof seg !== 'object') return;
-          if (typeof seg.label === 'string') return;                 // 段落标记块，不产音
+          if (typeof seg.label === 'string') {
+            var ltext = String(seg.label).trim();
+            if (ltext) {
+              var lb = {
+                text: ltext,
+                style: seg.style === 'jump' ? 'jump' : 'section',
+                si: si, li: li, ci: ci,
+                dx: (seg.dx != null && isFinite(Number(seg.dx))) ? Number(seg.dx) : null,
+                dy: (seg.dy != null && isFinite(Number(seg.dy))) ? Number(seg.dy) : null,
+                isStrict: isStrict,
+                measureNo: null,
+                atEnd: false
+              };
+              (rawLabelsBySec[si] = rawLabelsBySec[si] || []).push(lb);
+              if (!isStrict) {
+                var hasSoundAfter = segs.slice(ci + 1).some(function (x) {
+                  return x && typeof x === 'object' && typeof x.label !== 'string' && x.n;
+                });
+                flat.push({ type: 'label-anchor', ref: lb, hasSoundAfter: hasSoundAfter, where: { si: si, li: li, ci: ci } });
+              }
+            }
+            return;
+          }
 
           var where = { si: si, li: li, ci: ci };
 
@@ -379,6 +410,66 @@ function songLyricRows(seg){
           }
 
           var toks = SA.tokenizeN(seg.n);
+          /* 简谱单元格内的跳房子标记在数据里常写在格尾（如 `2 - - 1·_ 7,__ [v1 ]v :|`、
+             `( 5 - ... | [v2`、`( 4 4_ ... | [v2 ]v`），而整格在简谱里都包在同一个房子括号下；
+             若前面有发声音符且 `[v` 落在所有发声音符之后：
+               - 严格模式以 cell 为单位，提早到本格开头（ti=0）；
+               - 非严格模式若 `[v` 前没有隔着小节线（或同格结尾配了 `]v`），提到该小节起点，
+                 若 `[v` 落在小节线之后且没有同格 `]v`（意指下一格），则保留在原位。
+             同理，格内若出现 `[v1 ]v` 连写且后面还有实音（如 `[v1 ]v 0 0_ ... :|`），
+             把该前置 `]v` 推迟到本格末尾。 */
+          var voltaOpenIdxs = [], voltaCloseIdxs = [], barIdxs = [], lastSoundIdx = -1;
+          toks.forEach(function (tk, ti) {
+            if (getVoltaOpenLabel(tk) !== null) voltaOpenIdxs.push(ti);
+            else if (tk === ']v') voltaCloseIdxs.push(ti);
+            else if (splitBarNav(tk).bar) barIdxs.push(ti);
+            else if (isSoundingSlot(tk)) lastSoundIdx = ti;
+          });
+          var insertVoltaAt = {};
+          var skipTi = {};
+          var deferVoltaClose = null;
+          if (voltaOpenIdxs.length === 1 && lastSoundIdx >= 0 && voltaOpenIdxs[0] > lastSoundIdx) {
+            var hoistedTi = voltaOpenIdxs[0];
+            var hasBarAfterSound = barIdxs.some(function (bi) { return bi > lastSoundIdx && bi < hoistedTi; });
+            var hasCloseAfterOpen = voltaCloseIdxs.some(function (ci3) { return ci3 > hoistedTi; });
+            if (isStrict || !hasBarAfterSound || hasCloseAfterOpen) {
+              var targetTi = 0;
+              if (!isStrict) {
+                var prevBar = -1;
+                barIdxs.forEach(function (bi) { if (bi < lastSoundIdx && bi > prevBar) prevBar = bi; });
+                targetTi = prevBar + 1;
+              }
+              insertVoltaAt[targetTi] = {
+                type: 'volta', op: 'open',
+                label: getVoltaOpenLabel(toks[hoistedTi]),
+                where: { si: si, li: li, ci: ci, ti: hoistedTi }
+              };
+              skipTi[hoistedTi] = true;
+            }
+          }
+          voltaCloseIdxs.forEach(function (closeTi) {
+            var hasSoundAfter = false;
+            for (var k = closeTi + 1; k < toks.length; k++) {
+              if (isSoundingSlot(toks[k])) { hasSoundAfter = true; break; }
+            }
+            if (!hasSoundAfter) return;
+            var hasEmptyOpen = voltaOpenIdxs.some(function (oi) {
+              if (oi >= closeTi) return false;
+              for (var k = oi + 1; k < closeTi; k++) if (isSoundingSlot(toks[k])) return false;
+              return true;
+            }) || Object.keys(insertVoltaAt).some(function (k) {
+              var pos = Number(k);
+              if (pos > closeTi) return false;
+              for (var m = pos; m < closeTi; m++) if (isSoundingSlot(toks[m])) return false;
+              return true;
+            });
+            if (!hasEmptyOpen) return;
+            skipTi[closeTi] = true;
+            if (!voltaCloseIdxs.some(function (x) { return x > lastSoundIdx; })) {
+              deferVoltaClose = { si: si, li: li, ci: ci, ti: closeTi };
+            }
+          });
+
           var slotIdx = 0;
           var aligned = null;
           var looseChord = null;
@@ -405,6 +496,7 @@ function songLyricRows(seg){
           var soundIdx = 0;
 
           toks.forEach(function (tk, ti) {
+            if (insertVoltaAt[ti]) flat.push(insertVoltaAt[ti]);
             var w = { si: si, li: li, ci: ci, ti: ti };
             if (SA.isDualAtom(tk)) {
               var payload = { type: 'slot', tok: tk, where: w };
@@ -419,6 +511,7 @@ function songLyricRows(seg){
               flat.push(payload);
               return;
             }
+            if (skipTi[ti]) return;
             /* 结构 token */
             var its = SA._timeSign.extractInlineTimeSignToken(tk);
             if (its) { flat.push({ type: 'timesign', value: its, where: w }); return; }
@@ -441,7 +534,9 @@ function songLyricRows(seg){
             }
             warn('UNKNOWN_TOKEN', '无法识别的结构 token：' + JSON.stringify(tk), w);
           });
+          if (deferVoltaClose) flat.push({ type: 'volta', op: 'close', where: deferVoltaClose });
         });
+        flat.push({ type: 'line-end', si: si, li: li });
       });
     });
 
@@ -463,6 +558,8 @@ function songLyricRows(seg){
     var eventSeq = [];               // 全部事件的顺序表（`~` 找左端点用）
     var pendingTie = null;           // 等待右端点的 `~`
     var lastMeasureGlobal = null;
+    var closedByLineEnd = false;
+    var pendingLabels = [];
     var stats = { slots: 0, parsed: 0, dual: 0, tie: 0, tuplet: 0, crossSlur: 0 };
     var meterChanges = [];
 
@@ -499,6 +596,11 @@ function songLyricRows(seg){
 
     function pushEvent(ev) {
       ensureMeasure(ev.src);
+      closedByLineEnd = false;
+      if (pendingLabels.length) {
+        pendingLabels.forEach(function (lb) { lb.measureNo = curMeasure.no; });
+        pendingLabels = [];
+      }
       if (pendingBeamBreak) { ev.beamBreakBefore = true; pendingBeamBreak = false; }
       if (pendingSlurOpen.length) { ev.slurStarts = pendingSlurOpen.slice(); pendingSlurOpen = []; }
       if (tupletOpen) { ev.tuplet = { num: tupletOpen.num, pos: tupletOpen.first ? 'start' : 'mid' }; tupletOpen.first = false; curMeasure.hasTuplet = true; }
@@ -519,11 +621,35 @@ function songLyricRows(seg){
 
     flat.forEach(function (item) {
       if (item.type === 'section') {
+        closedByLineEnd = false;
         if (curMeasure) closeMeasure('|', null);
         newSection(item.name, item.si);
         return;
       }
+      if (item.type === 'line-end') {
+        /* 简谱行末若恰好满一小节且漏写 `|`，在换行边界隐式收小节，
+           避免把下一行开头的整小节并成一个 8/4 大长小节（如 womendeshen-zanmei）。
+           行末半小节（合法的跨行小节）保持原样不断开。 */
+        if (curMeasure && curMeasure.events.length && !curMeasure.hasTuplet) {
+          var u = curMeasure.events.reduce(function (a, e) { return a + e.units; }, 0);
+          if (Math.abs(u - curMeasure.unitsExpected) < 1e-9) {
+            closeMeasure('|', null);
+            closedByLineEnd = true;
+          }
+        }
+        return;
+      }
+      if (item.type === 'label-anchor') {
+        if (!item.hasSoundAfter && (curMeasure || lastMeasureGlobal)) {
+          item.ref.measureNo = (curMeasure ? curMeasure.no : lastMeasureGlobal.no);
+          item.ref.atEnd = true;
+        } else {
+          pendingLabels.push(item.ref);
+        }
+        return;
+      }
       if (item.type === 'timesign') {
+        closedByLineEnd = false;
         if (curMeasure && curMeasure.events.length) closeMeasure('|', null);
         var ts = parseTimeSign(item.value);
         if (ts) {
@@ -535,7 +661,18 @@ function songLyricRows(seg){
         } else warn('BAD_TIMESIGN', '行内拍号无法解析：' + item.value, item.where);
         return;
       }
-      if (item.type === 'bar') { ensureMeasure(item.where); closeMeasure(item.bar, item.nav); return; }
+      if (item.type === 'bar') {
+        if (!curMeasure && closedByLineEnd && lastMeasureGlobal) {
+          var role = barlineRole(item.bar || '|');
+          if (role.close !== 'normal') lastMeasureGlobal.closeBarline = role.close;
+          if (item.nav) lastMeasureGlobal.nav = item.nav;
+          if (role.open !== 'none') pendingOpen = role.open;
+          closedByLineEnd = false;
+          return;
+        }
+        closedByLineEnd = false;
+        ensureMeasure(item.where); closeMeasure(item.bar, item.nav); return;
+      }
       if (item.type === 'volta') {
         if (item.op === 'open') {
           /* 跳房子括号只画在区间的**第一个**小节上，之后的小节归属同一个括号。
@@ -687,13 +824,46 @@ function songLyricRows(seg){
     });
     if (curMeasure) closeMeasure('|', null);
 
-    /* 每个小节标注它来自 JSON 的哪一行 —— 供 ir-to-abc 做「跟随简谱分行」。
+    /* 每个小节标注它来自 JSON 的哪一行 —— 供 ir-to-abc 做「跟随简谱分行」，
+       并收集段落/排练/跳转标记（seg.label）供五线谱系统上方渲染徽章。
        实测全曲库只有 1.0% 的小节跨 JSON 行（24/2402），所以按第一个事件的出处归行即可。 */
     sections.forEach(function (sec) {
+      var nonEmptyLis = [];
+      var seenLi = {};
       sec.measures.forEach(function (m) {
         var first = null;
         for (var i = 0; i < m.events.length; i++) { if (m.events[i].src) { first = m.events[i].src; break; } }
         m.srcLine = first ? (first.si + '/' + first.li) : null;
+        if (m.events.length && first && !seenLi[first.li]) {
+          seenLi[first.li] = true;
+          nonEmptyLis.push(first.li);
+        }
+      });
+      nonEmptyLis.sort(function (a, b) { return a - b; });
+      sec.labels = (rawLabelsBySec[sec.si] || []).map(function (lb) {
+        var targetLi = lb.li;
+        if (lb.isStrict && lb.dy != null && lb.dy <= -65) {
+          targetLi = lb.li + Math.round(lb.dy / 110);
+        }
+        if (nonEmptyLis.length && !seenLi[targetLi]) {
+          var best = nonEmptyLis[0], bestDist = Infinity;
+          nonEmptyLis.forEach(function (li) {
+            var d = Math.abs(li - targetLi);
+            if (d < bestDist || (d === bestDist && li < best)) { best = li; bestDist = d; }
+          });
+          targetLi = best;
+        }
+        var xRatio = null;
+        if (lb.isStrict && lb.dx != null) xRatio = Math.max(0, Math.min(0.96, lb.dx / 746));
+        else if (lb.measureNo == null) xRatio = 0;
+        return {
+          text: lb.text,
+          style: lb.style,
+          srcLine: sec.si + '/' + targetLi,
+          measureNo: lb.measureNo,
+          atEnd: lb.atEnd,
+          xRatio: xRatio
+        };
       });
     });
 

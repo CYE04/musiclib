@@ -40,6 +40,61 @@
     return '';
   }
 
+  /** 粗略视觉宽度（中文算 2，ASCII 算 1），用于超长副标题折行。 */
+  function visualLen(str) {
+    var w = 0;
+    for (var i = 0; i < str.length; i++) w += (str.charCodeAt(i) > 0x2e7f ? 2 : 1);
+    return w;
+  }
+
+  /** 把过长的副标题 / 信息行均衡折成多行 `T:`，避免在版面上左右被裁切。 */
+  function wrapTitleLines(text, maxUnits) {
+    var s = String(text || '').replace(/[\r\n]+/g, ' ').trim();
+    if (!s) return [];
+    var limit = maxUnits || 84;
+    var total = visualLen(s);
+    if (total <= limit) return [s];
+    var linesCount = Math.ceil(total / limit);
+    var target = Math.min(limit, Math.ceil(total / linesCount) + 4);
+    var res = [], cur = '', curW = 0, lastBreak = -1;
+    var BREAK_RE = /[\s）)】；;、，,]/;
+    for (var i = 0; i < s.length; i++) {
+      var ch = s.charAt(i);
+      var cw = s.charCodeAt(i) > 0x2e7f ? 2 : 1;
+      if (curW + cw > target && cur.length > 0) {
+        if (lastBreak > Math.floor(cur.length * 0.55)) {
+          res.push(cur.slice(0, lastBreak + 1).trim());
+          cur = cur.slice(lastBreak + 1).replace(/^\s+/, '');
+          curW = visualLen(cur);
+        } else {
+          res.push(cur.trim());
+          cur = '';
+          curW = 0;
+        }
+        lastBreak = -1;
+      }
+      if (!cur && ch === ' ') continue;
+      cur += ch;
+      curW += cw;
+      if (BREAK_RE.test(ch)) lastBreak = cur.length - 1;
+    }
+    if (cur.trim()) res.push(cur.trim());
+    return res;
+  }
+
+  /** 拍号每组默认连梁时值（1/32 单位）：6/8 等复拍子按三八拍=12，其余按四分拍=8。 */
+  function beamGroupUnits(ts) {
+    var p = String(ts || '4/4').split('/');
+    var num = +p[0], den = +p[1];
+    if (den === 8 && num > 0 && num % 3 === 0) return 12;
+    return 8;
+  }
+
+  /** 是否允许参与符杠连梁（纯休止符或时值 >= 四分音符不连梁）。 */
+  function isBeamable(ev) {
+    if (!ev || ev.kind === 'rest' || ev.units >= 8 || !ev.pieces || !ev.pieces.length) return false;
+    return ev.pieces[0].units < 8 && ev.pieces[ev.pieces.length - 1].units < 8;
+  }
   /** 绝对音高 → ABC 音名。C4=`C`，C5=`c`，C6=`c'`，C3=`C,` */
   function abcNoteName(step, octave) {
     if (octave >= 5) {
@@ -104,7 +159,10 @@
     out.push('%%subtitlefont sans-serif 13');
     out.push('%%composerfont sans-serif 11');
     out.push('T:' + (ir.meta.title || '').replace(/[\r\n]/g, ' '));
-    [ir.meta.titleEn,ir.meta.artist,ir.meta.sub].forEach(function(text){if(text)out.push('T:'+String(text).replace(/[\r\n]/g,' '));});
+    [ir.meta.titleEn, ir.meta.artist, ir.meta.sub].forEach(function (text) {
+      if (!text) return;
+      wrapTitleLines(text, 84).forEach(function (line) { out.push('T:' + line); });
+    });
     var lyricist=String(ir.meta.lyricist||'').replace(/[\r\n]/g,' '),composer=String(ir.meta.composer||'').replace(/[\r\n]/g,' ');
     var credits=lyricist&&lyricist===composer?'词曲：'+lyricist:[lyricist?'作词：'+lyricist:'',composer?'作曲：'+composer:''].filter(Boolean).join(' / ');
     if(credits)out.push('C:'+credits);
@@ -134,28 +192,72 @@
       function resetWords() { for (var q = 0; q < words.length; q++) words[q] = ''; }
 
       var lastSrcLine = null;
+      var carryOpen = 'none', carryVolta = null;
       sec.measures.forEach(function (m) {
-        if (!m.events.length && m.openBarline === 'none' && !m.volta) return;
+        if (!m.events.length) {
+          if (m.openBarline && m.openBarline !== 'none') carryOpen = m.openBarline;
+          if (m.volta) carryVolta = m.volta;
+          return;
+        }
+        var openBar = (m.openBarline && m.openBarline !== 'none') ? m.openBarline : carryOpen;
+        carryOpen = 'none';
+        var voltaVal = m.volta || carryVolta;
+        carryVolta = null;
 
         /* 跟随简谱分行：来源行一变就断一次 */
         if (lineMode === 'jianpu' && m.srcLine && lastSrcLine && m.srcLine !== lastSrcLine) flushLine();
         if (m.srcLine) lastSrcLine = m.srcLine;
 
         if (m.timeSign !== curTs) { body += '[M:' + m.timeSign + ']'; curTs = m.timeSign; }
-        if (m.openBarline === 'repeat-start') body += '|:';
-        if (m.volta) {
+        if (openBar === 'repeat-start') {
+          /* 前一小节若是普通小节线 `|` 且同行紧接 `|:`，合写成 `|:`，避免 abcjs 画出 `| |:` 双线并多出一格空小节编号 */
+          body = body.replace(/ \| $/, ' ');
+          body += '|:';
+        }
+        if (voltaVal) {
           /* ABC 的跳房子括号只接受数字/数字列表（`[1` `[2` `[1,2` `[1-3`）。
              曲库里有 `[v:从前奏接Bridge]` `[v:最后一遍]` 这种任意文字标签，
              直接写进 `[` 会被当成和弦括号解析，产生一串 Unknown character。
              文字标签改成谱面上方的文本标注，信息不丢、语法也合法。 */
-          var vl = String(m.volta);
+          var vl = String(voltaVal);
           if (/^[0-9]+([,\-][0-9]+)*$/.test(vl)) body += '[' + vl + ' ';
           else body += '"^' + vl.replace(/"/g, '') + '"';
         }
         accState = {};                                       // 小节线重置临时记号
 
-        m.events.forEach(function (e) {
-          if (e.beamBreakBefore) body += ' ';
+        var grp = beamGroupUnits(m.timeSign || curTs);
+        var isFourFour = String(m.timeSign || curTs) === '4/4';
+        var hasLyrics = wantLyrics && m.events.some(function (ev) { return ev.lyrics && ev.lyrics.some(Boolean); });
+        var starts = [], pos = 0;
+        for (var si = 0; si < m.events.length; si++) { starts.push(pos); pos += m.events[si].units; }
+        var halfFull8ths = [false, false];
+        if (isFourFour && !hasLyrics) {
+          for (var h = 0; h < 2; h++) {
+            var hStart = h * 16, hEnd = hStart + 16, count8 = 0, ok8 = true;
+            for (var ei2 = 0; ei2 < m.events.length; ei2++) {
+              var ev2 = m.events[ei2], s2 = starts[ei2], e2 = s2 + ev2.units;
+              if (e2 <= hStart || s2 >= hEnd) continue;
+              if (s2 < hStart || e2 > hEnd || !isBeamable(ev2) || ev2.units !== 4 || (ei2 > 0 && s2 > hStart && ev2.beamBreakBefore)) {
+                ok8 = false; break;
+              }
+              count8++;
+            }
+            halfFull8ths[h] = ok8 && count8 === 4;
+          }
+        }
+        function canBeamTogether(i) {
+          var a = m.events[i - 1], b = m.events[i];
+          if (!isBeamable(a) || !isBeamable(b) || b.beamBreakBefore) return false;
+          var sa = starts[i - 1], sb = starts[i];
+          if (Math.floor(sa / grp) === Math.floor(sb / grp) &&
+              Math.floor((sb + b.units - 1) / grp) === Math.floor(sb / grp)) return true;
+          if (isFourFour && !hasLyrics && a.units === 4 && b.units === 4 &&
+              Math.floor(sa / 16) === Math.floor(sb / 16) && halfFull8ths[Math.floor(sa / 16)]) return true;
+          return false;
+        }
+
+        m.events.forEach(function (e, ei) {
+          if (ei > 0 && !canBeamTogether(ei)) body += ' ';
           if (e.chordSymbol) {
             // Source stacks are bottom-first; ABC lays adjacent chord symbols top-first.
             String(e.chordSymbol).split(',').map(function (chord) { return chord.trim(); }).filter(Boolean).reverse().forEach(function (chord) {
@@ -202,7 +304,6 @@
              写成 `d4)-` 会被 abcjs 当成 "Unknown character ignored" 丢掉。 */
           if (e.tieStart) body += '-';
           (e.slurStops || []).forEach(function () { body += ')'; });
-          body += ' ';
 
           if (wantLyrics && e.kind !== 'rest') {
             for (var vr = 0; vr < verseCount; vr++) {
@@ -214,6 +315,7 @@
             }
           }
         });
+        if (m.events.length) body += ' ';
 
         var close = m.closeBarline;
         body += (close === 'double' ? '|| ' : close === 'final' ? '|] '

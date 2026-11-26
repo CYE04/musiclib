@@ -222,7 +222,7 @@
   let staffViewPromise;
   function loadStaffView(){
     if(!staffViewPromise) staffViewPromise=new Promise((resolve,reject)=>{
-      const script=document.createElement('script');script.src=new URL('staff-view.js?v='+ML_VER,staffAssetBase).href;
+      const script=document.createElement('script');script.src=new URL('staff-view.js?v=20261126-staff-layout',staffAssetBase).href;
       script.onload=()=>resolve(window.CecpStaffView);
       script.onerror=()=>{script.remove();staffViewPromise=null;reject(new Error('staff-view load failed'));};
       document.head.appendChild(script);

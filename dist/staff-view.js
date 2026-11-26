@@ -53,6 +53,172 @@
 
   const PAPER_WIDTH=794,PAPER_MARGIN=24,LAYOUT_WIDTH=PAPER_WIDTH-2*PAPER_MARGIN;
   const CONTENT_RATIO=(PAPER_WIDTH*297/210-2*PAPER_MARGIN)/LAYOUT_WIDTH;
+  const SEC_LABEL_COLORS=[
+    ['pre-chorus','prechorus','pre chorus','前副歌','导歌','#0d9488'],
+    ['chorus','副歌','#e8590c'],
+    ['verse','主歌','#2f6fdb'],
+    ['bridge','桥段','桥','#7c3aed'],
+    ['intro','前奏','#6b7280'],
+    ['outro','ending','尾奏','尾声','#b45309']
+  ];
+  const SEC_LABEL_FALLBACK=['#db2777','#0891b2','#4f46e5','#65a30d','#9333ea','#0284c7'];
+  function secLabelColor(text){
+    const t=String(text||'').toLowerCase();
+    for(let i=0;i<SEC_LABEL_COLORS.length;i++){
+      const grp=SEC_LABEL_COLORS[i];
+      for(let j=0;j<grp.length-1;j++){
+        if(grp[j]&&t.indexOf(grp[j])>=0)return grp[grp.length-1];
+      }
+    }
+    let h=0;
+    for(let k=0;k<t.length;k++)h=(h*31+t.charCodeAt(k))%997;
+    return SEC_LABEL_FALLBACK[h%SEC_LABEL_FALLBACK.length];
+  }
+  function maxMeasuresPerLine(ir){
+    const counts=new Map();
+    (ir&&ir.sections||[]).forEach(sec=>(sec.measures||[]).forEach(m=>{
+      if(!m.events||!m.events.length)return;
+      const k=m.srcLine||('sec:'+sec.si);
+      counts.set(k,(counts.get(k)||0)+1);
+    }));
+    let max=0;
+    counts.forEach(v=>{if(v>max)max=v;});
+    return max;
+  }
+  function fitHeaderTexts(rendered,scoreWidth){
+    const maxW=scoreWidth-16;
+    if(maxW<=80)return;
+    rendered.querySelectorAll('svg').forEach(svg=>{
+      if(svg.querySelector('.abcjs-staff'))return;
+      svg.querySelectorAll('text').forEach(t=>{
+        let b;try{b=t.getBBox();}catch(_){return;}
+        if(!b||b.width<=maxW)return;
+        const cur=parseFloat(t.getAttribute('font-size')||getComputedStyle(t).fontSize)||13;
+        const next=Math.max(9,cur*maxW/b.width);
+        t.style.fontSize=next.toFixed(2)+'px';
+        t.querySelectorAll('tspan').forEach(sp=>{
+          if(sp.getAttribute('font-size')||sp.style.fontSize)sp.style.fontSize=next.toFixed(2)+'px';
+        });
+        try{
+          if(t.getBBox().width>maxW){
+            t.setAttribute('textLength',String(Math.floor(maxW)));
+            t.setAttribute('lengthAdjust','spacingAndGlyphs');
+          }
+        }catch(_){}
+      });
+    });
+  }
+  function renderSectionLabels(rendered,ir,scoreWidth,useWrap){
+    const allLabels=(ir&&ir.sections||[]).flatMap(sec=>sec.labels||[]);
+    if(!allLabels.length)return;
+    const svgs=Array.from(rendered.querySelectorAll('svg'));
+    const staffSvgs=svgs.filter(svg=>svg.querySelector('.abcjs-staff'));
+    const mmInfo=new Map();
+    const orderedMm=[];
+    staffSvgs.forEach(svg=>{
+      svg.querySelectorAll('.abcjs-note, .abcjs-rest').forEach(el=>{
+        const m=String(el.getAttribute('class')||'').match(/abcjs-mm\d+/g);
+        if(!m)return;
+        m.forEach(cls=>{
+          if(!mmInfo.has(cls)){mmInfo.set(cls,{svg,cls});orderedMm.push(cls);}
+        });
+      });
+    });
+    const measureMap=new Map();
+    const nonEmptyMeasures=[];
+    const orderedSrcLines=[];
+    (ir.sections||[]).forEach(sec=>(sec.measures||[]).forEach(m=>{
+      if(!m.events||!m.events.length)return;
+      nonEmptyMeasures.push(m);
+      if(m.srcLine&&(!orderedSrcLines.length||orderedSrcLines[orderedSrcLines.length-1]!==m.srcLine)){
+        if(orderedSrcLines.indexOf(m.srcLine)<0)orderedSrcLines.push(m.srcLine);
+      }
+    }));
+    if(orderedMm.length===nonEmptyMeasures.length){
+      nonEmptyMeasures.forEach((m,i)=>{measureMap.set(m.no,mmInfo.get(orderedMm[i]));});
+    }else{
+      nonEmptyMeasures.forEach(m=>{
+        const cls='abcjs-mm'+(m.no-1);
+        if(mmInfo.has(cls))measureMap.set(m.no,mmInfo.get(cls));
+      });
+    }
+    const srcLineSvg=new Map();
+    if(!useWrap&&orderedSrcLines.length===staffSvgs.length){
+      orderedSrcLines.forEach((sl,i)=>srcLineSvg.set(sl,staffSvgs[i]));
+    }else{
+      nonEmptyMeasures.forEach(m=>{
+        if(!m.srcLine||srcLineSvg.has(m.srcLine))return;
+        const info=measureMap.get(m.no);
+        if(info)srcLineSvg.set(m.srcLine,info.svg);
+      });
+    }
+    const bySvg=new Map();
+    allLabels.forEach(lb=>{
+      const info=lb.measureNo!=null?measureMap.get(lb.measureNo):null;
+      const svg=(info&&info.svg)||srcLineSvg.get(lb.srcLine);
+      if(!svg)return;
+      if(!bySvg.has(svg))bySvg.set(svg,[]);
+      bySvg.get(svg).push({lb,mmCls:info?info.cls:null});
+    });
+    if(!bySvg.size)return;
+    const renderedRect=rendered.getBoundingClientRect();
+    bySvg.forEach((entries,svg)=>{
+      let sysNode=svg;
+      while(sysNode&&sysNode.parentElement!==rendered)sysNode=sysNode.parentElement;
+      if(!sysNode)return;
+      const staffEl=svg.querySelector('.abcjs-staff');
+      const staffBox=staffEl?staffEl.getBoundingClientRect():svg.getBoundingClientRect();
+      const staffLeft=Math.max(0,staffBox.left-renderedRect.left);
+      const staffRight=Math.min(scoreWidth,staffBox.right-renderedRect.left);
+      const staffW=Math.max(100,staffRight-staffLeft);
+      const row=document.createElement('div');
+      row.className='ml-staff-label-row';
+      row.style.cssText='position:relative;width:'+scoreWidth+'px;height:20px;margin:2px 0 -4px;pointer-events:none;box-sizing:border-box;';
+      rendered.insertBefore(row,sysNode);
+      const items=entries.map((entry,idx)=>{
+        const lb=entry.lb;
+        const pill=document.createElement('span');
+        const jump=lb.style==='jump';
+        pill.className='ml-staff-label'+(jump?' ml-staff-label-jump':'');
+        const color=secLabelColor(lb.text);
+        const base='position:absolute;top:1px;display:inline-block;white-space:nowrap;line-height:1.35;font-size:11px;padding:1px 8px;border-radius:999px;box-sizing:border-box;letter-spacing:0.3px;';
+        pill.style.cssText=jump
+          ?(base+'font-style:italic;font-weight:600;color:'+color+';border:1px solid '+color+';background:rgba(247,244,238,0.92);')
+          :(base+'font-weight:700;color:#ffffff;border:1px solid '+color+';background:'+color+';');
+        pill.textContent=lb.text;
+        row.appendChild(pill);
+        const pillW=pill.offsetWidth||40;
+        let x=null;
+        if(entry.mmCls){
+          const mEls=svg.querySelectorAll('.'+entry.mmCls);
+          let mLeft=Infinity,mRight=-Infinity;
+          mEls.forEach(el=>{
+            const b=el.getBoundingClientRect();
+            if(!b.width&&!b.height)return;
+            mLeft=Math.min(mLeft,b.left-renderedRect.left);
+            mRight=Math.max(mRight,b.right-renderedRect.left);
+          });
+          if(isFinite(mLeft))x=lb.atEnd?(mRight-pillW):mLeft;
+        }
+        if(x===null)x=staffLeft+(lb.xRatio||0)*staffW;
+        return {pill,pillW,x:Math.max(staffLeft,Math.min(staffRight-pillW,x)),idx};
+      });
+      items.sort((a,b)=>(a.x-b.x)||(a.idx-b.idx));
+      for(let i=1;i<items.length;i++){
+        items[i].x=Math.max(items[i].x,items[i-1].x+items[i-1].pillW+6);
+      }
+      if(items.length){
+        const last=items[items.length-1];
+        if(last.x+last.pillW>staffRight){
+          last.x=Math.max(staffLeft,staffRight-last.pillW);
+          for(let i=items.length-2;i>=0;i--){
+            items[i].x=Math.max(staffLeft,Math.min(items[i].x,items[i+1].x-items[i].pillW-6));
+          }
+        }
+      }
+      items.forEach(it=>{it.pill.style.left=Math.round(it.x)+'px';});
+    });
+  }
   function fitPaper(surface,width){
     const page=surface.querySelector('.ml-staff-page');
     const content=surface.querySelector('.ml-staff-page-content');
@@ -67,7 +233,9 @@
   function makePaper(surface,rendered,width){
     rendered.className='ml-staff-canvas';
     rendered.dataset.staffHeight=String(Math.ceil(rendered.getBoundingClientRect().height));
-    Array.from(rendered.children).forEach(node=>node.classList.add('ml-staff-system'));
+    Array.from(rendered.children).forEach(node=>{
+      if(!node.classList.contains('ml-staff-label-row'))node.classList.add('ml-staff-system');
+    });
     const page=document.createElement('div');page.className='ml-staff-page';
     page.style.cssText='box-sizing:border-box;position:relative;background:#f7f4ee;color:#241C17;';
     const content=document.createElement('div');content.className='ml-staff-page-content';
@@ -96,7 +264,8 @@
         const width=host.clientWidth;
         if(width<=0)return;
         const ir=jp.songToIR(song,{key,chordFlat:lastOpts.chordFlat});
-        const source=abc.irToAbc(ir,{lineBreaks:'auto',stretchLast:true});
+        const useWrap=maxMeasuresPerLine(ir)>10;
+        const source=abc.irToAbc(ir,useWrap?{lineBreaks:'auto',stretchLast:true}:{lineBreaks:'jianpu',stretchLast:0.38});
         const surface=document.createElement('div');surface.className='ml-staff-surface';
         surface.style.cssText='display:flex;flex-direction:column;gap:14px;color:#241C17;';
         const style=getComputedStyle(host);
@@ -105,19 +274,36 @@
         rendered.style.width=LAYOUT_WIDTH+'px';
         surface.appendChild(rendered);
         host.replaceChildren(surface);
-        // Reflow long scores into wider systems before fitting, so height never wastes the page width.
+        // 跟随简谱分行并按 A4 比例扩宽版面，保证换行与简谱一致、右侧对齐且不裁切标题。
         let scoreWidth=LAYOUT_WIDTH;
+        const renderOpts={staffwidth:scoreWidth,responsive:'resize',add_classes:true,
+          oneSvgPerLine:true,foregroundColor:'#241C17',
+          paddingtop:10,paddingbottom:10,paddingleft:0,paddingright:0};
+        if(useWrap)renderOpts.wrap={minSpacing:1,maxSpacing:2.7,preferredMeasuresPerLine:6};
         for(let attempt=0;attempt<8;attempt++){
           rendered.style.width=scoreWidth+'px';rendered.dataset.staffWidth=String(scoreWidth);
-          renderer.renderAbc(rendered,source,{staffwidth:scoreWidth,responsive:'resize',add_classes:true,
-            oneSvgPerLine:true,foregroundColor:'#241C17',
-            wrap:{minSpacing:1,maxSpacing:2.7,preferredMeasuresPerLine:6},
-            paddingtop:10,paddingbottom:10,paddingleft:0,paddingright:0});
+          renderOpts.staffwidth=scoreWidth;
+          renderer.renderAbc(rendered,source,renderOpts);
           // abcjs assigns width:100% to the target; restore the canonical width before measuring.
           rendered.style.width=scoreWidth+'px';
+          fitHeaderTexts(rendered,scoreWidth);
+          renderSectionLabels(rendered,ir,scoreWidth,useWrap);
           const height=rendered.getBoundingClientRect().height;
-          if(height<=scoreWidth*CONTENT_RATIO)break;
-          scoreWidth=Math.max(scoreWidth+80,Math.ceil(scoreWidth*Math.sqrt(height/(scoreWidth*CONTENT_RATIO))*1.05));
+          let nextWidth=scoreWidth;
+          if(!useWrap){
+            let maxStaffW=0;
+            rendered.querySelectorAll('svg .abcjs-staff').forEach(st=>{
+              try{const w=st.getBBox().width;if(w>maxStaffW)maxStaffW=w;}catch(_){}
+            });
+            if(maxStaffW>scoreWidth+6)nextWidth=Math.max(nextWidth,Math.ceil(maxStaffW)+8);
+          }
+          if(height>scoreWidth*CONTENT_RATIO){
+            nextWidth=Math.max(nextWidth,useWrap
+              ?Math.max(scoreWidth+80,Math.ceil(scoreWidth*Math.sqrt(height/(scoreWidth*CONTENT_RATIO))*1.05))
+              :(Math.ceil(height/CONTENT_RATIO)+12));
+          }
+          if(nextWidth<=scoreWidth)break;
+          scoreWidth=nextWidth;
         }
         if(disposed||current!==token)return;
         makePaper(surface,rendered,pageWidth);lastWidth=width;
