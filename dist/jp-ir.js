@@ -358,7 +358,8 @@ function songLyricRows(seg){
     /* ── 1. 把整首歌摊平成带出处的 token 流 ───────────────────────────── */
     var flat = [];
     var cellLyrics = {};        // 'si/li/ci' -> all lyric lanes（非 strict 后处理用）
-    var rawLabelsBySec = {};    // si -> [{ text, style, si, li, ci, dx, dy, isStrict, measureNo, atEnd }]
+    var rawLabelsBySec = {};    // si -> [{ text, style, si, li, ci, dx, dy, isStrict, measureNo, eventIdx, atBarEnd }]
+    var strictColsByLine = {};  // 'si/li' -> [{ kind, x, w, measureNo, eventIdx, atBarEnd, isDash, isRepeatStart }]
     function getVoltaOpenLabel(tk) {
       if (tk === '[v1' || tk === '[v2') return tk.slice(2);
       var m = String(tk || '').match(/^\[v:(.+)\]$/);
@@ -370,6 +371,9 @@ function songLyricRows(seg){
     (song && song.sections || []).forEach(function (sec, si) {
       flat.push({ type: 'section', name: (sec && sec.name) || '', si: si });
       (sec && sec.lines || []).forEach(function (line, li) {
+        var lineKey = si + '/' + li;
+        var lineCols = isStrict ? (strictColsByLine[lineKey] = []) : null;
+        var colX = 0;
         var segs = Array.isArray(line) ? line : ((line && line.line) || []);
         segs.forEach(function (seg, ci) {
           if (!seg || typeof seg !== 'object') return;
@@ -384,7 +388,8 @@ function songLyricRows(seg){
                 dy: (seg.dy != null && isFinite(Number(seg.dy))) ? Number(seg.dy) : null,
                 isStrict: isStrict,
                 measureNo: null,
-                atEnd: false
+                eventIdx: null,
+                atBarEnd: false
               };
               (rawLabelsBySec[si] = rawLabelsBySec[si] || []).push(lb);
               if (!isStrict) {
@@ -503,6 +508,21 @@ function songLyricRows(seg){
               if (aligned) {
                 payload.chord = cleanChord(aligned.chords[slotIdx]);
                 payload.lyrics = aligned.lyrics.map(function (row) { return row[slotIdx] || null; });
+                if (lineCols) {
+                  var cw = 22;
+                  var chRaw = String(aligned.chords[slotIdx] || '').replace(/\{sp\}/g, '').replace(/[@\u3164\u3000\s]+/g, '');
+                  if (chRaw) {
+                    var maxPart = 0;
+                    chRaw.split(',').forEach(function (p) { if (p.length > maxPart) maxPart = p.length; });
+                    if (maxPart >= 4) cw = Math.max(cw, maxPart * 6.2);
+                  }
+                  var ly0 = String((aligned.lyrics[0] && aligned.lyrics[0][slotIdx]) || '');
+                  if (/[，。；、,!?.]/.test(ly0)) cw += 6;
+                  var col = { kind: 'slot', x: colX, w: cw, measureNo: null, eventIdx: null, atBarEnd: false, isDash: false, isRepeatStart: false };
+                  lineCols.push(col);
+                  colX += cw;
+                  payload._col = col;
+                }
               } else if (looseChord) {
                 var isSounding = (tk !== '-' && !/^sp/.test(tk));
                 if (isSounding) { if (looseChord[soundIdx] != null) payload.chord = looseChord[soundIdx]; soundIdx++; }
@@ -516,7 +536,18 @@ function songLyricRows(seg){
             var its = SA._timeSign.extractInlineTimeSignToken(tk);
             if (its) { flat.push({ type: 'timesign', value: its, where: w }); return; }
             var bn = splitBarNav(tk);
-            if (bn.bar || bn.nav) { flat.push({ type: 'bar', bar: bn.bar, nav: bn.nav, where: w }); return; }
+            if (bn.bar || bn.nav) {
+              var barItem = { type: 'bar', bar: bn.bar, nav: bn.nav, where: w };
+              if (lineCols) {
+                var bw = (tk === '|:' || tk === ':|' || tk === '||' || tk === '||/' || tk === '|]') ? 14 : 11;
+                var bcol = { kind: 'bar', x: colX, w: bw, measureNo: null, eventIdx: null, atBarEnd: true, isDash: false, isRepeatStart: tk === '|:' };
+                lineCols.push(bcol);
+                colX += bw;
+                barItem._col = bcol;
+              }
+              flat.push(barItem);
+              return;
+            }
             if (tk === '(') { flat.push({ type: 'slur', op: 'open', cross: false, where: w }); return; }
             if (tk === ')') { flat.push({ type: 'slur', op: 'close', cross: false, where: w }); return; }
             if (tk === '([') { flat.push({ type: 'slur', op: 'open', cross: true, where: w }); return; }
@@ -594,12 +625,19 @@ function songLyricRows(seg){
       curMeasure = null;
     }
 
-    function pushEvent(ev) {
+    function pushEvent(ev, col) {
       ensureMeasure(ev.src);
       closedByLineEnd = false;
       if (pendingLabels.length) {
-        pendingLabels.forEach(function (lb) { lb.measureNo = curMeasure.no; });
+        pendingLabels.forEach(function (lb) {
+          lb.measureNo = curMeasure.no;
+          lb.eventIdx = curMeasure.events.length;
+        });
         pendingLabels = [];
+      }
+      if (col) {
+        col.measureNo = curMeasure.no;
+        col.eventIdx = curMeasure.events.length;
       }
       if (pendingBeamBreak) { ev.beamBreakBefore = true; pendingBeamBreak = false; }
       if (pendingSlurOpen.length) { ev.slurStarts = pendingSlurOpen.slice(); pendingSlurOpen = []; }
@@ -642,7 +680,7 @@ function songLyricRows(seg){
       if (item.type === 'label-anchor') {
         if (!item.hasSoundAfter && (curMeasure || lastMeasureGlobal)) {
           item.ref.measureNo = (curMeasure ? curMeasure.no : lastMeasureGlobal.no);
-          item.ref.atEnd = true;
+          item.ref.atBarEnd = true;
         } else {
           pendingLabels.push(item.ref);
         }
@@ -668,10 +706,19 @@ function songLyricRows(seg){
           if (item.nav) lastMeasureGlobal.nav = item.nav;
           if (role.open !== 'none') pendingOpen = role.open;
           closedByLineEnd = false;
+          if (item._col && lastMeasureGlobal.events.length) {
+            item._col.measureNo = lastMeasureGlobal.no;
+            item._col.atBarEnd = true;
+          }
           return;
         }
         closedByLineEnd = false;
-        ensureMeasure(item.where); closeMeasure(item.bar, item.nav); return;
+        ensureMeasure(item.where); closeMeasure(item.bar, item.nav);
+        if (item._col && lastMeasureGlobal && lastMeasureGlobal.events.length) {
+          item._col.measureNo = lastMeasureGlobal.no;
+          item._col.atBarEnd = true;
+        }
+        return;
       }
       if (item.type === 'volta') {
         if (item.op === 'open') {
@@ -776,6 +823,11 @@ function songLyricRows(seg){
             var re = splitDurable(last.units);
             last.pieces = re.pieces;
             if (re.remainder > 0) warn('DUR_UNREPRESENTABLE', '延长后时值 ' + last.units + '/32 无法表达', item.where);
+            if (item._col) {
+              item._col.measureNo = curMeasure.no;
+              item._col.eventIdx = curMeasure.events.length - 1;
+              item._col.isDash = true;
+            }
             return;
           }
           if (lastEventGlobal && lastEventGlobal.kind !== 'rest') {
@@ -785,17 +837,17 @@ function songLyricRows(seg){
               kind: lastEventGlobal.kind, pitches: lastEventGlobal.pitches.slice(),
               units: Q, dots: 0, tieStop: true, tieStart: false,
               chordSymbol: null, lyrics: null, fermata: false, src: item.where
-            });
+            }, item._col);
             return;
           }
           if (lastEventGlobal && lastEventGlobal.kind === 'rest') {
             ensureMeasure(item.where);
-            pushEvent({ kind: 'rest', pitches: [], units: Q, dots: 0, chordSymbol: null, lyrics: null, fermata: false, src: item.where });
+            pushEvent({ kind: 'rest', pitches: [], units: Q, dots: 0, chordSymbol: null, lyrics: null, fermata: false, src: item.where }, item._col);
             return;
           }
           warn('DASH_NO_ANCHOR', '增时线前面没有可延长的音，按休止处理', item.where);
           ensureMeasure(item.where);
-          pushEvent({ kind: 'rest', pitches: [], units: Q, dots: 0, chordSymbol: null, lyrics: null, fermata: false, src: item.where });
+          pushEvent({ kind: 'rest', pitches: [], units: Q, dots: 0, chordSymbol: null, lyrics: null, fermata: false, src: item.where }, item._col);
           return;
         }
 
@@ -820,7 +872,7 @@ function songLyricRows(seg){
         src: item.where
       };
       if (gracePitches) evObj.gracePitches = gracePitches;
-      pushEvent(evObj);
+      pushEvent(evObj, item._col);
     });
     if (curMeasure) closeMeasure('|', null);
 
@@ -830,7 +882,9 @@ function songLyricRows(seg){
     sections.forEach(function (sec) {
       var nonEmptyLis = [];
       var seenLi = {};
+      var measureByNo = {};
       sec.measures.forEach(function (m) {
+        if (m.no) measureByNo[m.no] = m;
         var first = null;
         for (var i = 0; i < m.events.length; i++) { if (m.events[i].src) { first = m.events[i].src; break; } }
         m.srcLine = first ? (first.si + '/' + first.li) : null;
@@ -840,10 +894,16 @@ function songLyricRows(seg){
         }
       });
       nonEmptyLis.sort(function (a, b) { return a - b; });
+      var END_JUMP_RE = /^(fine|d\.?c|d\.?s|to\s|coda)/i;
       sec.labels = (rawLabelsBySec[sec.si] || []).map(function (lb) {
         var targetLi = lb.li;
-        if (lb.isStrict && lb.dy != null && lb.dy <= -65) {
-          targetLi = lb.li + Math.round(lb.dy / 110);
+        var isSection = lb.style !== 'jump' && !/^(fine|d\.?c|d\.?s|to\s|coda|1=)/i.test(lb.text);
+        if (lb.isStrict) {
+          if (lb.dy != null && lb.dy <= -65) {
+            targetLi = lb.li + Math.round(lb.dy / 110);
+          } else if (isSection && lb.dy != null && lb.dy >= 125 && (lb.dx == null || lb.dx < 60)) {
+            targetLi = lb.li + 1;
+          }
         }
         if (nonEmptyLis.length && !seenLi[targetLi]) {
           var best = nonEmptyLis[0], bestDist = Infinity;
@@ -853,15 +913,60 @@ function songLyricRows(seg){
           });
           targetLi = best;
         }
+        var measureNo = lb.measureNo;
+        var eventIdx = lb.eventIdx;
+        var atBarEnd = !!lb.atBarEnd;
+        var isEndJump = END_JUMP_RE.test(lb.text);
+        if (lb.isStrict) {
+          var cols = strictColsByLine[sec.si + '/' + targetLi] || [];
+          if (cols.length) {
+            var dxVal = lb.dx != null ? lb.dx : 0;
+            var bestIdx = 0;
+            for (var ci3 = 0; ci3 < cols.length; ci3++) {
+              if (cols[ci3].x <= dxVal + 6) bestIdx = ci3;
+              else break;
+            }
+            var chosen = cols[bestIdx];
+            if (chosen.measureNo == null || chosen.isRepeatStart) {
+              var found = null;
+              for (var fj = bestIdx + 1; fj < cols.length; fj++) {
+                if (cols[fj].measureNo != null && !cols[fj].atBarEnd) { found = cols[fj]; break; }
+              }
+              if (!found) {
+                for (var bj = bestIdx - 1; bj >= 0; bj--) {
+                  if (cols[bj].measureNo != null) { found = cols[bj]; break; }
+                }
+              }
+              if (found) chosen = found;
+            }
+            if (chosen.isDash && isEndJump && cols[bestIdx + 1] && cols[bestIdx + 1].kind === 'bar' && cols[bestIdx + 1].measureNo != null) {
+              chosen = cols[bestIdx + 1];
+            }
+            if (chosen.measureNo != null) {
+              measureNo = chosen.measureNo;
+              eventIdx = chosen.atBarEnd ? null : chosen.eventIdx;
+              atBarEnd = !!chosen.atBarEnd;
+            }
+          }
+        } else if (measureNo != null && !atBarEnd && lb.dx != null && lb.dx >= 25 && isEndJump) {
+          var tgtM = measureByNo[measureNo];
+          var lastEvIdx = tgtM && tgtM.events ? tgtM.events.length - 1 : 0;
+          if (eventIdx === 0 || eventIdx === lastEvIdx) {
+            atBarEnd = true;
+            eventIdx = null;
+          }
+        }
         var xRatio = null;
         if (lb.isStrict && lb.dx != null) xRatio = Math.max(0, Math.min(0.96, lb.dx / 746));
-        else if (lb.measureNo == null) xRatio = 0;
+        else if (measureNo == null) xRatio = 0;
         return {
           text: lb.text,
           style: lb.style,
           srcLine: sec.si + '/' + targetLi,
-          measureNo: lb.measureNo,
-          atEnd: lb.atEnd,
+          measureNo: measureNo,
+          eventIdx: eventIdx,
+          atBarEnd: atBarEnd,
+          atEnd: atBarEnd,
           xRatio: xRatio
         };
       });
