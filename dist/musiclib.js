@@ -222,7 +222,7 @@
   let staffViewPromise;
   function loadStaffView(){
     if(!staffViewPromise) staffViewPromise=new Promise((resolve,reject)=>{
-      const script=document.createElement('script');script.src=new URL('staff-view.js?v=20261126-staff-labels2',staffAssetBase).href;
+      const script=document.createElement('script');script.src=new URL('staff-view.js?v=20261128-jianpu-labels',staffAssetBase).href;
       script.onload=()=>resolve(window.CecpStaffView);
       script.onerror=()=>{script.remove();staffViewPromise=null;reject(new Error('staff-view load failed'));};
       document.head.appendChild(script);
@@ -4425,11 +4425,8 @@
        justify 写在 .prev-seg 上的 inline margin 和段落标记被挪过的 left/top。
        这里把两者都退回「按最宽的自然行对齐 + 作者拖的原始 dx/dy」=
        v2 之前导出拿到的样子,导出自己的排版从这里起步。 */
-    clone.classList.remove('sw-a4-tight');
-    clone.querySelectorAll('.sec-label[data-a4-l0]').forEach(t=>{
-      t.style.left=t.getAttribute('data-a4-l0')+'px';
-      t.style.top=t.getAttribute('data-a4-t0')+'px';
-    });
+    clone.classList.remove('sw-a4-tight','sw-a4-short-x');
+    secLabelsReset(clone);
     justifyScoreRowsClear(clone);
     layoutStrictChordsAll(clone,{skipTight:ML_JUSTIFY_ROWS});
     if(ML_JUSTIFY_ROWS)justifyScoreRows(clone.querySelectorAll('.sw-lrow'));
@@ -4819,6 +4816,7 @@
           snap.node.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
           layoutStrictArcsAll(snap.node);
           positionVoltaRails(snap.node);
+          resolveStrictLabelCollisions(snap.node);
           const r1=snap.node.getBoundingClientRect();
           let cw=Math.max(1,r1.width),ch=Math.max(1,r1.height);
           const P=EXPORT_FIT.portrait;
@@ -4849,10 +4847,11 @@
              snap.node.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);
              layoutStrictArcsAll(snap.node);
              positionVoltaRails(snap.node);
+             snap.node.querySelectorAll('[data-sl-pad]').forEach(el=>{el.style.paddingTop='';el.style.paddingBottom='';el.removeAttribute('data-sl-pad');});
+             secLabelsRestore(expLabels);                    // 徽章放回原来那一拍
              const r1b=snap.node.getBoundingClientRect();
              cw=Math.max(1,r1b.width);
              ch=Math.max(1,r1b.height);
-             secLabelsRestore(expLabels);                    // 徽章放回原来那一拍
              console.log('[FittedExport] after stretch: cw='+cw+' ch='+ch+' newAspect='+(cw/ch).toFixed(3));
           }
           const lyricPx=exportMeasureLyricFont(snap.node);
@@ -4874,6 +4873,7 @@
             snap.node.querySelectorAll('.sw-lrow').forEach(connectStrictBeams);   // 双栏重排后再排一次梁/弧
             layoutStrictArcsAll(snap.node);
             positionVoltaRails(snap.node);
+            resolveStrictLabelCollisions(snap.node);
             const r2=snap.node.getBoundingClientRect();
             const cw2=Math.max(1,r2.width),ch2=Math.max(1,r2.height);
             const L=EXPORT_FIT.landscape;
@@ -8190,6 +8190,26 @@ const secLabelsReset=scope=>{
     tag.style.left=tag.getAttribute('data-a4-l0')+'px';
     tag.style.top=tag.getAttribute('data-a4-t0')+'px';
   });
+  if(scope&&scope.querySelectorAll){
+    scope.querySelectorAll('[data-sl-pad]').forEach(el=>{
+      el.style.paddingTop='';
+      el.style.paddingBottom='';
+      el.removeAttribute('data-sl-pad');
+    });
+  }
+};
+const secLabelInitMeta=(tag,row)=>{
+  if(!tag.hasAttribute('data-a4-l0')){
+    tag.setAttribute('data-a4-l0',(parseFloat(tag.style.left)||0));
+    tag.setAttribute('data-a4-t0',(parseFloat(tag.style.top)||0));
+  }
+  if(!tag.hasAttribute('data-sl-pos')){
+    const tr=tag.getBoundingClientRect(),rr=row.getBoundingClientRect();
+    const firstNote=row.querySelector('.jp-num,.jp-plain-sym')||row.querySelector('.p-n');
+    const nr=firstNote?firstNote.getBoundingClientRect():null;
+    const noteMid=nr?(nr.top+nr.bottom)/2:(rr.top+rr.height*0.45);
+    tag.setAttribute('data-sl-pos',((tr.top+tr.bottom)/2>noteMid)?'below':'above');
+  }
 };
 const secLabelsSnapshot=scope=>{
   const marks=[];
@@ -8197,10 +8217,7 @@ const secLabelsSnapshot=scope=>{
     const line=tag.closest?tag.closest('.sw-lline'):null;
     const row=line?line.querySelector('.sw-lrow'):null;
     if(!row)return;
-    if(!tag.hasAttribute('data-a4-l0')){
-      tag.setAttribute('data-a4-l0',(parseFloat(tag.style.left)||0));
-      tag.setAttribute('data-a4-t0',(parseFloat(tag.style.top)||0));
-    }
+    secLabelInitMeta(tag,row);
     const rr=row.getBoundingClientRect(),tr=tag.getBoundingClientRect();
     const x=tr.left-rr.left,w=tr.width;
     const cols=row.querySelectorAll('.prev-seg');
@@ -8224,6 +8241,173 @@ const secLabelsSnapshot=scope=>{
   });
   return marks;
 };
+function secLabelHorizOverlap(a,b,pad){
+  return a.left<b.right+pad&&a.right>b.left-pad;
+}
+function secLabelCollectTextRects(container,sel){
+  if(!container)return [];
+  const out=[];
+  container.querySelectorAll(sel).forEach(el=>{
+    const txt=(el.textContent||'').replace(/[\s\u00a0\u3164\u3000]/g,'');
+    if(!txt)return;
+    const rg=document.createRange();rg.selectNodeContents(el);
+    const r=rg.getBoundingClientRect();
+    if(r.width>0.5&&r.height>0.5)out.push(r);
+  });
+  return out;
+}
+function secLabelCollectBoxRects(container,sel){
+  if(!container)return [];
+  const out=[];
+  container.querySelectorAll(sel).forEach(el=>{
+    const r=el.getBoundingClientRect();
+    if(r.width>0.5&&r.height>0.5)out.push(r);
+  });
+  return out;
+}
+function secLabelCollectVoltaRects(row,sc){
+  if(!row)return [];
+  const out=[];
+  row.querySelectorAll('.prev-volta,.jp-volta').forEach(house=>{
+    const r=house.getBoundingClientRect();
+    const rail=getComputedStyle(house,'::before');
+    if(rail.content!=='none'&&r.width>0){
+      const top=r.top+(parseFloat(rail.top)||0)*sc;
+      const left=r.left+(parseFloat(rail.left)||0)*sc;
+      const right=r.right-(parseFloat(rail.right)||0)*sc;
+      const height=(parseFloat(rail.height)||10)*sc;
+      if(right>left)out.push({left,right,top,bottom:top+Math.max(height,12*sc)});
+    }
+  });
+  return out;
+}
+function secLabelRowAboveObstacles(row,sc){
+  if(!row)return [];
+  return secLabelCollectBoxRects(row,'.jp-num,.jp-plain-sym,.jp-dot-top > span,.jp-grace-num,.jp-grace-dot-top > span,.jp-barline,.jp-navmark svg,[data-jp-nav-above="1"] .jp-bar-top svg,.strict-arc-svg > div,.strict-arc-svg path,.strict-arc-svg text,.strict-arc-tup text')
+    .concat(secLabelCollectVoltaRects(row,sc))
+    .concat(secLabelCollectTextRects(row,'.p-chord:not(.empty)'));
+}
+function secLabelRowBottomObstacles(row){
+  if(!row)return [];
+  return secLabelCollectTextRects(row,'.p-lyric:not([data-lyric-pad])')
+    .concat(secLabelCollectBoxRects(row,'.jp-num,.jp-plain-sym,.jp-dot-bot > span,.jp-u1-line,.jp-u2-line,.jp-under,.jp-bar-bot,.jp-barline'));
+}
+function secLabelAddPadTop(el,px){
+  if(!el||!(px>0.2))return;
+  const cur=parseFloat(getComputedStyle(el).paddingTop)||0;
+  el.style.paddingTop=(cur+px).toFixed(1)+'px';
+  el.setAttribute('data-sl-pad','1');
+}
+/* 严格模式段落/跳转标记避让：保证标记永不压到本行音符/弧/房子/和弦/歌词或相邻行元素。
+   在 fitRows 最终测量之前调用，添加在行上的 paddingTop/Bottom 会计入 natural.height 并受 A4 缩放保护。 */
+function resolveStrictLabelCollisions(scope){
+  if(!scope||!scope.querySelectorAll)return;
+  const allLines=Array.from(scope.querySelectorAll('.sw-lline'));
+  if(!allLines.length)return;
+  const sc=scoreHeightScale(scope)||1;
+  const GAP=3,X_PAD=3;
+  allLines.forEach((line,lineIdx)=>{
+    const row=line.querySelector('.sw-lrow');
+    const tags=Array.from(line.querySelectorAll('.strict-label-row .sec-label'));
+    if(!row||!tags.length)return;
+    tags.forEach(tag=>secLabelInitMeta(tag,row));
+    const aboveTags=tags.filter(t=>t.getAttribute('data-sl-pos')!=='below');
+    const belowTags=tags.filter(t=>t.getAttribute('data-sl-pos')==='below');
+    if(aboveTags.length){
+      aboveTags.sort((a,b)=>b.getBoundingClientRect().top-a.getBoundingClientRect().top);
+      const aboveObs=secLabelRowAboveObstacles(row,sc);
+      const placedAbove=[];
+      aboveTags.forEach(tag=>{
+        let tr=tag.getBoundingClientRect();
+        let floorY=Infinity;
+        aboveObs.concat(placedAbove).forEach(ob=>{
+          if(secLabelHorizOverlap(tr,ob,X_PAD*sc))floorY=Math.min(floorY,ob.top);
+        });
+        if(isFinite(floorY)&&tr.bottom>floorY-GAP*sc){
+          const shift=(tr.bottom-(floorY-GAP*sc))/sc;
+          tag.style.top=((parseFloat(tag.style.top)||0)-shift).toFixed(1)+'px';
+          tr=tag.getBoundingClientRect();
+        }
+        placedAbove.push(tr);
+      });
+      const upperObs=[];
+      const prevEl=line.previousElementSibling;
+      if(prevEl&&prevEl.classList.contains('sw-lsec-name')&&prevEl.offsetHeight>0){
+        upperObs.push(prevEl.getBoundingClientRect());
+      }
+      if(lineIdx>0){
+        const prevLine=allLines[lineIdx-1];
+        const prevRow=prevLine.querySelector('.sw-lrow');
+        if(prevRow)upperObs.push(...secLabelRowBottomObstacles(prevRow));
+        prevLine.querySelectorAll('.strict-label-row .sec-label[data-sl-pos="below"]').forEach(bt=>{
+          const r=bt.getBoundingClientRect();
+          if(r.width>0.5&&r.height>0.5)upperObs.push(r);
+        });
+      }
+      const scopeTop=scope.getBoundingClientRect().top+2*sc;
+      let needPadTop=0;
+      aboveTags.forEach(tag=>{
+        const tr=tag.getBoundingClientRect();
+        let ceilY=scopeTop;
+        upperObs.forEach(ob=>{
+          if(secLabelHorizOverlap(tr,ob,X_PAD*sc))ceilY=Math.max(ceilY,ob.bottom+GAP*sc);
+        });
+        if(tr.top<ceilY)needPadTop=Math.max(needPadTop,(ceilY-tr.top)/sc);
+      });
+      secLabelAddPadTop(line,needPadTop);
+    }
+    if(belowTags.length){
+      belowTags.sort((a,b)=>a.getBoundingClientRect().top-b.getBoundingClientRect().top);
+      const botObs=secLabelRowBottomObstacles(row);
+      const placedBelow=[];
+      belowTags.forEach(tag=>{
+        let tr=tag.getBoundingClientRect();
+        let ceilY=-Infinity;
+        botObs.concat(placedBelow).forEach(ob=>{
+          if(secLabelHorizOverlap(tr,ob,X_PAD*sc))ceilY=Math.max(ceilY,ob.bottom);
+        });
+        if(isFinite(ceilY)&&tr.top<ceilY+GAP*sc){
+          const shift=(ceilY+GAP*sc-tr.top)/sc;
+          tag.style.top=((parseFloat(tag.style.top)||0)+shift).toFixed(1)+'px';
+          tr=tag.getBoundingClientRect();
+        }
+        placedBelow.push(tr);
+      });
+      if(lineIdx+1<allLines.length){
+        const nextLine=allLines[lineIdx+1];
+        const nextRow=nextLine.querySelector('.sw-lrow');
+        const nextObs=nextRow?secLabelRowAboveObstacles(nextRow,sc):[];
+        const nextPrevEl=nextLine.previousElementSibling;
+        const hasSecName=nextPrevEl&&nextPrevEl.classList.contains('sw-lsec-name')&&nextPrevEl.offsetHeight>0;
+        if(hasSecName)nextObs.push(nextPrevEl.getBoundingClientRect());
+        let needNextPT=0;
+        belowTags.forEach(tag=>{
+          const tr=tag.getBoundingClientRect();
+          let nextFloorY=Infinity;
+          nextObs.forEach(ob=>{
+            if(secLabelHorizOverlap(tr,ob,X_PAD*sc))nextFloorY=Math.min(nextFloorY,ob.top);
+          });
+          if(isFinite(nextFloorY)&&tr.bottom>nextFloorY-GAP*sc){
+            needNextPT=Math.max(needNextPT,(tr.bottom-(nextFloorY-GAP*sc))/sc);
+          }
+        });
+        secLabelAddPadTop(hasSecName?nextLine.parentElement:nextLine,needNextPT);
+      }else{
+        let needBot=0;
+        const lr=line.getBoundingClientRect();
+        belowTags.forEach(tag=>{
+          const tr=tag.getBoundingClientRect();
+          if(tr.bottom>lr.bottom-2*sc)needBot=Math.max(needBot,(tr.bottom-lr.bottom)/sc+2);
+        });
+        if(needBot>0.2){
+          const curPB=parseFloat(getComputedStyle(row).paddingBottom)||0;
+          row.style.paddingBottom=(curPB+needBot).toFixed(1)+'px';
+          row.setAttribute('data-sl-pad','1');
+        }
+      }
+    }
+  });
+}
 const secLabelsRestore=marks=>{
   if(!marks||!marks.length)return;
   marks.forEach(m=>{
@@ -8246,29 +8430,12 @@ const secLabelsRestore=marks=>{
         refTop=m.note.getBoundingClientRect().top;
       }
       const now=m.tag.getBoundingClientRect().top-refTop;
-      let newTop=(parseFloat(m.tag.style.top)||0)+(m.gap-now);
+      const newTop=(parseFloat(m.tag.style.top)||0)+(m.gap-now);
       m.tag.style.top=newTop.toFixed(1)+'px';
-      if(m.prevLine){
-        const tr=m.tag.getBoundingClientRect();
-        let prevBottom=-Infinity;
-        m.prevLine.querySelectorAll('.p-lyric:not([data-lyric-pad])').forEach(ly=>{
-          const rg=document.createRange();rg.selectNodeContents(ly);const r=rg.getBoundingClientRect();
-          if(r.width>0&&r.left<tr.right+4&&r.right>tr.left-4)prevBottom=Math.max(prevBottom,r.bottom);
-        });
-        if(isFinite(prevBottom)&&tr.top<prevBottom+3){
-          const need=prevBottom+3-tr.top;
-          if(m.isJump){
-            const lw=m.tag.parentElement;
-            if(lw&&lw.classList.contains('strict-label-row')){
-              lw.style.height=((parseFloat(getComputedStyle(lw).height)||0)+need).toFixed(1)+'px';
-            }
-          }else{
-            m.tag.style.top=(newTop+need).toFixed(1)+'px';
-          }
-        }
-      }
     }
   });
+  const scope=marks[0].line&&(marks[0].line.closest('.sw-lb')||marks[0].line.parentElement);
+  if(scope)resolveStrictLabelCollisions(scope);
 };
 function segRenderLabelBlock(seg,row){
   var holder=document.createElement('span');
@@ -15851,6 +16018,9 @@ if(typeof window!=='undefined'){window.ChordEngine=ChordEngine;}
         if(tightNat)natural=tightNat;
         natural.height=relayoutRowExtras()||natural.height;
         secLabelsRestore(labelMarks);
+        natural.height=lbDiv.scrollHeight||natural.height;
+      }else{
+        resolveStrictLabelCollisions(lbDiv);
         natural.height=lbDiv.scrollHeight||natural.height;
       }
 
